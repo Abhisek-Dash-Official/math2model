@@ -1,1785 +1,1789 @@
-[
-    {
-        "id": "ai-001",
-        "title": "Attention Is All You Need",
-        "authors": [
-            "Ashish Vaswani",
-            "Noam Shazeer",
-            "Niki Parmar",
-            "et al."
-        ],
-        "year": 2017,
-        "abstract": "Introduces the Transformer architecture, which relies on attention mechanisms instead of recurrent or convolutional layers for sequence modeling.",
-        "doi": "10.48550/arXiv.1706.03762",
-        "paperUrl": "https://arxiv.org/abs/1706.03762",
-        "pdfUrl": "https://arxiv.org/pdf/1706.03762",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "Deep Learning",
-            "Transformers"
-        ],
-        "keywords": [
-            "attention",
-            "transformer",
-            "sequence modeling",
-            "neural networks"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-002",
-        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
-        "authors": [
-            "Jacob Devlin",
-            "Ming-Wei Chang",
-            "Kenton Lee",
-            "Kristina Toutanova"
-        ],
-        "year": 2018,
-        "abstract": "Introduces BERT, a bidirectionally trained Transformer model that improves language understanding across a range of NLP tasks.",
-        "doi": "10.48550/arXiv.1810.04805",
-        "paperUrl": "https://arxiv.org/abs/1810.04805",
-        "pdfUrl": "https://arxiv.org/pdf/1810.04805",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NAACL-HLT",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "NLP",
-            "Transformers"
-        ],
-        "keywords": [
-            "BERT",
-            "language understanding",
-            "pretraining",
-            "NLP"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-003",
-        "title": "Language Models are Few-Shot Learners",
-        "authors": [
-            "Tom B. Brown",
-            "Benjamin Mann",
-            "Nick Ryder",
-            "et al."
-        ],
-        "year": 2020,
-        "abstract": "Presents GPT-3 and demonstrates that large autoregressive language models can perform many tasks from natural-language instructions and a small number of examples.",
-        "doi": "10.48550/arXiv.2005.14165",
-        "paperUrl": "https://arxiv.org/abs/2005.14165",
-        "pdfUrl": "https://arxiv.org/pdf/2005.14165",
-        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Generative AI"
-        ],
-        "keywords": [
-            "GPT-3",
-            "few-shot learning",
-            "language models",
-            "in-context learning"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-004",
-        "title": "GPT-4 Technical Report",
-        "authors": [
-            "OpenAI"
-        ],
-        "year": 2023,
-        "abstract": "Describes GPT-4, a large multimodal model, and reports evaluations of its capabilities, limitations, and performance on professional and academic benchmarks.",
-        "doi": "10.48550/arXiv.2303.08774",
-        "paperUrl": "https://arxiv.org/abs/2303.08774",
-        "pdfUrl": "https://arxiv.org/pdf/2303.08774",
-        "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "LLMs",
-            "AGI",
-            "Multimodal AI"
-        ],
-        "keywords": [
-            "GPT-4",
-            "multimodal",
-            "language models",
-            "AI evaluation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-005",
-        "title": "Sparks of Artificial General Intelligence: Early Experiments with GPT-4",
-        "authors": [
-            "Sébastien Bubeck",
-            "Varun Chandrasekaran",
-            "Ronen Eldan",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Investigates GPT-4's performance across diverse tasks and discusses whether its capabilities show early signs of general intelligence.",
-        "doi": "10.48550/arXiv.2303.12712",
-        "paperUrl": "https://arxiv.org/abs/2303.12712",
-        "pdfUrl": "https://arxiv.org/pdf/2303.12712",
-        "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "AGI",
-            "AI",
-            "Reasoning"
-        ],
-        "keywords": [
-            "AGI",
-            "GPT-4",
-            "general intelligence",
-            "reasoning",
-            "cognition"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-006",
-        "title": "A Survey of Large Language Models",
-        "authors": [
-            "Wayne Xin Zhao",
-            "Kun Zhou",
-            "Junyi Li",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Surveys the development of large language models, covering architectures, training, adaptation, evaluation, applications, and open challenges.",
-        "doi": "10.48550/arXiv.2303.18223",
-        "paperUrl": "https://arxiv.org/abs/2303.18223",
-        "pdfUrl": "https://arxiv.org/pdf/2303.18223",
-        "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": "ACM Transactions on Information Systems",
-        "paperType": "survey",
-        "categories": [
-            "AI",
-            "LLMs",
-            "NLP"
-        ],
-        "keywords": [
-            "LLM survey",
-            "language models",
-            "pretraining",
-            "fine-tuning",
-            "evaluation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-007",
-        "title": "On the Opportunities and Risks of Foundation Models",
-        "authors": [
-            "Rishi Bommasani",
-            "Drew A. Hudson",
-            "Ehsan Adeli",
-            "et al."
-        ],
-        "year": 2021,
-        "abstract": "Examines foundation models trained on broad data and discusses their capabilities, societal effects, risks, and research opportunities.",
-        "doi": "10.48550/arXiv.2108.07258",
-        "paperUrl": "https://arxiv.org/abs/2108.07258",
-        "pdfUrl": "https://arxiv.org/pdf/2108.07258",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_report",
-        "categories": [
-            "AI",
-            "Foundation Models",
-            "AI Safety"
-        ],
-        "keywords": [
-            "foundation models",
-            "AI ethics",
-            "risks",
-            "societal impact"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-008",
-        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
-        "authors": [
-            "Patrick Lewis",
-            "Ethan Perez",
-            "Aleksandra Piktus",
-            "et al."
-        ],
-        "year": 2020,
-        "abstract": "Combines a pretrained sequence-to-sequence model with a dense retrieval system to improve generation on knowledge-intensive tasks.",
-        "doi": "10.48550/arXiv.2005.11401",
-        "paperUrl": "https://arxiv.org/abs/2005.11401",
-        "pdfUrl": "https://arxiv.org/pdf/2005.11401",
-        "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "RAG",
-            "NLP"
-        ],
-        "keywords": [
-            "retrieval-augmented generation",
-            "dense retrieval",
-            "knowledge-intensive NLP"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-009",
-        "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
-        "authors": [
-            "Jason Wei",
-            "Xuezhi Wang",
-            "Dale Schuurmans",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Shows that prompting sufficiently large language models to produce intermediate reasoning steps can improve performance on multi-step reasoning tasks.",
-        "doi": "10.48550/arXiv.2201.11903",
-        "paperUrl": "https://arxiv.org/abs/2201.11903",
-        "pdfUrl": "https://arxiv.org/pdf/2201.11903",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "Reasoning",
-            "LLMs"
-        ],
-        "keywords": [
-            "chain of thought",
-            "reasoning",
-            "prompting",
-            "problem solving"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-010",
-        "title": "Self-Consistency Improves Chain of Thought Reasoning in Language Models",
-        "authors": [
-            "Xuezhi Wang",
-            "Jason Wei",
-            "Dale Schuurmans",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Introduces self-consistency decoding, which samples multiple reasoning paths and selects a consistent answer to improve reasoning accuracy.",
-        "doi": "10.48550/arXiv.2203.11171",
-        "paperUrl": "https://arxiv.org/abs/2203.11171",
-        "pdfUrl": "https://arxiv.org/pdf/2203.11171",
-        "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "Reasoning",
-            "LLMs"
-        ],
-        "keywords": [
-            "self-consistency",
-            "chain of thought",
-            "reasoning",
-            "decoding"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-011",
-        "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
-        "authors": [
-            "Shunyu Yao",
-            "Jeffrey Zhao",
-            "Dian Yu",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Introduces a framework in which language models interleave reasoning with actions to interact with external environments and tools.",
-        "doi": "10.48550/arXiv.2210.03629",
-        "paperUrl": "https://arxiv.org/abs/2210.03629",
-        "pdfUrl": "https://arxiv.org/pdf/2210.03629",
-        "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Agents",
-            "LLMs",
-            "Reasoning"
-        ],
-        "keywords": [
-            "ReAct",
-            "agents",
-            "tool use",
-            "reasoning",
-            "acting"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-012",
-        "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
-        "authors": [
-            "Shunyu Yao",
-            "Dian Yu",
-            "Jeffrey Zhao",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Proposes exploring multiple intermediate reasoning paths as a tree, allowing language models to evaluate and revise candidate solutions.",
-        "doi": "10.48550/arXiv.2305.10601",
-        "paperUrl": "https://arxiv.org/abs/2305.10601",
-        "pdfUrl": "https://arxiv.org/pdf/2305.10601",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "Reasoning",
-            "LLMs"
-        ],
-        "keywords": [
-            "tree of thoughts",
-            "search",
-            "planning",
-            "reasoning"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-013",
-        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
-        "authors": [
-            "Rafael Rafailov",
-            "Archit Sharma",
-            "Eric Mitchell",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Introduces Direct Preference Optimization, a method for aligning language models with preference data without explicitly fitting a separate reward model.",
-        "doi": "10.48550/arXiv.2305.18290",
-        "paperUrl": "https://arxiv.org/abs/2305.18290",
-        "pdfUrl": "https://arxiv.org/pdf/2305.18290",
-        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Alignment",
-            "LLMs",
-            "Generative AI"
-        ],
-        "keywords": [
-            "DPO",
-            "preference optimization",
-            "alignment",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-014",
-        "title": "Constitutional AI: Harmlessness from AI Feedback",
-        "authors": [
-            "Yuntao Bai",
-            "Saurav Kadavath",
-            "Sandipan Kundu",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Presents an approach to training AI assistants using a set of principles and AI-generated feedback to improve helpfulness and harmlessness.",
-        "doi": "10.48550/arXiv.2212.08073",
-        "paperUrl": "https://arxiv.org/abs/2212.08073",
-        "pdfUrl": "https://arxiv.org/pdf/2212.08073",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "AI Safety",
-            "AI Alignment",
-            "LLMs"
-        ],
-        "keywords": [
-            "constitutional AI",
-            "AI feedback",
-            "alignment",
-            "harmlessness"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-015",
-        "title": "Toolformer: Language Models Can Teach Themselves to Use Tools",
-        "authors": [
-            "Timo Schick",
-            "Jane Dwivedi-Yu",
-            "Roberto Dessì",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Introduces a method for teaching language models to call external tools such as calculators, search engines, and question-answering systems.",
-        "doi": "10.48550/arXiv.2302.04761",
-        "paperUrl": "https://arxiv.org/abs/2302.04761",
-        "pdfUrl": "https://arxiv.org/pdf/2302.04761",
-        "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Agents",
-            "LLMs",
-            "Tool Use"
-        ],
-        "keywords": [
-            "tool use",
-            "language models",
-            "self-supervised learning",
-            "agents"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-016",
-        "title": "Training Language Models to Follow Instructions with Human Feedback",
-        "authors": [
-            "Long Ouyang",
-            "Jeffrey Wu",
-            "Xu Jiang",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Describes InstructGPT, trained using demonstrations and human preference feedback to better follow user instructions.",
-        "doi": "10.48550/arXiv.2203.02155",
-        "paperUrl": "https://arxiv.org/abs/2203.02155",
-        "pdfUrl": "https://arxiv.org/pdf/2203.02155",
-        "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Alignment",
-            "LLMs",
-            "Generative AI"
-        ],
-        "keywords": [
-            "InstructGPT",
-            "RLHF",
-            "human feedback",
-            "instruction following"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-017",
-        "title": "Training Verifiers to Solve Math Word Problems",
-        "authors": [
-            "Karl Cobbe",
-            "Vineet Kosaraju",
-            "Mohammad Bavarian",
-            "et al."
-        ],
-        "year": 2021,
-        "abstract": "Studies training reward models to distinguish correct and incorrect solutions to mathematical word problems and improve answer selection.",
-        "doi": "10.48550/arXiv.2110.14168",
-        "paperUrl": "https://arxiv.org/abs/2110.14168",
-        "pdfUrl": "https://arxiv.org/pdf/2110.14168",
-        "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Math AI",
-            "Reasoning",
-            "LLMs"
-        ],
-        "keywords": [
-            "math word problems",
-            "verifiers",
-            "reward models",
-            "solution ranking"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-018",
-        "title": "Let's Verify Step by Step",
-        "authors": [
-            "Hunter Lightman",
-            "Vineet Kosaraju",
-            "Yura Burda",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Investigates process supervision for mathematical reasoning and finds that feedback on individual solution steps can improve reliability.",
-        "doi": "10.48550/arXiv.2305.20050",
-        "paperUrl": "https://arxiv.org/abs/2305.20050",
-        "pdfUrl": "https://arxiv.org/pdf/2305.20050",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Math AI",
-            "Reasoning",
-            "AI Alignment"
-        ],
-        "keywords": [
-            "process supervision",
-            "mathematical reasoning",
-            "verification",
-            "reward models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-019",
-        "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
-        "authors": [
-            "Zhihong Shao",
-            "Peiyi Wang",
-            "Qihao Zhu",
-            "et al."
-        ],
-        "year": 2024,
-        "abstract": "Describes training techniques, data, and reinforcement learning methods that improve mathematical reasoning in open language models.",
-        "doi": "10.48550/arXiv.2402.03300",
-        "paperUrl": "https://arxiv.org/abs/2402.03300",
-        "pdfUrl": "https://arxiv.org/pdf/2402.03300",
-        "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Math AI",
-            "LLMs",
-            "Reasoning"
-        ],
-        "keywords": [
-            "DeepSeekMath",
-            "mathematical reasoning",
-            "reinforcement learning",
-            "open models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-020",
-        "title": "ToRA: A Tool-Integrated Reasoning Agent for Mathematical Problem Solving",
-        "authors": [
-            "Zhangir Azerbayev",
-            "Hailey Schoelkopf",
-            "Keiran Paster",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Presents a mathematical reasoning agent that combines language-model reasoning with external computational tools to solve problems.",
-        "doi": "10.48550/arXiv.2309.17452",
-        "paperUrl": "https://arxiv.org/abs/2309.17452",
-        "pdfUrl": "https://arxiv.org/pdf/2309.17452",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Math AI",
-            "AI Agents",
-            "Reasoning"
-        ],
-        "keywords": [
-            "ToRA",
-            "tool-integrated reasoning",
-            "math",
-            "agents",
-            "calculators"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-021",
-        "title": "AlphaGeometry: An Olympiad-Level AI System for Geometry",
-        "authors": [
-            "Trieu H. Trinh",
-            "Yuhuai Wu",
-            "Quoc V. Le",
-            "et al."
-        ],
-        "year": 2024,
-        "abstract": "Introduces a neuro-symbolic system that combines a language model with a symbolic deduction engine to solve complex geometry problems.",
-        "doi": "10.48550/arXiv.2402.03544",
-        "paperUrl": "https://arxiv.org/abs/2402.03544",
-        "pdfUrl": "https://arxiv.org/pdf/2402.03544",
-        "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "Nature",
-        "journal": "Nature",
-        "paperType": "journal",
-        "categories": [
-            "Math AI",
-            "Neuro-Symbolic AI",
-            "Reasoning"
-        ],
-        "keywords": [
-            "AlphaGeometry",
-            "geometry",
-            "symbolic reasoning",
-            "olympiad mathematics"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-022",
-        "title": "Advancing Mathematics by Guiding Human Intuition with AI",
-        "authors": [
-            "Alex Davies",
-            "Petar Veličković",
-            "Lloyd N. Trefethen",
-            "et al."
-        ],
-        "year": 2021,
-        "abstract": "Explores how machine learning can help mathematicians develop conjectures and investigate mathematical structures.",
-        "doi": null,
-        "paperUrl": "https://www.nature.com/articles/s41586-021-04086-x",
-        "pdfUrl": null,
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "Nature",
-        "journal": "Nature",
-        "paperType": "journal",
-        "categories": [
-            "Math AI",
-            "Scientific Discovery",
-            "Machine Learning"
-        ],
-        "keywords": [
-            "mathematical discovery",
-            "AI for mathematics",
-            "conjectures",
-            "human-AI collaboration"
-        ],
-        "accessType": "publisher_page",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "Nature",
-        "verified": false
-    },
-    {
-        "id": "ai-023",
-        "title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
-        "authors": [
-            "DeepSeek-AI"
-        ],
-        "year": 2025,
-        "abstract": "Describes reinforcement-learning approaches for developing reasoning capabilities in language models and reports results on reasoning benchmarks.",
-        "doi": "10.48550/arXiv.2501.12948",
-        "paperUrl": "https://arxiv.org/abs/2501.12948",
-        "pdfUrl": "https://arxiv.org/pdf/2501.12948",
-        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "Reasoning",
-            "LLMs"
-        ],
-        "keywords": [
-            "DeepSeek-R1",
-            "reinforcement learning",
-            "reasoning",
-            "test-time computation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-024",
-        "title": "DeepSeek-V3 Technical Report",
-        "authors": [
-            "DeepSeek-AI"
-        ],
-        "year": 2024,
-        "abstract": "Documents the architecture, training strategy, and evaluation of DeepSeek-V3, a large mixture-of-experts language model.",
-        "doi": "10.48550/arXiv.2412.19437",
-        "paperUrl": "https://arxiv.org/abs/2412.19437",
-        "pdfUrl": "https://arxiv.org/pdf/2412.19437",
-        "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Generative AI"
-        ],
-        "keywords": [
-            "DeepSeek-V3",
-            "mixture of experts",
-            "training",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-025",
-        "title": "Llama 2: Open Foundation and Fine-Tuned Chat Models",
-        "authors": [
-            "Hugo Touvron",
-            "Louis Martin",
-            "Kevin Stone",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Presents Llama 2 language models and describes their training, safety tuning, evaluation, and chat-oriented variants.",
-        "doi": "10.48550/arXiv.2307.09288",
-        "paperUrl": "https://arxiv.org/abs/2307.09288",
-        "pdfUrl": "https://arxiv.org/pdf/2307.09288",
-        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Open Models"
-        ],
-        "keywords": [
-            "Llama 2",
-            "open foundation models",
-            "fine-tuning",
-            "safety"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-026",
-        "title": "LLaMA: Open and Efficient Foundation Language Models",
-        "authors": [
-            "Hugo Touvron",
-            "Thibaut Lavril",
-            "Gautier Izacard",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Introduces the LLaMA family and studies how high-quality training data can produce competitive language models at different scales.",
-        "doi": "10.48550/arXiv.2302.13971",
-        "paperUrl": "https://arxiv.org/abs/2302.13971",
-        "pdfUrl": "https://arxiv.org/pdf/2302.13971",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Open Models"
-        ],
-        "keywords": [
-            "LLaMA",
-            "foundation models",
-            "language modeling",
-            "efficient training"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-027",
-        "title": "Mixtral of Experts",
-        "authors": [
-            "Albert Jiang",
-            "Alexandre Sablayrolles",
-            "Antoine Roux",
-            "et al."
-        ],
-        "year": 2024,
-        "abstract": "Introduces Mixtral, a sparse mixture-of-experts language model that activates a subset of its parameters for each token.",
-        "doi": "10.48550/arXiv.2401.04088",
-        "paperUrl": "https://arxiv.org/abs/2401.04088",
-        "pdfUrl": "https://arxiv.org/pdf/2401.04088",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "technical_report",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Neural Networks"
-        ],
-        "keywords": [
-            "Mixtral",
-            "mixture of experts",
-            "sparse models",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-028",
-        "title": "High-Resolution Image Synthesis with Latent Diffusion Models",
-        "authors": [
-            "Robin Rombach",
-            "Andreas Blattmann",
-            "Dominik Lorenz",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Introduces latent diffusion models, which perform diffusion in a compressed representation to make high-resolution image synthesis more efficient.",
-        "doi": "10.48550/arXiv.2112.10752",
-        "paperUrl": "https://arxiv.org/abs/2112.10752",
-        "pdfUrl": "https://arxiv.org/pdf/2112.10752",
-        "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "CVPR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Generative AI",
-            "Computer Vision",
-            "Diffusion Models"
-        ],
-        "keywords": [
-            "latent diffusion",
-            "image generation",
-            "Stable Diffusion",
-            "generative models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-029",
-        "title": "Denoising Diffusion Probabilistic Models",
-        "authors": [
-            "Jonathan Ho",
-            "Ajay Jain",
-            "Pieter Abbeel"
-        ],
-        "year": 2020,
-        "abstract": "Presents a probabilistic diffusion framework for generating data by learning to reverse a gradual noise-adding process.",
-        "doi": "10.48550/arXiv.2006.11239",
-        "paperUrl": "https://arxiv.org/abs/2006.11239",
-        "pdfUrl": "https://arxiv.org/pdf/2006.11239",
-        "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Generative AI",
-            "Diffusion Models",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "diffusion models",
-            "image generation",
-            "denoising",
-            "probabilistic models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-030",
-        "title": "Generative Adversarial Nets",
-        "authors": [
-            "Ian Goodfellow",
-            "Jean Pouget-Abadie",
-            "Mehdi Mirza",
-            "et al."
-        ],
-        "year": 2014,
-        "abstract": "Introduces generative adversarial networks, in which a generator and discriminator are trained competitively to model data.",
-        "doi": "10.48550/arXiv.1406.2661",
-        "paperUrl": "https://arxiv.org/abs/1406.2661",
-        "pdfUrl": "https://arxiv.org/pdf/1406.2661",
-        "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Generative AI",
-            "Neural Networks",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "GAN",
-            "generator",
-            "discriminator",
-            "generative modeling"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-031",
-        "title": "Auto-Encoding Variational Bayes",
-        "authors": [
-            "Diederik P. Kingma",
-            "Max Welling"
-        ],
-        "year": 2013,
-        "abstract": "Introduces variational autoencoders as a scalable method for learning latent-variable generative models using variational inference.",
-        "doi": "10.48550/arXiv.1312.6114",
-        "paperUrl": "https://arxiv.org/abs/1312.6114",
-        "pdfUrl": "https://arxiv.org/pdf/1312.6114",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Generative AI",
-            "Deep Learning",
-            "Neural Networks"
-        ],
-        "keywords": [
-            "VAE",
-            "variational inference",
-            "latent variables",
-            "generative models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-032",
-        "title": "Learning Transferable Visual Models From Natural Language Supervision",
-        "authors": [
-            "Alec Radford",
-            "Jong Wook Kim",
-            "Chris Hallacy",
-            "et al."
-        ],
-        "year": 2021,
-        "abstract": "Introduces CLIP, which learns transferable visual representations by training images and their natural-language descriptions together.",
-        "doi": "10.48550/arXiv.2103.00020",
-        "paperUrl": "https://arxiv.org/abs/2103.00020",
-        "pdfUrl": "https://arxiv.org/pdf/2103.00020",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICML",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Computer Vision",
-            "Multimodal AI",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "CLIP",
-            "vision-language models",
-            "contrastive learning",
-            "zero-shot classification"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-033",
-        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
-        "authors": [
-            "Alexey Dosovitskiy",
-            "Lucas Beyer",
-            "Alexander Kolesnikov",
-            "et al."
-        ],
-        "year": 2020,
-        "abstract": "Applies Transformer architectures to image patches and demonstrates strong image-classification performance at scale.",
-        "doi": "10.48550/arXiv.2010.11929",
-        "paperUrl": "https://arxiv.org/abs/2010.11929",
-        "pdfUrl": "https://arxiv.org/pdf/2010.11929",
-        "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Computer Vision",
-            "Transformers",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "Vision Transformer",
-            "ViT",
-            "image classification",
-            "attention"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-034",
-        "title": "Deep Residual Learning for Image Recognition",
-        "authors": [
-            "Kaiming He",
-            "Xiangyu Zhang",
-            "Shaoqing Ren",
-            "Jian Sun"
-        ],
-        "year": 2015,
-        "abstract": "Introduces residual connections that allow very deep neural networks to be trained effectively for image recognition.",
-        "doi": "10.48550/arXiv.1512.03385",
-        "paperUrl": "https://arxiv.org/abs/1512.03385",
-        "pdfUrl": "https://arxiv.org/pdf/1512.03385",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "CVPR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Deep Learning",
-            "Computer Vision",
-            "Neural Networks"
-        ],
-        "keywords": [
-            "ResNet",
-            "residual learning",
-            "image recognition",
-            "deep networks"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-035",
-        "title": "Adam: A Method for Stochastic Optimization",
-        "authors": [
-            "Diederik P. Kingma",
-            "Jimmy Ba"
-        ],
-        "year": 2014,
-        "abstract": "Introduces Adam, an adaptive optimization algorithm that uses estimates of first and second moments of gradients during training.",
-        "doi": "10.48550/arXiv.1412.6980",
-        "paperUrl": "https://arxiv.org/abs/1412.6980",
-        "pdfUrl": "https://arxiv.org/pdf/1412.6980",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "Machine Learning",
-            "Optimization",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "Adam optimizer",
-            "stochastic optimization",
-            "gradients",
-            "training"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-036",
-        "title": "Improving Neural Networks by Preventing Co-adaptation of Feature Detectors",
-        "authors": [
-            "Geoffrey E. Hinton",
-            "Nitish Srivastava",
-            "Alex Krizhevsky",
-            "et al."
-        ],
-        "year": 2012,
-        "abstract": "Introduces dropout as a regularization technique that reduces co-adaptation of feature detectors in neural networks.",
-        "doi": "10.48550/arXiv.1207.0580",
-        "paperUrl": "https://arxiv.org/abs/1207.0580",
-        "pdfUrl": "https://arxiv.org/pdf/1207.0580",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Neural Networks",
-            "Deep Learning",
-            "Machine Learning"
-        ],
-        "keywords": [
-            "dropout",
-            "regularization",
-            "neural networks",
-            "overfitting"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-037",
-        "title": "Scaling Laws for Neural Language Models",
-        "authors": [
-            "Jared Kaplan",
-            "Sam McCandlish",
-            "Tom Henighan",
-            "et al."
-        ],
-        "year": 2020,
-        "abstract": "Studies empirical relationships between model size, dataset size, compute, and language-model performance.",
-        "doi": "10.48550/arXiv.2001.08361",
-        "paperUrl": "https://arxiv.org/abs/2001.08361",
-        "pdfUrl": "https://arxiv.org/pdf/2001.08361",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "LLMs",
-            "Scaling",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "scaling laws",
-            "compute",
-            "model size",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-038",
-        "title": "Training Compute-Optimal Large Language Models",
-        "authors": [
-            "Jordan Hoffmann",
-            "Sebastian Borgeaud",
-            "Arthur Mensch",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Examines compute-optimal language-model training and argues that model size and training-token count should scale together.",
-        "doi": "10.48550/arXiv.2203.15556",
-        "paperUrl": "https://arxiv.org/abs/2203.15556",
-        "pdfUrl": "https://arxiv.org/pdf/2203.15556",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "LLMs",
-            "Scaling",
-            "Machine Learning"
-        ],
-        "keywords": [
-            "Chinchilla",
-            "compute-optimal",
-            "training data",
-            "scaling laws"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-039",
-        "title": "Emergent Abilities of Large Language Models",
-        "authors": [
-            "Jason Wei",
-            "Yi Tay",
-            "Rishi Bommasani",
-            "et al."
-        ],
-        "year": 2022,
-        "abstract": "Reviews capabilities that appear unexpectedly as language models scale and discusses their implications for evaluating model behavior.",
-        "doi": "10.48550/arXiv.2206.07682",
-        "paperUrl": "https://arxiv.org/abs/2206.07682",
-        "pdfUrl": "https://arxiv.org/pdf/2206.07682",
-        "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "Transactions on Machine Learning Research",
-        "journal": "Transactions on Machine Learning Research",
-        "paperType": "journal",
-        "categories": [
-            "AI",
-            "LLMs",
-            "AGI"
-        ],
-        "keywords": [
-            "emergent abilities",
-            "scaling",
-            "language models",
-            "generalization"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-040",
-        "title": "Are Emergent Abilities of Large Language Models a Mirage?",
-        "authors": [
-            "Rylan Schaeffer",
-            "Brando Miranda",
-            "Sanmi Koyejo"
-        ],
-        "year": 2023,
-        "abstract": "Examines whether apparent emergent abilities in language models may partly result from evaluation metrics and the way performance is measured.",
-        "doi": "10.48550/arXiv.2304.15004",
-        "paperUrl": "https://arxiv.org/abs/2304.15004",
-        "pdfUrl": "https://arxiv.org/pdf/2304.15004",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "LLMs",
-            "Evaluation"
-        ],
-        "keywords": [
-            "emergence",
-            "evaluation metrics",
-            "scaling",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-041",
-        "title": "Neural Turing Machines",
-        "authors": [
-            "Alex Graves",
-            "Greg Wayne",
-            "Ivo Danihelka"
-        ],
-        "year": 2014,
-        "abstract": "Introduces a neural architecture with an external differentiable memory that can be read from and written to by a neural network.",
-        "doi": "10.48550/arXiv.1410.5401",
-        "paperUrl": "https://arxiv.org/abs/1410.5401",
-        "pdfUrl": "https://arxiv.org/pdf/1410.5401",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "Neural Networks",
-            "Memory Networks",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "Neural Turing Machine",
-            "external memory",
-            "differentiable computation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-042",
-        "title": "Neural Ordinary Differential Equations",
-        "authors": [
-            "Ricky T. Q. Chen",
-            "Yulia Rubanova",
-            "Jesse Bettencourt",
-            "David Duvenaud"
-        ],
-        "year": 2018,
-        "abstract": "Treats a neural network's hidden state as a continuous dynamical system and uses differential-equation solvers to compute model outputs.",
-        "doi": "10.48550/arXiv.1806.07366",
-        "paperUrl": "https://arxiv.org/abs/1806.07366",
-        "pdfUrl": "https://arxiv.org/pdf/1806.07366",
-        "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "NeurIPS",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI",
-            "Mathematics",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "neural ODE",
-            "differential equations",
-            "continuous-depth models",
-            "dynamical systems"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-043",
-        "title": "A Comprehensive Survey on Graph Neural Networks",
-        "authors": [
-            "Zonghan Wu",
-            "Shirui Pan",
-            "Fengwen Chen",
-            "et al."
-        ],
-        "year": 2020,
-        "abstract": "Reviews graph neural network architectures, learning methods, applications, and challenges in processing graph-structured data.",
-        "doi": "10.48550/arXiv.1901.00596",
-        "paperUrl": "https://arxiv.org/abs/1901.00596",
-        "pdfUrl": "https://arxiv.org/pdf/1901.00596",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "IEEE Transactions on Neural Networks and Learning Systems",
-        "journal": "IEEE Transactions on Neural Networks and Learning Systems",
-        "paperType": "survey",
-        "categories": [
-            "Graph AI",
-            "Neural Networks",
-            "Machine Learning"
-        ],
-        "keywords": [
-            "graph neural networks",
-            "GNN",
-            "graph learning",
-            "network representation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-044",
-        "title": "Deep Learning in Neural Networks: An Overview",
-        "authors": [
-            "Jürgen Schmidhuber"
-        ],
-        "year": 2015,
-        "abstract": "Provides a broad historical and technical overview of deep learning in neural networks, including major architectures and learning advances.",
-        "doi": "10.1016/j.neunet.2014.09.003",
-        "paperUrl": "https://arxiv.org/abs/1404.7828",
-        "pdfUrl": "https://arxiv.org/pdf/1404.7828",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "Neural Networks",
-        "journal": "Neural Networks",
-        "paperType": "review",
-        "categories": [
-            "Deep Learning",
-            "Neural Networks",
-            "AI History"
-        ],
-        "keywords": [
-            "deep learning",
-            "neural networks",
-            "history",
-            "architectures"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-045",
-        "title": "Mamba: Linear-Time Sequence Modeling with Selective State Spaces",
-        "authors": [
-            "Albert Gu",
-            "Tri Dao"
-        ],
-        "year": 2023,
-        "abstract": "Introduces a selective state-space model designed for efficient sequence modeling with linear scaling in sequence length.",
-        "doi": "10.48550/arXiv.2312.00752",
-        "paperUrl": "https://arxiv.org/abs/2312.00752",
-        "pdfUrl": "https://arxiv.org/pdf/2312.00752",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "AI",
-            "Sequence Models",
-            "Deep Learning"
-        ],
-        "keywords": [
-            "Mamba",
-            "state-space models",
-            "sequence modeling",
-            "efficient architectures"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-046",
-        "title": "Lost in the Middle: How Language Models Use Long Contexts",
-        "authors": [
-            "Nelson F. Liu",
-            "Kevin Lin",
-            "John Hewitt",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Studies how language models use information in long input contexts and finds that relevant information in the middle can be harder to retrieve.",
-        "doi": "10.48550/arXiv.2307.03172",
-        "paperUrl": "https://arxiv.org/abs/2307.03172",
-        "pdfUrl": "https://arxiv.org/pdf/2307.03172",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "Transactions of the Association for Computational Linguistics",
-        "journal": "Transactions of the Association for Computational Linguistics",
-        "paperType": "journal",
-        "categories": [
-            "LLMs",
-            "NLP",
-            "Evaluation"
-        ],
-        "keywords": [
-            "long context",
-            "retrieval",
-            "context window",
-            "language models"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-047",
-        "title": "A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions",
-        "authors": [
-            "Yue Zhang",
-            "Yafu Li",
-            "Leyang Cui",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Surveys hallucination in large language models, covering definitions, causes, evaluation approaches, mitigation methods, and open research questions.",
-        "doi": "10.48550/arXiv.2311.05232",
-        "paperUrl": "https://arxiv.org/abs/2311.05232",
-        "pdfUrl": "https://arxiv.org/pdf/2311.05232",
-        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "survey",
-        "categories": [
-            "LLMs",
-            "AI Safety",
-            "NLP"
-        ],
-        "keywords": [
-            "hallucination",
-            "factuality",
-            "LLM evaluation",
-            "mitigation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-048",
-        "title": "Generative Agents: Interactive Simulacra of Human Behavior",
-        "authors": [
-            "Joon Sung Park",
-            "Joseph C. O'Brien",
-            "Carrie J. Cai",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Presents simulated agents that use memory, reflection, and planning to produce believable behavior in an interactive virtual environment.",
-        "doi": "10.48550/arXiv.2304.03442",
-        "paperUrl": "https://arxiv.org/abs/2304.03442",
-        "pdfUrl": "https://arxiv.org/pdf/2304.03442",
-        "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "UIST",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Agents",
-            "Generative AI",
-            "Simulation"
-        ],
-        "keywords": [
-            "generative agents",
-            "memory",
-            "planning",
-            "social simulation"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-049",
-        "title": "Voyager: An Open-Ended Embodied Agent with Large Language Models",
-        "authors": [
-            "Guanzhi Wang",
-            "Yuqi Xie",
-            "Yongdong Jin",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Introduces an open-ended agent that uses a language model to explore, acquire skills, and improve its behavior in the Minecraft environment.",
-        "doi": "10.48550/arXiv.2305.16291",
-        "paperUrl": "https://arxiv.org/abs/2305.16291",
-        "pdfUrl": "https://arxiv.org/pdf/2305.16291",
-        "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "arXiv",
-        "journal": null,
-        "paperType": "research_preprint",
-        "categories": [
-            "AI Agents",
-            "LLMs",
-            "Embodied AI"
-        ],
-        "keywords": [
-            "Voyager",
-            "embodied agents",
-            "skill learning",
-            "planning",
-            "Minecraft"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    },
-    {
-        "id": "ai-050",
-        "title": "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?",
-        "authors": [
-            "Carlos E. Jimenez",
-            "John Yang",
-            "Alexander Wettig",
-            "et al."
-        ],
-        "year": 2023,
-        "abstract": "Introduces a benchmark that evaluates language models on resolving real software engineering issues drawn from GitHub repositories.",
-        "doi": "10.48550/arXiv.2310.06770",
-        "paperUrl": "https://arxiv.org/abs/2310.06770",
-        "pdfUrl": "https://arxiv.org/pdf/2310.06770",
-        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
-        "imageType": "topic",
-        "publisher": "ICLR",
-        "journal": null,
-        "paperType": "conference",
-        "categories": [
-            "AI Agents",
-            "LLMs",
-            "Software Engineering"
-        ],
-        "keywords": [
-            "SWE-bench",
-            "coding agents",
-            "GitHub issues",
-            "software engineering"
-        ],
-        "accessType": "open",
-        "language": "en",
-        "citationCount": null,
-        "metadataSource": "arXiv",
-        "verified": false
-    }
-]
+{
+    "version": "1.0",
+    "lastUpdated": "2026-10-11",
+    "papers": [
+        {
+            "id": "ai-001",
+            "title": "Attention Is All You Need",
+            "authors": [
+                "Ashish Vaswani",
+                "Noam Shazeer",
+                "Niki Parmar",
+                "et al."
+            ],
+            "year": 2017,
+            "abstract": "Introduces the Transformer architecture, which relies on attention mechanisms instead of recurrent or convolutional layers for sequence modeling.",
+            "doi": "10.48550/arXiv.1706.03762",
+            "paperUrl": "https://arxiv.org/abs/1706.03762",
+            "pdfUrl": "https://arxiv.org/pdf/1706.03762",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "Deep Learning",
+                "Transformers"
+            ],
+            "keywords": [
+                "attention",
+                "transformer",
+                "sequence modeling",
+                "neural networks"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-002",
+            "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+            "authors": [
+                "Jacob Devlin",
+                "Ming-Wei Chang",
+                "Kenton Lee",
+                "Kristina Toutanova"
+            ],
+            "year": 2018,
+            "abstract": "Introduces BERT, a bidirectionally trained Transformer model that improves language understanding across a range of NLP tasks.",
+            "doi": "10.48550/arXiv.1810.04805",
+            "paperUrl": "https://arxiv.org/abs/1810.04805",
+            "pdfUrl": "https://arxiv.org/pdf/1810.04805",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NAACL-HLT",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "NLP",
+                "Transformers"
+            ],
+            "keywords": [
+                "BERT",
+                "language understanding",
+                "pretraining",
+                "NLP"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-003",
+            "title": "Language Models are Few-Shot Learners",
+            "authors": [
+                "Tom B. Brown",
+                "Benjamin Mann",
+                "Nick Ryder",
+                "et al."
+            ],
+            "year": 2020,
+            "abstract": "Presents GPT-3 and demonstrates that large autoregressive language models can perform many tasks from natural-language instructions and a small number of examples.",
+            "doi": "10.48550/arXiv.2005.14165",
+            "paperUrl": "https://arxiv.org/abs/2005.14165",
+            "pdfUrl": "https://arxiv.org/pdf/2005.14165",
+            "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Generative AI"
+            ],
+            "keywords": [
+                "GPT-3",
+                "few-shot learning",
+                "language models",
+                "in-context learning"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-004",
+            "title": "GPT-4 Technical Report",
+            "authors": [
+                "OpenAI"
+            ],
+            "year": 2023,
+            "abstract": "Describes GPT-4, a large multimodal model, and reports evaluations of its capabilities, limitations, and performance on professional and academic benchmarks.",
+            "doi": "10.48550/arXiv.2303.08774",
+            "paperUrl": "https://arxiv.org/abs/2303.08774",
+            "pdfUrl": "https://arxiv.org/pdf/2303.08774",
+            "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "LLMs",
+                "AGI",
+                "Multimodal AI"
+            ],
+            "keywords": [
+                "GPT-4",
+                "multimodal",
+                "language models",
+                "AI evaluation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-005",
+            "title": "Sparks of Artificial General Intelligence: Early Experiments with GPT-4",
+            "authors": [
+                "Sébastien Bubeck",
+                "Varun Chandrasekaran",
+                "Ronen Eldan",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Investigates GPT-4's performance across diverse tasks and discusses whether its capabilities show early signs of general intelligence.",
+            "doi": "10.48550/arXiv.2303.12712",
+            "paperUrl": "https://arxiv.org/abs/2303.12712",
+            "pdfUrl": "https://arxiv.org/pdf/2303.12712",
+            "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "AGI",
+                "AI",
+                "Reasoning"
+            ],
+            "keywords": [
+                "AGI",
+                "GPT-4",
+                "general intelligence",
+                "reasoning",
+                "cognition"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-006",
+            "title": "A Survey of Large Language Models",
+            "authors": [
+                "Wayne Xin Zhao",
+                "Kun Zhou",
+                "Junyi Li",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Surveys the development of large language models, covering architectures, training, adaptation, evaluation, applications, and open challenges.",
+            "doi": "10.48550/arXiv.2303.18223",
+            "paperUrl": "https://arxiv.org/abs/2303.18223",
+            "pdfUrl": "https://arxiv.org/pdf/2303.18223",
+            "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": "ACM Transactions on Information Systems",
+            "paperType": "survey",
+            "categories": [
+                "AI",
+                "LLMs",
+                "NLP"
+            ],
+            "keywords": [
+                "LLM survey",
+                "language models",
+                "pretraining",
+                "fine-tuning",
+                "evaluation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-007",
+            "title": "On the Opportunities and Risks of Foundation Models",
+            "authors": [
+                "Rishi Bommasani",
+                "Drew A. Hudson",
+                "Ehsan Adeli",
+                "et al."
+            ],
+            "year": 2021,
+            "abstract": "Examines foundation models trained on broad data and discusses their capabilities, societal effects, risks, and research opportunities.",
+            "doi": "10.48550/arXiv.2108.07258",
+            "paperUrl": "https://arxiv.org/abs/2108.07258",
+            "pdfUrl": "https://arxiv.org/pdf/2108.07258",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_report",
+            "categories": [
+                "AI",
+                "Foundation Models",
+                "AI Safety"
+            ],
+            "keywords": [
+                "foundation models",
+                "AI ethics",
+                "risks",
+                "societal impact"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-008",
+            "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+            "authors": [
+                "Patrick Lewis",
+                "Ethan Perez",
+                "Aleksandra Piktus",
+                "et al."
+            ],
+            "year": 2020,
+            "abstract": "Combines a pretrained sequence-to-sequence model with a dense retrieval system to improve generation on knowledge-intensive tasks.",
+            "doi": "10.48550/arXiv.2005.11401",
+            "paperUrl": "https://arxiv.org/abs/2005.11401",
+            "pdfUrl": "https://arxiv.org/pdf/2005.11401",
+            "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "RAG",
+                "NLP"
+            ],
+            "keywords": [
+                "retrieval-augmented generation",
+                "dense retrieval",
+                "knowledge-intensive NLP"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-009",
+            "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+            "authors": [
+                "Jason Wei",
+                "Xuezhi Wang",
+                "Dale Schuurmans",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Shows that prompting sufficiently large language models to produce intermediate reasoning steps can improve performance on multi-step reasoning tasks.",
+            "doi": "10.48550/arXiv.2201.11903",
+            "paperUrl": "https://arxiv.org/abs/2201.11903",
+            "pdfUrl": "https://arxiv.org/pdf/2201.11903",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "Reasoning",
+                "LLMs"
+            ],
+            "keywords": [
+                "chain of thought",
+                "reasoning",
+                "prompting",
+                "problem solving"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-010",
+            "title": "Self-Consistency Improves Chain of Thought Reasoning in Language Models",
+            "authors": [
+                "Xuezhi Wang",
+                "Jason Wei",
+                "Dale Schuurmans",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Introduces self-consistency decoding, which samples multiple reasoning paths and selects a consistent answer to improve reasoning accuracy.",
+            "doi": "10.48550/arXiv.2203.11171",
+            "paperUrl": "https://arxiv.org/abs/2203.11171",
+            "pdfUrl": "https://arxiv.org/pdf/2203.11171",
+            "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "Reasoning",
+                "LLMs"
+            ],
+            "keywords": [
+                "self-consistency",
+                "chain of thought",
+                "reasoning",
+                "decoding"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-011",
+            "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+            "authors": [
+                "Shunyu Yao",
+                "Jeffrey Zhao",
+                "Dian Yu",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Introduces a framework in which language models interleave reasoning with actions to interact with external environments and tools.",
+            "doi": "10.48550/arXiv.2210.03629",
+            "paperUrl": "https://arxiv.org/abs/2210.03629",
+            "pdfUrl": "https://arxiv.org/pdf/2210.03629",
+            "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Agents",
+                "LLMs",
+                "Reasoning"
+            ],
+            "keywords": [
+                "ReAct",
+                "agents",
+                "tool use",
+                "reasoning",
+                "acting"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-012",
+            "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
+            "authors": [
+                "Shunyu Yao",
+                "Dian Yu",
+                "Jeffrey Zhao",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Proposes exploring multiple intermediate reasoning paths as a tree, allowing language models to evaluate and revise candidate solutions.",
+            "doi": "10.48550/arXiv.2305.10601",
+            "paperUrl": "https://arxiv.org/abs/2305.10601",
+            "pdfUrl": "https://arxiv.org/pdf/2305.10601",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "Reasoning",
+                "LLMs"
+            ],
+            "keywords": [
+                "tree of thoughts",
+                "search",
+                "planning",
+                "reasoning"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-013",
+            "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+            "authors": [
+                "Rafael Rafailov",
+                "Archit Sharma",
+                "Eric Mitchell",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Introduces Direct Preference Optimization, a method for aligning language models with preference data without explicitly fitting a separate reward model.",
+            "doi": "10.48550/arXiv.2305.18290",
+            "paperUrl": "https://arxiv.org/abs/2305.18290",
+            "pdfUrl": "https://arxiv.org/pdf/2305.18290",
+            "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Alignment",
+                "LLMs",
+                "Generative AI"
+            ],
+            "keywords": [
+                "DPO",
+                "preference optimization",
+                "alignment",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-014",
+            "title": "Constitutional AI: Harmlessness from AI Feedback",
+            "authors": [
+                "Yuntao Bai",
+                "Saurav Kadavath",
+                "Sandipan Kundu",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Presents an approach to training AI assistants using a set of principles and AI-generated feedback to improve helpfulness and harmlessness.",
+            "doi": "10.48550/arXiv.2212.08073",
+            "paperUrl": "https://arxiv.org/abs/2212.08073",
+            "pdfUrl": "https://arxiv.org/pdf/2212.08073",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "AI Safety",
+                "AI Alignment",
+                "LLMs"
+            ],
+            "keywords": [
+                "constitutional AI",
+                "AI feedback",
+                "alignment",
+                "harmlessness"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-015",
+            "title": "Toolformer: Language Models Can Teach Themselves to Use Tools",
+            "authors": [
+                "Timo Schick",
+                "Jane Dwivedi-Yu",
+                "Roberto Dessì",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Introduces a method for teaching language models to call external tools such as calculators, search engines, and question-answering systems.",
+            "doi": "10.48550/arXiv.2302.04761",
+            "paperUrl": "https://arxiv.org/abs/2302.04761",
+            "pdfUrl": "https://arxiv.org/pdf/2302.04761",
+            "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Agents",
+                "LLMs",
+                "Tool Use"
+            ],
+            "keywords": [
+                "tool use",
+                "language models",
+                "self-supervised learning",
+                "agents"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-016",
+            "title": "Training Language Models to Follow Instructions with Human Feedback",
+            "authors": [
+                "Long Ouyang",
+                "Jeffrey Wu",
+                "Xu Jiang",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Describes InstructGPT, trained using demonstrations and human preference feedback to better follow user instructions.",
+            "doi": "10.48550/arXiv.2203.02155",
+            "paperUrl": "https://arxiv.org/abs/2203.02155",
+            "pdfUrl": "https://arxiv.org/pdf/2203.02155",
+            "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Alignment",
+                "LLMs",
+                "Generative AI"
+            ],
+            "keywords": [
+                "InstructGPT",
+                "RLHF",
+                "human feedback",
+                "instruction following"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-017",
+            "title": "Training Verifiers to Solve Math Word Problems",
+            "authors": [
+                "Karl Cobbe",
+                "Vineet Kosaraju",
+                "Mohammad Bavarian",
+                "et al."
+            ],
+            "year": 2021,
+            "abstract": "Studies training reward models to distinguish correct and incorrect solutions to mathematical word problems and improve answer selection.",
+            "doi": "10.48550/arXiv.2110.14168",
+            "paperUrl": "https://arxiv.org/abs/2110.14168",
+            "pdfUrl": "https://arxiv.org/pdf/2110.14168",
+            "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Math AI",
+                "Reasoning",
+                "LLMs"
+            ],
+            "keywords": [
+                "math word problems",
+                "verifiers",
+                "reward models",
+                "solution ranking"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-018",
+            "title": "Let's Verify Step by Step",
+            "authors": [
+                "Hunter Lightman",
+                "Vineet Kosaraju",
+                "Yura Burda",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Investigates process supervision for mathematical reasoning and finds that feedback on individual solution steps can improve reliability.",
+            "doi": "10.48550/arXiv.2305.20050",
+            "paperUrl": "https://arxiv.org/abs/2305.20050",
+            "pdfUrl": "https://arxiv.org/pdf/2305.20050",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Math AI",
+                "Reasoning",
+                "AI Alignment"
+            ],
+            "keywords": [
+                "process supervision",
+                "mathematical reasoning",
+                "verification",
+                "reward models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-019",
+            "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+            "authors": [
+                "Zhihong Shao",
+                "Peiyi Wang",
+                "Qihao Zhu",
+                "et al."
+            ],
+            "year": 2024,
+            "abstract": "Describes training techniques, data, and reinforcement learning methods that improve mathematical reasoning in open language models.",
+            "doi": "10.48550/arXiv.2402.03300",
+            "paperUrl": "https://arxiv.org/abs/2402.03300",
+            "pdfUrl": "https://arxiv.org/pdf/2402.03300",
+            "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Math AI",
+                "LLMs",
+                "Reasoning"
+            ],
+            "keywords": [
+                "DeepSeekMath",
+                "mathematical reasoning",
+                "reinforcement learning",
+                "open models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-020",
+            "title": "ToRA: A Tool-Integrated Reasoning Agent for Mathematical Problem Solving",
+            "authors": [
+                "Zhangir Azerbayev",
+                "Hailey Schoelkopf",
+                "Keiran Paster",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Presents a mathematical reasoning agent that combines language-model reasoning with external computational tools to solve problems.",
+            "doi": "10.48550/arXiv.2309.17452",
+            "paperUrl": "https://arxiv.org/abs/2309.17452",
+            "pdfUrl": "https://arxiv.org/pdf/2309.17452",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Math AI",
+                "AI Agents",
+                "Reasoning"
+            ],
+            "keywords": [
+                "ToRA",
+                "tool-integrated reasoning",
+                "math",
+                "agents",
+                "calculators"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-021",
+            "title": "AlphaGeometry: An Olympiad-Level AI System for Geometry",
+            "authors": [
+                "Trieu H. Trinh",
+                "Yuhuai Wu",
+                "Quoc V. Le",
+                "et al."
+            ],
+            "year": 2024,
+            "abstract": "Introduces a neuro-symbolic system that combines a language model with a symbolic deduction engine to solve complex geometry problems.",
+            "doi": "10.48550/arXiv.2402.03544",
+            "paperUrl": "https://arxiv.org/abs/2402.03544",
+            "pdfUrl": "https://arxiv.org/pdf/2402.03544",
+            "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "Nature",
+            "journal": "Nature",
+            "paperType": "journal",
+            "categories": [
+                "Math AI",
+                "Neuro-Symbolic AI",
+                "Reasoning"
+            ],
+            "keywords": [
+                "AlphaGeometry",
+                "geometry",
+                "symbolic reasoning",
+                "olympiad mathematics"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-022",
+            "title": "Advancing Mathematics by Guiding Human Intuition with AI",
+            "authors": [
+                "Alex Davies",
+                "Petar Veličković",
+                "Lloyd N. Trefethen",
+                "et al."
+            ],
+            "year": 2021,
+            "abstract": "Explores how machine learning can help mathematicians develop conjectures and investigate mathematical structures.",
+            "doi": null,
+            "paperUrl": "https://www.nature.com/articles/s41586-021-04086-x",
+            "pdfUrl": null,
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "Nature",
+            "journal": "Nature",
+            "paperType": "journal",
+            "categories": [
+                "Math AI",
+                "Scientific Discovery",
+                "Machine Learning"
+            ],
+            "keywords": [
+                "mathematical discovery",
+                "AI for mathematics",
+                "conjectures",
+                "human-AI collaboration"
+            ],
+            "accessType": "publisher_page",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "Nature",
+            "verified": false
+        },
+        {
+            "id": "ai-023",
+            "title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
+            "authors": [
+                "DeepSeek-AI"
+            ],
+            "year": 2025,
+            "abstract": "Describes reinforcement-learning approaches for developing reasoning capabilities in language models and reports results on reasoning benchmarks.",
+            "doi": "10.48550/arXiv.2501.12948",
+            "paperUrl": "https://arxiv.org/abs/2501.12948",
+            "pdfUrl": "https://arxiv.org/pdf/2501.12948",
+            "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "Reasoning",
+                "LLMs"
+            ],
+            "keywords": [
+                "DeepSeek-R1",
+                "reinforcement learning",
+                "reasoning",
+                "test-time computation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-024",
+            "title": "DeepSeek-V3 Technical Report",
+            "authors": [
+                "DeepSeek-AI"
+            ],
+            "year": 2024,
+            "abstract": "Documents the architecture, training strategy, and evaluation of DeepSeek-V3, a large mixture-of-experts language model.",
+            "doi": "10.48550/arXiv.2412.19437",
+            "paperUrl": "https://arxiv.org/abs/2412.19437",
+            "pdfUrl": "https://arxiv.org/pdf/2412.19437",
+            "imageUrl": "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Generative AI"
+            ],
+            "keywords": [
+                "DeepSeek-V3",
+                "mixture of experts",
+                "training",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-025",
+            "title": "Llama 2: Open Foundation and Fine-Tuned Chat Models",
+            "authors": [
+                "Hugo Touvron",
+                "Louis Martin",
+                "Kevin Stone",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Presents Llama 2 language models and describes their training, safety tuning, evaluation, and chat-oriented variants.",
+            "doi": "10.48550/arXiv.2307.09288",
+            "paperUrl": "https://arxiv.org/abs/2307.09288",
+            "pdfUrl": "https://arxiv.org/pdf/2307.09288",
+            "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Open Models"
+            ],
+            "keywords": [
+                "Llama 2",
+                "open foundation models",
+                "fine-tuning",
+                "safety"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-026",
+            "title": "LLaMA: Open and Efficient Foundation Language Models",
+            "authors": [
+                "Hugo Touvron",
+                "Thibaut Lavril",
+                "Gautier Izacard",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Introduces the LLaMA family and studies how high-quality training data can produce competitive language models at different scales.",
+            "doi": "10.48550/arXiv.2302.13971",
+            "paperUrl": "https://arxiv.org/abs/2302.13971",
+            "pdfUrl": "https://arxiv.org/pdf/2302.13971",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Open Models"
+            ],
+            "keywords": [
+                "LLaMA",
+                "foundation models",
+                "language modeling",
+                "efficient training"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-027",
+            "title": "Mixtral of Experts",
+            "authors": [
+                "Albert Jiang",
+                "Alexandre Sablayrolles",
+                "Antoine Roux",
+                "et al."
+            ],
+            "year": 2024,
+            "abstract": "Introduces Mixtral, a sparse mixture-of-experts language model that activates a subset of its parameters for each token.",
+            "doi": "10.48550/arXiv.2401.04088",
+            "paperUrl": "https://arxiv.org/abs/2401.04088",
+            "pdfUrl": "https://arxiv.org/pdf/2401.04088",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "technical_report",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Neural Networks"
+            ],
+            "keywords": [
+                "Mixtral",
+                "mixture of experts",
+                "sparse models",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-028",
+            "title": "High-Resolution Image Synthesis with Latent Diffusion Models",
+            "authors": [
+                "Robin Rombach",
+                "Andreas Blattmann",
+                "Dominik Lorenz",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Introduces latent diffusion models, which perform diffusion in a compressed representation to make high-resolution image synthesis more efficient.",
+            "doi": "10.48550/arXiv.2112.10752",
+            "paperUrl": "https://arxiv.org/abs/2112.10752",
+            "pdfUrl": "https://arxiv.org/pdf/2112.10752",
+            "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "CVPR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Generative AI",
+                "Computer Vision",
+                "Diffusion Models"
+            ],
+            "keywords": [
+                "latent diffusion",
+                "image generation",
+                "Stable Diffusion",
+                "generative models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-029",
+            "title": "Denoising Diffusion Probabilistic Models",
+            "authors": [
+                "Jonathan Ho",
+                "Ajay Jain",
+                "Pieter Abbeel"
+            ],
+            "year": 2020,
+            "abstract": "Presents a probabilistic diffusion framework for generating data by learning to reverse a gradual noise-adding process.",
+            "doi": "10.48550/arXiv.2006.11239",
+            "paperUrl": "https://arxiv.org/abs/2006.11239",
+            "pdfUrl": "https://arxiv.org/pdf/2006.11239",
+            "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Generative AI",
+                "Diffusion Models",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "diffusion models",
+                "image generation",
+                "denoising",
+                "probabilistic models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-030",
+            "title": "Generative Adversarial Nets",
+            "authors": [
+                "Ian Goodfellow",
+                "Jean Pouget-Abadie",
+                "Mehdi Mirza",
+                "et al."
+            ],
+            "year": 2014,
+            "abstract": "Introduces generative adversarial networks, in which a generator and discriminator are trained competitively to model data.",
+            "doi": "10.48550/arXiv.1406.2661",
+            "paperUrl": "https://arxiv.org/abs/1406.2661",
+            "pdfUrl": "https://arxiv.org/pdf/1406.2661",
+            "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Generative AI",
+                "Neural Networks",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "GAN",
+                "generator",
+                "discriminator",
+                "generative modeling"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-031",
+            "title": "Auto-Encoding Variational Bayes",
+            "authors": [
+                "Diederik P. Kingma",
+                "Max Welling"
+            ],
+            "year": 2013,
+            "abstract": "Introduces variational autoencoders as a scalable method for learning latent-variable generative models using variational inference.",
+            "doi": "10.48550/arXiv.1312.6114",
+            "paperUrl": "https://arxiv.org/abs/1312.6114",
+            "pdfUrl": "https://arxiv.org/pdf/1312.6114",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Generative AI",
+                "Deep Learning",
+                "Neural Networks"
+            ],
+            "keywords": [
+                "VAE",
+                "variational inference",
+                "latent variables",
+                "generative models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-032",
+            "title": "Learning Transferable Visual Models From Natural Language Supervision",
+            "authors": [
+                "Alec Radford",
+                "Jong Wook Kim",
+                "Chris Hallacy",
+                "et al."
+            ],
+            "year": 2021,
+            "abstract": "Introduces CLIP, which learns transferable visual representations by training images and their natural-language descriptions together.",
+            "doi": "10.48550/arXiv.2103.00020",
+            "paperUrl": "https://arxiv.org/abs/2103.00020",
+            "pdfUrl": "https://arxiv.org/pdf/2103.00020",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICML",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Computer Vision",
+                "Multimodal AI",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "CLIP",
+                "vision-language models",
+                "contrastive learning",
+                "zero-shot classification"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-033",
+            "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+            "authors": [
+                "Alexey Dosovitskiy",
+                "Lucas Beyer",
+                "Alexander Kolesnikov",
+                "et al."
+            ],
+            "year": 2020,
+            "abstract": "Applies Transformer architectures to image patches and demonstrates strong image-classification performance at scale.",
+            "doi": "10.48550/arXiv.2010.11929",
+            "paperUrl": "https://arxiv.org/abs/2010.11929",
+            "pdfUrl": "https://arxiv.org/pdf/2010.11929",
+            "imageUrl": "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Computer Vision",
+                "Transformers",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "Vision Transformer",
+                "ViT",
+                "image classification",
+                "attention"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-034",
+            "title": "Deep Residual Learning for Image Recognition",
+            "authors": [
+                "Kaiming He",
+                "Xiangyu Zhang",
+                "Shaoqing Ren",
+                "Jian Sun"
+            ],
+            "year": 2015,
+            "abstract": "Introduces residual connections that allow very deep neural networks to be trained effectively for image recognition.",
+            "doi": "10.48550/arXiv.1512.03385",
+            "paperUrl": "https://arxiv.org/abs/1512.03385",
+            "pdfUrl": "https://arxiv.org/pdf/1512.03385",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "CVPR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Deep Learning",
+                "Computer Vision",
+                "Neural Networks"
+            ],
+            "keywords": [
+                "ResNet",
+                "residual learning",
+                "image recognition",
+                "deep networks"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-035",
+            "title": "Adam: A Method for Stochastic Optimization",
+            "authors": [
+                "Diederik P. Kingma",
+                "Jimmy Ba"
+            ],
+            "year": 2014,
+            "abstract": "Introduces Adam, an adaptive optimization algorithm that uses estimates of first and second moments of gradients during training.",
+            "doi": "10.48550/arXiv.1412.6980",
+            "paperUrl": "https://arxiv.org/abs/1412.6980",
+            "pdfUrl": "https://arxiv.org/pdf/1412.6980",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "Machine Learning",
+                "Optimization",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "Adam optimizer",
+                "stochastic optimization",
+                "gradients",
+                "training"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-036",
+            "title": "Improving Neural Networks by Preventing Co-adaptation of Feature Detectors",
+            "authors": [
+                "Geoffrey E. Hinton",
+                "Nitish Srivastava",
+                "Alex Krizhevsky",
+                "et al."
+            ],
+            "year": 2012,
+            "abstract": "Introduces dropout as a regularization technique that reduces co-adaptation of feature detectors in neural networks.",
+            "doi": "10.48550/arXiv.1207.0580",
+            "paperUrl": "https://arxiv.org/abs/1207.0580",
+            "pdfUrl": "https://arxiv.org/pdf/1207.0580",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Neural Networks",
+                "Deep Learning",
+                "Machine Learning"
+            ],
+            "keywords": [
+                "dropout",
+                "regularization",
+                "neural networks",
+                "overfitting"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-037",
+            "title": "Scaling Laws for Neural Language Models",
+            "authors": [
+                "Jared Kaplan",
+                "Sam McCandlish",
+                "Tom Henighan",
+                "et al."
+            ],
+            "year": 2020,
+            "abstract": "Studies empirical relationships between model size, dataset size, compute, and language-model performance.",
+            "doi": "10.48550/arXiv.2001.08361",
+            "paperUrl": "https://arxiv.org/abs/2001.08361",
+            "pdfUrl": "https://arxiv.org/pdf/2001.08361",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "LLMs",
+                "Scaling",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "scaling laws",
+                "compute",
+                "model size",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-038",
+            "title": "Training Compute-Optimal Large Language Models",
+            "authors": [
+                "Jordan Hoffmann",
+                "Sebastian Borgeaud",
+                "Arthur Mensch",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Examines compute-optimal language-model training and argues that model size and training-token count should scale together.",
+            "doi": "10.48550/arXiv.2203.15556",
+            "paperUrl": "https://arxiv.org/abs/2203.15556",
+            "pdfUrl": "https://arxiv.org/pdf/2203.15556",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "LLMs",
+                "Scaling",
+                "Machine Learning"
+            ],
+            "keywords": [
+                "Chinchilla",
+                "compute-optimal",
+                "training data",
+                "scaling laws"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-039",
+            "title": "Emergent Abilities of Large Language Models",
+            "authors": [
+                "Jason Wei",
+                "Yi Tay",
+                "Rishi Bommasani",
+                "et al."
+            ],
+            "year": 2022,
+            "abstract": "Reviews capabilities that appear unexpectedly as language models scale and discusses their implications for evaluating model behavior.",
+            "doi": "10.48550/arXiv.2206.07682",
+            "paperUrl": "https://arxiv.org/abs/2206.07682",
+            "pdfUrl": "https://arxiv.org/pdf/2206.07682",
+            "imageUrl": "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "Transactions on Machine Learning Research",
+            "journal": "Transactions on Machine Learning Research",
+            "paperType": "journal",
+            "categories": [
+                "AI",
+                "LLMs",
+                "AGI"
+            ],
+            "keywords": [
+                "emergent abilities",
+                "scaling",
+                "language models",
+                "generalization"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-040",
+            "title": "Are Emergent Abilities of Large Language Models a Mirage?",
+            "authors": [
+                "Rylan Schaeffer",
+                "Brando Miranda",
+                "Sanmi Koyejo"
+            ],
+            "year": 2023,
+            "abstract": "Examines whether apparent emergent abilities in language models may partly result from evaluation metrics and the way performance is measured.",
+            "doi": "10.48550/arXiv.2304.15004",
+            "paperUrl": "https://arxiv.org/abs/2304.15004",
+            "pdfUrl": "https://arxiv.org/pdf/2304.15004",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "LLMs",
+                "Evaluation"
+            ],
+            "keywords": [
+                "emergence",
+                "evaluation metrics",
+                "scaling",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-041",
+            "title": "Neural Turing Machines",
+            "authors": [
+                "Alex Graves",
+                "Greg Wayne",
+                "Ivo Danihelka"
+            ],
+            "year": 2014,
+            "abstract": "Introduces a neural architecture with an external differentiable memory that can be read from and written to by a neural network.",
+            "doi": "10.48550/arXiv.1410.5401",
+            "paperUrl": "https://arxiv.org/abs/1410.5401",
+            "pdfUrl": "https://arxiv.org/pdf/1410.5401",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "Neural Networks",
+                "Memory Networks",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "Neural Turing Machine",
+                "external memory",
+                "differentiable computation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-042",
+            "title": "Neural Ordinary Differential Equations",
+            "authors": [
+                "Ricky T. Q. Chen",
+                "Yulia Rubanova",
+                "Jesse Bettencourt",
+                "David Duvenaud"
+            ],
+            "year": 2018,
+            "abstract": "Treats a neural network's hidden state as a continuous dynamical system and uses differential-equation solvers to compute model outputs.",
+            "doi": "10.48550/arXiv.1806.07366",
+            "paperUrl": "https://arxiv.org/abs/1806.07366",
+            "pdfUrl": "https://arxiv.org/pdf/1806.07366",
+            "imageUrl": "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "NeurIPS",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI",
+                "Mathematics",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "neural ODE",
+                "differential equations",
+                "continuous-depth models",
+                "dynamical systems"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-043",
+            "title": "A Comprehensive Survey on Graph Neural Networks",
+            "authors": [
+                "Zonghan Wu",
+                "Shirui Pan",
+                "Fengwen Chen",
+                "et al."
+            ],
+            "year": 2020,
+            "abstract": "Reviews graph neural network architectures, learning methods, applications, and challenges in processing graph-structured data.",
+            "doi": "10.48550/arXiv.1901.00596",
+            "paperUrl": "https://arxiv.org/abs/1901.00596",
+            "pdfUrl": "https://arxiv.org/pdf/1901.00596",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "IEEE Transactions on Neural Networks and Learning Systems",
+            "journal": "IEEE Transactions on Neural Networks and Learning Systems",
+            "paperType": "survey",
+            "categories": [
+                "Graph AI",
+                "Neural Networks",
+                "Machine Learning"
+            ],
+            "keywords": [
+                "graph neural networks",
+                "GNN",
+                "graph learning",
+                "network representation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-044",
+            "title": "Deep Learning in Neural Networks: An Overview",
+            "authors": [
+                "Jürgen Schmidhuber"
+            ],
+            "year": 2015,
+            "abstract": "Provides a broad historical and technical overview of deep learning in neural networks, including major architectures and learning advances.",
+            "doi": "10.1016/j.neunet.2014.09.003",
+            "paperUrl": "https://arxiv.org/abs/1404.7828",
+            "pdfUrl": "https://arxiv.org/pdf/1404.7828",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "Neural Networks",
+            "journal": "Neural Networks",
+            "paperType": "review",
+            "categories": [
+                "Deep Learning",
+                "Neural Networks",
+                "AI History"
+            ],
+            "keywords": [
+                "deep learning",
+                "neural networks",
+                "history",
+                "architectures"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-045",
+            "title": "Mamba: Linear-Time Sequence Modeling with Selective State Spaces",
+            "authors": [
+                "Albert Gu",
+                "Tri Dao"
+            ],
+            "year": 2023,
+            "abstract": "Introduces a selective state-space model designed for efficient sequence modeling with linear scaling in sequence length.",
+            "doi": "10.48550/arXiv.2312.00752",
+            "paperUrl": "https://arxiv.org/abs/2312.00752",
+            "pdfUrl": "https://arxiv.org/pdf/2312.00752",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "AI",
+                "Sequence Models",
+                "Deep Learning"
+            ],
+            "keywords": [
+                "Mamba",
+                "state-space models",
+                "sequence modeling",
+                "efficient architectures"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-046",
+            "title": "Lost in the Middle: How Language Models Use Long Contexts",
+            "authors": [
+                "Nelson F. Liu",
+                "Kevin Lin",
+                "John Hewitt",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Studies how language models use information in long input contexts and finds that relevant information in the middle can be harder to retrieve.",
+            "doi": "10.48550/arXiv.2307.03172",
+            "paperUrl": "https://arxiv.org/abs/2307.03172",
+            "pdfUrl": "https://arxiv.org/pdf/2307.03172",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "Transactions of the Association for Computational Linguistics",
+            "journal": "Transactions of the Association for Computational Linguistics",
+            "paperType": "journal",
+            "categories": [
+                "LLMs",
+                "NLP",
+                "Evaluation"
+            ],
+            "keywords": [
+                "long context",
+                "retrieval",
+                "context window",
+                "language models"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-047",
+            "title": "A Survey on Hallucination in Large Language Models: Principles, Taxonomy, Challenges, and Open Questions",
+            "authors": [
+                "Yue Zhang",
+                "Yafu Li",
+                "Leyang Cui",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Surveys hallucination in large language models, covering definitions, causes, evaluation approaches, mitigation methods, and open research questions.",
+            "doi": "10.48550/arXiv.2311.05232",
+            "paperUrl": "https://arxiv.org/abs/2311.05232",
+            "pdfUrl": "https://arxiv.org/pdf/2311.05232",
+            "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "survey",
+            "categories": [
+                "LLMs",
+                "AI Safety",
+                "NLP"
+            ],
+            "keywords": [
+                "hallucination",
+                "factuality",
+                "LLM evaluation",
+                "mitigation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-048",
+            "title": "Generative Agents: Interactive Simulacra of Human Behavior",
+            "authors": [
+                "Joon Sung Park",
+                "Joseph C. O'Brien",
+                "Carrie J. Cai",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Presents simulated agents that use memory, reflection, and planning to produce believable behavior in an interactive virtual environment.",
+            "doi": "10.48550/arXiv.2304.03442",
+            "paperUrl": "https://arxiv.org/abs/2304.03442",
+            "pdfUrl": "https://arxiv.org/pdf/2304.03442",
+            "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "UIST",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Agents",
+                "Generative AI",
+                "Simulation"
+            ],
+            "keywords": [
+                "generative agents",
+                "memory",
+                "planning",
+                "social simulation"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-049",
+            "title": "Voyager: An Open-Ended Embodied Agent with Large Language Models",
+            "authors": [
+                "Guanzhi Wang",
+                "Yuqi Xie",
+                "Yongdong Jin",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Introduces an open-ended agent that uses a language model to explore, acquire skills, and improve its behavior in the Minecraft environment.",
+            "doi": "10.48550/arXiv.2305.16291",
+            "paperUrl": "https://arxiv.org/abs/2305.16291",
+            "pdfUrl": "https://arxiv.org/pdf/2305.16291",
+            "imageUrl": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "arXiv",
+            "journal": null,
+            "paperType": "research_preprint",
+            "categories": [
+                "AI Agents",
+                "LLMs",
+                "Embodied AI"
+            ],
+            "keywords": [
+                "Voyager",
+                "embodied agents",
+                "skill learning",
+                "planning",
+                "Minecraft"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        },
+        {
+            "id": "ai-050",
+            "title": "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?",
+            "authors": [
+                "Carlos E. Jimenez",
+                "John Yang",
+                "Alexander Wettig",
+                "et al."
+            ],
+            "year": 2023,
+            "abstract": "Introduces a benchmark that evaluates language models on resolving real software engineering issues drawn from GitHub repositories.",
+            "doi": "10.48550/arXiv.2310.06770",
+            "paperUrl": "https://arxiv.org/abs/2310.06770",
+            "pdfUrl": "https://arxiv.org/pdf/2310.06770",
+            "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80",
+            "imageType": "topic",
+            "publisher": "ICLR",
+            "journal": null,
+            "paperType": "conference",
+            "categories": [
+                "AI Agents",
+                "LLMs",
+                "Software Engineering"
+            ],
+            "keywords": [
+                "SWE-bench",
+                "coding agents",
+                "GitHub issues",
+                "software engineering"
+            ],
+            "accessType": "open",
+            "language": "en",
+            "citationCount": null,
+            "metadataSource": "arXiv",
+            "verified": false
+        }
+    ]
+}
