@@ -1,0 +1,1303 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-10-11",
+  "modules": [
+    {
+      "id": "module-00-foundations",
+      "moduleIndex": 0,
+      "title": "Foundations",
+      "slug": "foundations",
+      "href": "/curriculum/00-foundations",
+      "lucideIcon": "Code2",
+      "imgUrl": "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=800&q=80",
+      "description": "Master programming fundamentals, Python for AI, data structures, and basic probability intuition.",
+      "topics": [
+        {
+          "title": "Programming Fundamentals",
+          "slug": "programming-fundamentals",
+          "href": "/curriculum/00-foundations/programming-fundamentals",
+          "filePath": "content/curriculum/00-foundations/01-programming-fundamentals.json"
+        },
+        {
+          "title": "Python for AI",
+          "slug": "python-for-ai",
+          "href": "/curriculum/00-foundations/python-for-ai",
+          "filePath": "content/curriculum/00-foundations/02-python-for-ai.json"
+        },
+        {
+          "title": "NumPy",
+          "slug": "numpy",
+          "href": "/curriculum/00-foundations/numpy",
+          "filePath": "content/curriculum/00-foundations/03-numpy.json"
+        },
+        {
+          "title": "Data Structures & Algorithms",
+          "slug": "data-structures-algorithms",
+          "href": "/curriculum/00-foundations/data-structures-algorithms",
+          "filePath": "content/curriculum/00-foundations/04-data-structures-algorithms.json"
+        },
+        {
+          "title": "Basic Probability Intuition",
+          "slug": "basic-probability-intuition",
+          "href": "/curriculum/00-foundations/basic-probability-intuition",
+          "filePath": "content/curriculum/00-foundations/05-basic-probability-intuition.json"
+        },
+        {
+          "title": "Computational Thinking",
+          "slug": "computational-thinking",
+          "href": "/curriculum/00-foundations/computational-thinking",
+          "filePath": "content/curriculum/00-foundations/06-computational-thinking.json"
+        }
+      ]
+    },
+    {
+      "id": "module-01-mathematics-for-ai",
+      "moduleIndex": 1,
+      "title": "Mathematics for AI",
+      "slug": "mathematics-for-ai",
+      "href": "/curriculum/01-mathematics-for-ai",
+      "lucideIcon": "Binary",
+      "imgUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?auto=format&fit=crop&w=800&q=80",
+      "description": "Rigorous foundation in Linear Algebra, Calculus, and Probability & Statistics required for Machine Learning and AI.",
+      "subsections": [
+        {
+          "title": "Linear Algebra",
+          "slug": "linear-algebra",
+          "topics": [
+            {
+              "title": "Scalars, Vectors, Matrices, Tensors",
+              "slug": "scalars-vectors-matrices-tensors",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/scalars-vectors-matrices-tensors",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/01-scalars-vectors-matrices-tensors.json"
+            },
+            {
+              "title": "Vector Operations",
+              "slug": "vector-operations",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/vector-operations",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/02-vector-operations.json"
+            },
+            {
+              "title": "Dot Products",
+              "slug": "dot-products",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/dot-products",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/03-dot-products.json"
+            },
+            {
+              "title": "Matrix Multiplication",
+              "slug": "matrix-multiplication",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/matrix-multiplication",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/04-matrix-multiplication.json"
+            },
+            {
+              "title": "Linear Transformations",
+              "slug": "linear-transformations",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/linear-transformations",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/05-linear-transformations.json"
+            },
+            {
+              "title": "Basis and Dimensionality",
+              "slug": "basis-and-dimensionality",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/basis-and-dimensionality",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/06-basis-and-dimensionality.json"
+            },
+            {
+              "title": "Eigenvalues / Eigenvectors",
+              "slug": "eigenvalues-eigenvectors",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/eigenvalues-eigenvectors",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/07-eigenvalues-eigenvectors.json"
+            },
+            {
+              "title": "Singular Value Decomposition (SVD)",
+              "slug": "svd",
+              "href": "/curriculum/01-mathematics-for-ai/linear-algebra/svd",
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/08-svd.json"
+            }
+          ]
+        },
+        {
+          "title": "Calculus",
+          "slug": "calculus",
+          "topics": [
+            {
+              "title": "Functions",
+              "slug": "functions",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/functions",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/01-functions.json"
+            },
+            {
+              "title": "Limits",
+              "slug": "limits",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/limits",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/02-limits.json"
+            },
+            {
+              "title": "Derivatives",
+              "slug": "derivatives",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/derivatives",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/03-derivatives.json"
+            },
+            {
+              "title": "Partial Derivatives",
+              "slug": "partial-derivatives",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/partial-derivatives",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/04-partial-derivatives.json"
+            },
+            {
+              "title": "Gradients",
+              "slug": "gradients",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/gradients",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/05-gradients.json"
+            },
+            {
+              "title": "Jacobians",
+              "slug": "jacobians",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/jacobians",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/06-jacobians.json"
+            },
+            {
+              "title": "Chain Rule",
+              "slug": "chain-rule",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/chain-rule",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/07-chain-rule.json"
+            },
+            {
+              "title": "Optimization",
+              "slug": "optimization",
+              "href": "/curriculum/01-mathematics-for-ai/calculus/optimization",
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/08-optimization.json"
+            }
+          ]
+        },
+        {
+          "title": "Probability & Statistics",
+          "slug": "probability-and-statistics",
+          "topics": [
+            {
+              "title": "Random Variables",
+              "slug": "random-variables",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/random-variables",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/01-random-variables.json"
+            },
+            {
+              "title": "Probability Distributions",
+              "slug": "probability-distributions",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/probability-distributions",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/02-probability-distributions.json"
+            },
+            {
+              "title": "Expectation & Variance",
+              "slug": "expectation-variance",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/expectation-variance",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/03-expectation-variance.json"
+            },
+            {
+              "title": "Conditional Probability",
+              "slug": "conditional-probability",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/conditional-probability",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/04-conditional-probability.json"
+            },
+            {
+              "title": "Bayes Theorem",
+              "slug": "bayes-theorem",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/bayes-theorem",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/05-bayes-theorem.json"
+            },
+            {
+              "title": "Maximum Likelihood Estimation (MLE)",
+              "slug": "maximum-likelihood",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/maximum-likelihood",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/06-maximum-likelihood.json"
+            },
+            {
+              "title": "Maximum A Posteriori (MAP)",
+              "slug": "maximum-a-posteriori",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/maximum-a-posteriori",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/07-maximum-a-posteriori.json"
+            },
+            {
+              "title": "Entropy",
+              "slug": "entropy",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/entropy",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/08-entropy.json"
+            },
+            {
+              "title": "KL Divergence",
+              "slug": "kl-divergence",
+              "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/kl-divergence",
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/09-kl-divergence.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "module-02-classical-machine-learning",
+      "moduleIndex": 2,
+      "title": "Classical Machine Learning",
+      "slug": "classical-machine-learning",
+      "href": "/curriculum/02-classical-machine-learning",
+      "lucideIcon": "BrainCircuit",
+      "imgUrl": "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=800&q=80",
+      "description": "Core machine learning concepts, supervised and unsupervised learning algorithms, and evaluation frameworks.",
+      "topics": [
+        {
+          "title": "What is Learning?",
+          "slug": "what-is-learning",
+          "href": "/curriculum/02-classical-machine-learning/what-is-learning",
+          "filePath": "content/curriculum/02-classical-machine-learning/01-what-is-learning.json"
+        },
+        {
+          "title": "Training, Validation, and Test Sets",
+          "slug": "training-validation-test-sets",
+          "href": "/curriculum/02-classical-machine-learning/training-validation-test-sets",
+          "filePath": "content/curriculum/02-classical-machine-learning/02-training-validation-test-sets.json"
+        },
+        {
+          "title": "Linear Regression",
+          "slug": "linear-regression",
+          "href": "/curriculum/02-classical-machine-learning/linear-regression",
+          "filePath": "content/curriculum/02-classical-machine-learning/03-linear-regression.json"
+        },
+        {
+          "title": "Logistic Regression",
+          "slug": "logistic-regression",
+          "href": "/curriculum/02-classical-machine-learning/logistic-regression",
+          "filePath": "content/curriculum/02-classical-machine-learning/04-logistic-regression.json"
+        },
+        {
+          "title": "Loss Functions",
+          "slug": "loss-functions",
+          "href": "/curriculum/02-classical-machine-learning/loss-functions",
+          "filePath": "content/curriculum/02-classical-machine-learning/05-loss-functions.json"
+        },
+        {
+          "title": "Gradient Descent",
+          "slug": "gradient-descent",
+          "href": "/curriculum/02-classical-machine-learning/gradient-descent",
+          "filePath": "content/curriculum/02-classical-machine-learning/06-gradient-descent.json"
+        },
+        {
+          "title": "Regularization",
+          "slug": "regularization",
+          "href": "/curriculum/02-classical-machine-learning/regularization",
+          "filePath": "content/curriculum/02-classical-machine-learning/07-regularization.json"
+        },
+        {
+          "title": "Decision Trees",
+          "slug": "decision-trees",
+          "href": "/curriculum/02-classical-machine-learning/decision-trees",
+          "filePath": "content/curriculum/02-classical-machine-learning/08-decision-trees.json"
+        },
+        {
+          "title": "Random Forests",
+          "slug": "random-forests",
+          "href": "/curriculum/02-classical-machine-learning/random-forests",
+          "filePath": "content/curriculum/02-classical-machine-learning/09-random-forests.json"
+        },
+        {
+          "title": "Support Vector Machines (SVM)",
+          "slug": "svm",
+          "href": "/curriculum/02-classical-machine-learning/svm",
+          "filePath": "content/curriculum/02-classical-machine-learning/10-svm.json"
+        },
+        {
+          "title": "K-Nearest Neighbors (KNN)",
+          "slug": "knn",
+          "href": "/curriculum/02-classical-machine-learning/knn",
+          "filePath": "content/curriculum/02-classical-machine-learning/11-knn.json"
+        },
+        {
+          "title": "Clustering Algorithms",
+          "slug": "clustering",
+          "href": "/curriculum/02-classical-machine-learning/clustering",
+          "filePath": "content/curriculum/02-classical-machine-learning/12-clustering.json"
+        },
+        {
+          "title": "Principal Component Analysis (PCA)",
+          "slug": "pca",
+          "href": "/curriculum/02-classical-machine-learning/pca",
+          "filePath": "content/curriculum/02-classical-machine-learning/13-pca.json"
+        },
+        {
+          "title": "Evaluation Metrics",
+          "slug": "evaluation-metrics",
+          "href": "/curriculum/02-classical-machine-learning/evaluation-metrics",
+          "filePath": "content/curriculum/02-classical-machine-learning/14-evaluation-metrics.json"
+        },
+        {
+          "title": "Bias / Variance Tradeoff",
+          "slug": "bias-variance",
+          "href": "/curriculum/02-classical-machine-learning/bias-variance",
+          "filePath": "content/curriculum/02-classical-machine-learning/15-bias-variance.json"
+        },
+        {
+          "title": "Overfitting and Underfitting",
+          "slug": "overfitting-underfitting",
+          "href": "/curriculum/02-classical-machine-learning/overfitting-underfitting",
+          "filePath": "content/curriculum/02-classical-machine-learning/16-overfitting-underfitting.json"
+        }
+      ]
+    },
+    {
+      "id": "module-03-neural-networks",
+      "moduleIndex": 3,
+      "title": "Neural Networks",
+      "slug": "neural-networks",
+      "href": "/curriculum/03-neural-networks",
+      "lucideIcon": "Network",
+      "imgUrl": "https://images.unsplash.com/photo-1501136842533-be6eb75e9f81?auto=format&fit=crop&w=800&q=80",
+      "description": "Building artificial neural networks mathematically, understanding computational graphs, backpropagation, and optimization.",
+      "topics": [
+        {
+          "title": "Perceptron",
+          "slug": "perceptron",
+          "href": "/curriculum/03-neural-networks/perceptron",
+          "filePath": "content/curriculum/03-neural-networks/01-perceptron.json"
+        },
+        {
+          "title": "Neurons",
+          "slug": "neurons",
+          "href": "/curriculum/03-neural-networks/neurons",
+          "filePath": "content/curriculum/03-neural-networks/02-neurons.json"
+        },
+        {
+          "title": "Activation Functions",
+          "slug": "activation-functions",
+          "href": "/curriculum/03-neural-networks/activation-functions",
+          "filePath": "content/curriculum/03-neural-networks/03-activation-functions.json"
+        },
+        {
+          "title": "Forward Propagation",
+          "slug": "forward-propagation",
+          "href": "/curriculum/03-neural-networks/forward-propagation",
+          "filePath": "content/curriculum/03-neural-networks/04-forward-propagation.json"
+        },
+        {
+          "title": "Loss Functions",
+          "slug": "loss-functions",
+          "href": "/curriculum/03-neural-networks/loss-functions",
+          "filePath": "content/curriculum/03-neural-networks/05-loss-functions.json"
+        },
+        {
+          "title": "Computational Graphs",
+          "slug": "computational-graphs",
+          "href": "/curriculum/03-neural-networks/computational-graphs",
+          "filePath": "content/curriculum/03-neural-networks/06-computational-graphs.json"
+        },
+        {
+          "title": "Backpropagation",
+          "slug": "backpropagation",
+          "href": "/curriculum/03-neural-networks/backpropagation",
+          "filePath": "content/curriculum/03-neural-networks/07-backpropagation.json"
+        },
+        {
+          "title": "Chain Rule in Neural Networks",
+          "slug": "chain-rule-in-neural-networks",
+          "href": "/curriculum/03-neural-networks/chain-rule-in-neural-networks",
+          "filePath": "content/curriculum/03-neural-networks/08-chain-rule-in-neural-networks.json"
+        },
+        {
+          "title": "Gradient Descent & SGD",
+          "slug": "gradient-descent-sgd",
+          "href": "/curriculum/03-neural-networks/gradient-descent-sgd",
+          "filePath": "content/curriculum/03-neural-networks/09-gradient-descent-sgd.json"
+        },
+        {
+          "title": "Mini-Batch Training",
+          "slug": "mini-batch-training",
+          "href": "/curriculum/03-neural-networks/mini-batch-training",
+          "filePath": "content/curriculum/03-neural-networks/10-mini-batch-training.json"
+        },
+        {
+          "title": "Weight Initialization",
+          "slug": "weight-initialization",
+          "href": "/curriculum/03-neural-networks/weight-initialization",
+          "filePath": "content/curriculum/03-neural-networks/11-weight-initialization.json"
+        },
+        {
+          "title": "Batch Normalization",
+          "slug": "batch-normalization",
+          "href": "/curriculum/03-neural-networks/batch-normalization",
+          "filePath": "content/curriculum/03-neural-networks/12-batch-normalization.json"
+        },
+        {
+          "title": "Dropout",
+          "slug": "dropout",
+          "href": "/curriculum/03-neural-networks/dropout",
+          "filePath": "content/curriculum/03-neural-networks/13-dropout.json"
+        },
+        {
+          "title": "Optimizers: Momentum, RMSProp, Adam",
+          "slug": "optimizers-momentum-rmsprop-adam",
+          "href": "/curriculum/03-neural-networks/optimizers-momentum-rmsprop-adam",
+          "filePath": "content/curriculum/03-neural-networks/14-optimizers-momentum-rmsprop-adam.json"
+        }
+      ]
+    },
+    {
+      "id": "module-04-deep-learning",
+      "moduleIndex": 4,
+      "title": "Deep Learning",
+      "slug": "deep-learning",
+      "href": "/curriculum/04-deep-learning",
+      "lucideIcon": "Layers",
+      "imgUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+      "description": "Deep architectures including MLPs, CNNs, representations, autoencoders, and transfer learning.",
+      "topics": [
+        {
+          "title": "Multilayer Perceptrons (MLPs)",
+          "slug": "mlps",
+          "href": "/curriculum/04-deep-learning/mlps",
+          "filePath": "content/curriculum/04-deep-learning/01-mlps.json"
+        },
+        {
+          "title": "Convolutional Neural Networks (CNNs)",
+          "slug": "cnns",
+          "href": "/curriculum/04-deep-learning/cnns",
+          "filePath": "content/curriculum/04-deep-learning/02-cnns.json"
+        },
+        {
+          "title": "Convolution Mathematically",
+          "slug": "convolution-mathematically",
+          "href": "/curriculum/04-deep-learning/convolution-mathematically",
+          "filePath": "content/curriculum/04-deep-learning/03-convolution-mathematically.json"
+        },
+        {
+          "title": "Pooling Layers",
+          "slug": "pooling",
+          "href": "/curriculum/04-deep-learning/pooling",
+          "filePath": "content/curriculum/04-deep-learning/04-pooling.json"
+        },
+        {
+          "title": "Image Classification",
+          "slug": "image-classification",
+          "href": "/curriculum/04-deep-learning/image-classification",
+          "filePath": "content/curriculum/04-deep-learning/05-image-classification.json"
+        },
+        {
+          "title": "Embeddings & Representation Learning",
+          "slug": "embeddings-representation-learning",
+          "href": "/curriculum/04-deep-learning/embeddings-representation-learning",
+          "filePath": "content/curriculum/04-deep-learning/06-embeddings-representation-learning.json"
+        },
+        {
+          "title": "Autoencoders",
+          "slug": "autoencoders",
+          "href": "/curriculum/04-deep-learning/autoencoders",
+          "filePath": "content/curriculum/04-deep-learning/07-autoencoders.json"
+        },
+        {
+          "title": "Transfer Learning",
+          "slug": "transfer-learning",
+          "href": "/curriculum/04-deep-learning/transfer-learning",
+          "filePath": "content/curriculum/04-deep-learning/08-transfer-learning.json"
+        }
+      ]
+    },
+    {
+      "id": "module-05-sequence-models",
+      "moduleIndex": 5,
+      "title": "Sequence Models",
+      "slug": "sequence-models",
+      "href": "/curriculum/05-sequence-models",
+      "lucideIcon": "GitCommit",
+      "imgUrl": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+      "description": "Modeling sequential and temporal data using Recurrent Neural Networks, LSTMs, GRUs, and Seq2Seq.",
+      "topics": [
+        {
+          "title": "Sequential Data Fundamentals",
+          "slug": "sequential-data",
+          "href": "/curriculum/05-sequence-models/sequential-data",
+          "filePath": "content/curriculum/05-sequence-models/01-sequential-data.json"
+        },
+        {
+          "title": "Recurrent Neural Networks (RNN)",
+          "slug": "rnn",
+          "href": "/curriculum/05-sequence-models/rnn",
+          "filePath": "content/curriculum/05-sequence-models/02-rnn.json"
+        },
+        {
+          "title": "Backpropagation Through Time (BPTT)",
+          "slug": "backpropagation-through-time",
+          "href": "/curriculum/05-sequence-models/backpropagation-through-time",
+          "filePath": "content/curriculum/05-sequence-models/03-backpropagation-through-time.json"
+        },
+        {
+          "title": "Vanishing & Exploding Gradients",
+          "slug": "vanishing-exploding-gradients",
+          "href": "/curriculum/05-sequence-models/vanishing-exploding-gradients",
+          "filePath": "content/curriculum/05-sequence-models/04-vanishing-exploding-gradients.json"
+        },
+        {
+          "title": "Long Short-Term Memory (LSTM)",
+          "slug": "lstm",
+          "href": "/curriculum/05-sequence-models/lstm",
+          "filePath": "content/curriculum/05-sequence-models/05-lstm.json"
+        },
+        {
+          "title": "Gated Recurrent Unit (GRU)",
+          "slug": "gru",
+          "href": "/curriculum/05-sequence-models/gru",
+          "filePath": "content/curriculum/05-sequence-models/06-gru.json"
+        },
+        {
+          "title": "Bidirectional Networks",
+          "slug": "bidirectional-networks",
+          "href": "/curriculum/05-sequence-models/bidirectional-networks",
+          "filePath": "content/curriculum/05-sequence-models/07-bidirectional-networks.json"
+        },
+        {
+          "title": "Sequence-to-Sequence Models",
+          "slug": "sequence-to-sequence-models",
+          "href": "/curriculum/05-sequence-models/sequence-to-sequence-models",
+          "filePath": "content/curriculum/05-sequence-models/08-sequence-to-sequence-models.json"
+        }
+      ]
+    },
+    {
+      "id": "module-06-attention",
+      "moduleIndex": 6,
+      "title": "Attention",
+      "slug": "attention",
+      "href": "/curriculum/06-attention",
+      "lucideIcon": "Sparkles",
+      "imgUrl": "https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&w=800&q=80",
+      "description": "Deep dive into the mathematical foundation of attention mechanisms bridging deep learning to modern LLMs.",
+      "mathFormula": "Attention(Q,K,V) = softmax((Q K^T) / sqrt(d_k)) V",
+      "topics": [
+        {
+          "title": "Why RNNs Struggle with Long Sequences",
+          "slug": "why-rnns-struggle",
+          "href": "/curriculum/06-attention/why-rnns-struggle",
+          "filePath": "content/curriculum/06-attention/01-why-rnns-struggle.json"
+        },
+        {
+          "title": "Attention Intuition",
+          "slug": "attention-intuition",
+          "href": "/curriculum/06-attention/attention-intuition",
+          "filePath": "content/curriculum/06-attention/02-attention-intuition.json"
+        },
+        {
+          "title": "Query, Key, Value Formulation",
+          "slug": "query-key-value",
+          "href": "/curriculum/06-attention/query-key-value",
+          "filePath": "content/curriculum/06-attention/03-query-key-value.json"
+        },
+        {
+          "title": "Scaled Dot-Product Attention & Math",
+          "slug": "scaled-dot-product-attention",
+          "href": "/curriculum/06-attention/scaled-dot-product-attention",
+          "filePath": "content/curriculum/06-attention/04-scaled-dot-product-attention.json"
+        },
+        {
+          "title": "Self-Attention",
+          "slug": "self-attention",
+          "href": "/curriculum/06-attention/self-attention",
+          "filePath": "content/curriculum/06-attention/05-self-attention.json"
+        },
+        {
+          "title": "Masked Attention",
+          "slug": "masked-attention",
+          "href": "/curriculum/06-attention/masked-attention",
+          "filePath": "content/curriculum/06-attention/06-masked-attention.json"
+        },
+        {
+          "title": "Multi-Head Attention",
+          "slug": "multi-head-attention",
+          "href": "/curriculum/06-attention/multi-head-attention",
+          "filePath": "content/curriculum/06-attention/07-multi-head-attention.json"
+        },
+        {
+          "title": "Positional Encoding",
+          "slug": "positional-encoding",
+          "href": "/curriculum/06-attention/positional-encoding",
+          "filePath": "content/curriculum/06-attention/08-positional-encoding.json"
+        },
+        {
+          "title": "Cross-Attention",
+          "slug": "cross-attention",
+          "href": "/curriculum/06-attention/cross-attention",
+          "filePath": "content/curriculum/06-attention/09-cross-attention.json"
+        }
+      ]
+    },
+    {
+      "id": "module-07-transformers",
+      "moduleIndex": 7,
+      "title": "Transformers",
+      "slug": "transformers",
+      "href": "/curriculum/07-transformers",
+      "lucideIcon": "Cpu",
+      "imgUrl": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+      "description": "Complete breakdown of Transformer architectures, variants (Encoder/Decoder), and building a Transformer from scratch.",
+      "topics": [
+        {
+          "title": "Transformer Architecture Overview",
+          "slug": "transformer-architecture",
+          "href": "/curriculum/07-transformers/transformer-architecture",
+          "filePath": "content/curriculum/07-transformers/01-transformer-architecture.json"
+        },
+        {
+          "title": "Encoder Layer Breakdown",
+          "slug": "encoder",
+          "href": "/curriculum/07-transformers/encoder",
+          "filePath": "content/curriculum/07-transformers/02-encoder.json"
+        },
+        {
+          "title": "Decoder Layer Breakdown",
+          "slug": "decoder",
+          "href": "/curriculum/07-transformers/decoder",
+          "filePath": "content/curriculum/07-transformers/03-decoder.json"
+        },
+        {
+          "title": "Residual Connections & Normalization",
+          "slug": "residual-connections-layer-norm",
+          "href": "/curriculum/07-transformers/residual-connections-layer-norm",
+          "filePath": "content/curriculum/07-transformers/04-residual-connections-layer-norm.json"
+        },
+        {
+          "title": "Feed-Forward Networks (FFN)",
+          "slug": "feed-forward-networks",
+          "href": "/curriculum/07-transformers/feed-forward-networks",
+          "filePath": "content/curriculum/07-transformers/05-feed-forward-networks.json"
+        },
+        {
+          "title": "Positional Information & Rotary Embeddings",
+          "slug": "positional-information",
+          "href": "/curriculum/07-transformers/positional-information",
+          "filePath": "content/curriculum/07-transformers/06-positional-information.json"
+        },
+        {
+          "title": "Causal Masking Mechanics",
+          "slug": "causal-masking",
+          "href": "/curriculum/07-transformers/causal-masking",
+          "filePath": "content/curriculum/07-transformers/07-causal-masking.json"
+        },
+        {
+          "title": "Encoder-Only Models (BERT)",
+          "slug": "encoder-only-models",
+          "href": "/curriculum/07-transformers/encoder-only-models",
+          "filePath": "content/curriculum/07-transformers/08-encoder-only-models.json"
+        },
+        {
+          "title": "Decoder-Only Models (GPT)",
+          "slug": "decoder-only-models",
+          "href": "/curriculum/07-transformers/decoder-only-models",
+          "filePath": "content/curriculum/07-transformers/09-decoder-only-models.json"
+        },
+        {
+          "title": "Encoder-Decoder Models (T5)",
+          "slug": "encoder-decoder-models",
+          "href": "/curriculum/07-transformers/encoder-decoder-models",
+          "filePath": "content/curriculum/07-transformers/10-encoder-decoder-models.json"
+        },
+        {
+          "title": "Build a Tiny Transformer from Scratch",
+          "slug": "build-tiny-transformer-from-scratch",
+          "href": "/curriculum/07-transformers/build-tiny-transformer-from-scratch",
+          "filePath": "content/curriculum/07-transformers/11-build-tiny-transformer-from-scratch.json"
+        }
+      ]
+    },
+    {
+      "id": "module-08-natural-language-processing",
+      "moduleIndex": 8,
+      "title": "Natural Language Processing",
+      "slug": "natural-language-processing",
+      "href": "/curriculum/08-natural-language-processing",
+      "lucideIcon": "MessageSquareText",
+      "imgUrl": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80",
+      "description": "Text representation, tokenization algorithms, word embeddings, subword modeling, and language modeling primitives.",
+      "topics": [
+        {
+          "title": "Tokenization Techniques",
+          "slug": "tokenization",
+          "href": "/curriculum/08-natural-language-processing/tokenization",
+          "filePath": "content/curriculum/08-natural-language-processing/01-tokenization.json"
+        },
+        {
+          "title": "Vocabulary Construction",
+          "slug": "vocabulary",
+          "href": "/curriculum/08-natural-language-processing/vocabulary",
+          "filePath": "content/curriculum/08-natural-language-processing/02-vocabulary.json"
+        },
+        {
+          "title": "One-Hot Encoding",
+          "slug": "one-hot-encoding",
+          "href": "/curriculum/08-natural-language-processing/one-hot-encoding",
+          "filePath": "content/curriculum/08-natural-language-processing/03-one-hot-encoding.json"
+        },
+        {
+          "title": "Word Embeddings (Word2Vec, GloVe)",
+          "slug": "word-embeddings",
+          "href": "/curriculum/08-natural-language-processing/word-embeddings",
+          "filePath": "content/curriculum/08-natural-language-processing/04-word-embeddings.json"
+        },
+        {
+          "title": "Subword Tokenization & Byte-Pair Encoding (BPE)",
+          "slug": "subword-tokenization-bpe",
+          "href": "/curriculum/08-natural-language-processing/subword-tokenization-bpe",
+          "filePath": "content/curriculum/08-natural-language-processing/05-subword-tokenization-bpe.json"
+        },
+        {
+          "title": "Sentence Representations",
+          "slug": "sentence-representations",
+          "href": "/curriculum/08-natural-language-processing/sentence-representations",
+          "filePath": "content/curriculum/08-natural-language-processing/06-sentence-representations.json"
+        },
+        {
+          "title": "Language Modeling",
+          "slug": "language-modeling",
+          "href": "/curriculum/08-natural-language-processing/language-modeling",
+          "filePath": "content/curriculum/08-natural-language-processing/07-language-modeling.json"
+        },
+        {
+          "title": "Next-Token Prediction",
+          "slug": "next-token-prediction",
+          "href": "/curriculum/08-natural-language-processing/next-token-prediction",
+          "filePath": "content/curriculum/08-natural-language-processing/08-next-token-prediction.json"
+        }
+      ]
+    },
+    {
+      "id": "module-09-large-language-models",
+      "moduleIndex": 9,
+      "title": "Large Language Models",
+      "slug": "large-language-models",
+      "href": "/curriculum/09-large-language-models",
+      "lucideIcon": "Bot",
+      "imgUrl": "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=800&q=80",
+      "description": "Understanding end-to-end pretraining, data pipelines, scaling laws, distributed training systems, and loss optimization.",
+      "topics": [
+        {
+          "title": "Pretraining Objectives & Paradigms",
+          "slug": "pretraining",
+          "href": "/curriculum/09-large-language-models/pretraining",
+          "filePath": "content/curriculum/09-large-language-models/01-pretraining.json"
+        },
+        {
+          "title": "Dataset Curation & Filtering",
+          "slug": "dataset-construction",
+          "href": "/curriculum/09-large-language-models/dataset-construction",
+          "filePath": "content/curriculum/09-large-language-models/02-dataset-construction.json"
+        },
+        {
+          "title": "Tokenizer Design at Scale",
+          "slug": "tokenization",
+          "href": "/curriculum/09-large-language-models/tokenization",
+          "filePath": "content/curriculum/09-large-language-models/03-tokenization.json"
+        },
+        {
+          "title": "LLM Architecture & Scaling Design",
+          "slug": "model-architecture",
+          "href": "/curriculum/09-large-language-models/model-architecture",
+          "filePath": "content/curriculum/09-large-language-models/04-model-architecture.json"
+        },
+        {
+          "title": "Parameter Initialization Strategies",
+          "slug": "parameter-initialization",
+          "href": "/curriculum/09-large-language-models/parameter-initialization",
+          "filePath": "content/curriculum/09-large-language-models/05-parameter-initialization.json"
+        },
+        {
+          "title": "Training Objectives & Cross-Entropy Loss",
+          "slug": "training-objective-cross-entropy",
+          "href": "/curriculum/09-large-language-models/training-objective-cross-entropy",
+          "filePath": "content/curriculum/09-large-language-models/06-training-objective-cross-entropy.json"
+        },
+        {
+          "title": "Gradient Computation & Optimizers",
+          "slug": "gradient-computation-optimizers",
+          "href": "/curriculum/09-large-language-models/gradient-computation-optimizers",
+          "filePath": "content/curriculum/09-large-language-models/07-gradient-computation-optimizers.json"
+        },
+        {
+          "title": "Learning-Rate Schedules",
+          "slug": "learning-rate-schedules",
+          "href": "/curriculum/09-large-language-models/learning-rate-schedules",
+          "filePath": "content/curriculum/09-large-language-models/08-learning-rate-schedules.json"
+        },
+        {
+          "title": "Distributed Training (DP, TP, PP)",
+          "slug": "distributed-training",
+          "href": "/curriculum/09-large-language-models/distributed-training",
+          "filePath": "content/curriculum/09-large-language-models/09-distributed-training.json"
+        },
+        {
+          "title": "Checkpointing & Fault Tolerance",
+          "slug": "checkpointing",
+          "href": "/curriculum/09-large-language-models/checkpointing",
+          "filePath": "content/curriculum/09-large-language-models/10-checkpointing.json"
+        },
+        {
+          "title": "Neural Scaling Laws (Chinchilla, Kaplan)",
+          "slug": "scaling-laws",
+          "href": "/curriculum/09-large-language-models/scaling-laws",
+          "filePath": "content/curriculum/09-large-language-models/11-scaling-laws.json"
+        }
+      ]
+    },
+    {
+      "id": "module-10-llm-training-alignment",
+      "moduleIndex": 10,
+      "title": "LLM Training / Alignment",
+      "slug": "llm-training-alignment",
+      "href": "/curriculum/10-llm-training-alignment",
+      "lucideIcon": "Sliders",
+      "imgUrl": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
+      "description": "Instruction tuning, Supervised Fine-Tuning (SFT), RLHF, Reward Modeling, Direct Preference Optimization (DPO), and safety.",
+      "topics": [
+        {
+          "title": "Instruction Tuning Overview",
+          "slug": "instruction-tuning",
+          "href": "/curriculum/10-llm-training-alignment/instruction-tuning",
+          "filePath": "content/curriculum/10-llm-training-alignment/01-instruction-tuning.json"
+        },
+        {
+          "title": "Supervised Fine-Tuning (SFT)",
+          "slug": "supervised-fine-tuning",
+          "href": "/curriculum/10-llm-training-alignment/supervised-fine-tuning",
+          "filePath": "content/curriculum/10-llm-training-alignment/02-supervised-fine-tuning.json"
+        },
+        {
+          "title": "Preference Dataset Curation",
+          "slug": "preference-datasets",
+          "href": "/curriculum/10-llm-training-alignment/preference-datasets",
+          "filePath": "content/curriculum/10-llm-training-alignment/03-preference-datasets.json"
+        },
+        {
+          "title": "Reinforcement Learning from Human Feedback (RLHF)",
+          "slug": "rlhf",
+          "href": "/curriculum/10-llm-training-alignment/rlhf",
+          "filePath": "content/curriculum/10-llm-training-alignment/04-rlhf.json"
+        },
+        {
+          "title": "Reward Model Training",
+          "slug": "reward-models",
+          "href": "/curriculum/10-llm-training-alignment/reward-models",
+          "filePath": "content/curriculum/10-llm-training-alignment/05-reward-models.json"
+        },
+        {
+          "title": "Direct Preference Optimization (DPO)",
+          "slug": "dpo",
+          "href": "/curriculum/10-llm-training-alignment/dpo",
+          "filePath": "content/curriculum/10-llm-training-alignment/06-dpo.json"
+        },
+        {
+          "title": "LLM Evaluation Frameworks",
+          "slug": "evaluation",
+          "href": "/curriculum/10-llm-training-alignment/evaluation",
+          "filePath": "content/curriculum/10-llm-training-alignment/07-evaluation.json"
+        },
+        {
+          "title": "Hallucination Mitigation",
+          "slug": "hallucination",
+          "href": "/curriculum/10-llm-training-alignment/hallucination",
+          "filePath": "content/curriculum/10-llm-training-alignment/08-hallucination.json"
+        },
+        {
+          "title": "Safety & Alignment Guardrails",
+          "slug": "safety-alignment",
+          "href": "/curriculum/10-llm-training-alignment/safety-alignment",
+          "filePath": "content/curriculum/10-llm-training-alignment/09-safety-alignment.json"
+        }
+      ]
+    },
+    {
+      "id": "module-11-inference",
+      "moduleIndex": 11,
+      "title": "Inference",
+      "slug": "inference",
+      "href": "/curriculum/11-inference",
+      "lucideIcon": "Zap",
+      "imgUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+      "description": "Autoregressive decoding, KV caching, sampling algorithms, quantization techniques, and speculative decoding.",
+      "topics": [
+        {
+          "title": "Autoregressive Generation Mechanics",
+          "slug": "autoregressive-generation",
+          "href": "/curriculum/11-inference/autoregressive-generation",
+          "filePath": "content/curriculum/11-inference/01-autoregressive-generation.json"
+        },
+        {
+          "title": "Temperature Sampling",
+          "slug": "temperature",
+          "href": "/curriculum/11-inference/temperature",
+          "filePath": "content/curriculum/11-inference/02-temperature.json"
+        },
+        {
+          "title": "Top-k Sampling",
+          "slug": "top-k",
+          "href": "/curriculum/11-inference/top-k",
+          "filePath": "content/curriculum/11-inference/03-top-k.json"
+        },
+        {
+          "title": "Top-p (Nucleus) Sampling",
+          "slug": "top-p",
+          "href": "/curriculum/11-inference/top-p",
+          "filePath": "content/curriculum/11-inference/04-top-p.json"
+        },
+        {
+          "title": "Beam Search Decoding",
+          "slug": "beam-search",
+          "href": "/curriculum/11-inference/beam-search",
+          "filePath": "content/curriculum/11-inference/05-beam-search.json"
+        },
+        {
+          "title": "KV Cache & Memory Optimization",
+          "slug": "kv-cache",
+          "href": "/curriculum/11-inference/kv-cache",
+          "filePath": "content/curriculum/11-inference/06-kv-cache.json"
+        },
+        {
+          "title": "Quantization (AWQ, GPTQ, GGUF)",
+          "slug": "quantization",
+          "href": "/curriculum/11-inference/quantization",
+          "filePath": "content/curriculum/11-inference/07-quantization.json"
+        },
+        {
+          "title": "Continuous & Dynamic Batching",
+          "slug": "batching",
+          "href": "/curriculum/11-inference/batching",
+          "filePath": "content/curriculum/11-inference/08-batching.json"
+        },
+        {
+          "title": "Speculative Decoding",
+          "slug": "speculative-decoding",
+          "href": "/curriculum/11-inference/speculative-decoding",
+          "filePath": "content/curriculum/11-inference/09-speculative-decoding.json"
+        }
+      ]
+    },
+    {
+      "id": "module-12-modern-ai-systems",
+      "moduleIndex": 12,
+      "title": "Modern AI Systems",
+      "slug": "modern-ai-systems",
+      "href": "/curriculum/12-modern-ai-systems",
+      "lucideIcon": "Workflow",
+      "imgUrl": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
+      "description": "Retrieval-Augmented Generation (RAG), vector databases, autonomous agentic workflows, function calling, and structured outputs.",
+      "topics": [
+        {
+          "title": "Retrieval-Augmented Generation (RAG)",
+          "slug": "rag",
+          "href": "/curriculum/12-modern-ai-systems/rag",
+          "filePath": "content/curriculum/12-modern-ai-systems/01-rag.json"
+        },
+        {
+          "title": "Vector Embeddings",
+          "slug": "vector-embeddings",
+          "href": "/curriculum/12-modern-ai-systems/vector-embeddings",
+          "filePath": "content/curriculum/12-modern-ai-systems/02-vector-embeddings.json"
+        },
+        {
+          "title": "Vector Databases (Pinecone, Qdrant, Milvus)",
+          "slug": "vector-databases",
+          "href": "/curriculum/12-modern-ai-systems/vector-databases",
+          "filePath": "content/curriculum/12-modern-ai-systems/03-vector-databases.json"
+        },
+        {
+          "title": "Retrieval & Hybrid Search",
+          "slug": "retrieval",
+          "href": "/curriculum/12-modern-ai-systems/retrieval",
+          "filePath": "content/curriculum/12-modern-ai-systems/04-retrieval.json"
+        },
+        {
+          "title": "Reranking Models",
+          "slug": "reranking",
+          "href": "/curriculum/12-modern-ai-systems/reranking",
+          "filePath": "content/curriculum/12-modern-ai-systems/05-reranking.json"
+        },
+        {
+          "title": "Tool Calling & Function Execution",
+          "slug": "tool-calling",
+          "href": "/curriculum/12-modern-ai-systems/tool-calling",
+          "filePath": "content/curriculum/12-modern-ai-systems/06-tool-calling.json"
+        },
+        {
+          "title": "Autonomous AI Agents",
+          "slug": "agents",
+          "href": "/curriculum/12-modern-ai-systems/agents",
+          "filePath": "content/curriculum/12-modern-ai-systems/07-agents.json"
+        },
+        {
+          "title": "Function Calling Architecture",
+          "slug": "function-calling",
+          "href": "/curriculum/12-modern-ai-systems/function-calling",
+          "filePath": "content/curriculum/12-modern-ai-systems/08-function-calling.json"
+        },
+        {
+          "title": "Structured Generation & JSON Modes",
+          "slug": "structured-generation",
+          "href": "/curriculum/12-modern-ai-systems/structured-generation",
+          "filePath": "content/curriculum/12-modern-ai-systems/09-structured-generation.json"
+        },
+        {
+          "title": "Multimodal Systems",
+          "slug": "multimodal-models",
+          "href": "/curriculum/12-modern-ai-systems/multimodal-models",
+          "filePath": "content/curriculum/12-modern-ai-systems/10-multimodal-models.json"
+        }
+      ]
+    },
+    {
+      "id": "module-13-computer-vision",
+      "moduleIndex": 13,
+      "title": "Computer Vision",
+      "slug": "computer-vision",
+      "href": "/curriculum/13-computer-vision",
+      "lucideIcon": "Eye",
+      "imgUrl": "https://images.unsplash.com/photo-1527430253228-e93688616381?auto=format&fit=crop&w=800&q=80",
+      "description": "Visual representation models including Vision Transformers (ViT), object detection, segmentation, and multimodal vision-language models.",
+      "topics": [
+        {
+          "title": "CNNs in Modern Vision",
+          "slug": "cnns",
+          "href": "/curriculum/13-computer-vision/cnns",
+          "filePath": "content/curriculum/13-computer-vision/01-cnns.json"
+        },
+        {
+          "title": "Vision Transformers (ViT)",
+          "slug": "vision-transformers",
+          "href": "/curriculum/13-computer-vision/vision-transformers",
+          "filePath": "content/curriculum/13-computer-vision/02-vision-transformers.json"
+        },
+        {
+          "title": "Image Embeddings",
+          "slug": "image-embeddings",
+          "href": "/curriculum/13-computer-vision/image-embeddings",
+          "filePath": "content/curriculum/13-computer-vision/03-image-embeddings.json"
+        },
+        {
+          "title": "Object Detection (YOLO, Faster R-CNN)",
+          "slug": "object-detection",
+          "href": "/curriculum/13-computer-vision/object-detection",
+          "filePath": "content/curriculum/13-computer-vision/04-object-detection.json"
+        },
+        {
+          "title": "Semantic & Instance Segmentation",
+          "slug": "segmentation",
+          "href": "/curriculum/13-computer-vision/segmentation",
+          "filePath": "content/curriculum/13-computer-vision/05-segmentation.json"
+        },
+        {
+          "title": "Diffusion Models for Vision",
+          "slug": "diffusion-models",
+          "href": "/curriculum/13-computer-vision/diffusion-models",
+          "filePath": "content/curriculum/13-computer-vision/06-diffusion-models.json"
+        },
+        {
+          "title": "CLIP & Contrastive Vision-Language Learning",
+          "slug": "clip-style-models",
+          "href": "/curriculum/13-computer-vision/clip-style-models",
+          "filePath": "content/curriculum/13-computer-vision/07-clip-style-models.json"
+        },
+        {
+          "title": "Multimodal Vision Models",
+          "slug": "multimodal-models",
+          "href": "/curriculum/13-computer-vision/multimodal-models",
+          "filePath": "content/curriculum/13-computer-vision/08-multimodal-models.json"
+        }
+      ]
+    },
+    {
+      "id": "module-14-generative-models",
+      "moduleIndex": 14,
+      "title": "Generative Models",
+      "slug": "generative-models",
+      "href": "/curriculum/14-generative-models",
+      "lucideIcon": "Wand2",
+      "imgUrl": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80",
+      "description": "Deep generative modeling including VAEs, GANs, Score-based models, Diffusion SDEs, and Text-to-Image synthesis.",
+      "topics": [
+        {
+          "title": "Autoencoders",
+          "slug": "autoencoders",
+          "href": "/curriculum/14-generative-models/autoencoders",
+          "filePath": "content/curriculum/14-generative-models/01-autoencoders.json"
+        },
+        {
+          "title": "Variational Autoencoders (VAEs)",
+          "slug": "variational-autoencoders",
+          "href": "/curriculum/14-generative-models/variational-autoencoders",
+          "filePath": "content/curriculum/14-generative-models/02-variational-autoencoders.json"
+        },
+        {
+          "title": "Generative Adversarial Networks (GANs)",
+          "slug": "gans",
+          "href": "/curriculum/14-generative-models/gans",
+          "filePath": "content/curriculum/14-generative-models/03-gans.json"
+        },
+        {
+          "title": "Diffusion Process & DDPM",
+          "slug": "diffusion",
+          "href": "/curriculum/14-generative-models/diffusion",
+          "filePath": "content/curriculum/14-generative-models/04-diffusion.json"
+        },
+        {
+          "title": "Score-Based Generative Models",
+          "slug": "score-matching",
+          "href": "/curriculum/14-generative-models/score-matching",
+          "filePath": "content/curriculum/14-generative-models/05-score-matching.json"
+        },
+        {
+          "title": "Noise Schedules & Samplers",
+          "slug": "noise-schedules",
+          "href": "/curriculum/14-generative-models/noise-schedules",
+          "filePath": "content/curriculum/14-generative-models/06-noise-schedules.json"
+        },
+        {
+          "title": "Denoising Neural Networks",
+          "slug": "denoising",
+          "href": "/curriculum/14-generative-models/denoising",
+          "filePath": "content/curriculum/14-generative-models/07-denoising.json"
+        },
+        {
+          "title": "Text-to-Image Synthesis Architectures",
+          "slug": "text-to-image-models",
+          "href": "/curriculum/14-generative-models/text-to-image-models",
+          "filePath": "content/curriculum/14-generative-models/08-text-to-image-models.json"
+        }
+      ]
+    },
+    {
+      "id": "module-15-reinforcement-learning",
+      "moduleIndex": 15,
+      "title": "Reinforcement Learning",
+      "slug": "reinforcement-learning",
+      "href": "/curriculum/15-reinforcement-learning",
+      "lucideIcon": "Gamepad2",
+      "imgUrl": "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=800&q=80",
+      "description": "MDPs, Q-Learning, Policy Gradients, PPO, and connecting Reinforcement Learning to LLM Alignment.",
+      "topics": [
+        {
+          "title": "Agent & Environment Interactions",
+          "slug": "agent-environment",
+          "href": "/curriculum/15-reinforcement-learning/agent-environment",
+          "filePath": "content/curriculum/15-reinforcement-learning/01-agent-environment.json"
+        },
+        {
+          "title": "States, Actions, and Rewards",
+          "slug": "states-actions-rewards",
+          "href": "/curriculum/15-reinforcement-learning/states-actions-rewards",
+          "filePath": "content/curriculum/15-reinforcement-learning/02-states-actions-rewards.json"
+        },
+        {
+          "title": "Markov Decision Processes (MDP)",
+          "slug": "markov-decision-processes",
+          "href": "/curriculum/15-reinforcement-learning/markov-decision-processes",
+          "filePath": "content/curriculum/15-reinforcement-learning/03-markov-decision-processes.json"
+        },
+        {
+          "title": "Value Functions & Bellman Equations",
+          "slug": "value-functions",
+          "href": "/curriculum/15-reinforcement-learning/value-functions",
+          "filePath": "content/curriculum/15-reinforcement-learning/04-value-functions.json"
+        },
+        {
+          "title": "Q-Learning & Deep Q-Networks (DQN)",
+          "slug": "q-learning",
+          "href": "/curriculum/15-reinforcement-learning/q-learning",
+          "filePath": "content/curriculum/15-reinforcement-learning/05-q-learning.json"
+        },
+        {
+          "title": "Policy Gradients",
+          "slug": "policy-gradients",
+          "href": "/curriculum/15-reinforcement-learning/policy-gradients",
+          "filePath": "content/curriculum/15-reinforcement-learning/06-policy-gradients.json"
+        },
+        {
+          "title": "Actor-Critic Architectures",
+          "slug": "actor-critic",
+          "href": "/curriculum/15-reinforcement-learning/actor-critic",
+          "filePath": "content/curriculum/15-reinforcement-learning/07-actor-critic.json"
+        },
+        {
+          "title": "Proximal Policy Optimization (PPO)",
+          "slug": "ppo",
+          "href": "/curriculum/15-reinforcement-learning/ppo",
+          "filePath": "content/curriculum/15-reinforcement-learning/08-ppo.json"
+        },
+        {
+          "title": "Connecting RL to LLM Alignment",
+          "slug": "rlhf-connection",
+          "href": "/curriculum/15-reinforcement-learning/rlhf-connection",
+          "filePath": "content/curriculum/15-reinforcement-learning/09-rlhf-connection.json"
+        }
+      ]
+    },
+    {
+      "id": "module-16-ai-engineering",
+      "moduleIndex": 16,
+      "title": "AI Engineering",
+      "slug": "ai-engineering",
+      "href": "/curriculum/16-ai-engineering",
+      "lucideIcon": "Terminal",
+      "imgUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
+      "description": "Production PyTorch, GPU & CUDA programming, mixed precision, model serving, quantization, and evaluation infrastructure.",
+      "topics": [
+        {
+          "title": "Production PyTorch",
+          "slug": "pytorch",
+          "href": "/curriculum/16-ai-engineering/pytorch",
+          "filePath": "content/curriculum/16-ai-engineering/01-pytorch.json"
+        },
+        {
+          "title": "GPU Programming Concepts",
+          "slug": "gpu-programming-concepts",
+          "href": "/curriculum/16-ai-engineering/gpu-programming-concepts",
+          "filePath": "content/curriculum/16-ai-engineering/02-gpu-programming-concepts.json"
+        },
+        {
+          "title": "CUDA Fundamentals for AI",
+          "slug": "cuda-basics",
+          "href": "/curriculum/16-ai-engineering/cuda-basics",
+          "filePath": "content/curriculum/16-ai-engineering/03-cuda-basics.json"
+        },
+        {
+          "title": "Mixed Precision Training (FP16 / BF16)",
+          "slug": "mixed-precision",
+          "href": "/curriculum/16-ai-engineering/mixed-precision",
+          "filePath": "content/curriculum/16-ai-engineering/04-mixed-precision.json"
+        },
+        {
+          "title": "Distributed Training Engineering",
+          "slug": "distributed-training",
+          "href": "/curriculum/16-ai-engineering/distributed-training",
+          "filePath": "content/curriculum/16-ai-engineering/05-distributed-training.json"
+        },
+        {
+          "title": "High-Throughput Data Pipelines",
+          "slug": "data-pipelines",
+          "href": "/curriculum/16-ai-engineering/data-pipelines",
+          "filePath": "content/curriculum/16-ai-engineering/06-data-pipelines.json"
+        },
+        {
+          "title": "Experiment Tracking & MLOps",
+          "slug": "experiment-tracking",
+          "href": "/curriculum/16-ai-engineering/experiment-tracking",
+          "filePath": "content/curriculum/16-ai-engineering/07-experiment-tracking.json"
+        },
+        {
+          "title": "Model Serving & Deployment Systems",
+          "slug": "model-serving",
+          "href": "/curriculum/16-ai-engineering/model-serving",
+          "filePath": "content/curriculum/16-ai-engineering/08-model-serving.json"
+        },
+        {
+          "title": "Model Optimization & Kernel Fusion",
+          "slug": "quantization-optimization",
+          "href": "/curriculum/16-ai-engineering/quantization-optimization",
+          "filePath": "content/curriculum/16-ai-engineering/09-quantization-optimization.json"
+        },
+        {
+          "title": "Evaluation Infrastructure & Benchmarking",
+          "slug": "evaluation-infrastructure",
+          "href": "/curriculum/16-ai-engineering/evaluation-infrastructure",
+          "filePath": "content/curriculum/16-ai-engineering/10-evaluation-infrastructure.json"
+        }
+      ]
+    }
+  ]
+}
