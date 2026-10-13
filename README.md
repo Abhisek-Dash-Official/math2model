@@ -1,7 +1,9 @@
 # Math2Model
 
 Math2Model is an educational platform designed to bridge the gap between mathematical foundations and practical artificial intelligence.
+
 The platform helps learners understand how mathematical concepts evolve into algorithms, neural network architectures, and modern AI models. It brings structured learning, research exploration, and practical implementations together in one place.
+
 Math2Model aims to provide a comprehensive learning experience covering the mathematics, theory, research, and implementation behind artificial intelligence.
 
 ## Core Features
@@ -49,14 +51,9 @@ Connect mathematical theory with practical implementation through code walkthrou
 ## Tech Stack
 
 - **Framework:** Next.js (App Router)
-- **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **Structured Content:** JSON
 - **Database:** MongoDB for dynamically managed personal research papers
-- **Markdown Processing:** react-markdown, remark-gfm
-- **Math Rendering:** remark-math, rehype-katex
-- **Code Highlighting:** rehype-pretty-code, Shiki
-- **Metadata Parsing:** gray-matter, when using Markdown frontmatter
 - **Icons:** lucide-react
 
 ## Getting Started
@@ -64,28 +61,37 @@ Connect mathematical theory with practical implementation through code walkthrou
 To run this project locally:
 
 1. Clone the repository:
+
+   ```bash
    git clone https://github.com/Abhisek-Dash-Official/math2model.git
    cd math2model
+   ```
 
 2. Install the dependencies:
+
+   ```bash
    npm install
+   ```
 
 3. Start the development server:
+
+   ```bash
    npm run dev
+   ```
 
 4. Open http://localhost:3000 in your browser to view the application.
 
-<!-- TODO: Screenshots -->
-
 ## Screenshots
 
-<!-- TODO: Add high-resolution screenshots of the user interface, specifically showcasing the LaTeX math rendering, syntax-highlighted code blocks, and sidebar navigation. -->
-
-<!-- TODO: Key Learnings -->
+<!-- TODO: Screenshots -->
 
 ## Key Learnings
 
-<!-- TODO: Document the technical challenges faced and solutions implemented during the development of this platform, particularly regarding Next.js server components and MDX/Markdown parsing. -->
+- **Mathematical Content Rendering:** Understanding how to render complex mathematical equations and scientific notation in an educational platform.
+
+- **AI Curriculum Architecture:** Structuring learning paths to connect mathematical foundations, theoretical concepts, AI architectures, and practical implementations.
+
+- **Payment Gateway Integration:** Integrating Razorpay to enable secure donations and support for the platform.
 
 ## License
 
