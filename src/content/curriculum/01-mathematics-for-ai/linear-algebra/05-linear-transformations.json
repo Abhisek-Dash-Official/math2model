@@ -1,1 +1,856 @@
-{}
+{
+    "id": "linear-transformations",
+    "title": "Linear Transformations",
+    "slug": "linear-transformations",
+    "module": "mathematics-for-ai",
+    "description": "Understand how linear transformations map vectors from one space to another and how they form the mathematical foundation of neural network layers, feature transformations, computer graphics, and dimensionality reduction.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication"
+    ],
+    "learningObjectives": [
+        "Define linear transformations and distinguish them from general functions.",
+        "Understand the two defining properties of a linear transformation.",
+        "Represent linear transformations using matrices.",
+        "Calculate the transformation of vectors using matrix-vector multiplication.",
+        "Visualize how transformations affect vector length, direction, angles, and coordinate systems.",
+        "Understand composition of transformations through matrix multiplication.",
+        "Connect linear transformations to neural networks, embeddings, and dimensionality reduction.",
+        "Identify transformations that are not linear and understand why the distinction matters in AI."
+    ],
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. What Is a Linear Transformation?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear transformation is a mathematical operation that maps vectors from one vector space to another while preserving vector addition and scalar multiplication. In simple terms, it changes how vectors are represented without breaking these two fundamental relationships."
+                },
+                {
+                    "type": "text",
+                    "value": "Imagine a collection of points representing images, words, or user preferences. A machine learning model often needs to transform these representations into a new space where useful patterns become easier to learn. Linear transformations provide one of the most important tools for doing this."
+                },
+                {
+                    "type": "math",
+                    "value": "T: V \\rightarrow W"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, T is the transformation, V is the input vector space, and W is the output vector space. The input and output spaces may have different dimensions."
+                },
+                {
+                    "type": "math",
+                    "value": "T: \\mathbb{R}^n \\rightarrow \\mathbb{R}^m"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, a transformation can map a 3-dimensional vector to a 2-dimensional vector. This is useful when reducing the number of features in a dataset or projecting high-dimensional data into a smaller representation."
+                },
+                {
+                    "type": "text",
+                    "value": "A linear transformation is not simply any operation that changes a vector. It must satisfy specific mathematical rules. Those rules make linear transformations predictable, composable, and efficient to compute."
+                }
+            ]
+        },
+        {
+            "id": "formal-definition",
+            "title": "2. The Two Rules of Linearity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A transformation T is linear if it satisfies two properties for all vectors u and v and every scalar c in its input space."
+                },
+                {
+                    "type": "text",
+                    "value": "Rule 1: Additivity. Transforming the sum of two vectors must produce the same result as transforming each vector separately and then adding the results."
+                },
+                {
+                    "type": "math",
+                    "value": "T(u+v)=T(u)+T(v)"
+                },
+                {
+                    "type": "text",
+                    "value": "Rule 2: Homogeneity. Scaling a vector before applying the transformation must produce the same result as scaling the transformed vector."
+                },
+                {
+                    "type": "math",
+                    "value": "T(cv)=cT(v)"
+                },
+                {
+                    "type": "text",
+                    "value": "These two rules can be combined into one expression:"
+                },
+                {
+                    "type": "math",
+                    "value": "T(au+bv)=aT(u)+bT(v)"
+                },
+                {
+                    "type": "text",
+                    "value": "The combined property states that linear transformations preserve linear combinations. You can combine vectors and scale them before transforming, or transform them first and then perform the same combination. Both approaches produce the same result."
+                },
+                {
+                    "type": "text",
+                    "value": "These rules also imply that a linear transformation must map the zero vector to the zero vector."
+                },
+                {
+                    "type": "math",
+                    "value": "T(0)=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Why? From homogeneity, T(0v)=0T(v)=0. Therefore, if a transformation maps the zero vector to a nonzero vector, it cannot be linear."
+                },
+                {
+                    "type": "text",
+                    "value": "Important distinction: preserving vector addition and scalar multiplication does not mean a transformation must preserve lengths, angles, or distances. A linear transformation can stretch, compress, rotate, reflect, or project vectors."
+                }
+            ]
+        },
+        {
+            "id": "simple-example",
+            "title": "3. A Simple Example of a Linear Transformation",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider the transformation that doubles the first coordinate and triples the second coordinate of every two-dimensional vector."
+                },
+                {
+                    "type": "math",
+                    "value": "T\\left(\\begin{bmatrix}x\\\\y\\end{bmatrix}\\right)=\\begin{bmatrix}2x\\\\3y\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "For an input vector (1, 2), the output is (2, 6)."
+                },
+                {
+                    "type": "math",
+                    "value": "T\\left(\\begin{bmatrix}1\\\\2\\end{bmatrix}\\right)=\\begin{bmatrix}2\\\\6\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Now consider two vectors u = (1, 2) and v = (3, 1). Their sum is (4, 3). Transforming the sum gives (8, 9). Transforming the vectors individually gives T(u) = (2, 6) and T(v) = (6, 3). Adding these outputs also gives (8, 9)."
+                },
+                {
+                    "type": "math",
+                    "value": "T(u+v)=\\begin{bmatrix}8\\\\9\\end{bmatrix}=T(u)+T(v)"
+                },
+                {
+                    "type": "text",
+                    "value": "The scaling rule works as well. If u = (1, 2) and c = 4, then T(4u) = (8, 24), which equals 4T(u). Both defining properties hold, so this transformation is linear."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\ndef transform(vector):\n    x, y = vector\n    return np.array([2 * x, 3 * y])\n\nu = np.array([1, 2])\nv = np.array([3, 1])\n\n# Test additivity\nleft = transform(u + v)\nright = transform(u) + transform(v)\nprint(\"T(u + v):\", left)\nprint(\"T(u) + T(v):\", right)\nprint(\"Additivity holds:\", np.allclose(left, right))\n\n# Test homogeneity\nc = 4\nleft = transform(c * u)\nright = c * transform(u)\nprint(\"T(cu):\", left)\nprint(\"cT(u):\", right)\nprint(\"Homogeneity holds:\", np.allclose(left, right))"
+                },
+                {
+                    "type": "text",
+                    "value": "Use np.allclose rather than exact floating-point equality when testing numerical calculations. Small rounding differences can occur in computer arithmetic."
+                }
+            ]
+        },
+        {
+            "id": "matrix-representation",
+            "title": "4. Representing Linear Transformations with Matrices",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Every linear transformation between finite-dimensional real vector spaces can be represented by a matrix once bases for the input and output spaces have been chosen. This is one reason matrices are so important in machine learning."
+                },
+                {
+                    "type": "math",
+                    "value": "T(x)=Ax"
+                },
+                {
+                    "type": "text",
+                    "value": "In this expression, x is the input vector, A is the transformation matrix, and Ax is the transformed output vector. If x has n coordinates and the output has m coordinates, A has shape m by n."
+                },
+                {
+                    "type": "math",
+                    "value": "A\\in\\mathbb{R}^{m\\times n},\\quad x\\in\\mathbb{R}^{n},\\quad Ax\\in\\mathbb{R}^{m}"
+                },
+                {
+                    "type": "text",
+                    "value": "The columns of A describe where the standard basis vectors are sent. If e₁, e₂, ..., eₙ are the standard basis vectors, then the first column of A is T(e₁), the second column is T(e₂), and so on."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}|&|&&|\\\\T(e_1)&T(e_2)&\\cdots&T(e_n)\\\\|&|&&|\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, suppose a transformation maps e₁ = (1, 0) to (2, 1) and e₂ = (0, 1) to (1, 3). Its matrix is formed by placing these output vectors in columns."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}2&1\\\\1&3\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The transformation of an arbitrary vector x = (x₁, x₂) is therefore:"
+                },
+                {
+                    "type": "math",
+                    "value": "T(x)=\\begin{bmatrix}2&1\\\\1&3\\end{bmatrix}\\begin{bmatrix}x_1\\\\x_2\\end{bmatrix}=\\begin{bmatrix}2x_1+x_2\\\\x_1+3x_2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Once the matrix is known, the transformation of any input vector can be calculated using matrix-vector multiplication."
+                }
+            ]
+        },
+        {
+            "id": "geometric-intuition",
+            "title": "5. Geometric Meaning of Linear Transformations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A useful way to understand a linear transformation is to imagine an entire coordinate grid being transformed. Every vector in the grid changes according to the same matrix."
+                },
+                {
+                    "type": "text",
+                    "value": "Depending on the matrix, a linear transformation can perform several geometric operations."
+                },
+                {
+                    "type": "text",
+                    "value": "Scaling: stretches or compresses vectors along one or more directions. For example, multiplying every coordinate by 2 doubles all vector lengths."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}2&0\\\\0&2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Rotation: turns vectors around the origin while preserving lengths and angles."
+                },
+                {
+                    "type": "math",
+                    "value": "R(\\theta)=\\begin{bmatrix}\\cos\\theta&-\\sin\\theta\\\\\\sin\\theta&\\cos\\theta\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Reflection: flips vectors across a line or plane. Reflecting across the y-axis changes the sign of the x-coordinate."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}-1&0\\\\0&1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Shearing: shifts one coordinate in proportion to another, changing the shape of the grid."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}1&k\\\\0&1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Projection: maps vectors onto a lower-dimensional subspace. For example, projecting a two-dimensional vector onto the x-axis removes its y-coordinate."
+                },
+                {
+                    "type": "math",
+                    "value": "P=\\begin{bmatrix}1&0\\\\0&0\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "A linear transformation may change vector lengths and angles. Rotations and reflections preserve lengths, while general scaling, shearing, and projection may not. All linear transformations preserve the origin and linear combinations."
+                }
+            ]
+        },
+        {
+            "id": "visualization",
+            "title": "6. Visualizing a Transformation with Python",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Visualization makes transformations easier to understand. In the following example, a matrix transforms a collection of points. The original points and transformed points are plotted side by side."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\nimport matplotlib.pyplot as plt\n\nA = np.array([\n    [2.0, 1.0],\n    [0.5, 1.5]\n])\n\npoints = np.array([\n    [0, 0], [1, 0], [0, 1],\n    [1, 1], [-1, 1], [1, -1]\n], dtype=float)\n\n# Each point is stored as a row, so use A.T here.\ntransformed = points @ A.T\n\nfig, axes = plt.subplots(1, 2, figsize=(10, 4))\n\naxes[0].scatter(points[:, 0], points[:, 1])\naxes[0].set_title(\"Original Points\")\naxes[0].set_xlabel(\"x\")\naxes[0].set_ylabel(\"y\")\naxes[0].axhline(0)\naxes[0].axvline(0)\naxes[0].grid(True)\naxes[0].set_aspect(\"equal\", adjustable=\"box\")\n\naxes[1].scatter(transformed[:, 0], transformed[:, 1])\naxes[1].set_title(\"Transformed Points\")\naxes[1].set_xlabel(\"x\")\naxes[1].set_ylabel(\"y\")\naxes[1].axhline(0)\naxes[1].axvline(0)\naxes[1].grid(True)\naxes[1].set_aspect(\"equal\", adjustable=\"box\")\n\nplt.tight_layout()\nplt.show()"
+                },
+                {
+                    "type": "text",
+                    "value": "Notice that points move according to the same transformation matrix. The origin remains fixed, and any line through the origin remains a line through the origin, although its direction or scale may change."
+                },
+                {
+                    "type": "text",
+                    "value": "The code stores each point as a row. Therefore, it multiplies the point array by A.T. With column-vector notation, the equivalent mathematical operation is x' = Ax."
+                }
+            ]
+        },
+        {
+            "id": "nonlinear-transformations",
+            "title": "7. Linear vs. Nonlinear Transformations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Not every transformation is linear. Some operations violate additivity, homogeneity, or both. Understanding this difference is essential when studying neural networks and optimization."
+                },
+                {
+                    "type": "text",
+                    "value": "Example 1: Adding a constant. Consider T(x) = x + b, where b is a fixed nonzero vector. Then T(0) = b, which is not zero. This transformation is affine rather than linear."
+                },
+                {
+                    "type": "math",
+                    "value": "T(x)=Ax+b"
+                },
+                {
+                    "type": "text",
+                    "value": "Example 2: Squaring. The function T(x) = x² is not linear because, in general, (x + y)² is not equal to x² + y²."
+                },
+                {
+                    "type": "math",
+                    "value": "(x+y)^2=x^2+2xy+y^2"
+                },
+                {
+                    "type": "text",
+                    "value": "Example 3: ReLU. The rectified linear unit is defined as ReLU(x) = max(0, x). Despite its name, ReLU is not a linear transformation because it does not satisfy the scaling rule for negative scalars across all inputs."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{ReLU}(x)=\\max(0,x)"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, ReLU(−1) = 0, while −ReLU(1) = −1. These are not equal, so homogeneity fails for the scalar −1."
+                },
+                {
+                    "type": "text",
+                    "value": "Example 4: Element-wise exponential. The transformation T(x) = exp(x), applied coordinate by coordinate, does not generally preserve vector addition."
+                },
+                {
+                    "type": "text",
+                    "value": "Why this matters in AI: a standard dense layer computes an affine transformation, Ax + b. Neural networks then commonly apply nonlinear activation functions such as ReLU or GELU. Without nonlinear operations, stacking ordinary affine layers produces another affine transformation and cannot represent the full range of nonlinear relationships that deep learning is designed to learn."
+                },
+                {
+                    "type": "text",
+                    "value": "Terminology note: affine transformations have the form Ax + b. When b = 0, the affine transformation becomes linear. Some machine learning materials loosely describe the operation inside a dense layer as a linear layer even when it includes a bias; mathematically, the complete operation is affine."
+                }
+            ]
+        },
+        {
+            "id": "composition",
+            "title": "8. Composition of Linear Transformations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "You can apply one linear transformation and then apply another. This process is called composition. If the first transformation uses matrix A and the second uses matrix B, the combined transformation can be represented by the matrix product BA."
+                },
+                {
+                    "type": "math",
+                    "value": "T(x)=Ax,\\quad S(y)=By"
+                },
+                {
+                    "type": "math",
+                    "value": "S(T(x))=B(Ax)=(BA)x"
+                },
+                {
+                    "type": "text",
+                    "value": "The order matters. In general, BA is not equal to AB. The rightmost matrix acts first on a column vector."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider a transformation that doubles both coordinates, followed by a transformation that swaps the two coordinates. The combined result is found by multiplying the swap matrix by the scaling matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}2&0\\\\0&2\\end{bmatrix},\\quad B=\\begin{bmatrix}0&1\\\\1&0\\end{bmatrix}"
+                },
+                {
+                    "type": "math",
+                    "value": "BA=\\begin{bmatrix}0&2\\\\2&0\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Composition is central to deep learning. A neural network contains multiple transformations applied in sequence. Between layers, nonlinear activation functions are typically introduced so that the overall network can model more complex functions."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.array([\n    [2, 0],\n    [0, 2]\n])\n\nB = np.array([\n    [0, 1],\n    [1, 0]\n])\n\nx = np.array([3, 5])\n\n# Apply A first, then B.\nsequential = B @ (A @ x)\n\n# Combine the transformations into one matrix.\ncombined = (B @ A) @ x\n\nprint(\"Sequential result:\", sequential)\nprint(\"Combined result:\", combined)\nprint(\"Equivalent:\", np.allclose(sequential, combined))"
+                },
+                {
+                    "type": "text",
+                    "value": "Matrix multiplication is associative, so B(Ax) = (BA)x. It is not generally commutative, so changing the order of transformations may change the result."
+                }
+            ]
+        },
+        {
+            "id": "kernel-image-rank",
+            "title": "9. Kernel, Image, and Rank",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Three concepts help describe what a linear transformation does to a vector space: the kernel, the image, and the rank."
+                },
+                {
+                    "type": "text",
+                    "value": "The kernel, also called the null space, contains all input vectors that the transformation maps to the zero vector."
+                },
+                {
+                    "type": "math",
+                    "value": "\\ker(T)=\\{x\\in V:T(x)=0\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "The image, also called the range, contains all possible output vectors produced by the transformation."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{im}(T)=\\{T(x):x\\in V\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "The rank is the dimension of the image. For a matrix, its rank equals the number of linearly independent columns and also the number of linearly independent rows."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{rank}(A)=\\dim(\\operatorname{im}(T))"
+                },
+                {
+                    "type": "text",
+                    "value": "Consider the projection matrix that removes the second coordinate. Every vector of the form (0, y) lies in its kernel because the projection maps it to (0, 0). The image consists of all vectors on the x-axis."
+                },
+                {
+                    "type": "math",
+                    "value": "P=\\begin{bmatrix}1&0\\\\0&0\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "This matrix has rank 1 because its image is one-dimensional. It loses information about the original y-coordinate, so the original vector cannot generally be reconstructed from the output alone."
+                },
+                {
+                    "type": "text",
+                    "value": "The rank-nullity theorem relates input dimensionality, kernel dimensionality, and rank."
+                },
+                {
+                    "type": "math",
+                    "value": "\\dim(V)=\\dim(\\ker(T))+\\operatorname{rank}(T)"
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, rank helps describe whether a transformation preserves all input directions or compresses data into a smaller effective space. Rank-deficient transformations can discard information, which may be intentional in dimensionality reduction."
+                }
+            ]
+        },
+        {
+            "id": "invertibility",
+            "title": "10. Invertible Linear Transformations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear transformation is invertible if every output corresponds to exactly one input and an inverse transformation can recover that input. For a square matrix A, invertibility is equivalent to having full rank."
+                },
+                {
+                    "type": "math",
+                    "value": "A^{-1}A=AA^{-1}=I"
+                },
+                {
+                    "type": "text",
+                    "value": "If y = Ax and A is invertible, then the original input can be recovered by applying the inverse matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "x=A^{-1}y"
+                },
+                {
+                    "type": "text",
+                    "value": "For a square matrix, the following conditions are equivalent: the matrix is invertible, its columns are linearly independent, its rank equals its dimension, and its determinant is nonzero."
+                },
+                {
+                    "type": "math",
+                    "value": "\\det(A)\\ne 0"
+                },
+                {
+                    "type": "text",
+                    "value": "A projection from two dimensions to one dimension cannot generally be inverted because it discards information. Multiple different input vectors can produce the same output."
+                },
+                {
+                    "type": "text",
+                    "value": "Invertibility matters in reversible transformations, normalizing flows, and certain generative models. In other applications, such as dimensionality reduction, a transformation may intentionally be non-invertible because reducing dimensionality is the goal."
+                },
+                {
+                    "type": "text",
+                    "value": "A practical numerical warning: even when a matrix is theoretically invertible, it may be poorly conditioned. Small changes or rounding errors in the input can then produce large changes in the recovered result. In numerical computing, solving a linear system directly is usually preferred over explicitly computing an inverse when possible."
+                }
+            ]
+        },
+        {
+            "id": "transformations-in-neural-networks",
+            "title": "11. Linear Transformations Inside Neural Networks",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A dense neural network layer transforms an input feature vector into a new feature representation. The transformation uses a weight matrix and usually a bias vector."
+                },
+                {
+                    "type": "math",
+                    "value": "z=Wx+b"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, x is the input vector, W contains learned weights, b is a learned bias vector, and z is the output before the activation function. The matrix multiplication combines the input features according to the weights."
+                },
+                {
+                    "type": "text",
+                    "value": "For a layer with n input features and m output features, W has shape m by n, the input has n values, and the output has m values."
+                },
+                {
+                    "type": "math",
+                    "value": "W\\in\\mathbb{R}^{m\\times n},\\quad x\\in\\mathbb{R}^{n},\\quad b\\in\\mathbb{R}^{m}"
+                },
+                {
+                    "type": "text",
+                    "value": "The bias makes the complete operation affine rather than strictly linear. Applying a nonlinear activation gives the layer output."
+                },
+                {
+                    "type": "math",
+                    "value": "h=\\sigma(Wx+b)"
+                },
+                {
+                    "type": "text",
+                    "value": "The weights are learned during training. Backpropagation calculates gradients that indicate how the weights should change to reduce the loss."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\n# Three input features and two output features.\nW = np.array([\n    [0.2, 0.5, -0.3],\n    [0.8, -0.1, 0.4]\n])\n\nb = np.array([0.1, -0.2])\nx = np.array([1.0, 2.0, 3.0])\n\n# Affine transformation.\nz = W @ x + b\n\n# ReLU activation.\nh = np.maximum(0, z)\n\nprint(\"Input shape:\", x.shape)\nprint(\"Weight shape:\", W.shape)\nprint(\"Pre-activation output:\", z)\nprint(\"Activated output:\", h)\nprint(\"Output shape:\", h.shape)"
+                },
+                {
+                    "type": "text",
+                    "value": "The matrix W transforms a three-dimensional input into a two-dimensional representation. The output dimensions are determined by the number of rows in W."
+                }
+            ]
+        },
+        {
+            "id": "transformations-in-transformers",
+            "title": "12. Linear Transformations in Transformers",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Transformer models use learned linear projections to create query, key, and value representations from token embeddings. These projections allow the model to represent the same token information in different learned spaces."
+                },
+                {
+                    "type": "math",
+                    "value": "Q=XW_Q,\\quad K=XW_K,\\quad V=XW_V"
+                },
+                {
+                    "type": "text",
+                    "value": "X represents a matrix of token embeddings. W_Q, W_K, and W_V are learned projection matrices. Their outputs are used to calculate attention scores and combine information across tokens."
+                },
+                {
+                    "type": "text",
+                    "value": "For example, if X has shape sequence length by embedding dimension, a projection matrix can map each token embedding into a smaller or larger feature space. The same projection matrix is applied to every token position in that layer."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{Attention}(Q,K,V)=\\operatorname{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V"
+                },
+                {
+                    "type": "text",
+                    "value": "The query, key, and value projections are linear transformations, but the complete attention operation is not one single linear transformation of X. It also includes query-key multiplication, scaling, softmax normalization, and multiplication by V."
+                },
+                {
+                    "type": "text",
+                    "value": "This distinction is important: linear transformations create useful learned representations, while the surrounding operations allow the model to calculate relationships between tokens and combine contextual information."
+                },
+                {
+                    "type": "text",
+                    "value": "Embeddings also rely on learned transformations. A model may map token IDs through an embedding table or transform an existing embedding into another feature space. These operations help represent information in a form suitable for downstream computations."
+                }
+            ]
+        },
+        {
+            "id": "dimensionality-reduction",
+            "title": "13. Linear Transformations and Dimensionality Reduction",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Dimensionality reduction aims to represent data using fewer dimensions while preserving information relevant to a task. A linear transformation can project high-dimensional vectors into a lower-dimensional space."
+                },
+                {
+                    "type": "math",
+                    "value": "T:\\mathbb{R}^{n}\\rightarrow\\mathbb{R}^{m},\\quad m<n"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, a dataset may contain 100 numerical features, but many features may be redundant or strongly correlated. A transformation can map the original vectors into a smaller set of features."
+                },
+                {
+                    "type": "text",
+                    "value": "Principal component analysis (PCA) finds directions of high variance in centered data. Projecting data onto a selected number of principal components is a linear transformation."
+                },
+                {
+                    "type": "math",
+                    "value": "Z=XW_k"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, X is a matrix of centered observations and W_k contains the selected principal-component directions. The resulting Z represents each observation using k coordinates instead of the original number of features."
+                },
+                {
+                    "type": "text",
+                    "value": "When k is smaller than the original feature count, some information is usually lost. PCA chooses directions that retain as much variance as possible among linear projections of the selected dimensionality, but high variance does not always correspond to the information most useful for prediction."
+                },
+                {
+                    "type": "text",
+                    "value": "Linear projections are also used to visualize high-dimensional data in two or three dimensions. However, complex nonlinear structures may not be well represented by a simple linear projection."
+                }
+            ]
+        },
+        {
+            "id": "batch-transformations",
+            "title": "14. Applying Transformations to Batches of Data",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Machine learning systems usually process multiple examples together rather than transforming only one vector at a time. If each example contains n features and there are B examples, a common representation is a matrix X with shape B by n."
+                },
+                {
+                    "type": "math",
+                    "value": "X\\in\\mathbb{R}^{B\\times n}"
+                },
+                {
+                    "type": "text",
+                    "value": "When examples are stored as rows, a weight matrix W with shape n by m transforms the entire batch using XW. The output has shape B by m."
+                },
+                {
+                    "type": "math",
+                    "value": "Y=XW,\\quad (B\\times n)(n\\times m)=(B\\times m)"
+                },
+                {
+                    "type": "text",
+                    "value": "For an affine layer, the bias vector is broadcast across the batch."
+                },
+                {
+                    "type": "math",
+                    "value": "Y=XW+b"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\n# Five examples, each with three input features.\nX = np.array([\n    [1.0, 2.0, 3.0],\n    [2.0, 1.0, 0.0],\n    [0.0, 1.0, 2.0],\n    [3.0, 2.0, 1.0],\n    [1.0, 0.0, 1.0]\n])\n\n# Transform three input features into four output features.\nW = np.random.default_rng(42).normal(size=(3, 4))\nb = np.zeros(4)\n\nY = X @ W + b\n\nprint(\"Input batch shape:\", X.shape)\nprint(\"Weight matrix shape:\", W.shape)\nprint(\"Output batch shape:\", Y.shape)"
+                },
+                {
+                    "type": "text",
+                    "value": "The batch calculation is mathematically equivalent to transforming each row individually using the same weights. Batch operations allow numerical libraries and hardware accelerators to process many values efficiently."
+                }
+            ]
+        },
+        {
+            "id": "computational-cost",
+            "title": "15. Computational Cost and Practical Considerations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A dense matrix-vector transformation using an m by n matrix requires approximately mn multiplications and a similar number of additions. Its arithmetic complexity is O(mn)."
+                },
+                {
+                    "type": "text",
+                    "value": "For a batch of B examples, multiplying a B by n matrix by an n by m matrix has a standard arithmetic complexity of O(Bnm). The exact runtime depends on memory access, hardware, data types, and the matrix multiplication implementation."
+                },
+                {
+                    "type": "text",
+                    "value": "Several practical considerations matter when implementing transformations."
+                },
+                {
+                    "type": "text",
+                    "value": "Shape compatibility: the inner dimensions of a matrix multiplication must match. If X has shape B by n, W must have shape n by m for XW to be valid."
+                },
+                {
+                    "type": "text",
+                    "value": "Memory usage: large matrices can require substantial memory. Neural networks use architectural choices such as smaller hidden dimensions, low-rank approximations, and efficient attention mechanisms to manage computational costs."
+                },
+                {
+                    "type": "text",
+                    "value": "Numerical precision: floating-point operations can introduce rounding error. Lower-precision arithmetic can improve speed and memory use on supported hardware, but numerical stability must be considered."
+                },
+                {
+                    "type": "text",
+                    "value": "Information loss: a transformation that reduces dimensionality or has deficient rank may discard some directions in the input space. Whether this is beneficial depends on the learning objective."
+                },
+                {
+                    "type": "text",
+                    "value": "Parameter learning: in a neural network, transformation matrices are usually learned from data rather than selected manually. Training adjusts the matrix values to help minimize the model's objective function."
+                },
+                {
+                    "type": "text",
+                    "value": "Understanding transformations therefore connects abstract linear algebra to model architecture, computational efficiency, representation learning, and optimization."
+                }
+            ]
+        },
+        {
+            "id": "summary",
+            "title": "16. Key Takeaways",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear transformation maps vectors between vector spaces while preserving addition and scalar multiplication."
+                },
+                {
+                    "type": "text",
+                    "value": "Every linear transformation between finite-dimensional vector spaces can be represented by a matrix after choosing bases for the input and output spaces."
+                },
+                {
+                    "type": "text",
+                    "value": "A matrix transforms a vector by combining the matrix columns according to the vector's coordinates."
+                },
+                {
+                    "type": "text",
+                    "value": "Linear transformations can scale, rotate, reflect, shear, or project vectors. They preserve the origin and linear combinations, but they do not necessarily preserve lengths or angles."
+                },
+                {
+                    "type": "text",
+                    "value": "The composition of linear transformations is represented by matrix multiplication. The order of the matrices matters."
+                },
+                {
+                    "type": "text",
+                    "value": "The kernel describes which inputs map to zero, the image describes possible outputs, and the rank measures the dimension of the image."
+                },
+                {
+                    "type": "text",
+                    "value": "An affine transformation has the form Ax + b. A linear transformation is the special case where b is zero."
+                },
+                {
+                    "type": "text",
+                    "value": "Neural networks rely on learned affine transformations and nonlinear activation functions. Transformers use learned linear projections for query, key, and value representations."
+                },
+                {
+                    "type": "text",
+                    "value": "Dimensionality reduction uses transformations to represent data with fewer coordinates, potentially trading some information for a more compact representation."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "A transformation is defined by T(x, y) = (3x, 2y). Is it linear? Verify the two defining properties.",
+            "hints": [
+                "Test whether T(u + v) equals T(u) + T(v).",
+                "Test whether T(cu) equals cT(u).",
+                "The zero vector should map to the zero vector."
+            ],
+            "solution": "Yes. Let u = (x₁, y₁) and v = (x₂, y₂). Then T(u + v) = (3(x₁ + x₂), 2(y₁ + y₂)) = (3x₁, 2y₁) + (3x₂, 2y₂) = T(u) + T(v). For any scalar c, T(cu) = (3cx₁, 2cy₁) = cT(u). Both properties hold, so T is linear."
+        },
+        {
+            "id": "exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Explain why T(x) = 2x + 5 is not a linear transformation from the real numbers to the real numbers.",
+            "hints": [
+                "Evaluate T(0).",
+                "Recall the necessary condition T(0) = 0.",
+                "Distinguish linear transformations from affine transformations."
+            ],
+            "solution": "T(0) = 5, which is not zero. Therefore, the transformation violates a necessary condition for linearity. It is an affine transformation of the form Ax + b with A = 2 and b = 5."
+        },
+        {
+            "id": "exercise-3",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Given A = [[2, 1], [0, 3]] and x = [4, 2], calculate T(x) = Ax.",
+            "hints": [
+                "Multiply each row of A by the vector x.",
+                "The first output coordinate is 2(4) + 1(2).",
+                "The second output coordinate is 0(4) + 3(2)."
+            ],
+            "solution": "The first coordinate is 2(4) + 1(2) = 10. The second coordinate is 0(4) + 3(2) = 6. Therefore, T(x) = [10, 6]."
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Let A = [[1, 2], [0, 1]] and B = [[2, 0], [1, 3]]. Calculate BA and explain which transformation is applied first when computing BAx.",
+            "hints": [
+                "Use the row-by-column rule for matrix multiplication.",
+                "Calculate B times A, not A times B.",
+                "In BAx, the matrix closest to x acts first."
+            ],
+            "solution": "BA = [[2, 4], [1, 5]]. In BAx, A acts on x first, followed by B. Therefore, BA represents the combined transformation that applies A and then B."
+        },
+        {
+            "id": "exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "A transformation maps every vector (x, y) to (x, 0). Describe its kernel, image, and rank.",
+            "hints": [
+                "Find the inputs that produce (0, 0).",
+                "Identify all possible output vectors.",
+                "Determine the dimension of the output subspace."
+            ],
+            "solution": "The transformation is represented by P = [[1, 0], [0, 0]]. Its kernel contains all vectors (0, y), which form the y-axis. Its image contains all vectors (x, 0), which form the x-axis. The image is one-dimensional, so the rank is 1."
+        },
+        {
+            "id": "exercise-6",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Use NumPy to create a random 3 by 3 matrix A and a vector x with three coordinates. Calculate Ax, then verify that A(2x) = 2Ax using np.allclose.",
+            "hints": [
+                "Use np.random.default_rng() to create reproducible random values.",
+                "Use the @ operator for matrix multiplication.",
+                "Compare the two results with np.allclose."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nrng = np.random.default_rng(42)\nA = rng.normal(size=(3, 3))\nx = rng.normal(size=3)\n\nleft = A @ (2 * x)\nright = 2 * (A @ x)\n\nprint(\"A(2x):\", left)\nprint(\"2Ax:\", right)\nprint(\"Homogeneity holds:\", np.allclose(left, right))\n\nThe comparison should return True, allowing for normal floating-point tolerance."
+        },
+        {
+            "id": "exercise-7",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Create a NumPy transformation that maps four input features to two output features for a batch of six examples. Print the input, weight, and output shapes.",
+            "hints": [
+                "Represent the batch as a matrix with six rows and four columns.",
+                "Use a weight matrix with four rows and two columns.",
+                "Multiply the batch matrix by the weight matrix."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nrng = np.random.default_rng(42)\nX = rng.normal(size=(6, 4))\nW = rng.normal(size=(4, 2))\nb = np.zeros(2)\nY = X @ W + b\n\nprint(X.shape)  # (6, 4)\nprint(W.shape)  # (4, 2)\nprint(Y.shape)  # (6, 2)\n\nThe transformation maps each four-feature example into a two-feature representation."
+        },
+        {
+            "id": "exercise-8",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A neural network layer computes h = ReLU(Wx + b). Identify which part is a linear transformation, which part is affine, and why the complete layer is generally nonlinear.",
+            "hints": [
+                "Examine the bias term b.",
+                "Recall that a linear transformation maps zero to zero.",
+                "Consider how ReLU treats positive and negative values."
+            ],
+            "solution": "The operation x → Wx is linear. The operation x → Wx + b is affine and is linear only when b = 0. Applying ReLU introduces a nonlinear operation because it does not preserve all linear combinations, including homogeneity for negative scalars. Therefore, the complete layer is generally nonlinear."
+        },
+        {
+            "id": "exercise-9",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A dataset contains 20 features. You apply a linear transformation from R²⁰ to R⁵. Can this transformation be invertible over all of R²⁰? Explain using rank and dimensionality.",
+            "hints": [
+                "Consider the dimensions of the input and output spaces.",
+                "The rank cannot exceed the smaller matrix dimension.",
+                "Use the rank-nullity theorem."
+            ],
+            "solution": "No. The transformation is represented by a 5 by 20 matrix, whose rank is at most 5. By the rank-nullity theorem, the kernel has dimension 20 − rank, which is at least 15. Therefore, there are nonzero input directions that map to zero, so the transformation cannot uniquely recover every original 20-dimensional vector."
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "basis-and-dimensionality",
+        "eigenvalues-eigenvectors",
+        "svd",
+        "functions",
+        "gradients",
+        "neural-networks",
+        "transformers",
+        "principal-component-analysis"
+    ]
+}

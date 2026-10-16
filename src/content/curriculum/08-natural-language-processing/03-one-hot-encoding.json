@@ -1,1 +1,193 @@
-{}
+{
+    "id": "module-08-natural-language-processing-one-hot-encoding",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 3,
+    "title": "One-Hot Encoding",
+    "slug": "one-hot-encoding",
+    "href": "/curriculum/08-natural-language-processing/one-hot-encoding",
+    "filePath": "content/curriculum/08-natural-language-processing/03-one-hot-encoding.json",
+    "description": "Understand one-hot vectors, their mathematical construction, their role in NLP, and their limitations compared with dense learned word embeddings.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Python Fundamentals",
+        "Vocabulary Construction",
+        "Basic Linear Algebra"
+    ],
+    "learningObjectives": [
+        "Define one-hot encoding and construct one-hot vectors from vocabulary IDs.",
+        "Explain the relationship between vocabulary size and vector dimensionality.",
+        "Compute dot products and similarities between one-hot vectors.",
+        "Understand sparse representations and their memory implications.",
+        "Explain why one-hot representations do not inherently encode semantic similarity.",
+        "Compare one-hot encoding with learned embedding representations."
+    ],
+    "sections": [
+        {
+            "id": "one-hot-definition",
+            "title": "What Is One-Hot Encoding?",
+            "type": "concept",
+            "content": "One-hot encoding represents a category using a vector containing exactly one active value, usually 1, while all other entries are 0. In NLP, each vocabulary token receives a unique position in the vector. If the vocabulary contains five tokens, each token is represented by a five-dimensional vector. The token assigned to index 2 becomes [0, 0, 1, 0, 0] when indexing begins at zero. The vector identifies the token but does not directly express its meaning."
+        },
+        {
+            "id": "one-hot-mathematics",
+            "title": "Mathematical Definition",
+            "type": "math",
+            "content": "Let the vocabulary size be V and let token i have index i, where 0 ≤ i < V. Its one-hot vector x belongs to R^V and is defined by x_j = 1 when j = i, and x_j = 0 otherwise. Equivalently, x_j = 1 if j = i and 0 if j ≠ i. Every valid one-hot vector has exactly one nonzero element and an L1 norm of 1. Its L2 norm is also 1."
+        },
+        {
+            "id": "one-hot-example",
+            "title": "A Worked Example",
+            "type": "concept",
+            "content": "Suppose the vocabulary is ['cat', 'dog', 'bird', 'fish']. The one-hot vectors are cat = [1, 0, 0, 0], dog = [0, 1, 0, 0], bird = [0, 0, 1, 0], and fish = [0, 0, 0, 1]. The order of entries is determined by the vocabulary mapping. Reordering the vocabulary changes the vector positions, so the mapping must remain stable when these vectors are used with learned model parameters."
+        },
+        {
+            "id": "one-hot-python",
+            "title": "Implement One-Hot Encoding in Python",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nvocabulary = {\"cat\": 0, \"dog\": 1, \"bird\": 2, \"fish\": 3}\n\ndef one_hot(token, vocab):\n    vector = np.zeros(len(vocab), dtype=np.float32)\n    vector[vocab[token]] = 1.0\n    return vector\n\nprint(one_hot(\"bird\", vocabulary))",
+            "explanation": "The function allocates a zero vector whose length equals the vocabulary size, then sets the token's index to one. This is straightforward for small vocabularies, but allocating a dense vector for every token becomes expensive when vocabularies are large."
+        },
+        {
+            "id": "one-hot-indices",
+            "title": "One-Hot Vectors and Token IDs",
+            "type": "concept",
+            "content": "A token ID is a compact integer, while a one-hot vector expands that integer into a vector of length V. For many neural network operations, explicitly constructing the vector is unnecessary. An embedding lookup or a suitable indexed operation can use the integer ID directly. Understanding one-hot encoding remains valuable because it explains categorical representations, classification targets, and the relationship between embeddings and vocabulary-indexed matrices."
+        },
+        {
+            "id": "one-hot-dot-product",
+            "title": "Dot Products of One-Hot Vectors",
+            "type": "math",
+            "content": "For one-hot vectors e_i and e_j, their dot product is e_i^T e_j = 1 when i = j and 0 otherwise. Thus, distinct vocabulary items have zero dot product. Since each vector has unit length, the cosine similarity of identical vectors is 1 and the cosine similarity of distinct one-hot vectors is 0. This geometry reflects identity, not natural-language meaning."
+        },
+        {
+            "id": "one-hot-similarity-example",
+            "title": "Why One-Hot Similarity Is Limited",
+            "type": "concept",
+            "content": "Consider the words 'cat' and 'dog'. They are semantically related, but their distinct one-hot vectors have dot product zero. The same is true for 'cat' and 'quantum'. One-hot encoding treats all different tokens as orthogonal categories. It therefore cannot express that two words have related meanings, appear in similar contexts, or belong to the same semantic field without an additional learned transformation."
+        },
+        {
+            "id": "sparse-representations",
+            "title": "Sparse Versus Dense Representations",
+            "type": "concept",
+            "content": "A sparse vector contains mostly zeros, whereas a dense vector has many nonzero values. One-hot vectors are extremely sparse: only one of V positions is active. Although this looks efficient mathematically, storing every one-hot vector as a dense array wastes memory. Sparse data structures or integer token IDs are more efficient. Learned embeddings are typically dense, low-dimensional vectors that can represent useful relationships among tokens."
+        },
+        {
+            "id": "memory-cost",
+            "title": "Memory Cost of One-Hot Vectors",
+            "type": "math",
+            "content": "A dense one-hot vector of vocabulary size V stores V values even though only one is nonzero. If V = 50,000 and each value uses four bytes, one dense vector occupies approximately 200,000 bytes, or about 195 KiB. A batch of 1,000 such vectors would require about 200 MB in decimal units. In contrast, the token IDs alone can be stored as compact integers. Actual framework memory use depends on dtype, layout, and batching."
+        },
+        {
+            "id": "numpy-batch-one-hot",
+            "title": "Encoding a Batch of Token IDs",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nids = np.array([2, 0, 3])\nvocab_size = 4\nencoded = np.eye(vocab_size, dtype=np.float32)[ids]\nprint(encoded)\nprint(\"Shape:\", encoded.shape)",
+            "explanation": "The identity matrix contains one one-hot vector per row. Indexing it with token IDs produces a matrix with shape (3, 4): three tokens, each represented by a four-dimensional vector. This method is useful for demonstrations, but constructing a full identity matrix is inefficient for large vocabularies."
+        },
+        {
+            "id": "one-hot-as-matrix",
+            "title": "One-Hot Encoding as Matrix Multiplication",
+            "type": "math",
+            "content": "A one-hot vector can select a row from a matrix through multiplication. If x is a one-hot row vector of shape 1 × V and E is a matrix of shape V × d, then xE has shape 1 × d and equals the row of E selected by the active position of x. This is the mathematical connection between one-hot inputs and embedding lookup. The lookup can be computed directly without materializing the full one-hot vector."
+        },
+        {
+            "id": "embedding-connection",
+            "title": "From One-Hot Vectors to Embeddings",
+            "type": "concept",
+            "content": "Suppose E is a learned embedding matrix whose rows correspond to vocabulary tokens. Multiplying a one-hot vector by E selects the corresponding embedding. The one-hot representation supplies token identity, while the learned matrix supplies a dense representation trained to support a task. Similar words may develop similar embedding vectors when the training objective and data encourage such relationships. One-hot vectors themselves do not learn semantic structure."
+        },
+        {
+            "id": "classification-labels",
+            "title": "One-Hot Encoding for Classification Targets",
+            "type": "concept",
+            "content": "One-hot vectors are also used to represent class labels. For a three-class problem, the label for class 1 might be [0, 1, 0]. A classifier produces a probability distribution over classes, and cross-entropy compares the predicted distribution with the target label. Many frameworks accept integer class labels directly and compute the equivalent loss without requiring users to construct one-hot targets."
+        },
+        {
+            "id": "softmax-cross-entropy",
+            "title": "One-Hot Targets and Cross-Entropy",
+            "type": "math",
+            "content": "For a target class c and predicted probabilities p_1 through p_C, the categorical cross-entropy for a one-hot target y is L = -Σ_i y_i log(p_i) = -log(p_c). All terms except the target class disappear because their target values are zero. This connects one-hot encoding to classification and next-token prediction. Numerical implementations usually operate on logits with a stable log-softmax calculation rather than computing probabilities and logarithms naively."
+        },
+        {
+            "id": "one-hot-limitations",
+            "title": "Limitations of One-Hot Encoding",
+            "type": "concept",
+            "content": "One-hot encoding has several limitations for language modeling. Its dimensionality grows with vocabulary size, it contains no intrinsic semantic similarity, and it does not share statistical strength between related word forms. A model may learn relationships through later layers, but the input representation itself does not provide them. For large vocabularies, sparse operations, token IDs, and learned embeddings are generally more practical."
+        },
+        {
+            "id": "one-hot-vs-embedding",
+            "title": "One-Hot Encoding Versus Word Embeddings",
+            "type": "concept",
+            "content": "One-hot vectors have dimension V and one active component. Embeddings usually have dimension d, where d is much smaller than V, and contain learned dense values. One-hot vectors are fixed identifiers; embeddings are trainable representations. One-hot vectors are useful for illustrating categorical identity and target labels. Embeddings are useful for representing tokens in neural models because they can encode distributional patterns and reduce input dimensionality."
+        },
+        {
+            "id": "one-hot-and-unknowns",
+            "title": "Unknown Tokens and Vocabulary Boundaries",
+            "type": "concept",
+            "content": "One-hot encoding assumes that a token already has a valid vocabulary index. An unseen token therefore requires an explicit policy, such as mapping it to an unknown-token ID, rejecting the input, or splitting it into subword units. Attempting to index a vector with an invalid token ID can raise an error or select the wrong location. Validate token IDs and ensure that special tokens have reserved vocabulary entries."
+        },
+        {
+            "id": "one-hot-batch-shapes",
+            "title": "Shapes in Batched NLP Models",
+            "type": "concept",
+            "content": "If a batch contains B token positions and each position is one-hot encoded with vocabulary size V, the resulting representation has shape B × V for a single position per example. For sequences of length L, the shape can be B × L × V. This can become very large. Embedding lookup instead commonly produces B × L × d, where d is the embedding dimension. Understanding tensor shapes helps explain why embedding lookup is preferred for most language models."
+        },
+        {
+            "id": "practical-guidelines",
+            "title": "Practical Guidelines",
+            "type": "concept",
+            "content": "Use one-hot encoding when the category space is small, when an explicit categorical representation is useful, or when explaining classification mathematics. For token inputs in neural NLP systems, prefer integer IDs and embedding layers. For output targets, check whether the loss function accepts integer labels. Avoid creating large dense identity matrices for real vocabularies, and ensure that vocabulary indices remain aligned with model weights."
+        },
+        {
+            "id": "one-hot-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "One-hot encoding maps each category to a vector with one active entry. Its vector length equals vocabulary size, and distinct token vectors are orthogonal. It identifies tokens but does not encode semantic relationships. One-hot vectors can select rows from an embedding matrix and represent classification targets, but explicit dense representations become inefficient for large vocabularies. Token IDs and learned embeddings are generally preferred for neural language models."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "one-hot-exercise-1",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Using the vocabulary {'red': 0, 'green': 1, 'blue': 2}, write the one-hot vector for 'green'.",
+            "correctAnswer": "[0, 1, 0]",
+            "solution": "Create a three-dimensional zero vector and set index 1 to one. The result is [0, 1, 0]."
+        },
+        {
+            "id": "one-hot-exercise-2",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "What is the dot product of two one-hot vectors for different tokens?",
+            "correctAnswer": "0",
+            "solution": "Different one-hot vectors have their active entries at different positions. Every pairwise product is zero, so their dot product is zero."
+        },
+        {
+            "id": "one-hot-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "An embedding matrix has vocabulary size 8,000 and dimension 64. How many values does it contain?",
+            "correctAnswer": "512,000 values.",
+            "solution": "The matrix shape is 8,000 × 64. Multiplying these dimensions gives 512,000 parameters."
+        },
+        {
+            "id": "one-hot-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is a learned embedding usually more useful than a one-hot vector as input to a large language model?",
+            "correctAnswer": "It provides a compact dense representation that can learn useful relationships among tokens.",
+            "solution": "A one-hot vector only identifies a token and has vocabulary-sized dimensionality. An embedding maps the token to a lower-dimensional trainable vector whose values can capture statistical relationships learned from data."
+        }
+    ],
+    "summary": "One-hot encoding represents a token or category using a vector with one active component. It is mathematically simple and useful for classification targets and understanding embedding lookup. However, it has vocabulary-sized dimensionality and no intrinsic semantic geometry. Modern NLP systems generally retain compact token IDs and use learned embeddings rather than explicitly materializing large one-hot vectors.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-vocabulary",
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-tokenization",
+        "module-09-large-language-models-training-objective-cross-entropy"
+    ]
+}

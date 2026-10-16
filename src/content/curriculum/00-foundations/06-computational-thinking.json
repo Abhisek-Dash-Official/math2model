@@ -1,1 +1,360 @@
-{}
+{
+  "id": "computational-thinking",
+  "title": "Computational Thinking",
+  "slug": "computational-thinking",
+  "module": "Foundations",
+  "description": "Develop a systematic approach to solving computational problems through decomposition, abstraction, pattern recognition, algorithm design, testing, complexity reasoning, and translating mathematical ideas into working AI systems.",
+  "difficulty": "Beginner",
+  "estimatedHours": 7,
+  "prerequisites": [
+    "programming-fundamentals"
+  ],
+  "learningObjectives": [
+    "Decompose large problems into smaller tasks with clear interfaces.",
+    "Recognize patterns that support reuse and generalization.",
+    "Use abstraction to create mathematical or computational models.",
+    "Write algorithms with explicit inputs, outputs, assumptions, and edge cases.",
+    "Test correctness using examples, invariants, and boundary cases.",
+    "Reason about trade-offs in runtime, memory, accuracy, and simplicity.",
+    "Translate a simple mathematical model into an implementation and evaluation plan."
+  ],
+  "sections": [
+    {
+      "id": "what-is-computational-thinking",
+      "title": "What Is Computational Thinking?",
+      "content": [
+        {
+          "type": "text",
+          "value": "Computational thinking is a way of formulating problems so that a human or computer can solve them systematically. It is not limited to programming; it includes defining the problem, identifying relevant information, designing a procedure, and checking the result."
+        },
+        {
+          "type": "text",
+          "value": "Four commonly used ideas are decomposition, pattern recognition, abstraction, and algorithm design. They reinforce each other: decomposition separates a task, pattern recognition identifies repeated structure, abstraction hides irrelevant details, and algorithms specify the steps needed to solve the problem."
+        },
+        {
+          "type": "text",
+          "value": "For Math2Model, the central example is the journey from a real-world goal to a mathematical formulation, then to an algorithm, implementation, and evaluation. A model is not merely code; it is a collection of assumptions and decisions that should be understood and tested."
+        }
+      ],
+      "keyTakeaways": [
+        "Define the problem before choosing tools.",
+        "Use decomposition, patterns, abstraction, and algorithms together.",
+        "Every model encodes assumptions."
+      ]
+    },
+    {
+      "id": "decomposition",
+      "title": "Decomposition: Break the Problem Down",
+      "content": [
+        {
+          "type": "text",
+          "value": "Decomposition breaks a complex problem into smaller tasks with explicit responsibilities. A large task becomes easier to reason about when each part has a defined input, output, and success condition."
+        },
+        {
+          "type": "text",
+          "value": "Consider building a spam classifier. Subtasks include defining what counts as spam, collecting labeled examples, inspecting data quality, preparing text, splitting data, choosing a baseline model, training, evaluating errors, and deciding how predictions will be used."
+        },
+        {
+          "type": "text",
+          "value": "Good decomposition creates modules that can be developed and tested independently, while making dependencies visible. Poor decomposition may split a task in arbitrary ways or create too many tiny components that are difficult to coordinate."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def prepare_dataset(records):\n    # Validate and clean raw records.\n    raise NotImplementedError\n\ndef split_dataset(dataset, seed):\n    # Create reproducible train/validation/test splits.\n    raise NotImplementedError\n\ndef train_model(train_data, config):\n    # Fit a model using training data.\n    raise NotImplementedError\n\ndef evaluate_model(model, test_data):\n    # Measure performance on held-out data.\n    raise NotImplementedError"
+        },
+        {
+          "type": "text",
+          "value": "The functions are placeholders showing interfaces, not a complete classifier. Their value is architectural: each stage has a separate responsibility, which makes it easier to test data preparation without training a model."
+        }
+      ],
+      "keyTakeaways": [
+        "Break work along meaningful responsibilities.",
+        "Define interfaces between subtasks.",
+        "Keep data preparation, training, and evaluation distinct."
+      ]
+    },
+    {
+      "id": "pattern-recognition",
+      "title": "Pattern Recognition and Generalization",
+      "content": [
+        {
+          "type": "text",
+          "value": "Pattern recognition in computational thinking means noticing repeated structures in problems or solutions. If several tasks require counting occurrences, a reusable frequency-counting pattern may solve them all. If multiple models need normalization, a shared transformation can reduce duplicated code."
+        },
+        {
+          "type": "text",
+          "value": "Generalization turns a solution for one example into a solution for a class of examples. A function that calculates a mean should work for many non-empty numeric sequences, not just one hard-coded list."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def mean(values):\n    if len(values) == 0:\n        raise ValueError(\"values must not be empty\")\n    return sum(values) / len(values)\n\nprint(mean([1, 2, 3]))\nprint(mean([10, 20, 30, 40]))"
+        },
+        {
+          "type": "text",
+          "value": "Pattern recognition can also mislead. Two tasks may look similar but have different assumptions. For example, random train-test splitting may be inappropriate for time-series data, where future observations must not leak into training. A pattern is useful only when its assumptions match the problem."
+        }
+      ],
+      "keyTakeaways": [
+        "Generalize beyond a single hard-coded example.",
+        "Reuse patterns when assumptions match.",
+        "Always look for cases where a familiar pattern fails."
+      ]
+    },
+    {
+      "id": "abstraction-modeling",
+      "title": "Abstraction and Mathematical Modeling",
+      "content": [
+        {
+          "type": "text",
+          "value": "Abstraction retains details relevant to the question and ignores details that do not affect the chosen solution. A map is an abstraction of a place; a mathematical model is an abstraction of a system. Every abstraction makes trade-offs between simplicity and fidelity."
+        },
+        {
+          "type": "text",
+          "value": "A linear model assumes an output can be approximated by a weighted sum of inputs plus a bias. It does not capture every possible relationship, but it is simple, interpretable, and useful as a baseline."
+        },
+        {
+          "type": "math",
+          "value": "\\hat{y}=w^Tx+b"
+        },
+        {
+          "type": "text",
+          "value": "Here x is a feature vector, w is a vector of weights, b is a bias, and y-hat is the prediction. The model's assumptions determine what it can represent. Adding nonlinear features or layers can increase expressive power, but also increases complexity and may require more data."
+        },
+        {
+          "type": "text",
+          "value": "A good model is not necessarily the most complicated model. Start with the simplest representation that can answer the question, compare it with alternatives, and examine errors to decide whether additional complexity is justified."
+        }
+      ],
+      "keyTakeaways": [
+        "A model is a deliberate simplification.",
+        "Write down assumptions and limitations.",
+        "Use a baseline before adding complexity."
+      ]
+    },
+    {
+      "id": "algorithm-design",
+      "title": "Algorithm Design and Pseudocode",
+      "content": [
+        {
+          "type": "text",
+          "value": "An algorithm specifies a sequence of steps independent of a particular programming language. Pseudocode communicates those steps without requiring exact syntax. A useful algorithm description includes input, output, preconditions, postconditions, and termination behavior."
+        },
+        {
+          "type": "text",
+          "value": "For example, to find the maximum of a non-empty sequence: initialize the current maximum with the first item; inspect each remaining item; replace the current maximum whenever a larger value appears; return the result."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "FUNCTION FindMaximum(values)\n    REQUIRE values is non-empty\n    current_max <- first item in values\n\n    FOR each remaining value:\n        IF value > current_max:\n            current_max <- value\n\n    RETURN current_max"
+        },
+        {
+          "type": "text",
+          "value": "A loop invariant is a statement that remains true at each iteration. In this example, after processing the first k elements, current_max is the maximum among those k elements. The invariant helps establish correctness."
+        },
+        {
+          "type": "text",
+          "value": "Algorithm design also includes selecting the right representation. A graph problem may be much easier with an adjacency list; a repeated lookup problem may benefit from a hash map. Representation is part of the solution, not a detail to postpone indefinitely."
+        }
+      ],
+      "keyTakeaways": [
+        "Specify preconditions and outputs.",
+        "Use invariants to reason about correctness.",
+        "Choose a representation that fits the operations."
+      ]
+    },
+    {
+      "id": "correctness-testing",
+      "title": "Correctness, Edge Cases, and Testing",
+      "content": [
+        {
+          "type": "text",
+          "value": "A program that produces the expected answer for one example may still be wrong. Test normal inputs, boundary cases, invalid inputs, and cases that challenge the assumptions. For a sorting function, test empty input, one item, repeated values, negative values, and already sorted input."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def absolute_error(actual, predicted):\n    if len(actual) != len(predicted):\n        raise ValueError(\"lengths must match\")\n    if not actual:\n        raise ValueError(\"inputs must not be empty\")\n    return sum(abs(a - p) for a, p in zip(actual, predicted)) / len(actual)\n\nassert absolute_error([1, 2], [1, 3]) == 0.5"
+        },
+        {
+          "type": "text",
+          "value": "Property-based reasoning tests general properties rather than only fixed answers. A sorting function should preserve the number of elements and return a nondecreasing sequence. A probability vector should contain nonnegative entries whose sum is approximately one."
+        },
+        {
+          "type": "text",
+          "value": "For floating-point calculations, use tolerances instead of exact equality when rounding is expected. For numerical models, test dimensions, finite values, and behavior on small synthetic examples before training on large datasets."
+        },
+        {
+          "type": "text",
+          "value": "Testing can show that a defect exists, but a finite set of tests cannot prove the absence of every defect. Combine tests with clear specifications, code review, and monitoring."
+        }
+      ],
+      "keyTakeaways": [
+        "Test edge cases and invalid inputs.",
+        "Test general properties as well as examples.",
+        "Use numerical tolerances when appropriate."
+      ]
+    },
+    {
+      "id": "complexity-tradeoffs",
+      "title": "Efficiency and Trade-Offs",
+      "content": [
+        {
+          "type": "text",
+          "value": "A solution may be correct but too slow or memory-intensive for its intended workload. Computational thinking includes estimating growth, measuring actual performance, and balancing speed against readability, accuracy, development time, and resource constraints."
+        },
+        {
+          "type": "text",
+          "value": "An O(n²) algorithm may be acceptable for a few dozen elements but impractical for millions. An algorithm with better asymptotic complexity may have higher constant overhead for small inputs. Big O informs the discussion but does not replace measurement."
+        },
+        {
+          "type": "text",
+          "value": "AI systems have additional trade-offs: model quality versus inference latency, model size versus memory, data quality versus collection cost, and privacy versus personalization. The correct choice depends on the product's requirements and constraints."
+        },
+        {
+          "type": "text",
+          "value": "Optimization should be evidence-driven. Establish a correct baseline, profile representative inputs, identify the bottleneck, change one important thing at a time, and compare both runtime and output quality."
+        }
+      ],
+      "keyTakeaways": [
+        "Estimate growth before scaling.",
+        "Measure real bottlenecks.",
+        "Optimize against explicit requirements, not vague intuition."
+      ]
+    },
+    {
+      "id": "from-math-to-code",
+      "title": "From Mathematics to an AI Implementation",
+      "content": [
+        {
+          "type": "text",
+          "value": "A mathematical formula becomes an implementation through a sequence of explicit choices: define variables and dimensions, decide the inputs and outputs, select numerical representations, implement the operation, test it on known examples, and evaluate it on data appropriate to the task."
+        },
+        {
+          "type": "text",
+          "value": "Consider a linear predictor. For one input x, the output is wx + b. For a batch of m examples with n features, represent inputs as X with shape (m, n), weights as w with shape (n,), and bias as a scalar. The batch predictions are Xw + b, with shape (m,)."
+        },
+        {
+          "type": "math",
+          "value": "\\hat{y}=Xw+b"
+        },
+        {
+          "type": "text",
+          "value": "To train the model, choose an objective such as mean squared error. An optimization algorithm updates the parameters to reduce the objective on training data. Evaluation on held-out data checks whether the learned relationship generalizes beyond the examples used to fit it."
+        },
+        {
+          "type": "math",
+          "value": "J(w,b)=\\frac{1}{m}\\sum_{i=1}^{m}(\\hat{y}_i-y_i)^2"
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.array([[1.0], [2.0], [3.0], [4.0]])\ny = np.array([3.0, 5.0, 7.0, 9.0])\n\n# Fit a simple linear relationship for demonstration.\ndesign = np.column_stack([X[:, 0], np.ones(len(X))])\nweight, bias = np.linalg.lstsq(design, y, rcond=None)[0]\n\npredictions = X[:, 0] * weight + bias\nmse = np.mean((predictions - y) ** 2)\n\nprint(\"weight:\", weight)\nprint(\"bias:\", bias)\nprint(\"MSE:\", mse)"
+        },
+        {
+          "type": "text",
+          "value": "This example uses least squares to fit a simple linear relationship. It demonstrates translation from a formula to data structures, a numerical operation, and an evaluation metric. It is not a full account of modern neural-network training, which introduces nonlinear layers, differentiable objectives, gradient-based optimization, regularization, and many practical considerations."
+        }
+      ],
+      "keyTakeaways": [
+        "Define dimensions and units before coding.",
+        "Test the implementation on a known synthetic relationship.",
+        "Separate training objective from held-out evaluation."
+      ]
+    },
+    {
+      "id": "communicating-solutions",
+      "title": "Communicating and Documenting Solutions",
+      "content": [
+        {
+          "type": "text",
+          "value": "A good technical solution should be understandable by someone other than its author. Explain the problem, assumptions, approach, complexity, limitations, and evidence that the solution works. Diagrams, equations, examples, and tests each communicate different parts of the reasoning."
+        },
+        {
+          "type": "text",
+          "value": "When documenting an AI model, include the dataset source and version, preprocessing, model architecture, training setup, evaluation split, metrics, and known limitations. Without this context, results may be impossible to interpret or reproduce."
+        },
+        {
+          "type": "text",
+          "value": "A useful explanation distinguishes facts from assumptions and hypotheses. If an experiment fails, record what was tried and what was observed rather than presenting only the successful run. This makes research and engineering more cumulative."
+        }
+      ],
+      "keyTakeaways": [
+        "Document assumptions and limitations.",
+        "Report enough detail for reproduction.",
+        "Communicate negative results honestly."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Design a small prediction system",
+      "problem": "Design a system that predicts a numeric target from input features. Describe the stages before writing the full model.",
+      "solution": "1. Define the target and input features. 2. Validate records and units. 3. Split data into training, validation, and test sets. 4. Fit preprocessing only on training data. 5. Establish a simple baseline. 6. Train a candidate model. 7. Evaluate using suitable metrics. 8. Inspect errors and limitations. 9. Record the configuration and results.",
+      "explanation": "This is computational thinking in practice: decomposition defines stages, abstraction defines the model, algorithm design specifies operations, testing checks behavior, and evaluation measures whether the solution is useful."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Decompose a Recommendation System",
+      "difficulty": "Beginner",
+      "problem": "Break a simple book-recommendation system into independent stages and define the input/output of each stage.",
+      "hints": [
+        "Include data preparation, recommendation logic, evaluation, and delivery."
+      ]
+    },
+    {
+      "id": "exercise-2",
+      "title": "State an Invariant",
+      "difficulty": "Intermediate",
+      "problem": "For a loop that finds the maximum value in a non-empty list, state a loop invariant and explain why it proves the final result.",
+      "hints": [
+        "Track the maximum of the portion already processed."
+      ]
+    },
+    {
+      "id": "exercise-3",
+      "title": "Choose an Abstraction",
+      "difficulty": "Beginner",
+      "problem": "Describe the assumptions of a linear model and give an example where those assumptions may be too restrictive.",
+      "hints": [
+        "Think about a nonlinear relationship."
+      ]
+    },
+    {
+      "id": "exercise-4",
+      "title": "Test a Probability Function",
+      "difficulty": "Intermediate",
+      "problem": "Write tests for a function that converts nonnegative scores into a normalized probability vector. Include invalid inputs and numerical tolerance.",
+      "hints": [
+        "Check nonnegativity and that the sum is close to one."
+      ]
+    },
+    {
+      "id": "exercise-5",
+      "title": "Plan an Experiment",
+      "difficulty": "Intermediate",
+      "problem": "Create an experiment plan comparing a baseline model with a more complex model. Specify data splits, metrics, reproducibility information, and criteria for choosing the winner."
+    },
+    {
+      "id": "exercise-6",
+      "title": "From Formula to Code",
+      "difficulty": "Intermediate",
+      "problem": "Implement a batch linear predictor Y = XW + b, state the expected shapes, and test it on a small synthetic dataset.",
+      "hints": [
+        "Write down the shape of each term before implementing it."
+      ]
+    }
+  ],
+  "relatedTopics": [
+    "programming-fundamentals",
+    "python-for-ai",
+    "data-structures-algorithms",
+    "numpy",
+    "basic-probability-intuition",
+    "linear-algebra"
+  ]
+}

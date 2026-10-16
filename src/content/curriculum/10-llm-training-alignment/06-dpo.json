@@ -1,1 +1,179 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-dpo",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 6,
+    "title": "Direct Preference Optimization (DPO)",
+    "slug": "dpo",
+    "href": "/curriculum/10-llm-training-alignment/dpo",
+    "filePath": "content/curriculum/10-llm-training-alignment/06-dpo.json",
+    "description": "Understand how Direct Preference Optimization trains language models directly from preference pairs without requiring a separately trained reward model and online reinforcement-learning loop.",
+    "difficulty": "advanced",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-reward-models"
+    ],
+    "learningObjectives": [
+        "Explain the motivation behind DPO.",
+        "Understand chosen and rejected response pairs.",
+        "Interpret the DPO loss function.",
+        "Explain the role of a frozen reference policy.",
+        "Compare DPO with conventional RLHF.",
+        "Recognize limitations and common implementation mistakes."
+    ],
+    "sections": [
+        {
+            "id": "dpo-introduction",
+            "title": "What Is Direct Preference Optimization?",
+            "type": "concept",
+            "content": "Direct Preference Optimization (DPO) is a method for adapting language models using preference pairs. It directly updates the policy from chosen and rejected responses, avoiding the need for a separately trained reward model and a conventional online RL optimization stage. DPO still relies on preference data and a reference policy. It simplifies parts of the training pipeline but does not eliminate the need for careful data curation, evaluation, or safety testing."
+        },
+        {
+            "id": "motivation",
+            "title": "Why DPO?",
+            "type": "concept",
+            "content": "A conventional RLHF pipeline often requires supervised fine-tuning, reward-model training, and policy optimization with an RL algorithm. This can require substantial engineering and careful management of reward-model behavior. DPO derives a preference-learning objective that can be optimized with a supervised-style training loop. This makes the process easier to implement in many settings, although it still requires computing policy log probabilities and managing a reference model."
+        },
+        {
+            "id": "dpo-data",
+            "title": "Preference Data for DPO",
+            "type": "concept",
+            "content": "DPO typically uses records containing a prompt x, a preferred response y_w, and a rejected response y_l. The model should assign a higher relative likelihood to the preferred response than to the rejected response, after accounting for the reference policy. Dataset quality is crucial: noisy labels, duplicated records, inconsistent formatting, and biased preferences can all affect the result. The chosen and rejected responses must correspond to the same prompt and relevant context."
+        },
+        {
+            "id": "reference-policy",
+            "title": "The Reference Policy",
+            "type": "concept",
+            "content": "DPO commonly uses a frozen reference policy, often the supervised fine-tuned starting model. The reference policy provides a baseline for measuring how the trainable policy changes the relative likelihood of responses. This helps prevent preference optimization from being interpreted as simply maximizing the probability of chosen answers without constraint. The reference model is not updated by the DPO loss in the standard setup."
+        },
+        {
+            "id": "dpo-intuition",
+            "title": "DPO Intuition",
+            "type": "concept",
+            "content": "For each prompt, DPO compares the trainable policy's log probabilities for the chosen and rejected responses with the corresponding log probabilities under the reference policy. It encourages the trainable policy to favor the chosen response relative to the rejected one more strongly than the reference policy does. This relative formulation is important: DPO is not merely ordinary supervised fine-tuning on chosen responses, because rejected responses and the reference policy both influence the objective."
+        },
+        {
+            "id": "dpo-objective",
+            "title": "The DPO Objective",
+            "type": "math",
+            "content": "The standard DPO loss uses the difference between policy and reference log-probability margins. Let πθ be the trainable policy and πref be the frozen reference policy. The coefficient β controls the strength of the preference objective relative to reference-policy behavior. Implementations may differ in reduction, masking, and response log-probability normalization, so the exact convention must be documented.",
+            "formula": "L_DPO(θ) = -E[log σ(β(log(πθ(y_w|x)/πref(y_w|x)) - log(πθ(y_l|x)/πref(y_l|x))))]",
+            "example": "If the current policy increases the chosen response's log probability relative to the reference and decreases the rejected response's relative probability, the preference margin increases and the loss generally decreases."
+        },
+        {
+            "id": "log-probability",
+            "title": "Sequence Log Probability",
+            "type": "concept",
+            "content": "For an autoregressive model, the log probability of a response is the sum of its token-level conditional log probabilities given the prompt and preceding response tokens. Implementations usually mask prompt tokens and calculate the response contribution. Long responses naturally contain more token terms, so the choice between summed and normalized log probabilities can influence training behavior. Both policy and reference calculations must use compatible tokenization, formatting, and masking."
+        },
+        {
+            "id": "beta-parameter",
+            "title": "The Role of Beta",
+            "type": "concept",
+            "content": "The β parameter controls the scale of the DPO preference margin and is related to the regularization trade-off in the underlying derivation. A larger value changes how strongly the scaled margin enters the logistic objective; it does not guarantee a better model. Appropriate values depend on data quality, model initialization, log-probability conventions, and optimization settings. β should be selected through controlled validation rather than assumed to have a universally optimal value."
+        },
+        {
+            "id": "dpo-vs-sft",
+            "title": "DPO vs. Supervised Fine-Tuning",
+            "type": "concept",
+            "content": "SFT learns from target demonstrations and typically increases the likelihood of the demonstrated response tokens. DPO learns from comparative preferences and explicitly contrasts chosen and rejected responses relative to a reference policy. SFT can provide a strong initialization for DPO, and DPO datasets may complement supervised demonstrations. DPO cannot compensate automatically for poor preference labels or missing skills in the initial model."
+        },
+        {
+            "id": "dpo-vs-rlhf",
+            "title": "DPO vs. Conventional RLHF",
+            "type": "concept",
+            "content": "A conventional RLHF pipeline often trains a reward model and uses a reinforcement-learning algorithm such as PPO to optimize the policy. DPO directly optimizes a preference-derived loss and typically does not require a separately trained reward model or an online rollout loop. DPO can simplify training infrastructure, while conventional RL methods offer different optimization choices and can use reward signals collected during training. Both methods remain vulnerable to data limitations and evaluation failures."
+        },
+        {
+            "id": "dpo-training-loop",
+            "title": "DPO Training Loop",
+            "type": "concept",
+            "content": "A typical DPO loop loads the trainable policy, frozen reference policy, and preference batch. It computes chosen and rejected response log probabilities for both models, forms the relative preference margin, calculates the logistic loss, backpropagates through the trainable policy, and updates its parameters. The reference policy remains frozen. Efficient implementations may cache reference log probabilities when the data and formatting are fixed."
+        },
+        {
+            "id": "dpo-pseudocode",
+            "title": "Simplified DPO Pseudocode",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nbeta = 0.1\npolicy_margin = policy_chosen_logp - policy_rejected_logp\nreference_margin = reference_chosen_logp - reference_rejected_logp\nlogits = beta * (policy_margin - reference_margin)\nloss = -F.logsigmoid(logits).mean()",
+            "explanation": "The log-probability tensors in this example are assumed to have already been computed correctly. A complete implementation must preserve gradients through policy log probabilities, run the reference model without gradient tracking, mask prompt and padding tokens correctly, and apply consistent sequence-level reduction."
+        },
+        {
+            "id": "dpo-evaluation",
+            "title": "Evaluating DPO Models",
+            "type": "concept",
+            "content": "Evaluate preference win rates, task correctness, instruction adherence, response quality, safety, robustness, and retention of base capabilities. Compare the DPO model against both the initial supervised fine-tuned model and relevant baselines. Use held-out preference comparisons and independent prompts. Monitor response length, repetition, diversity, and calibration because a model may improve on the training preference distribution while regressing on other tasks."
+        },
+        {
+            "id": "dpo-common-errors",
+            "title": "Common DPO Implementation Errors",
+            "type": "concept",
+            "content": "Common errors include accidentally updating the reference model, using mismatched prompt templates, including prompt tokens in response log probabilities, misaligning chosen and rejected examples, and using inconsistent reduction conventions. Other problems include poor preference labels, overly aggressive optimization, and evaluation leakage. Test the implementation on a small batch, verify tensor shapes and gradients, and compare the computed objective against a trusted implementation."
+        },
+        {
+            "id": "dpo-limitations",
+            "title": "Limitations of DPO",
+            "type": "concept",
+            "content": "DPO depends on representative preference pairs and a suitable starting policy. It may overfit the preference dataset, inherit annotation bias, or reduce performance on underrepresented tasks. Offline preference data does not automatically reveal how the model behaves on responses it generates after substantial optimization. DPO simplifies the optimization process but does not guarantee factuality, safety, or robust generalization. Independent evaluations and iterative data improvement remain necessary."
+        },
+        {
+            "id": "dpo-practical-workflow",
+            "title": "A Practical DPO Workflow",
+            "type": "concept",
+            "content": "Start from a capable supervised fine-tuned model. Validate preference data and split it without leakage. Confirm that the reference and trainable models use compatible templates and tokenization. Implement response log-probability computation and test the objective on a small batch. Train while monitoring loss, gradient norms, and validation behavior. Finally, compare against the baseline on held-out preferences, factual tasks, safety tests, and general capability benchmarks."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "dpo-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What distinguishes DPO from ordinary SFT?",
+            "correctAnswer": "DPO optimizes comparative preferences between chosen and rejected responses relative to a reference policy, while SFT typically learns from target demonstrations.",
+            "solution": "DPO uses both preferred and rejected responses in a relative preference objective rather than training only on a target answer."
+        },
+        {
+            "id": "dpo-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does standard DPO use a frozen reference policy?",
+            "correctAnswer": "The reference policy provides a baseline for relative log-probability changes and helps constrain the learned policy.",
+            "solution": "DPO compares current-policy response probabilities with reference-policy probabilities, so the reference must remain fixed during ordinary training."
+        },
+        {
+            "id": "dpo-ex-3",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Why must chosen and rejected responses share the same prompt?",
+            "correctAnswer": "Their comparison should isolate response preference under the same request and context.",
+            "solution": "Comparing answers to different prompts would confound response quality with differences in task difficulty or context."
+        },
+        {
+            "id": "dpo-ex-4",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A DPO model has lower training loss but performs worse on held-out tasks. Give likely causes.",
+            "correctAnswer": "Overfitting, biased or narrow preference data, excessive optimization, incorrect masking, or evaluation-distribution mismatch.",
+            "solution": "Audit the data and implementation, reduce overfitting, and select checkpoints using independent evaluation rather than training loss alone."
+        },
+        {
+            "id": "dpo-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Describe three implementation checks for a DPO training pipeline.",
+            "correctAnswer": "Verify reference-model freezing, response-only log-probability masking, and alignment of chosen and rejected examples; also test gradients and template consistency.",
+            "solution": "These checks prevent unintended reference updates, incorrect likelihood calculations, and invalid preference comparisons."
+        }
+    ],
+    "summary": "DPO directly optimizes a language model using chosen-rejected preference pairs and a frozen reference policy. Its logistic objective compares policy and reference log-probability margins. DPO can simplify the RLHF training pipeline, but success still depends on preference-data quality, correct token-level likelihood calculations, controlled optimization, and independent evaluation.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-reward-models",
+        "module-10-llm-training-alignment-rlhf",
+        "module-10-llm-training-alignment-evaluation",
+        "module-10-llm-training-alignment-safety-alignment"
+    ]
+}

@@ -1,1 +1,222 @@
-{}
+{
+    "id": "module-09-large-language-models-tokenization",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 3,
+    "title": "Tokenizer Design at Scale",
+    "slug": "tokenization",
+    "href": "/curriculum/09-large-language-models/tokenization",
+    "filePath": "content/curriculum/09-large-language-models/03-tokenization.json",
+    "description": "Study the design, training, evaluation, and deployment of tokenizers for large language models, including vocabulary sizing, byte-level BPE, Unicode handling, special tokens, and multilingual efficiency.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Subword Tokenization & Byte-Pair Encoding",
+        "Vocabulary Construction",
+        "LLM Pretraining"
+    ],
+    "learningObjectives": [
+        "Explain the relationship between tokenizer design and LLM architecture.",
+        "Compare word-level, character-level, subword, and byte-level tokenization.",
+        "Understand vocabulary-size trade-offs.",
+        "Explain how tokenizers handle Unicode, whitespace, and special tokens.",
+        "Evaluate tokenizer efficiency across languages and domains.",
+        "Understand how tokenization affects context windows and training compute.",
+        "Use a pretrained tokenizer consistently during model inference."
+    ],
+    "sections": [
+        {
+            "id": "tokenizer-design-introduction",
+            "title": "Why Tokenizer Design Matters at Scale",
+            "type": "concept",
+            "content": "A tokenizer converts raw text into a sequence of discrete token IDs that a language model can process. At large scale, small differences in tokenization can affect training sequence length, embedding parameters, context-window utilization, inference cost, and multilingual coverage. Tokenization is therefore part of model design rather than merely a preprocessing detail. A pretrained model must use the tokenizer and token-ID mapping associated with its training configuration."
+        },
+        {
+            "id": "tokenizer-pipeline",
+            "title": "From Text to Token IDs",
+            "type": "concept",
+            "content": "A tokenizer pipeline commonly includes text normalization, pre-tokenization, subword segmentation, and conversion of token pieces into vocabulary IDs. Some tokenizers also define special tokens and rules for preserving whitespace or splitting text into regions. The exact sequence of steps varies across implementations. Decoding maps generated token IDs back to text, although normalization and special-token handling can mean that decoding is not a perfect inverse of every input transformation."
+        },
+        {
+            "id": "pretokenization",
+            "title": "Pre-Tokenization",
+            "type": "concept",
+            "content": "Pre-tokenization divides text into initial chunks before subword segmentation. Rules may separate whitespace, punctuation, numbers, or groups of letters. These boundaries constrain which pieces can be merged by the subword algorithm. Different pre-tokenization rules can lead to different token sequences even when two tokenizers use related vocabulary-learning methods. The rules must be compatible with the tokenizer's training procedure and inference implementation."
+        },
+        {
+            "id": "word-vs-subword",
+            "title": "Word-Level and Subword Tokenization",
+            "type": "concept",
+            "content": "Word-level tokenization assigns one vocabulary entry to each recognized word, but rare words create a large vocabulary and unseen words may become unknown tokens. Subword tokenization represents text with reusable pieces that can combine to form rare words. It usually provides a practical compromise between vocabulary size and sequence length. However, the resulting pieces are not guaranteed to correspond to meaningful linguistic morphemes."
+        },
+        {
+            "id": "byte-level",
+            "title": "Byte-Level Tokenization",
+            "type": "concept",
+            "content": "Byte-level tokenizers begin from bytes rather than requiring a vocabulary entry for every Unicode character. UTF-8 text is encoded into bytes, and subword merges can build frequent sequences from this initial representation. Byte-level methods offer broad coverage for arbitrary input strings, including uncommon symbols and unusual Unicode sequences. The trade-off is that a human-perceived character can require multiple bytes and may be represented by several tokens."
+        },
+        {
+            "id": "bpe-recap",
+            "title": "Byte-Pair Encoding at Scale",
+            "type": "concept",
+            "content": "BPE learns a sequence of merges that combine frequent adjacent symbols. Training begins from an initial alphabet and repeatedly merges selected pairs until a target vocabulary size or merge budget is reached. At inference, the learned merge rules and their ordering determine how new text is segmented. Efficient implementations optimize pair counting and updates because repeatedly scanning a massive corpus can be expensive."
+        },
+        {
+            "id": "vocabulary-size",
+            "title": "Choosing Vocabulary Size",
+            "type": "concept",
+            "content": "A larger vocabulary can encode common strings using fewer tokens, but it increases the number of token embeddings and potentially the output projection size. A smaller vocabulary reduces the number of token types but often creates longer sequences. Vocabulary size must be chosen with model dimension, corpus characteristics, target languages, hardware constraints, and inference workloads in mind. There is no universally optimal vocabulary size for all models."
+        },
+        {
+            "id": "vocabulary-parameter-cost",
+            "title": "Vocabulary Size and Parameter Count",
+            "type": "math",
+            "content": "For vocabulary size V and embedding dimension d, a standard token embedding table contains V × d parameters. If V = 50,000 and d = 4,096, the table contains 204,800,000 parameters. An output projection from hidden dimension d to vocabulary dimension V may add another V × d parameters when input and output embeddings are not tied. Actual architectures may use weight tying, factorization, or other designs that change the parameter count."
+        },
+        {
+            "id": "sequence-length-cost",
+            "title": "Tokenization and Sequence-Length Cost",
+            "type": "concept",
+            "content": "Tokenization affects the number of positions required to represent a document. For standard full self-attention, attention-score computation and memory scale approximately quadratically with sequence length L, while other model operations often scale roughly linearly with L for a fixed architecture. Reducing tokens per document can improve efficiency, but the benefit must be balanced against vocabulary size, representation quality, and language coverage."
+        },
+        {
+            "id": "token-efficiency",
+            "title": "Measuring Tokenizer Efficiency",
+            "type": "concept",
+            "content": "Useful metrics include tokens per word, tokens per character, tokens per byte, tokens per document, encoding speed, decoding speed, vocabulary size, and unknown-token frequency where applicable. For multilingual systems, report results separately by language and script. For code and mathematics, measure how identifiers, symbols, equations, and formatting are represented. A single average across all text can hide severe inefficiencies in particular domains."
+        },
+        {
+            "id": "special-tokens",
+            "title": "Special Tokens",
+            "type": "concept",
+            "content": "Special tokens represent structural information such as sequence boundaries, end-of-generation markers, padding, or task-specific instructions. Their IDs are reserved or otherwise configured by the tokenizer. The model learns how to use these tokens through its training process. Adding a special token to an existing tokenizer may require updating the model's embedding table and training the new embedding, so vocabulary changes should not be made casually after pretraining."
+        },
+        {
+            "id": "chat-formatting",
+            "title": "Chat Templates and Structural Tokens",
+            "type": "concept",
+            "content": "Instruction-tuned language models may use structured message formats with role markers, message boundaries, and control tokens. A chat template converts messages into the exact token sequence expected by the model. Different model families can use different templates, so a generic role-tagged string may not be equivalent to the intended input format. The tokenizer configuration and model documentation should be treated as part of the inference contract."
+        },
+        {
+            "id": "unicode",
+            "title": "Unicode and Text Normalization",
+            "type": "concept",
+            "content": "Unicode allows visually similar text to have different code-point sequences. Normalization forms such as NFC can combine certain sequences into a canonical representation, but normalization choices may affect exact text preservation. Language-specific marks, emoji sequences, combining characters, and scripts with complex shaping require careful handling. A tokenizer should be tested on representative multilingual examples rather than assumed to behave uniformly across scripts."
+        },
+        {
+            "id": "whitespace",
+            "title": "Whitespace and Formatting",
+            "type": "concept",
+            "content": "Whitespace can affect tokenization and meaning, especially in source code, structured data, and text formats where indentation matters. Some tokenizers encode whitespace as part of a token or use visible markers internally. Stripping all whitespace before tokenization can damage code, tables, or intended formatting. Data normalization must be consistent with tokenizer behavior and the model's training corpus."
+        },
+        {
+            "id": "multilingual-design",
+            "title": "Multilingual Tokenizer Design",
+            "type": "concept",
+            "content": "A shared multilingual vocabulary must allocate capacity across languages with different corpus sizes, scripts, and morphological structures. If the training corpus is dominated by a few languages, their frequent patterns may receive more dedicated tokens. Lower-resource languages may then require more tokens per sentence, increasing compute and reducing the effective information available within a fixed context window. Measure per-language efficiency and task performance before deciding on vocabulary and sampling strategies."
+        },
+        {
+            "id": "domain-specific-tokenization",
+            "title": "Tokenization for Code and Mathematics",
+            "type": "concept",
+            "content": "Programming languages and mathematical notation contain punctuation-heavy sequences, identifiers, operators, indentation, and structured symbols. A general-purpose tokenizer may split common identifiers or expressions inefficiently. Tokenizer evaluation should include realistic source code, equations, scientific notation, URLs, file paths, and structured formats. Specialized vocabulary changes can improve efficiency, but they also affect model compatibility and may require additional training."
+        },
+        {
+            "id": "tokenizer-training",
+            "title": "Training a Tokenizer",
+            "type": "concept",
+            "content": "Tokenizer training generally begins with a representative text sample, normalization and pre-tokenization rules, an initial alphabet, and a vocabulary-learning algorithm such as BPE or Unigram. The resulting vocabulary, merge rules, and configuration are saved for later encoding and decoding. Training data should represent the intended languages and domains. If the tokenizer training sample is biased, the learned vocabulary may encode some types of text much more efficiently than others."
+        },
+        {
+            "id": "tokenizer-inspection",
+            "title": "Inspect a Pretrained Tokenizer",
+            "type": "code",
+            "language": "python",
+            "content": "from transformers import AutoTokenizer\n\nmodel_name = \"gpt2\"\ntokenizer = AutoTokenizer.from_pretrained(model_name)\nexamples = [\n    \"Language models predict tokens.\",\n    \"def train_model(data): return data\",\n    \"Mathematics: x² + y² = z²\",\n    \"Namaste, ନମସ୍କାର\"\n]\nfor text in examples:\n    tokens = tokenizer.tokenize(text)\n    print(\"Text:\", text)\n    print(\"Tokens:\", tokens)\n    print(\"Token count:\", len(tokens))",
+            "explanation": "This code inspects how a pretrained tokenizer segments English, code, mathematical notation, and multilingual text. The exact output depends on the tokenizer and library version. It requires Transformers and access to the pretrained tokenizer files."
+        },
+        {
+            "id": "encode-decode",
+            "title": "Encoding and Decoding",
+            "type": "code",
+            "language": "python",
+            "content": "from transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(\"gpt2\")\ntext = \"Tokenization is part of the model interface.\"\nencoded = tokenizer(text, add_special_tokens=False)\nids = encoded[\"input_ids\"]\nreconstructed = tokenizer.decode(ids)\nprint(\"IDs:\", ids)\nprint(\"Decoded:\", reconstructed)",
+            "explanation": "The tokenizer converts input text into token IDs and decodes those IDs back to text. Exact reconstruction depends on the tokenizer's normalization, whitespace, and special-token behavior."
+        },
+        {
+            "id": "context-budget",
+            "title": "Token Budgets and Context Windows",
+            "type": "concept",
+            "content": "A context limit is measured in tokens rather than words. Two documents with the same number of words can have different token counts because of vocabulary, language, punctuation, and formatting. When building long-context applications, measure actual token counts before constructing prompts or document chunks. Leave room for generated output, special tokens, and any system or tool messages that the application adds."
+        },
+        {
+            "id": "tokenizer-versioning",
+            "title": "Tokenizer Versioning and Model Compatibility",
+            "type": "concept",
+            "content": "A token ID has meaning only relative to the tokenizer vocabulary and its mapping. If token IDs are generated by an incompatible tokenizer, the model will interpret them as different symbols. Save tokenizer files, special-token definitions, normalization settings, and chat templates with the model checkpoint. When adding tokens or modifying a vocabulary, update the model configuration and train the corresponding embeddings as required."
+        },
+        {
+            "id": "tokenizer-limitations",
+            "title": "Common Design Pitfalls",
+            "type": "concept",
+            "content": "Common pitfalls include choosing vocabulary size using only English text, removing whitespace that matters, confusing token boundaries with linguistic units, comparing token counts across unrelated tokenizers without context, and modifying a pretrained vocabulary without updating model parameters. Another mistake is treating fewer tokens as the only objective. A good tokenizer must balance efficiency, coverage, compatibility, and the needs of the intended tasks."
+        },
+        {
+            "id": "tokenizer-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Tokenizer design affects vocabulary parameters, sequence length, compute cost, context usage, and multilingual coverage. BPE and other subword methods balance reusable vocabulary units with broad text coverage. Special tokens, normalization, whitespace handling, and chat templates must remain compatible with the model. Evaluate tokenizer behavior on representative languages and domains, and preserve tokenizer configuration with every model checkpoint."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "tokenizer-design-exercise-1",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "A token embedding table has a vocabulary of 30,000 tokens and embedding dimension 2,048. How many embedding parameters does it contain?",
+            "correctAnswer": "61,440,000 parameters.",
+            "solution": "The number of parameters is V × d = 30,000 × 2,048 = 61,440,000."
+        },
+        {
+            "id": "tokenizer-design-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can a larger tokenizer vocabulary reduce sequence length but increase model parameters?",
+            "correctAnswer": "More frequent text sequences may become single tokens, while the embedding table requires one vector for each vocabulary token.",
+            "solution": "A larger vocabulary can represent common strings with fewer tokens. However, the embedding table size grows proportionally to vocabulary size when embedding dimension is fixed."
+        },
+        {
+            "id": "tokenizer-design-exercise-3",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "What should you inspect when evaluating a tokenizer for a multilingual educational model?",
+            "correctAnswer": "Per-language token counts, script coverage, encoding quality, domain vocabulary, and downstream task performance.",
+            "solution": "A global average can hide poor efficiency for particular languages. Evaluate representative examples for each target language and inspect technical, mathematical, and educational text."
+        },
+        {
+            "id": "tokenizer-design-exercise-4",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why should you not replace a pretrained model's tokenizer with an arbitrary tokenizer at inference time?",
+            "correctAnswer": "The model's learned token embeddings and output weights are associated with the original vocabulary and token-ID mapping.",
+            "solution": "An ID produced by another tokenizer can refer to a different token. This breaks the intended mapping between text and learned parameters unless the model is deliberately adapted and retrained."
+        },
+        {
+            "id": "tokenizer-design-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Your tokenizer handles English efficiently but uses many more tokens for Odia text. What steps would you take to investigate?",
+            "correctAnswer": "Measure per-language token efficiency, inspect the training corpus and vocabulary allocation, test normalization and script handling, and evaluate alternative vocabulary or sampling strategies.",
+            "solution": "First confirm the issue on a representative dataset. Then inspect token boundaries and training representation for Odia, determine whether corpus imbalance is contributing, and compare alternative tokenizer configurations using both efficiency and task-performance metrics."
+        }
+    ],
+    "summary": "Tokenizer design determines how text becomes model input. Vocabulary size trades embedding parameters against sequence length, while byte-level and subword approaches provide broad coverage. Multilingual efficiency, Unicode handling, whitespace, special tokens, and chat templates must be evaluated carefully. The tokenizer configuration must remain compatible with the model's learned token embeddings and output vocabulary.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-subword-tokenization-bpe",
+        "module-09-large-language-models-pretraining",
+        "module-09-large-language-models-dataset-construction",
+        "module-09-large-language-models-model-architecture"
+    ]
+}

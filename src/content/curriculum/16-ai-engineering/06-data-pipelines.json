@@ -1,1 +1,144 @@
-{}
+{
+    "id": "module-16-ai-engineering-data-pipelines",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 6,
+    "title": "High-Throughput Data Pipelines",
+    "slug": "data-pipelines",
+    "href": "/curriculum/16-ai-engineering/data-pipelines",
+    "filePath": "content/curriculum/16-ai-engineering/06-data-pipelines.json",
+    "description": "Design efficient, reproducible input pipelines that decode, transform, batch, and transfer data without starving accelerators during model training.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "distributed-training"
+    ],
+    "learningObjectives": [
+        "Identify common data-loading bottlenecks in model training.",
+        "Configure DataLoader workers, prefetching, pinned memory, and persistent workers.",
+        "Understand batching, shuffling, caching, and deterministic preprocessing.",
+        "Overlap CPU data preparation and host-to-device transfers with GPU computation.",
+        "Build efficient dataset implementations for files that do not fit in memory.",
+        "Measure input throughput and diagnose accelerator starvation.",
+        "Apply data-pipeline design principles to distributed training."
+    ],
+    "sections": [
+        {
+            "id": "input-pipeline-overview",
+            "title": "1. The Model Input Pipeline",
+            "type": "concept",
+            "content": "A training pipeline typically reads data from storage, decodes records, applies preprocessing and augmentation, assembles batches, transfers tensors to the accelerator, and feeds the model. Any stage can become the bottleneck. If the GPU completes its computation before the next batch is ready, it waits idle. High-throughput systems aim to overlap independent stages and avoid unnecessary copying or repeated work. The best pipeline depends on data size, storage latency, CPU capacity, transformations, accelerator speed, and whether training is single-device or distributed.",
+            "example": "A vision model may be fast enough to process a batch in 10 milliseconds, but image decoding and augmentation may take 25 milliseconds. Increasing model compute is not the solution if the input pipeline cannot produce batches quickly enough."
+        },
+        {
+            "id": "dataset-design",
+            "title": "2. Designing Dataset Implementations",
+            "type": "concept",
+            "content": "PyTorch supports map-style datasets, where samples are accessed by index, and iterable-style datasets, where records are streamed. Map-style datasets are useful when examples can be indexed reliably. Iterable datasets are useful for streams, remote shards, or datasets too large to index conveniently. Expensive initialization should not be repeated unnecessarily for every sample. Keep file handles, worker processes, random state, and distributed sharding behavior in mind. In multi-worker iterable datasets, each worker must avoid unintentionally reading the same records as every other worker.",
+            "code": "from pathlib import Path\nfrom PIL import Image\nfrom torch.utils.data import Dataset\n\nclass ImageDataset(Dataset):\n    def __init__(self, records, transform=None):\n        self.records = records\n        self.transform = transform\n\n    def __len__(self):\n        return len(self.records)\n\n    def __getitem__(self, index):\n        path, label = self.records[index]\n        with Image.open(Path(path)) as image:\n            image = image.convert(\"RGB\")\n            if self.transform is not None:\n                image = self.transform(image)\n        return image, label",
+            "explanation": "The dataset stores sample metadata and loads one image when indexed. The file is closed after decoding, and conversion to RGB ensures a consistent number of channels. Production pipelines should also validate corrupt files, define error-handling policies, and ensure transforms return tensors of compatible shapes."
+        },
+        {
+            "id": "dataloader-workers",
+            "title": "3. DataLoader Workers and Prefetching",
+            "type": "concept",
+            "content": "DataLoader workers load and preprocess samples in parallel with the training process. num_workers=0 loads data in the main process and is often useful for debugging. Increasing workers can improve throughput when preprocessing is CPU-bound, but excessive workers can increase memory pressure, context switching, storage contention, and process startup costs. With multiprocessing enabled, prefetch_factor controls how many batches each worker can prepare ahead, subject to the DataLoader configuration. persistent_workers=True avoids repeatedly shutting down and restarting workers between epochs. These settings should be tuned experimentally rather than copied blindly from another workload.",
+            "example": "A reasonable starting point might be num_workers=4, pin_memory=True, and persistent_workers=True on a CUDA training system. If num_workers is zero, persistent_workers must not be enabled."
+        },
+        {
+            "id": "batching-and-shuffling",
+            "title": "4. Batching, Shuffling, and Sampling",
+            "type": "concept",
+            "content": "Batching groups examples so the model can process them efficiently. Shuffling reduces dependence on the order in which training examples are presented. Random sampling, weighted sampling, distributed sampling, and bucketed batching serve different purposes. Variable-length language sequences can be grouped by similar lengths to reduce padding overhead. In distributed jobs, sampler configuration must ensure appropriate partitioning across workers. Reproducibility requires controlling random seeds and understanding which random operations run in the main process and which run inside data workers.",
+            "example": "For variable-length text, placing sequences of lengths 20, 22, and 24 in the same batch typically wastes less computation than combining lengths 20, 24, and 1,000."
+        },
+        {
+            "id": "memory-and-transfer",
+            "title": "5. Pinned Memory and Device Transfer",
+            "type": "concept",
+            "content": "Pinned or page-locked host memory can improve host-to-device transfer performance for suitable workloads. With DataLoader pin_memory=True, returned tensors can be placed in pinned host memory before being transferred. Calling tensor.to(device, non_blocking=True) allows an asynchronous transfer when the conditions and hardware support it. Asynchronous transfer alone does not guarantee overlap; useful overlap also depends on stream usage, dependencies, and when the copied data is consumed. Pinned memory is a limited resource, so allocating excessive batches can create system-memory pressure.",
+            "code": "loader = DataLoader(dataset, batch_size=128, shuffle=True, num_workers=4, pin_memory=True, persistent_workers=True)\n\nfor inputs, targets in loader:\n    inputs = inputs.to(device, non_blocking=True)\n    targets = targets.to(device, non_blocking=True)\n    predictions = model(inputs)",
+            "explanation": "This configuration is intended for a dataset and a system where multiple workers are appropriate. Enable persistent_workers only when num_workers is greater than zero. non_blocking=True can make transfers asynchronous when supported, but the actual benefit must be measured."
+        },
+        {
+            "id": "prefetch-and-overlap",
+            "title": "6. Prefetching and Overlapping Work",
+            "type": "concept",
+            "content": "Prefetching prepares future batches while the current batch is being consumed. It can hide some data-loading latency, provided the pipeline has enough CPU and storage capacity to work ahead. A simple DataLoader already supports background worker prefetching. More advanced designs use separate CUDA streams or dedicated prefetcher objects to overlap device transfers with computation. Such implementations must manage stream dependencies and tensor lifetimes correctly; otherwise, they may introduce synchronization bugs or use buffers before transfers are complete. Begin with DataLoader tuning before implementing custom CUDA-stream logic.",
+            "example": "If loading a batch takes 15 ms and training takes 20 ms, fully independent stages could approach a 20 ms batch interval after the pipeline is filled, rather than the 35 ms required by strictly sequential stages."
+        },
+        {
+            "id": "caching-and-storage",
+            "title": "7. Caching and Storage Layout",
+            "type": "concept",
+            "content": "Repeatedly decoding the same data can waste CPU time. Caching decoded or transformed data can improve throughput when the dataset or cache fits within available memory or local storage. Cache invalidation must account for preprocessing changes and dataset versions. Small files can create metadata and random-access overhead, so packing examples into larger shards or sequentially readable formats may improve throughput for large datasets. Remote object storage introduces network latency and retry requirements. Avoid loading an entire dataset into memory unless its size and memory budget have been measured.",
+            "example": "For a very large image corpus, store a manifest of samples and use multiple reasonably sized shards. Workers can read different shards while avoiding the overhead of opening thousands of tiny files for every epoch."
+        },
+        {
+            "id": "data-augmentation",
+            "title": "8. Data Augmentation and Determinism",
+            "type": "concept",
+            "content": "Data augmentation creates transformed versions of training examples to improve generalization. Random crops, flips, noise, masking, and color transformations are common examples. CPU augmentation may become expensive when model computation is highly optimized. Some transformations can be moved to accelerators, but this changes memory and compute trade-offs. Reproducibility requires deliberate seed management across processes and workers. Evaluation and test pipelines should generally use deterministic preprocessing unless the evaluation protocol explicitly requires multiple stochastic views.",
+            "example": "A random horizontal flip can be applied during training, while validation uses a fixed resize and center crop so that metric changes are not caused by random evaluation transforms."
+        },
+        {
+            "id": "profiling-input-pipeline",
+            "title": "9. Measuring Data Throughput",
+            "type": "concept",
+            "content": "Measure data throughput separately from full model training. Time how long it takes to consume batches without the model, then profile the integrated training loop. If data-only throughput is much higher than training throughput, the bottleneck may be model computation. If data-only throughput is lower than the model's consumption rate, the pipeline may starve the accelerator. CUDA execution is asynchronous, so GPU timing requires synchronization or proper profiling tools. Benchmark after warm-up and across enough batches to smooth out filesystem and scheduling variation.",
+            "code": "import time\n\ndef measure_loader(loader, max_batches=200):\n    start = time.perf_counter()\n    count = 0\n    for count, _ in enumerate(loader, start=1):\n        if count >= max_batches:\n            break\n    elapsed = time.perf_counter() - start\n    return {\"batches\": count, \"seconds\": elapsed, \"batches_per_second\": count / elapsed if elapsed else 0.0}",
+            "explanation": "This measures the rate at which the loader yields batches, excluding model computation and device transfer performed elsewhere. The first batches may include startup costs, so use warm-up or report startup separately when comparing configurations."
+        },
+        {
+            "id": "distributed-data-loading",
+            "title": "10. Input Pipelines for Distributed Training",
+            "type": "concept",
+            "content": "When multiple GPUs train concurrently, the input system must feed all workers without duplicating data unintentionally or overloading shared storage. Each training process may create its own DataLoader workers, so the total number of CPU workers can grow quickly. DistributedSampler is common for map-style datasets, while iterable datasets require explicit worker and rank-aware sharding. Shared storage can become a bottleneck if every rank reads many small files independently. Monitor per-rank batch wait time, GPU utilization, CPU usage, storage throughput, and memory consumption. The slowest rank can limit synchronized training throughput.",
+            "example": "Eight GPU processes each launching eight DataLoader workers create up to 64 loader workers, in addition to the training processes. This may be appropriate on a large server but excessive on a smaller host."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "data-pipelines-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the purpose of DataLoader workers?",
+            "correctAnswer": "They prepare data in separate processes so data loading and preprocessing can overlap with model computation.",
+            "solution": "Parallel workers can read and transform future batches while the training process works on the current batch. The performance benefit depends on the workload and system resources."
+        },
+        {
+            "id": "data-pipelines-ex-2",
+            "type": "practical",
+            "difficulty": "intermediate",
+            "question": "Why might pin_memory=True and non_blocking=True improve CUDA training performance?",
+            "correctAnswer": "Pinned host memory can support efficient asynchronous transfers, while non_blocking=True requests non-blocking transfer behavior when supported.",
+            "solution": "These options may reduce transfer overhead and help overlap data movement with computation. They do not guarantee overlap or speedup, so measure performance on the actual system."
+        },
+        {
+            "id": "data-pipelines-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A data loader produces 240 batches in 30 seconds. What is its average throughput?",
+            "correctAnswer": "8 batches per second.",
+            "solution": "Throughput = number of batches / elapsed time = 240 / 30 = 8 batches per second."
+        },
+        {
+            "id": "data-pipelines-ex-4",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "GPU utilization is low, CPU utilization is high, and a data-only benchmark is slower than the model's required batch rate. What should you investigate?",
+            "correctAnswer": "CPU preprocessing cost, worker configuration, storage throughput, caching opportunities, and unnecessary transformations.",
+            "solution": "Profile each pipeline stage, then tune worker count and prefetching. Consider caching expensive repeated work or improving storage layout. Verify that improvements increase end-to-end training throughput rather than only isolated loader speed."
+        }
+    ],
+    "summary": "A high-throughput data pipeline keeps accelerators supplied with well-formed batches by coordinating storage reads, decoding, preprocessing, batching, and device transfers. DataLoader worker count, prefetching, pinned memory, caching, and sharding all affect performance. Measure the data-only pipeline and integrated training loop, then optimize the actual bottleneck.",
+    "relatedTopics": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "distributed-training",
+        "mixed-precision",
+        "experiment-tracking"
+    ]
+}

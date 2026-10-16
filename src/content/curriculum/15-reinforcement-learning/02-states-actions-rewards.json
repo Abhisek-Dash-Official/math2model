@@ -1,1 +1,378 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-states-actions-rewards",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 2,
+    "title": "States, Actions, and Rewards",
+    "slug": "states-actions-rewards",
+    "href": "/curriculum/15-reinforcement-learning/states-actions-rewards",
+    "filePath": "content/curriculum/15-reinforcement-learning/02-states-actions-rewards.json",
+    "description": "Explore state representations, discrete and continuous action spaces, reward design, observation limitations, and how these elements determine the behavior learned by reinforcement learning agents.",
+    "difficulty": "beginner",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "agent-environment"
+    ],
+    "learningObjectives": [
+        "Explain the roles of states, observations, actions, and rewards.",
+        "Distinguish fully observable and partially observable environments.",
+        "Identify Markov state representations and explain why memory may be necessary.",
+        "Compare discrete, continuous, and hybrid action spaces.",
+        "Design reward functions that reflect task objectives.",
+        "Explain sparse, dense, terminal, and shaped rewards.",
+        "Calculate simple discounted returns.",
+        "Understand reward scaling and its influence on optimization.",
+        "Recognize reward hacking and unintended incentives.",
+        "Implement a simple reward function and state representation in Python."
+    ],
+    "sections": [
+        {
+            "id": "state-action-reward-overview",
+            "title": "The Three Building Blocks",
+            "type": "concept",
+            "content": "States, actions, and rewards are fundamental components of a reinforcement learning problem. A state describes the situation relevant to decision-making. An action represents a choice available to the agent. A reward supplies numerical feedback about the immediate result of an interaction. These components work together: the state influences which actions are useful, the chosen action influences what happens next, and the reward helps the agent compare outcomes. Their definitions are part of the problem specification, not merely implementation details. A poorly designed state can hide information needed for good decisions, an unsuitable action space can prevent useful behavior, and a flawed reward can encourage the wrong objective."
+        },
+        {
+            "id": "state-definition",
+            "title": "What Is a State?",
+            "type": "concept",
+            "content": "A state is a representation of the current situation. In a grid world, the state might be the agent's row and column. In a card game, it may include visible cards, the current score, and the remaining legal moves. In a robot task, it may include position, velocity, and relevant environmental variables. A useful state representation preserves information needed to predict the consequences of actions and evaluate future outcomes. It should not include unavailable information unless the problem explicitly allows it. A state representation may be symbolic, numerical, visual, or a combination of several data types."
+        },
+        {
+            "id": "state-representation",
+            "title": "Choosing a State Representation",
+            "type": "concept",
+            "content": "State representation affects both learning difficulty and achievable performance. A compact representation can make learning efficient but may omit information that matters. A very large representation can preserve details but require more data and computation. For a grid navigation task, coordinates and obstacle locations may be sufficient. For a robot, coordinates alone may be inadequate if velocity affects stopping distance. For visual control, an image may contain useful information but can also include irrelevant details. Representation design should be guided by the task's dynamics, available observations, and algorithm."
+        },
+        {
+            "id": "markov-property-intro",
+            "title": "The Markov Property",
+            "type": "concept",
+            "content": "A state representation is Markov when the current state contains enough information that the conditional distribution of the next state and reward depends on the past only through the current state and action. In practical terms, once the current state and action are known, the earlier history should not provide additional information needed to predict the next transition. This property is important because many RL algorithms are formulated around Markov decision processes. If the representation omits important history, the problem may appear non-Markovian to the agent even when the underlying physical process could be described by a richer state."
+        },
+        {
+            "id": "markov-property-math",
+            "title": "Markov State Condition",
+            "type": "math",
+            "content": "Let s_t be the state, a_t the action, and r_{t+1} the next reward. The Markov property states that the distribution of the next state and reward, conditioned on the full history, equals the distribution conditioned on the current state and action alone. This does not require the next state to be deterministic; randomness is permitted.",
+            "formula": "P(s_{t+1}, r_{t+1}\\mid s_t,a_t,h_t)=P(s_{t+1},r_{t+1}\\mid s_t,a_t)",
+            "example": "If a robot's next position depends on both current position and velocity, representing state using position alone may be insufficient. Adding velocity may make the representation more predictive."
+        },
+        {
+            "id": "state-history",
+            "title": "When State History Matters",
+            "type": "concept",
+            "content": "A current observation may not reveal everything needed for a decision. A camera image may show a vehicle's location but not whether it is moving quickly toward an intersection. An agent may therefore use a sequence of observations, a recurrent neural network, or a belief state that summarizes uncertainty about hidden variables. History can restore useful information that is absent from a single observation. However, storing every past observation is often inefficient; a compact memory representation can be more practical. The best choice depends on the task and algorithm."
+        },
+        {
+            "id": "observation-definition",
+            "title": "State Versus Observation",
+            "type": "concept",
+            "content": "The state is the underlying situation used to describe the environment, while an observation is the information delivered to the agent. In fully observable settings, observations may reveal the state completely. In partially observable settings, the agent sees only a projection or noisy measurement of the state. A robot might observe camera pixels but not exact object velocities. A game agent might see public information but not an opponent's hidden cards. Treating an observation as a complete state can lead to poor decisions if hidden variables influence future outcomes."
+        },
+        {
+            "id": "full-partial-observability",
+            "title": "Fully and Partially Observable Environments",
+            "type": "concept",
+            "content": "A fully observable environment provides sufficient information to identify the state relevant to optimal decision-making. A partially observable environment hides some state information or supplies noisy observations. Partial observability does not mean the agent receives no useful information; it means the observation alone may not fully determine the underlying state. Methods for partially observable tasks can use recurrent policies, explicit belief states, or learned representations of history. The choice depends on the amount of hidden information and the computational budget."
+        },
+        {
+            "id": "belief-state",
+            "title": "Belief States",
+            "type": "concept",
+            "content": "A belief state is a probability distribution over possible underlying states, representing the agent's uncertainty. Instead of asserting that the environment is definitely in one hidden state, the agent maintains probabilities for several possibilities. After a new observation, the belief can be updated using the transition model and observation likelihood. Belief states can transform a partially observable problem into a decision problem over beliefs, although exact beliefs may be expensive to calculate in large environments. Neural networks often approximate the useful information contained in history rather than maintaining an exact probability distribution."
+        },
+        {
+            "id": "actions-definition",
+            "title": "What Is an Action?",
+            "type": "concept",
+            "content": "An action is a decision or control input selected by the agent. In a game, an action may be a legal move. In a navigation task, it may be a direction. In a continuous control problem, it may be a vector of motor commands. The action space determines which decisions are available. Actions may also be conditional: the set of legal moves can vary with the current state. The agent should not be allowed to select actions that the environment cannot meaningfully execute unless the environment defines how invalid actions are handled."
+        },
+        {
+            "id": "discrete-actions",
+            "title": "Discrete Action Spaces",
+            "type": "concept",
+            "content": "A discrete action space contains separate choices, such as left, right, jump, or wait. Discrete actions are often easy to enumerate, which makes them convenient for tabular value methods and neural networks that output one value per action. However, the number of possible actions may become enormous when several decisions are combined. A game with many units and many possible moves can have a large or state-dependent action space. Algorithms must account for this complexity rather than assuming that every action can always be evaluated exhaustively."
+        },
+        {
+            "id": "continuous-actions",
+            "title": "Continuous Action Spaces",
+            "type": "concept",
+            "content": "A continuous action space contains real-valued controls, such as steering angle, motor torque, or the amount of a resource allocated to a service. Continuous control is natural for many physical systems but creates challenges for action selection. There may be infinitely many possible actions, so simply storing one value per action is impractical. Algorithms may learn a policy that outputs a distribution over actions, optimize a deterministic action-producing network, or use methods that approximate continuous action values. Physical constraints, such as maximum torque, must be included in the action representation or enforced by the environment."
+        },
+        {
+            "id": "hybrid-actions",
+            "title": "Hybrid Action Spaces",
+            "type": "concept",
+            "content": "Hybrid action spaces combine discrete choices and continuous parameters. A warehouse robot might choose whether to pick, place, or move, while also selecting a continuous movement target. A vehicle controller might select a gear and continuously adjust steering and acceleration. Hybrid spaces can be represented using separate policy components or structured action distributions. The representation should reflect the dependencies between components. For example, a continuous parameter may be valid only when a particular discrete action is selected."
+        },
+        {
+            "id": "legal-actions",
+            "title": "State-Dependent Legal Actions",
+            "type": "concept",
+            "content": "Some environments have actions that are valid only in particular states. A board game may allow different moves depending on the board, and a resource allocator may have constraints that depend on available capacity. Invalid-action handling can use action masks, constrained policies, or environment-defined fallback behavior. Allowing the agent to repeatedly select impossible actions can waste samples and distort learning. However, action masking must be based on information legitimately available to the agent; using hidden future information to mask actions would leak information."
+        },
+        {
+            "id": "reward-definition",
+            "title": "What Is a Reward?",
+            "type": "concept",
+            "content": "A reward is a scalar feedback signal generated by the environment. It can represent progress, cost, safety, task completion, or another aspect of the objective. A positive reward does not necessarily mean an action is always good, and a negative reward does not necessarily mean an action is always bad in the long term. A temporarily costly action may enable a larger future benefit. RL algorithms use reward sequences to estimate the long-term consequences of behavior. The reward function should express the intended objective as accurately as practical."
+        },
+        {
+            "id": "reward-timing",
+            "title": "When Rewards Are Delivered",
+            "type": "concept",
+            "content": "Rewards may be delivered after every action, only at important milestones, or at the end of an episode. Frequent rewards are often called dense rewards, while infrequent feedback is called sparse reward. Dense feedback can make progress easier to learn, but poorly chosen intermediate rewards can lead to behavior that optimizes the proxy instead of the true goal. Sparse rewards can preserve a clear objective but make credit assignment difficult because the agent may not know which earlier actions caused success. Reward timing is therefore a central part of task design."
+        },
+        {
+            "id": "terminal-rewards",
+            "title": "Terminal Rewards",
+            "type": "concept",
+            "content": "A terminal reward is delivered when an episode reaches a final outcome. A game might award +1 for a win, 0 for a draw, and -1 for a loss. Terminal rewards provide a direct signal about overall success, but the agent must infer which earlier decisions contributed to the result. Long episodes with only terminal feedback can be difficult to learn from. Algorithms such as Monte Carlo methods, temporal-difference learning, and policy gradients provide different ways to propagate information from outcomes back to earlier decisions."
+        },
+        {
+            "id": "dense-rewards",
+            "title": "Dense Rewards",
+            "type": "concept",
+            "content": "A dense reward provides feedback throughout the task. A navigation agent might receive a small reward for reducing distance to the target, while a control agent might receive a penalty proportional to tracking error. Dense rewards can accelerate learning by making useful progress visible at many steps. Their main risk is misalignment: an agent can maximize the shaping signal while failing the real task. A distance-based reward, for example, might encourage approaching a target but not completing the final required interaction. Dense rewards should be validated against the terminal objective."
+        },
+        {
+            "id": "reward-design",
+            "title": "Principles of Reward Design",
+            "type": "concept",
+            "content": "Reward design begins by identifying the actual task objective and the outcomes that matter. Rewards should encourage desired behavior without making unintended shortcuts attractive. If safety, fairness, or resource constraints are important, they should be represented explicitly rather than assumed to emerge automatically. Test the reward against plausible failure behaviors: what would happen if an agent optimized it extremely well? Could it collect reward repeatedly without completing the task? Could it sacrifice a long-term requirement for a short-term gain? Reward design should include such adversarial reasoning before large-scale training."
+        },
+        {
+            "id": "reward-example",
+            "title": "Example: A Navigation Reward",
+            "type": "example",
+            "content": "Suppose a robot must reach a target while avoiding collisions. One reward design is to provide +10 for reaching the target, -10 for a collision, and -0.05 for each movement step. The goal reward encourages completion, the collision penalty discourages dangerous behavior, and the step cost encourages efficiency. This design still needs testing. If the robot can reach the target only by crossing a risky area, the relative reward magnitudes matter. If the collision penalty is too small, it may accept unsafe paths; if the time penalty is too large, it may take unreasonable risks to finish quickly."
+        },
+        {
+            "id": "discounted-return",
+            "title": "Rewards Across Time",
+            "type": "math",
+            "content": "The return combines rewards over time. A discount factor gamma between zero and one reduces the weight of more distant rewards. The discount factor influences how strongly the agent values long-term outcomes. It does not replace the need for good reward design, and its interpretation depends on whether the task is episodic or continuing.",
+            "formula": "G_t = \\sum_{k=0}^{\\infty} \\gamma^k r_{t+k+1}",
+            "example": "For rewards 1, 2, and 3 with gamma = 0.5, the three-step discounted return is 1 + 0.5(2) + 0.25(3) = 2.75."
+        },
+        {
+            "id": "reward-scaling",
+            "title": "Reward Scaling and Normalization",
+            "type": "concept",
+            "content": "Reward scale affects numerical targets, gradient magnitudes, and sometimes training stability. A task producing rewards around one million may be harder to optimize with an unchanged learning rate than a task producing rewards near one. Some algorithms normalize rewards or returns to improve numerical behavior. Scaling rewards by a positive constant often preserves the ordering of policies for a fixed discounted objective under idealized conditions, but it can change optimization behavior, exploration incentives in the presence of additional terms, and the balance between reward and regularization. Reward transformations should be documented and evaluated carefully."
+        },
+        {
+            "id": "reward-clipping",
+            "title": "Reward Clipping",
+            "type": "concept",
+            "content": "Reward clipping limits rewards to a chosen range, such as negative one to positive one. It can reduce the effect of unusually large rewards and make optimization more stable in some settings. However, clipping changes the objective when it merges outcomes that originally had different magnitudes. If one action produces a cost of -2 and another produces a cost of -200, clipping both to -1 removes information about their relative severity. Clipping should therefore be treated as an algorithmic design choice rather than a harmless preprocessing step."
+        },
+        {
+            "id": "reward-hacking",
+            "title": "Reward Hacking",
+            "type": "concept",
+            "content": "Reward hacking happens when an agent discovers behavior that increases the reward without satisfying the intended objective. An agent trained to maximize the number of completed inspections may learn to perform superficial inspections. A robot rewarded for moving quickly may ignore collision risk if safety is not represented. A recommendation system optimized only for clicks may favor sensational content over long-term user value. These examples demonstrate that the agent optimizes the formal objective, not the designer's unexpressed intentions. Prevention involves careful reward design, independent evaluation metrics, constraints, behavioral audits, and monitoring after deployment."
+        },
+        {
+            "id": "reward-shaping",
+            "title": "Reward Shaping",
+            "type": "concept",
+            "content": "Reward shaping adds feedback intended to make learning easier. For example, a navigation task may reward progress toward a target instead of providing feedback only at the goal. Shaping can accelerate exploration but may also change which behavior is optimal. Potential-based shaping is a principled technique that adds a reward difference derived from a state potential function, with suitable discounting and assumptions, to preserve optimal policies in standard discounted MDP settings. Arbitrary shaping does not have this guarantee. Always test whether the shaped reward supports the original objective."
+        },
+        {
+            "id": "potential-shaping",
+            "title": "Potential-Based Reward Shaping",
+            "type": "math",
+            "content": "Potential-based shaping commonly adds a term equal to gamma times the potential of the next state minus the potential of the current state. The potential function expresses a heuristic measure of state desirability. Under the standard assumptions for discounted Markov decision processes, this form preserves the optimal policy while changing intermediate feedback. Correct terminal-state handling and consistent discounting are important for the guarantee.",
+            "formula": "F(s,a,s') = \\gamma \\Phi(s') - \\Phi(s)",
+            "example": "If gamma is 0.9, the current potential is 2, and the next-state potential is 3, the shaping term is 0.9(3) - 2 = 0.7. This term can provide feedback about progress without directly replacing the task's original reward."
+        },
+        {
+            "id": "constraints-and-safety",
+            "title": "Rewards, Constraints, and Safety",
+            "type": "concept",
+            "content": "Not every requirement should necessarily be represented as an ordinary reward. Some requirements are hard constraints, such as never exceeding a machine's physical limits or avoiding a forbidden action. If a catastrophic event is merely assigned a finite penalty, an agent may still choose it when other rewards are sufficiently large. Constrained RL methods, action filters, safety shields, and external controllers can enforce restrictions more directly. Safety-critical systems should not rely on reward tuning alone to guarantee that dangerous behavior never occurs."
+        },
+        {
+            "id": "multi-objective",
+            "title": "Multiple Objectives",
+            "type": "concept",
+            "content": "Real tasks often involve several objectives, such as speed, accuracy, cost, safety, and fairness. Combining them into one scalar reward requires choosing trade-offs. A weighted sum can be convenient, but its weights encode priorities and may hide important conflicts. A system that maximizes average throughput may produce unacceptable outcomes for a small group of users. Evaluation should therefore track multiple metrics even when training uses one scalar reward. In some applications, constrained or multi-objective formulations are more appropriate than a single unrestricted weighted sum."
+        },
+        {
+            "id": "state-design-code",
+            "title": "Implementing a State Representation",
+            "type": "code",
+            "language": "python",
+            "content": "A state representation converts environment information into a form that an agent can consume. The following example uses a navigation task with position, target position, and an obstacle indicator. This representation is illustrative; a real environment may require velocity, orientation, or additional context.",
+            "explanation": "The function produces a dictionary for readability. Neural-network policies typically convert these values into numerical arrays or tensors with consistent shapes.",
+            "code": "def encode_navigation_state(position, target, obstacle_ahead):\n    return {\n        'position': float(position),\n        'target': float(target),\n        'distance_to_target': float(target - position),\n        'obstacle_ahead': float(bool(obstacle_ahead))\n    }\n\nstate = encode_navigation_state(position=2, target=8, obstacle_ahead=True)\nprint(state)"
+        },
+        {
+            "id": "reward-function-code",
+            "title": "Implementing a Reward Function",
+            "type": "code",
+            "language": "python",
+            "content": "A reward function maps the outcome of a transition to a scalar. This example prioritizes successful completion and strongly discourages collisions while applying a small movement cost.",
+            "explanation": "The numerical values are illustrative and must be validated for a real task. Reward functions should be tested against edge cases and unintended behaviors.",
+            "code": "def navigation_reward(reached_goal, collision, step_cost=0.05):\n    if collision:\n        return -10.0\n    if reached_goal:\n        return 10.0\n    return -abs(step_cost)\n\nprint(navigation_reward(False, False))\nprint(navigation_reward(True, False))\nprint(navigation_reward(False, True))"
+        },
+        {
+            "id": "reward-analysis-code",
+            "title": "Analyzing Reward Outcomes",
+            "type": "code",
+            "language": "python",
+            "content": "Before training, inspect the reward function across plausible outcomes. This helps detect cases where the numerical objective disagrees with the intended task.",
+            "explanation": "This table is a basic sanity check. More advanced evaluation can simulate policies and compare reward with independent measures of safety, success, and efficiency.",
+            "code": "outcomes = [\n    {'name': 'goal reached safely', 'goal': True, 'collision': False},\n    {'name': 'ordinary movement', 'goal': False, 'collision': False},\n    {'name': 'collision before goal', 'goal': False, 'collision': True},\n    {'name': 'goal reached after collision', 'goal': True, 'collision': True}\n]\n\nfor outcome in outcomes:\n    reward = navigation_reward(outcome['goal'], outcome['collision'])\n    print(outcome['name'], '->', reward)"
+        },
+        {
+            "id": "action-space-code",
+            "title": "Representing Discrete Actions",
+            "type": "code",
+            "language": "python",
+            "content": "Discrete actions are often represented by integer identifiers. A separate mapping makes the meaning of each identifier explicit and prevents the code from depending on unexplained numeric values.",
+            "explanation": "The example uses four movement actions. A production environment should also define what happens when an action is invalid for the current state.",
+            "code": "ACTIONS = {0: 'left', 1: 'right', 2: 'up', 3: 'down'}\n\ndef action_name(action):\n    if action not in ACTIONS:\n        raise ValueError(f'Invalid action: {action}')\n    return ACTIONS[action]\n\nfor action in range(len(ACTIONS)):\n    print(action, action_name(action))"
+        },
+        {
+            "id": "state-action-reward-testing",
+            "title": "Testing State, Action, and Reward Logic",
+            "type": "concept",
+            "content": "Testing should cover more than typical successful transitions. Check boundary states, terminal states, invalid actions, obstacle interactions, and unusual combinations of reward conditions. Verify that the state contains no accidental future information, that the action mapping is consistent, and that rewards are finite numerical values. Compare the reward function with independent task metrics to determine whether high reward actually corresponds to good behavior. These tests are inexpensive compared with training a large agent using an incorrectly specified environment."
+        },
+        {
+            "id": "normalization-and-feature-scaling",
+            "title": "Scaling State Features",
+            "type": "concept",
+            "content": "State features may have very different numerical scales. A position may range from zero to thousands, while a Boolean indicator ranges between zero and one. Large scale differences can make neural-network optimization more difficult. Feature normalization, standardization, or carefully chosen bounded representations can improve training. Any normalization statistics should be calculated from training data or known environment bounds and reused consistently during evaluation. Accidentally fitting preprocessing on held-out information can create data leakage, while changing normalization between training and deployment can shift the policy's effective input distribution."
+        },
+        {
+            "id": "state-encoding-categorical",
+            "title": "Encoding Categorical State Variables",
+            "type": "concept",
+            "content": "Categorical variables represent discrete labels such as room type, object category, or machine mode. Assigning arbitrary integer identifiers can incorrectly imply an ordering that does not exist. One-hot encoding represents each category with a separate indicator, while learned embeddings map categories to trainable vectors. One-hot encoding can become large when there are many categories, whereas embeddings are compact but require sufficient data to learn useful representations. The encoding method should reflect the number of categories, their relationships, and the model architecture."
+        },
+        {
+            "id": "reward-uncertainty",
+            "title": "Noisy and Delayed Rewards",
+            "type": "concept",
+            "content": "Rewards may be noisy because the same action produces variable outcomes or because the reward is measured imperfectly. An agent should not assume that one high reward proves an action is consistently good. Repeated interactions help estimate expected outcomes, while value functions can summarize long-term reward. Delayed rewards create a separate challenge because the cause of an outcome may be several decisions in the past. Careful trajectory recording, appropriate return estimates, and sufficient exploration help address these difficulties."
+        },
+        {
+            "id": "real-world-example",
+            "title": "Case Study: Resource Allocation",
+            "type": "example",
+            "content": "Consider a system that assigns incoming computing jobs to available servers. A state could include queue lengths, server utilization, and job priorities. An action might select a server or defer a job. A reward could reflect completed work while penalizing delay, energy use, or service violations. If the reward measures only throughput, the agent might neglect small jobs that are expensive to serve. If the state omits queue age, the agent might repeatedly delay a waiting job. This example illustrates how state completeness, action design, and reward priorities interact."
+        },
+        {
+            "id": "real-world-example-robot",
+            "title": "Case Study: Robot Navigation",
+            "type": "example",
+            "content": "A navigation agent may observe position, orientation, nearby obstacles, and target direction. Its actions may control steering and speed. A reward may encourage progress while penalizing collisions and excessive energy use. Position alone may not be enough because velocity affects how quickly the robot can stop. A reward based only on distance can encourage unsafe movement through obstacles. A complete design includes relevant motion information, physically valid actions, and explicit safety mechanisms."
+        },
+        {
+            "id": "common-mistakes",
+            "title": "Common Modeling Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include omitting variables that influence future outcomes, confusing observations with complete states, allowing invalid actions without a clear rule, and assigning rewards that do not match the actual objective. Other errors include inconsistent reward timing, mixing terminal and truncated episodes, using arbitrary feature scales, and evaluating only the training reward. These issues can be difficult to diagnose because the learning algorithm may still run and produce apparently improving curves. Testing the task specification independently is an essential part of RL development."
+        },
+        {
+            "id": "key-takeaways",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "States represent situations, actions represent available decisions, and rewards provide feedback. State representations should preserve information needed for decision-making, while observations may be incomplete or noisy. Discrete and continuous action spaces require different modeling choices. Rewards should reflect the intended objective, but agents can exploit imperfect specifications. Sparse rewards provide limited feedback, dense rewards may introduce misleading incentives, and reward shaping must be designed carefully. State and reward logic should be tested with boundary cases, independent metrics, and realistic scenarios before expensive training begins."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "states-actions-rewards-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "In a chess-playing agent, provide one example each of a state, action, and reward.",
+            "correctAnswer": "The board configuration is part of the state, a legal move is an action, and a reward might be +1 for winning, 0 for a draw, and -1 for losing.",
+            "solution": "The state represents the current game situation. The action changes the board, and the reward evaluates the outcome. Intermediate moves may receive no immediate reward even though they affect the final result."
+        },
+        {
+            "id": "states-actions-rewards-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between a state and an observation?",
+            "correctAnswer": "The state describes the underlying situation relevant to the task, while the observation is the information available to the agent.",
+            "solution": "In a partially observable environment, the observation may omit hidden variables such as velocity or private information. The agent may need history or a belief state to make good decisions."
+        },
+        {
+            "id": "states-actions-rewards-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Calculate the discounted return for rewards 4, 2, and 1 with gamma equal to 0.5.",
+            "correctAnswer": "5.25",
+            "solution": "G = 4 + 0.5(2) + 0.25(1) = 4 + 1 + 0.25 = 5.25."
+        },
+        {
+            "id": "states-actions-rewards-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why might position alone be an inadequate state for a moving robot?",
+            "correctAnswer": "Because velocity and possibly acceleration affect future movement and stopping distance.",
+            "solution": "Two robots at the same position but moving at different speeds may need different actions. Including velocity can make the state more predictive of future outcomes."
+        },
+        {
+            "id": "states-actions-rewards-ex-5",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A cleaning robot receives a reward for every square it visits, including squares it has already cleaned. What reward-hacking behavior might result?",
+            "correctAnswer": "The robot may repeatedly visit the same easy squares instead of cleaning the entire area.",
+            "solution": "The reward counts visits rather than successful cleaning progress. A better specification could reward newly cleaned squares and evaluate overall coverage, while handling safety and resource limits explicitly."
+        },
+        {
+            "id": "states-actions-rewards-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the main difference between sparse and dense rewards?",
+            "correctAnswer": "Sparse rewards are provided infrequently, often at task completion, while dense rewards provide feedback at many intermediate steps.",
+            "solution": "Dense rewards can make progress easier to learn but may introduce incentives that differ from the true objective. Sparse rewards express the final goal directly but can make credit assignment harder."
+        },
+        {
+            "id": "states-actions-rewards-ex-7",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "With gamma equal to 0.9, the current state potential is 5 and the next state potential is 7. Calculate the potential-based shaping term.",
+            "correctAnswer": "1.3",
+            "solution": "F = gamma times the next potential minus the current potential = 0.9(7) - 5 = 6.3 - 5 = 1.3."
+        },
+        {
+            "id": "states-actions-rewards-ex-8",
+            "type": "coding",
+            "difficulty": "medium",
+            "question": "Write a Python function that returns +10 for reaching a goal, -10 for a collision, and -0.05 otherwise. If the goal and collision flags are both true, collision should take priority.",
+            "correctAnswer": "Check collision first, then the goal, and return the step penalty otherwise.",
+            "solution": "Example: def reward(goal, collision):\n    if collision:\n        return -10.0\n    if goal:\n        return 10.0\n    return -0.05"
+        },
+        {
+            "id": "states-actions-rewards-ex-9",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Explain why potential-based reward shaping is different from adding an arbitrary bonus for approaching the goal.",
+            "correctAnswer": "Potential-based shaping uses a discounted difference between consecutive state potentials and, under standard assumptions, preserves optimal policies. Arbitrary bonuses do not generally have that guarantee.",
+            "solution": "An arbitrary distance bonus may change the relative value of complete policies and create incentives to approach the goal repeatedly without finishing. Potential-based shaping has a specific mathematical structure designed to preserve optimal behavior under the relevant assumptions."
+        },
+        {
+            "id": "states-actions-rewards-ex-10",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A server-allocation agent maximizes throughput but frequently violates response-time requirements. Suggest improvements to the problem specification.",
+            "correctAnswer": "Include response-time requirements explicitly through constraints or carefully designed penalties, add relevant queue-age and workload features to the state, and evaluate latency independently of throughput.",
+            "solution": "Throughput alone does not represent service quality. The state should expose information needed to predict delays, and the task should include explicit latency constraints or a validated cost for violations. Independent evaluation prevents a high training reward from hiding poor service outcomes."
+        }
+    ],
+    "summary": "States, actions, and rewards define what an RL agent can perceive, what it can do, and how outcomes are evaluated. A Markov state summarizes enough information for predicting relevant transitions, while observations may be incomplete. Action spaces can be discrete, continuous, or hybrid. Rewards may be sparse, dense, terminal, or shaped, and discounted returns combine feedback across time. Reward scaling and shaping influence optimization, while reward hacking exposes weaknesses in task specifications. Reliable RL requires state representations that preserve relevant information, valid action definitions, carefully tested rewards, and independent evaluation metrics.",
+    "relatedTopics": [
+        "agent-environment",
+        "markov-decision-processes",
+        "value-functions",
+        "q-learning",
+        "policy-gradients"
+    ]
+}

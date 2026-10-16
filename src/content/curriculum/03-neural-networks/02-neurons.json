@@ -1,1 +1,142 @@
-{}
+{
+    "id": "neurons",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 2,
+    "title": "Neurons",
+    "slug": "neurons",
+    "description": "Explore artificial neurons as computational units, including weighted inputs, bias, pre-activation, activation, vectorized computation, parameter learning, and the relationship between individual neurons and neural network layers.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Basic algebra",
+        "Vectors and matrices",
+        "Perceptron fundamentals"
+    ],
+    "learningObjectives": [
+        "Describe the components of an artificial neuron.",
+        "Distinguish pre-activation from post-activation values.",
+        "Calculate neuron outputs for numerical inputs.",
+        "Explain why activation functions are needed.",
+        "Understand the role of weights and biases as learnable parameters.",
+        "Represent multiple neurons using matrix operations.",
+        "Implement a simple neuron in Python."
+    ],
+    "sections": [
+        {
+            "id": "neurons-introduction",
+            "title": "1. What Is an Artificial Neuron?",
+            "type": "concept",
+            "content": "An artificial neuron is a computational unit that receives one or more input values, combines them using trainable weights, adds a bias, and applies an activation function.\n\nBiological neurons communicate through complex electrochemical processes. Artificial neurons are simplified mathematical abstractions inspired by some aspects of biological information processing. They are not exact simulations of biological neurons.\n\nIn a neural network, a neuron can receive input features directly or outputs from neurons in a previous layer. Its output becomes an input to other computational units.\n\nA neuron typically performs two operations:\n\n1. Affine transformation: Calculate a weighted sum and add a bias.\n2. Nonlinear transformation: Apply an activation function.\n\nThese operations allow networks to learn useful representations of data. A single neuron can model a simple transformation, while a network of connected neurons can represent more complex functions."
+        },
+        {
+            "id": "neuron-components",
+            "title": "2. Components of a Neuron",
+            "type": "concept",
+            "content": "Inputs: The values presented to the neuron. These may be raw features such as age and income or hidden representations produced by another layer.\n\nWeights: Trainable coefficients that determine how strongly each input contributes to the result.\n\nBias: A trainable offset that allows the neuron to adjust its response independently of the input values.\n\nPre-activation: The weighted sum plus bias, often represented by z.\n\nActivation function: A function applied to z to produce the neuron's output.\n\nOutput: The final value sent to downstream neurons or used by the prediction layer.\n\nFor example, a neuron may receive normalized age, income, and account activity. It combines them into a score and applies ReLU to obtain a nonnegative activation. This activation does not automatically have a direct human interpretation. During training, the network learns parameters that help these intermediate values support the final prediction."
+        },
+        {
+            "id": "neuron-equation",
+            "title": "3. Mathematical Model of a Neuron",
+            "type": "math",
+            "content": "For n inputs, the pre-activation value is:\n\nz = sum(i=1 to n) wi*xi + b\n\nIn vector notation:\n\nz = w^T x + b\n\na = f(z)\n\nHere, f is the activation function and a is the neuron output.\n\nWorked example:\n\nInputs: x = [1.5, 2.0, -1.0]\nWeights: w = [0.4, 0.2, -0.5]\nBias: b = 0.1\n\nFirst calculate the weighted sum:\n\n1.5(0.4) + 2.0(0.2) + (-1.0)(-0.5)\n= 0.6 + 0.4 + 0.5\n= 1.5\n\nAdd the bias:\n\nz = 1.5 + 0.1 = 1.6\n\nIf the activation is ReLU, then a = max(0, 1.6) = 1.6.\n\nIf the activation is sigmoid, then a = 1 / (1 + exp(-1.6)), approximately 0.832.\n\nThe same weighted sum can produce different outputs depending on the activation function."
+        },
+        {
+            "id": "preactivation-activation",
+            "title": "4. Pre-activation vs. Activation",
+            "type": "concept",
+            "content": "Pre-activation is the raw value calculated from the weighted inputs and bias. It is commonly represented by z.\n\nActivation is the result after applying the activation function. It is commonly represented by a.\n\nThe distinction is important because the pre-activation can take a wide range of positive and negative values, while the activation function may restrict or transform the result.\n\nExamples:\n\n- ReLU: z = -2 produces a = 0.\n- ReLU: z = 3 produces a = 3.\n- Sigmoid: z = 0 produces a = 0.5.\n- Tanh: z = 0 produces a = 0.\n\nA neuron with a linear activation returns its pre-activation unchanged. A neuron with a nonlinear activation can transform the representation in ways that enable a multilayer network to learn nonlinear functions.\n\nWhen debugging a network, inspecting both pre-activations and activations can help identify saturated sigmoid units, inactive ReLU units, exploding values, or unexpected numerical behavior."
+        },
+        {
+            "id": "why-nonlinearity",
+            "title": "5. Why Do Neurons Need Nonlinear Activations?",
+            "type": "concept",
+            "content": "A network needs nonlinear activation functions to represent complex nonlinear relationships through compositions of layers.\n\nSuppose every layer uses only a linear transformation. Two layers would produce:\n\nh = W1*x + b1\ny = W2*h + b2\n\nSubstituting the first equation into the second gives:\n\ny = W2*W1*x + W2*b1 + b2\n\nThis is still a linear or affine transformation of the input. Adding more purely linear layers does not fundamentally change that fact.\n\nNonlinear activation functions such as ReLU, sigmoid, and tanh allow a network to construct nonlinear decision boundaries and richer feature representations.\n\nThis does not mean every layer must use the same activation. Hidden layers often use ReLU or related functions. Output layers use activations appropriate to the task, such as sigmoid for binary classification or softmax for multiclass classification.\n\nActivation functions and their derivatives are discussed in greater detail in the Activation Functions topic."
+        },
+        {
+            "id": "single-neuron-python",
+            "title": "6. Implementing a Neuron with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef relu(z):\n    return np.maximum(0, z)\n\ndef sigmoid(z):\n    # Clip values to reduce overflow in exp for extreme inputs.\n    z = np.clip(z, -500, 500)\n    return 1 / (1 + np.exp(-z))\n\ndef neuron(x, weights, bias, activation='relu'):\n    x = np.asarray(x, dtype=float)\n    weights = np.asarray(weights, dtype=float)\n\n    if x.shape != weights.shape:\n        raise ValueError('Inputs and weights must have the same shape.')\n\n    z = np.dot(x, weights) + bias\n\n    if activation == 'relu':\n        output = relu(z)\n    elif activation == 'sigmoid':\n        output = sigmoid(z)\n    elif activation == 'linear':\n        output = z\n    else:\n        raise ValueError('Unsupported activation function.')\n\n    return z, output\n\nx = [1.5, 2.0, -1.0]\nweights = [0.4, 0.2, -0.5]\nbias = 0.1\n\nz, output = neuron(x, weights, bias, activation='relu')\nprint('Pre-activation:', z)\nprint('Neuron output:', output)",
+            "explanation": "The function separates the affine calculation from the activation step. It validates input dimensions and supports ReLU, sigmoid, and linear activations. This separation makes the mathematical operations easier to test and debug. Production implementations should also consider numerical stability and batch processing."
+        },
+        {
+            "id": "multiple-neurons-matrix",
+            "title": "7. From One Neuron to a Layer",
+            "type": "math",
+            "content": "A layer contains multiple neurons that process the same input vector using different weights and biases.\n\nSuppose the input has n features and the layer contains m neurons. The weight matrix W has shape (m, n), and the bias vector b has shape (m,).\n\nThe layer calculation is:\n\nZ = XW^T + b\n\nA = f(Z)\n\nFor a batch of B examples, X has shape (B, n), W has shape (m, n), and Z and A have shape (B, m). The bias is broadcast across the examples.\n\nEach row of W contains the weights of one neuron. Each element of b is the bias for the corresponding neuron.\n\nVectorized matrix operations allow libraries such as NumPy, PyTorch, and TensorFlow to process many examples efficiently. They also make the mathematical structure of neural networks clearer.\n\nDimensions are especially important. Many neural network bugs arise from accidentally transposing a matrix or combining arrays with incompatible shapes."
+        },
+        {
+            "id": "layer-python",
+            "title": "8. Implementing a Dense Layer",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\n# Three examples, each containing two features.\nX = np.array([\n    [1.0, 2.0],\n    [0.0, 1.0],\n    [3.0, -1.0]\n])\n\n# Two neurons, each with two input weights.\nW = np.array([\n    [0.5, -0.2],\n    [0.1, 0.4]\n])\n\nb = np.array([0.1, -0.3])\n\n# Shape of X: (3, 2)\n# Shape of W.T: (2, 2)\n# Shape of Z: (3, 2)\nZ = X @ W.T + b\nA = np.maximum(0, Z)\n\nprint('Pre-activations:')\nprint(Z)\nprint('ReLU activations:')\nprint(A)\nprint('Output shape:', A.shape)",
+            "explanation": "This example evaluates two neurons for three examples at once. Matrix multiplication calculates all weighted sums efficiently, while broadcasting adds the bias vector to every row. Applying ReLU elementwise produces the final activation matrix."
+        },
+        {
+            "id": "neurons-learning",
+            "title": "9. How Does a Neuron Learn?",
+            "type": "concept",
+            "content": "The neuron itself performs a forward calculation; learning happens when a training procedure adjusts its parameters to reduce a loss function.\n\nA typical neural network training cycle is:\n\n1. Initialize weights and biases.\n2. Pass training inputs through the network.\n3. Calculate predictions.\n4. Compare predictions with the target values using a loss function.\n5. Compute gradients of the loss with respect to the parameters using backpropagation.\n6. Update parameters with an optimizer.\n7. Repeat over training examples and epochs.\n\nFor a parameter theta, a basic gradient-descent update is:\n\ntheta_new = theta_old - learning_rate * dL/dtheta\n\nThe derivative dL/dtheta measures how the loss changes when theta changes locally. The learning rate controls the step size.\n\nA single artificial neuron is therefore only one component of a trainable system. Backpropagation calculates how the final loss depends on the neuron's parameters, and an optimizer uses these gradients to update them."
+        },
+        {
+            "id": "neuron-debugging",
+            "title": "10. Practical Considerations and Common Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include confusing weights with inputs, forgetting the bias, applying the wrong activation, and misunderstanding tensor dimensions.\n\nOther practical considerations:\n\n- Large input magnitudes can create large pre-activation values and may lead to unstable optimization.\n- Sigmoid can saturate at extreme positive or negative values, producing very small gradients.\n- ReLU can produce zero activations for negative inputs and may leave some units inactive.\n- An activation between zero and one is not automatically a calibrated probability unless the model and task support that interpretation.\n- Weight initialization matters because identical or poorly scaled initial parameters can impair learning.\n- Intermediate neuron activations usually have no guaranteed standalone meaning. Their usefulness comes from the role they play in the network.\n\nWhen debugging, inspect input shapes, parameter shapes, pre-activation values, activation values, loss values, and gradient magnitudes. Test individual components with small hand-computed examples before training a large network."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "neurons-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A neuron has inputs [2, -1], weights [0.3, 0.8], and bias 0.2. Calculate its pre-activation value.",
+            "correctAnswer": "z = 0.0",
+            "solution": "z = 2(0.3) + (-1)(0.8) + 0.2 = 0.6 - 0.8 + 0.2 = 0.0."
+        },
+        {
+            "id": "neurons-exercise-2",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Using z = -1.5, calculate the ReLU activation.",
+            "correctAnswer": "0",
+            "solution": "ReLU is f(z) = max(0, z). Therefore, max(0, -1.5) = 0."
+        },
+        {
+            "id": "neurons-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why are nonlinear activation functions important in multilayer neural networks?",
+            "correctAnswer": "They allow compositions of layers to represent nonlinear functions.",
+            "solution": "Compositions of purely linear or affine transformations remain linear or affine. Nonlinear activations allow a network to learn nonlinear relationships and more complex decision boundaries."
+        },
+        {
+            "id": "neurons-exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "An input batch has shape (8, 5). A dense layer has 4 neurons. What are the shapes of its weight matrix, bias vector, and output matrix if weights use the convention W.shape = (number_of_neurons, number_of_features)?",
+            "correctAnswer": "Weights: (4, 5); bias: (4,); output: (8, 4).",
+            "solution": "Each of the four neurons has five input weights, giving a weight matrix of shape (4, 5). Each neuron has one bias, giving shape (4,). Eight examples produce four outputs each, so the output has shape (8, 4)."
+        },
+        {
+            "id": "neurons-exercise-5",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Write a NumPy expression that calculates a dense layer's pre-activation matrix when X has shape (batch_size, input_features), W has shape (units, input_features), and b has shape (units,).",
+            "correctAnswer": "Z = X @ W.T + b",
+            "solution": "X @ W.T multiplies each input row by every neuron's weight vector. The resulting shape is (batch_size, units). Adding b broadcasts each neuron's bias across all examples."
+        }
+    ],
+    "summary": "An artificial neuron computes a weighted sum of its inputs, adds a bias, and applies an activation function. The pre-activation and activation are distinct quantities. Nonlinear activations make multilayer neural networks more expressive, while matrix operations allow many neurons and examples to be processed efficiently. Learning requires a loss function, gradient computation, and parameter updates.",
+    "relatedTopics": [
+        "perceptron",
+        "activation-functions",
+        "forward-propagation",
+        "computational-graphs",
+        "backpropagation",
+        "weight-initialization"
+    ]
+}

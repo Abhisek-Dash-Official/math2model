@@ -1,0 +1,248 @@
+{
+    "id": "module-06-attention-scaled-dot-product-attention",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 4,
+    "title": "Scaled Dot-Product Attention & Math",
+    "slug": "scaled-dot-product-attention",
+    "href": "/curriculum/06-attention/scaled-dot-product-attention",
+    "filePath": "content/curriculum/06-attention/04-scaled-dot-product-attention.json",
+    "description": "Develop a rigorous understanding of scaled dot-product attention, including dot-product similarity, score scaling, softmax normalization, matrix operations, numerical stability, masking, complexity, and implementation from scratch.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Vectors and matrices",
+        "Matrix multiplication",
+        "Dot products",
+        "Softmax",
+        "Query, Key, Value Formulation"
+    ],
+    "learningObjectives": [
+        "Derive the scaled dot-product attention equation.",
+        "Explain how query-key dot products generate attention scores.",
+        "Explain why scores are divided by the square root of the key dimension.",
+        "Calculate attention weights by hand for small examples.",
+        "Derive the dimensions of every tensor in the attention operation.",
+        "Implement numerically stable softmax and scaled dot-product attention.",
+        "Understand masking and its position relative to softmax.",
+        "Analyze attention computation and memory complexity.",
+        "Identify common implementation bugs and numerical problems.",
+        "Explain how scaled dot-product attention is used in Transformer models."
+    ],
+    "sections": [
+        {
+            "id": "sdpa-motivation",
+            "title": "1. Why Scaled Dot-Product Attention Matters",
+            "type": "concept",
+            "content": "Scaled dot-product attention is the fundamental attention operation used by standard Transformer architectures. It converts query-key compatibility scores into normalized weights and uses those weights to combine value vectors. Rather than compressing all previous information into a single recurrent state, a query can retrieve information from multiple positions. The mechanism is differentiable, allowing the model to learn useful query, key, and value projections through gradient-based optimization. Its matrix-based formulation also makes it efficient to execute on GPUs and specialized accelerators."
+        },
+        {
+            "id": "sdpa-vector-intuition",
+            "title": "2. Understanding Dot Products",
+            "type": "concept",
+            "content": "For two vectors q and k of the same dimension, their dot product is q dot k = sum_i q_i k_i. The result is a scalar. A large positive dot product often indicates that the vectors point in compatible directions and have substantial magnitudes. A negative result indicates opposing directions under the usual geometric interpretation, while a value near zero indicates little dot-product alignment. However, a dot product depends on both direction and magnitude; it is not the same as cosine similarity unless the vectors are normalized. In attention, the model learns the vector representations, so the dot product becomes a trainable compatibility mechanism."
+        },
+        {
+            "id": "sdpa-equation",
+            "title": "3. The Core Equation",
+            "type": "math",
+            "content": "The standard equation is Attention(Q, K, V) = softmax(QK^T / sqrt(d_k))V. Q contains queries, K contains keys, and V contains values. The matrix product QK^T produces a score for every query-key pair. Dividing by sqrt(d_k) scales the scores, where d_k is the final dimension of each query and key vector. Softmax is applied independently across the key positions for each query. The resulting attention matrix is multiplied by V to create context vectors. In practice, masks can be added to the scaled scores before softmax."
+        },
+        {
+            "id": "sdpa-tensor-shapes",
+            "title": "4. Tensor Shapes and Matrix Dimensions",
+            "type": "math",
+            "content": "Let Q have shape [n_q, d_k], K have shape [n_k, d_k], and V have shape [n_k, d_v]. Then K transpose has shape [d_k, n_k]. Therefore, QK^T has shape [n_q, n_k]. Scaling and softmax do not change this shape. Multiplying the attention matrix [n_q, n_k] by V [n_k, d_v] produces an output of shape [n_q, d_v]. The number of query positions does not need to equal the number of key-value positions, which is useful in cross-attention. In self-attention, they normally correspond to the same sequence positions."
+        },
+        {
+            "id": "sdpa-step-one",
+            "title": "5. Step One: Compute Raw Scores",
+            "type": "math",
+            "content": "For query q_i and key k_j, the raw score is s_ij = q_i^T k_j. The score matrix S = QK^T computes all such comparisons at once. For example, if q = [1, 2] and k = [3, 4], their dot product is 1 times 3 plus 2 times 4, giving 11. If a second key is [1, 0], its score is 1. The query therefore assigns a much larger raw compatibility score to the first key. These scores are not yet probabilities and are not restricted to the interval from zero to one."
+        },
+        {
+            "id": "sdpa-step-two",
+            "title": "6. Step Two: Scale the Scores",
+            "type": "math",
+            "content": "The scaled score is s_ij / sqrt(d_k). The motivation is that, under a simplified model where query and key coordinates are independent, have mean zero, and each have variance one, the dot product has variance approximately d_k. As d_k increases, raw scores can therefore become larger in magnitude. Large score differences can push softmax toward very concentrated distributions, causing small derivatives for many entries. Dividing by sqrt(d_k) helps keep score magnitudes in a more manageable range. This is a variance-based motivation rather than a guarantee that all real learned scores have unit variance."
+        },
+        {
+            "id": "sdpa-variance-derivation",
+            "title": "7. Mathematical Derivation of the Scaling Factor",
+            "type": "math",
+            "content": "Let q and k be d-dimensional random vectors. Their dot product is q^T k = sum from i=1 to d of q_i k_i. If each coordinate pair has zero-mean product and unit product variance, and the terms are independent, the variance of the sum is d. Its standard deviation is therefore sqrt(d). Dividing by sqrt(d) makes the variance approximately one under these assumptions. The actual variance depends on initialization, learned representations, and coordinate correlations, but this derivation explains why the square-root scaling is a sensible default."
+        },
+        {
+            "id": "sdpa-step-three",
+            "title": "8. Step Three: Normalize with Softmax",
+            "type": "math",
+            "content": "For a score row s, softmax assigns weight alpha_j = exp(s_j) / sum_l exp(s_l). The weights are nonnegative and sum to one, provided at least one position is valid and the calculation is well-defined. Subtracting the row maximum before exponentiation does not change the mathematical result: softmax(s) = softmax(s - max(s)). This transformation improves numerical stability because the largest exponent becomes exp(0) = 1, preventing overflow from large positive scores. In masked attention, invalid positions must be excluded before normalization."
+        },
+        {
+            "id": "sdpa-softmax-example",
+            "title": "9. Worked Example: Softmax by Hand",
+            "type": "example",
+            "content": "Suppose the scaled scores for one query are [1, 2, 0]. Subtracting the maximum gives [-1, 0, -2]. Their exponentials are approximately [0.368, 1.000, 0.135]. The sum is approximately 1.503. Dividing by this sum gives attention weights approximately [0.245, 0.665, 0.090]. The second key receives the highest weight because it has the highest score. Small differences in the final decimals can arise from rounding."
+        },
+        {
+            "id": "sdpa-step-four",
+            "title": "10. Step Four: Combine the Values",
+            "type": "math",
+            "content": "The output for query i is o_i = sum_j alpha_ij v_j. Suppose three value vectors are v_1 = [1, 0], v_2 = [0, 2], and v_3 = [3, 1], and the weights are [0.245, 0.665, 0.090]. Then the first coordinate is 0.245 times 1 plus 0.665 times 0 plus 0.090 times 3, which is 0.515. The second coordinate is 0.245 times 0 plus 0.665 times 2 plus 0.090 times 1, which is 1.420. The output is approximately [0.515, 1.420]. It is a weighted mixture of the value vectors."
+        },
+        {
+            "id": "sdpa-complete-example",
+            "title": "11. Complete Numerical Example",
+            "type": "example",
+            "content": "Let Q = [[1, 0]], K = [[1, 0], [0, 1]], and V = [[2, 0], [0, 4]]. The key dimension is two. Raw scores are [1, 0], so scaled scores are [1/sqrt(2), 0], approximately [0.707, 0]. Softmax gives weights approximately [0.670, 0.330]. The output is approximately 0.670[2, 0] + 0.330[0, 4] = [1.340, 1.320]. This demonstrates the complete sequence of score computation, scaling, normalization, and value aggregation."
+        },
+        {
+            "id": "sdpa-why-differentiable",
+            "title": "12. Why the Operation Is Differentiable",
+            "type": "concept",
+            "content": "Dot products, scaling, softmax, and weighted sums are differentiable operations for finite inputs. During training, a loss gradient can flow backward from the attention output through the weighted sum, the attention weights, the scores, and the query-key projections. This allows the model to learn which relationships are useful for its task. If a loss encourages the output to preserve a relevant dependency, gradient-based optimization can adjust query and key representations so that the useful positions receive more appropriate scores. The learning process is not guaranteed to converge to a particular interpretation."
+        },
+        {
+            "id": "sdpa-mask-placement",
+            "title": "13. Where Masking Fits",
+            "type": "concept",
+            "content": "An attention mask restricts which key positions a query can use. The mask is normally applied to the scaled scores before softmax. Invalid scores are replaced by negative infinity, or a suitable large negative number in an educational implementation. Their exponentials then become zero, so invalid positions receive zero probability mass. Applying a mask only after softmax is generally incorrect if the remaining weights are not renormalized. If every position in a row is masked, softmax over negative infinity values can become undefined; robust implementations must avoid this situation or explicitly handle it."
+        },
+        {
+            "id": "sdpa-complexity",
+            "title": "14. Computational Complexity",
+            "type": "math",
+            "content": "For n query positions, n key positions, and feature dimension d_k, computing QK^T requires approximately O(n^2 d_k) arithmetic operations in self-attention. Multiplying the attention matrix by V adds approximately O(n^2 d_v) operations. Storing a dense attention matrix requires O(n^2) memory per head, ignoring batch and head multipliers. These costs explain why standard dense attention becomes expensive for very long sequences. Fused attention kernels can reduce intermediate memory traffic, while sparse, local, or approximate attention methods change which interactions are computed or how they are represented."
+        },
+        {
+            "id": "sdpa-complexity-example",
+            "title": "15. Understanding Sequence-Length Growth",
+            "type": "example",
+            "content": "If sequence length doubles from 1,000 to 2,000 tokens, the number of query-key pairs increases from 1,000,000 to 4,000,000. That is a fourfold increase in the size of the dense score matrix. If sequence length increases tenfold, the number of pairs increases one hundredfold. The exact runtime increase also depends on hardware utilization, matrix dimensions, kernel design, and memory behavior, but the quadratic pair count is a fundamental property of dense full self-attention."
+        },
+        {
+            "id": "sdpa-code",
+            "title": "16. Python Implementation from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef stable_softmax(scores, axis=-1):\n    shifted = scores - np.max(scores, axis=axis, keepdims=True)\n    exp_scores = np.exp(shifted)\n    denominator = np.sum(exp_scores, axis=axis, keepdims=True)\n    return exp_scores / denominator\n\ndef scaled_dot_product_attention(Q, K, V, allowed_mask=None):\n    if Q.shape[-1] != K.shape[-1]:\n        raise ValueError('Query and key feature dimensions must match')\n    if K.shape[-2] != V.shape[-2]:\n        raise ValueError('Key and value sequence lengths must match')\n\n    d_k = Q.shape[-1]\n    scores = Q @ np.swapaxes(K, -1, -2)\n    scores = scores / np.sqrt(d_k)\n\n    if allowed_mask is not None:\n        if not np.all(np.any(allowed_mask, axis=-1)):\n            raise ValueError('Each query must have at least one allowed key')\n        scores = np.where(allowed_mask, scores, -np.inf)\n\n    weights = stable_softmax(scores, axis=-1)\n    output = weights @ V\n    return output, weights\n\nQ = np.array([[1.0, 0.0]])\nK = np.array([[1.0, 0.0], [0.0, 1.0]])\nV = np.array([[2.0, 0.0], [0.0, 4.0]])\n\noutput, weights = scaled_dot_product_attention(Q, K, V)\nprint('Attention weights:', weights)\nprint('Attention output:', output)",
+            "explanation": "The implementation checks the feature and sequence dimensions, computes query-key scores, applies square-root scaling, optionally masks invalid positions, normalizes the scores with a stable softmax, and combines the values. The function supports a single sequence represented by two-dimensional arrays. The use of swapaxes also makes the score calculation compatible with batched arrays whose last two dimensions are sequence and feature dimensions. For a batched mask, the mask must be broadcastable to the score tensor."
+        },
+        {
+            "id": "sdpa-test",
+            "title": "17. Test and Verify the Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "output, weights = scaled_dot_product_attention(Q, K, V)\n\nassert weights.shape == (1, 2)\nassert output.shape == (1, 2)\nassert np.allclose(weights.sum(axis=-1), 1.0)\nassert np.all(weights >= 0.0)\nassert np.allclose(output, weights @ V)\n\nprint('All attention checks passed.')",
+            "explanation": "These assertions verify the output dimensions, probability normalization, nonnegative weights, and weighted-sum computation. Tests like these are useful when implementing attention in a larger neural network, where a transposed dimension or incorrect softmax axis can otherwise remain difficult to diagnose."
+        },
+        {
+            "id": "sdpa-common-mistakes",
+            "title": "18. Common Mistakes and Debugging",
+            "type": "concept",
+            "content": "A common mistake is using Q @ K rather than Q @ K^T when queries and keys are stored as [sequence, features]. Another is dividing by d_k rather than sqrt(d_k). A third is applying softmax along the wrong axis. Developers may also accidentally use a padding mask with the opposite Boolean convention, forget to mask padded keys, or mask every key for a query. Verify shapes before matrix multiplication, check that valid attention rows sum to one, and test a tiny example where the expected result can be calculated by hand."
+        },
+        {
+            "id": "sdpa-interpretation",
+            "title": "19. Interpreting Attention Weights Carefully",
+            "type": "concept",
+            "content": "Attention weights indicate how the current attention operation combines value vectors. They can reveal patterns such as local attention or strong weighting of a distant token. However, a weight is not a complete explanation of the final prediction. Values may contain mixed features, multiple heads contribute different representations, and later layers transform the output. When investigating a model, attention maps are best considered one diagnostic view alongside ablation studies, input perturbations, and output behavior."
+        },
+        {
+            "id": "sdpa-summary",
+            "title": "20. Key Takeaways",
+            "type": "concept",
+            "content": "Scaled dot-product attention follows four main operations: compute QK^T, divide by sqrt(d_k), normalize scores with softmax, and multiply by V. Scaling helps control the variance of dot-product scores, stable softmax reduces overflow risk, and masking prevents invalid information from being used. The matrix formulation is powerful and parallelizable, but dense attention has quadratic sequence-length costs. These ideas form the basis for self-attention, multi-head attention, and Transformer blocks."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "sdpa-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Write the standard scaled dot-product attention equation and identify its three inputs.",
+            "correctAnswer": "Attention(Q, K, V) = softmax(QK^T / sqrt(d_k))V. The inputs are queries Q, keys K, and values V.",
+            "solution": "Q and K generate compatibility scores. Scaling controls score magnitudes, softmax converts them into weights, and the weights combine V."
+        },
+        {
+            "id": "sdpa-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Calculate the dot product of q = [2, 1] and k = [3, 4].",
+            "correctAnswer": "10.",
+            "solution": "Compute 2 times 3 plus 1 times 4, which equals 6 + 4 = 10."
+        },
+        {
+            "id": "sdpa-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A query-key dot product is 12 and d_k = 16. What is the scaled score?",
+            "correctAnswer": "3.",
+            "solution": "The scaling factor is sqrt(16) = 4. The scaled score is 12 / 4 = 3."
+        },
+        {
+            "id": "sdpa-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If Q has shape [6, 32], K has shape [10, 32], and V has shape [10, 64], what are the shapes of the score matrix and output?",
+            "correctAnswer": "The score matrix has shape [6, 10], and the output has shape [6, 64].",
+            "solution": "QK^T has shape [6, 10]. Multiplying that matrix by V [10, 64] produces [6, 64]."
+        },
+        {
+            "id": "sdpa-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the score matrix divided by sqrt(d_k) instead of d_k?",
+            "correctAnswer": "Under common simplifying assumptions, dot-product variance grows approximately linearly with d_k, so its standard deviation grows with sqrt(d_k). Dividing by sqrt(d_k) controls that scale.",
+            "solution": "If the raw dot product has variance approximately d_k, dividing by sqrt(d_k) reduces the variance by a factor of d_k, bringing it to approximately one under those assumptions."
+        },
+        {
+            "id": "sdpa-ex-6",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Given attention weights [0.2, 0.3, 0.5] and values [[1, 0], [0, 2], [3, 1]], calculate the output.",
+            "correctAnswer": "[1.7, 1.1].",
+            "solution": "The first coordinate is 0.2(1) + 0.3(0) + 0.5(3) = 1.7. The second is 0.2(0) + 0.3(2) + 0.5(1) = 1.1."
+        },
+        {
+            "id": "sdpa-ex-7",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "Why can softmax over a row containing only negative infinity values produce NaNs?",
+            "correctAnswer": "Stable softmax subtracts the maximum, but the maximum is negative infinity, so subtracting it from each entry creates undefined negative-infinity minus negative-infinity operations.",
+            "solution": "The row has no valid probability distribution. The implementation must prevent fully masked rows or handle them explicitly before softmax."
+        },
+        {
+            "id": "sdpa-ex-8",
+            "type": "complexity",
+            "difficulty": "medium",
+            "question": "If the sequence length increases from 512 to 1,024, by what factor does the number of dense query-key pairs increase?",
+            "correctAnswer": "By a factor of four.",
+            "solution": "The number of pairs scales with n squared. Doubling n multiplies n squared by four."
+        },
+        {
+            "id": "sdpa-ex-9",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "Why must a padding mask be applied before softmax?",
+            "correctAnswer": "To ensure padded positions receive zero attention probability rather than receiving probability mass during normalization.",
+            "solution": "Replacing invalid scores before softmax removes their contribution to the normalization denominator. If masking occurs afterward, the remaining weights may no longer sum to one."
+        },
+        {
+            "id": "sdpa-ex-10",
+            "type": "implementation",
+            "difficulty": "hard",
+            "question": "What three basic properties would you test in a small implementation of scaled dot-product attention?",
+            "correctAnswer": "Correct tensor shapes, nonnegative normalized weights for valid rows, and an output equal to the attention-weight matrix multiplied by V.",
+            "solution": "These tests catch many shape, softmax-axis, and aggregation bugs. Additional tests should cover masking, batch dimensions, and numerical edge cases."
+        }
+    ],
+    "summary": "Scaled dot-product attention computes QK^T, divides the scores by sqrt(d_k), applies softmax over valid key positions, and multiplies the weights by V. The scaling factor helps control score variance, stable softmax prevents numerical overflow, and masking excludes invalid positions. Dense attention is highly parallelizable but has quadratic sequence-length costs.",
+    "relatedTopics": [
+        "module-06-attention-query-key-value",
+        "module-06-attention-self-attention",
+        "module-06-attention-masked-attention",
+        "module-06-attention-multi-head-attention",
+        "module-07-transformers-transformer-architecture"
+    ]
+}

@@ -1,1 +1,168 @@
-{}
+{
+    "id": "module-11-inference-beam-search",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 5,
+    "title": "Beam Search Decoding",
+    "slug": "beam-search",
+    "href": "/curriculum/11-inference/beam-search",
+    "filePath": "content/curriculum/11-inference/05-beam-search.json",
+    "description": "Understand beam search, cumulative sequence probabilities, length normalization, and how maintaining multiple candidate sequences can improve structured text generation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-k"
+    ],
+    "learningObjectives": [
+        "Explain the difference between greedy decoding and beam search.",
+        "Calculate cumulative log-probability scores for token sequences.",
+        "Implement a simplified beam search algorithm.",
+        "Understand beam width, length normalization, and stopping criteria.",
+        "Identify the computational costs and limitations of beam search.",
+        "Choose suitable decoding strategies for different generation tasks."
+    ],
+    "sections": [
+        {
+            "id": "beam-introduction",
+            "title": "1. What Is Beam Search?",
+            "type": "concept",
+            "content": "Beam search is a decoding algorithm that maintains multiple candidate sequences instead of committing to a single continuation at each step. At every generation step, it expands the current candidates, scores the resulting sequences, and keeps the best candidates according to a scoring rule. The number of candidates retained is called the beam width. Beam search is useful when the overall sequence score matters, although it does not guarantee the globally optimal sequence."
+        },
+        {
+            "id": "beam-greedy-comparison",
+            "title": "2. Greedy Decoding Versus Beam Search",
+            "type": "concept",
+            "content": "Greedy decoding selects the highest-probability next token and keeps only one sequence. Beam search retains several partial sequences so that alternatives can continue to compete. A token that is not the most likely immediate choice may lead to a better-scoring complete sequence later. Beam search can explore more alternatives than greedy decoding, but its search remains limited to the candidates preserved at each step."
+        },
+        {
+            "id": "beam-probability",
+            "title": "3. Scoring a Complete Sequence",
+            "type": "math",
+            "content": "An autoregressive model assigns a sequence probability by multiplying the conditional probabilities of its tokens. Since products of many small probabilities can underflow numerically, implementations commonly work with log probabilities. The log of a product becomes the sum of individual log probabilities.",
+            "formula": "log P(x_1, ..., x_T) = Σ_{t=1}^{T} log P(x_t | x_{<t})",
+            "example": "If three generated tokens have conditional probabilities 0.8, 0.5, and 0.4, the sequence probability is 0.8 × 0.5 × 0.4 = 0.16. Its log score is log(0.8) + log(0.5) + log(0.4), approximately -1.833."
+        },
+        {
+            "id": "beam-search-process",
+            "title": "4. The Beam Search Algorithm",
+            "type": "concept",
+            "content": "Beam search starts with the prompt as the initial candidate. The model predicts next-token probabilities for each active candidate. Each candidate is expanded with possible next tokens, and the resulting sequences receive cumulative scores. The algorithm retains the highest-scoring candidates up to the configured beam width. It repeats this process until candidates finish or a stopping condition is reached. Completed sequences may be stored separately so that they do not need to be expanded again."
+        },
+        {
+            "id": "beam-width",
+            "title": "5. Understanding Beam Width",
+            "type": "concept",
+            "content": "Beam width determines how many candidate sequences are retained at each step. A width of one behaves like greedy search under the same token-scoring and stopping rules. Larger widths explore more alternatives but require more computation and memory. Increasing beam width does not guarantee a better answer according to human judgment, factual correctness, or task-specific metrics. It only expands the search within the algorithm's scoring framework."
+        },
+        {
+            "id": "beam-example",
+            "title": "6. Worked Example",
+            "type": "concept",
+            "content": "Suppose the prompt is 'The sky is' and the leading next-token candidates are 'blue' with probability 0.6 and 'clear' with probability 0.4. With beam width two, both partial sequences can be retained. At the next step, 'blue today' might have conditional probability 0.3 while 'clear today' has probability 0.8. Their cumulative probabilities become 0.18 and 0.32 respectively. Although 'blue' was the more likely first token, the 'clear today' path has the higher cumulative probability in this simplified example."
+        },
+        {
+            "id": "beam-length-bias",
+            "title": "7. Why Sequence Length Matters",
+            "type": "concept",
+            "content": "Raw log-probability scores generally become more negative as sequences get longer because each additional token contributes a non-positive log probability. Comparing sequences of different lengths can therefore favor shorter outputs. Length normalization or length penalties are sometimes used to reduce this bias. These adjustments change the ranking objective and must be selected carefully because excessive penalties can favor unnecessarily long responses."
+        },
+        {
+            "id": "beam-length-formula",
+            "title": "8. Length Normalization",
+            "type": "math",
+            "content": "One simple scoring approach divides the cumulative log-probability by sequence length. Other implementations use more sophisticated length penalties. These formulas are not interchangeable, and the appropriate convention depends on the decoding library and task.",
+            "formula": "score(y) = (Σ_t log P(y_t | y_{<t})) / |y|",
+            "example": "Candidate A has total log score -4 over 4 tokens, giving an average of -1. Candidate B has total log score -5 over 10 tokens, giving an average of -0.5. Under this simple average-log-probability score, B ranks higher even though its raw cumulative score is lower."
+        },
+        {
+            "id": "beam-python",
+            "title": "9. Simplified Beam Search Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "import math\n\ndef beam_search(step_fn, prompt, beam_width=3, max_new_tokens=10, eos_token_id=None):\n    beams = [(list(prompt), 0.0, False)]\n    for _ in range(max_new_tokens):\n        candidates = []\n        for tokens, score, finished in beams:\n            if finished:\n                candidates.append((tokens, score, True))\n                continue\n            log_probs = step_fn(tokens)\n            for token_id, log_prob in log_probs:\n                ended = eos_token_id is not None and token_id == eos_token_id\n                candidates.append((tokens + [token_id], score + log_prob, ended))\n        beams = sorted(candidates, key=lambda item: item[1], reverse=True)[:beam_width]\n        if all(finished for _, _, finished in beams):\n            break\n    return max(beams, key=lambda item: item[1])[0]",
+            "explanation": "The step_fn function is expected to return a collection of (token_id, log_probability) pairs for the current prefix. This simplified implementation expands each active beam and retains the highest cumulative log scores. It omits length normalization, efficient batched model execution, candidate deduplication, and sophisticated handling of completed hypotheses. It is educational pseudocode rather than a production-ready decoder."
+        },
+        {
+            "id": "beam-stopping",
+            "title": "10. Stopping Conditions",
+            "type": "concept",
+            "content": "Beam search can stop when all retained candidates have emitted an end-of-sequence token, when a maximum generation length is reached, or when an algorithm-specific stopping criterion indicates that further search is unlikely to improve the result. Finished candidates should be handled consistently. Incorrect stopping logic can prematurely discard strong hypotheses or waste computation by expanding completed sequences."
+        },
+        {
+            "id": "beam-diversity",
+            "title": "11. Beam Search and Diversity",
+            "type": "concept",
+            "content": "Standard beam search usually favors high-scoring sequences and may produce similar candidates. This is often acceptable for tasks prioritizing a single high-scoring result, but it can be undesirable when users need diverse alternatives. Diverse beam search variants introduce mechanisms that encourage different beams to explore different continuations. Such modifications change the search objective and may trade raw model likelihood for candidate variety."
+        },
+        {
+            "id": "beam-applications",
+            "title": "12. Where Beam Search Is Useful",
+            "type": "concept",
+            "content": "Beam search has been widely used in machine translation, speech recognition, and structured sequence generation. It can be helpful when a task benefits from exploring several candidate continuations under a defined sequence score. For open-ended conversational generation, sampling methods may be preferred because standard beam search can produce repetitive or generic text. The best method depends on the output requirements rather than on a universal ranking of decoding algorithms."
+        },
+        {
+            "id": "beam-complexity",
+            "title": "13. Computational Cost",
+            "type": "concept",
+            "content": "A beam width greater than one requires maintaining multiple active prefixes and computing their next-token distributions. In a straightforward implementation, the number of active candidates is bounded by the beam width, but the model still performs substantial computation for each generation step. Efficient implementations batch beam candidates and reuse intermediate states where possible. Wider beams increase memory usage and can increase latency."
+        },
+        {
+            "id": "beam-limitations",
+            "title": "14. Limitations",
+            "type": "concept",
+            "content": "Beam search optimizes a chosen model-based scoring rule, not truth or human preference directly. It can miss good sequences that are pruned early, and length penalties can change rankings in unintended ways. A model with poorly calibrated probabilities may rank weak outputs highly. Beam search should therefore be evaluated using task-specific metrics and human review where appropriate."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "beam-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main difference between greedy decoding and beam search?",
+            "correctAnswer": "Greedy decoding keeps one partial sequence, while beam search maintains multiple candidate sequences.",
+            "solution": "Greedy decoding commits to one next-token choice. Beam search expands multiple candidates and retains the best-scoring sequences at each step."
+        },
+        {
+            "id": "beam-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A sequence contains two tokens with conditional probabilities 0.5 and 0.4. What is its sequence probability?",
+            "correctAnswer": "0.2.",
+            "solution": "Multiply the conditional probabilities: 0.5 × 0.4 = 0.2."
+        },
+        {
+            "id": "beam-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What does beam width control?",
+            "correctAnswer": "The maximum number of candidate sequences retained during each search step.",
+            "solution": "A wider beam keeps more alternatives but usually increases computation and memory usage."
+        },
+        {
+            "id": "beam-ex-4",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "Why can raw cumulative log-probability favor shorter sequences?",
+            "correctAnswer": "Each additional token usually adds a non-positive log-probability term, making the total score more negative.",
+            "solution": "Since token probabilities are at most one, their logarithms are at most zero. Length normalization or a length penalty can reduce this bias, but it also changes the scoring objective."
+        },
+        {
+            "id": "beam-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "Would you automatically choose beam width 20 instead of 5 for a conversational assistant?",
+            "correctAnswer": "No. The choice should depend on response quality, diversity, latency, and computational cost.",
+            "solution": "A larger beam explores more candidates but can increase latency and may produce repetitive or generic responses. Evaluate several widths on representative prompts."
+        }
+    ],
+    "summary": "Beam search maintains multiple candidate sequences and expands them using cumulative token log-probabilities. Beam width controls how many candidates survive each step. Length normalization can help compare outputs of different lengths, but it changes the scoring objective. Beam search is useful for some structured generation tasks, yet it increases computational cost and does not guarantee factual or human-preferred outputs.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-k",
+        "module-11-inference-top-p",
+        "module-11-inference-kv-cache"
+    ]
+}

@@ -1,1 +1,141 @@
-{}
+{
+    "id": "perceptron",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 1,
+    "title": "Perceptron",
+    "slug": "perceptron",
+    "description": "Understand the perceptron, one of the earliest artificial neuron models, including weighted inputs, bias, threshold activation, decision boundaries, learning rules, limitations, and Python implementation.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Basic algebra",
+        "Vectors and dot products",
+        "Basic understanding of classification"
+    ],
+    "learningObjectives": [
+        "Explain the biological inspiration behind a perceptron.",
+        "Calculate the weighted sum of input features.",
+        "Understand the role of weights and bias.",
+        "Implement the perceptron learning rule.",
+        "Explain how a perceptron creates a linear decision boundary.",
+        "Identify problems that a single-layer perceptron cannot solve.",
+        "Implement and train a perceptron using Python and scikit-learn."
+    ],
+    "sections": [
+        {
+            "id": "perceptron-introduction",
+            "title": "1. What Is a Perceptron?",
+            "type": "concept",
+            "content": "A perceptron is a simple mathematical model of an artificial neuron. It receives numerical inputs, multiplies each input by a corresponding weight, adds a bias, and passes the result through an activation function to produce an output.\n\nThe perceptron was introduced by Frank Rosenblatt in the late 1950s and became an important foundation for modern neural networks.\n\nImagine building a model that decides whether an email is spam. The inputs might represent the number of suspicious words, the presence of a suspicious link, and the frequency of promotional phrases. A perceptron combines these signals to produce a binary prediction: spam or not spam.\n\nA perceptron has four major components:\n\n1. Inputs: Numerical features representing an example.\n2. Weights: Parameters determining the importance and direction of each input's influence.\n3. Bias: An adjustable offset that shifts the decision boundary.\n4. Activation function: A function that converts the weighted sum into an output.\n\nThe perceptron is a foundational model, but modern neural networks typically use differentiable activation functions and gradient-based optimization instead of the original hard-threshold learning rule."
+        },
+        {
+            "id": "perceptron-architecture",
+            "title": "2. Architecture and Information Flow",
+            "type": "concept",
+            "content": "Suppose a perceptron receives three inputs: x1, x2, and x3. Each input is associated with a weight: w1, w2, and w3.\n\nThe inputs first pass through weighted connections. The model calculates the weighted sum and adds a bias term. The resulting value is called the pre-activation value or net input.\n\nThe information flow is:\n\nInput features → Weighted connections → Summation → Bias addition → Activation → Prediction.\n\nFor example, suppose x = [2, 1], w = [0.6, 0.3], and b = -0.5. The weighted sum is 2(0.6) + 1(0.3) = 1.5. Adding the bias gives z = 1.0. A binary threshold activation then returns 1.\n\nThe weights and bias are learned parameters. The input features are supplied by the dataset and are not normally optimized by the perceptron itself."
+        },
+        {
+            "id": "perceptron-mathematics",
+            "title": "3. Mathematical Formulation",
+            "type": "math",
+            "content": "Let an input example contain n features:\n\nx = [x1, x2, ..., xn]\n\nLet the corresponding weights be:\n\nw = [w1, w2, ..., wn]\n\nThe weighted sum with bias is:\n\nz = w1*x1 + w2*x2 + ... + wn*xn + b\n\nUsing vector notation:\n\nz = w^T x + b\n\nThe superscript T denotes the transpose, so w^T x is the dot product between the weight vector and input vector.\n\nFor a binary perceptron, a common activation function is the step function:\n\nprediction = 1 if z >= 0\nprediction = 0 if z < 0\n\nSome formulations use outputs of -1 and +1 instead of 0 and 1. These conventions are both valid, but the learning rule and threshold must be consistent with the chosen convention.\n\nWorked example:\n\nInput: x = [3, 2]\nWeights: w = [0.4, -0.2]\nBias: b = 0.1\n\nz = (3 * 0.4) + (2 * -0.2) + 0.1\nz = 1.2 - 0.4 + 0.1\nz = 0.9\n\nSince z >= 0, the predicted class is 1.\n\nIf the bias were -1.0, the new result would be z = -0.2, giving class 0."
+        },
+        {
+            "id": "perceptron-weights-bias",
+            "title": "4. Understanding Weights and Bias",
+            "type": "concept",
+            "content": "Weights determine how input features influence the prediction.\n\nA positive weight means that increasing the corresponding feature increases the weighted sum, assuming other inputs remain fixed. A negative weight means that increasing the feature decreases the weighted sum. The magnitude of a weight indicates the strength of its contribution relative to the feature's scale.\n\nFeature scaling matters. A weight of 100 for a feature measured in thousands may not imply greater importance than a weight of 0.5 for a feature measured in fractions. Weight magnitudes are most directly comparable when features use comparable scales.\n\nThe bias shifts the activation threshold. Without a bias, the decision boundary of a linear perceptron must pass through the origin. Adding a bias allows the boundary to move.\n\nFor two input features, the decision boundary is:\n\nw1*x1 + w2*x2 + b = 0\n\nRearranging when w2 is not zero:\n\nx2 = -(w1/w2)*x1 - b/w2\n\nThis is a straight line in two dimensions. In higher dimensions, it becomes a hyperplane.\n\nThe perceptron therefore learns a linear decision boundary. It cannot represent every possible classification pattern, regardless of how long it trains."
+        },
+        {
+            "id": "perceptron-learning-rule",
+            "title": "5. The Perceptron Learning Rule",
+            "type": "math",
+            "content": "The perceptron learning rule updates the weights when an example is misclassified.\n\nFor labels y in {0, 1}, one commonly used update convention is:\n\nw_new = w_old + learning_rate * (y - y_pred) * x\n\nb_new = b_old + learning_rate * (y - y_pred)\n\nHere:\n\n- y is the correct target.\n- y_pred is the predicted class.\n- learning_rate controls the update magnitude.\n- x is the input vector.\n\nIf the prediction is correct, y - y_pred equals zero, so the parameters remain unchanged for that example.\n\nIf the true label is 1 but the model predicts 0, the weights move in the direction of the input vector, making a positive score more likely for similar examples.\n\nIf the true label is 0 but the model predicts 1, the weights move in the opposite direction.\n\nWorked example:\n\nx = [2, 1]\ny = 1\ny_pred = 0\nlearning_rate = 0.1\nw = [0.2, -0.1]\nb = 0\n\nThe error is 1 - 0 = 1.\n\nw_new = [0.2, -0.1] + 0.1 * [2, 1]\nw_new = [0.4, 0.0]\n\nb_new = 0 + 0.1 = 0.1\n\nThe update increases the model's score for this positive example.\n\nImportant: this is the perceptron learning rule, not the general gradient-descent rule used to train most modern neural networks. The hard-threshold activation is not differentiable at its threshold and has zero derivative almost everywhere."
+        },
+        {
+            "id": "perceptron-python",
+            "title": "6. Implementing a Perceptron from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nclass SimplePerceptron:\n    def __init__(self, learning_rate=0.1, epochs=20):\n        self.learning_rate = learning_rate\n        self.epochs = epochs\n        self.weights = None\n        self.bias = 0.0\n\n    def predict_one(self, x):\n        z = np.dot(x, self.weights) + self.bias\n        return int(z >= 0)\n\n    def fit(self, X, y):\n        X = np.asarray(X, dtype=float)\n        y = np.asarray(y, dtype=int)\n\n        self.weights = np.zeros(X.shape[1], dtype=float)\n        self.bias = 0.0\n\n        for _ in range(self.epochs):\n            errors = 0\n\n            for xi, target in zip(X, y):\n                prediction = self.predict_one(xi)\n                update = self.learning_rate * (target - prediction)\n\n                if update != 0:\n                    self.weights += update * xi\n                    self.bias += update\n                    errors += 1\n\n            if errors == 0:\n                break\n\n        return self\n\n    def predict(self, X):\n        X = np.asarray(X, dtype=float)\n        return np.array([self.predict_one(x) for x in X])\n\nX = np.array([\n    [0, 0],\n    [0, 1],\n    [1, 0],\n    [1, 1]\n])\n\ny = np.array([0, 0, 0, 1])\n\nmodel = SimplePerceptron(learning_rate=0.1, epochs=20)\nmodel.fit(X, y)\n\nprint('Weights:', model.weights)\nprint('Bias:', model.bias)\nprint('Predictions:', model.predict(X))",
+            "explanation": "This implementation trains a perceptron to model the AND logical operation. The model starts with zero weights and bias, processes each example, and updates parameters when its prediction differs from the target. Training stops early if an entire epoch has no errors. A perceptron is guaranteed to converge in a finite number of updates on a linearly separable training dataset under the standard perceptron assumptions, but not on every possible dataset."
+        },
+        {
+            "id": "perceptron-sklearn",
+            "title": "7. Using the Scikit-learn Perceptron",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import make_classification\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.linear_model import Perceptron\nfrom sklearn.metrics import accuracy_score, classification_report\n\nX, y = make_classification(\n    n_samples=1000,\n    n_features=10,\n    n_informative=6,\n    n_redundant=2,\n    random_state=42\n)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X,\n    y,\n    test_size=0.2,\n    random_state=42,\n    stratify=y\n)\n\nmodel = make_pipeline(\n    StandardScaler(),\n    Perceptron(max_iter=1000, eta0=0.1, random_state=42)\n)\n\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\n\nprint('Accuracy:', accuracy_score(y_test, predictions))\nprint(classification_report(y_test, predictions))",
+            "explanation": "The pipeline scales features using statistics learned only from the training data, then trains the perceptron. Stratified splitting helps preserve class proportions in train and test sets. Accuracy alone may be misleading for imbalanced datasets, so the classification report also includes precision, recall, and F1-score."
+        },
+        {
+            "id": "perceptron-limitations",
+            "title": "8. Limitations and the XOR Problem",
+            "type": "concept",
+            "content": "A single perceptron can learn only linearly separable classification patterns. Linearly separable means that one straight line, plane, or hyperplane can separate the classes without classification errors.\n\nThe AND operation is linearly separable. The OR operation is also linearly separable.\n\nThe XOR operation is different:\n\nInput [0, 0] → 0\nInput [0, 1] → 1\nInput [1, 0] → 1\nInput [1, 1] → 0\n\nNo single straight line can separate the positive XOR examples from the negative examples. Therefore, a single-layer perceptron cannot represent XOR perfectly.\n\nA network containing a hidden layer and suitable nonlinear activation functions can represent XOR. This limitation helped motivate the development of multilayer neural networks.\n\nOther limitations include the hard-threshold output, the lack of calibrated probabilities, sensitivity to feature scale, and the inability to model nonlinear boundaries without additional feature transformations."
+        },
+        {
+            "id": "perceptron-practical-guidance",
+            "title": "9. When Should You Use a Perceptron?",
+            "type": "concept",
+            "content": "A perceptron is useful for learning the basic mechanics of neural computation and linear classification. It can also be useful as a simple baseline for certain linearly separable problems.\n\nFor many practical binary classification problems, logistic regression or a linear support vector classifier is a more flexible baseline. Logistic regression provides probabilities and a smooth differentiable objective. Modern neural networks typically use differentiable activations and backpropagation.\n\nPractical checklist:\n\n- Scale numerical features when their ranges differ substantially.\n- Inspect class balance before selecting evaluation metrics.\n- Compare against a simple baseline.\n- Do not assume that successful training means the decision boundary is suitable for unseen data.\n- Use a multilayer model if the underlying pattern is nonlinear.\n- Evaluate performance on data that was not used to fit the model."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "perceptron-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A perceptron has x = [2, 3], w = [0.5, -0.2], and b = 0.1. Calculate z and the predicted class using the rule that predicts 1 when z >= 0.",
+            "correctAnswer": "z = 0.1, so the predicted class is 1.",
+            "solution": "Compute z = 2(0.5) + 3(-0.2) + 0.1 = 1.0 - 0.6 + 0.1 = 0.5. Therefore, the correct result is z = 0.5 and the predicted class is 1."
+        },
+        {
+            "id": "perceptron-exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the primary purpose of the bias term in a perceptron?",
+            "options": [
+                "To increase the number of input features",
+                "To shift the decision boundary",
+                "To guarantee perfect training accuracy",
+                "To convert every input into a probability"
+            ],
+            "correctAnswer": "To shift the decision boundary",
+            "solution": "The bias changes the threshold at which the model predicts a class. Without a bias, the linear decision boundary must pass through the origin."
+        },
+        {
+            "id": "perceptron-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A perceptron uses learning rate 0.2, x = [1, 3], true label 1, and predicted label 0. Its weights are [0.1, 0.2] and its bias is 0. Calculate the updated weights and bias.",
+            "correctAnswer": "Updated weights are [0.3, 0.8] and updated bias is 0.2.",
+            "solution": "The error is 1 - 0 = 1. The weight update is 0.2 * 1 * [1, 3] = [0.2, 0.6]. Adding this to the original weights gives [0.3, 0.8]. The bias becomes 0 + 0.2 = 0.2."
+        },
+        {
+            "id": "perceptron-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can a single perceptron not learn the XOR function perfectly?",
+            "correctAnswer": "XOR is not linearly separable, while a single perceptron creates a linear decision boundary.",
+            "solution": "The positive XOR examples occupy opposite corners of the input space. No single line separates both positive examples from both negative examples. A multilayer network with nonlinear activation functions can model this pattern."
+        },
+        {
+            "id": "perceptron-exercise-5",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Change the training labels in the scratch implementation to represent the OR operation. What should the predictions be for inputs [0,0], [0,1], [1,0], and [1,1]?",
+            "correctAnswer": "[0, 1, 1, 1]",
+            "solution": "Use y = np.array([0, 1, 1, 1]). The OR operation predicts 0 only when both inputs are zero. It is linearly separable, so a perceptron can learn it under standard training assumptions."
+        }
+    ],
+    "summary": "A perceptron combines weighted input features and a bias, then applies a threshold activation to make a prediction. Its learning rule adjusts weights when examples are misclassified. It forms a linear decision boundary and can learn linearly separable functions such as AND and OR, but cannot represent XOR on its own. Understanding perceptrons establishes the foundation for neurons, activation functions, multilayer networks, and backpropagation.",
+    "relatedTopics": [
+        "neurons",
+        "activation-functions",
+        "forward-propagation",
+        "backpropagation",
+        "gradient-descent-sgd"
+    ]
+}

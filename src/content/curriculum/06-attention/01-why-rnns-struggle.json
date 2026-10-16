@@ -1,0 +1,138 @@
+{
+    "id": "module-06-attention-why-rnns-struggle",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 1,
+    "title": "Why RNNs Struggle with Long Sequences",
+    "slug": "why-rnns-struggle",
+    "href": "/curriculum/06-attention/why-rnns-struggle",
+    "filePath": "content/curriculum/06-attention/01-why-rnns-struggle.json",
+    "description": "Understand the limitations of recurrent neural networks on long sequences and why attention became a foundational mechanism for modern language models.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Basic neural networks",
+        "Vectors and matrices",
+        "Introduction to recurrent neural networks",
+        "Basic understanding of sequence data"
+    ],
+    "learningObjectives": [
+        "Explain how recurrent neural networks process sequential data.",
+        "Understand hidden states and recurrent information flow.",
+        "Explain the vanishing and exploding gradient problems.",
+        "Understand why long-distance dependencies are difficult for RNNs.",
+        "Describe the computational limitations of sequential processing.",
+        "Explain how attention helps address these limitations."
+    ],
+    "sections": [
+        {
+            "id": "sequential-data",
+            "title": "1. Understanding Sequential Data",
+            "type": "concept",
+            "content": "Sequential data contains elements whose order matters. Examples include sentences, time series, audio, video frames, and event logs. In a sentence such as 'The animal that chased the cats was hungry', understanding the word 'was' requires information about the earlier subject 'animal'. Models that process each element independently may miss such relationships. Recurrent neural networks were designed to process sequences while carrying information from earlier elements into later computations."
+        },
+        {
+            "id": "rnn-mechanics",
+            "title": "2. How a Recurrent Neural Network Works",
+            "type": "math",
+            "content": "At time step t, an RNN receives the current input x_t and previous hidden state h_(t-1). It computes h_t = tanh(W_xh x_t + W_hh h_(t-1) + b_h). An output may then be computed as y_t = W_hy h_t + b_y. The hidden state acts as a compact representation of information observed so far. Because each hidden state depends on the previous one, the computation follows the order of the sequence."
+        },
+        {
+            "id": "hidden-state-bottleneck",
+            "title": "3. The Hidden-State Bottleneck",
+            "type": "concept",
+            "content": "In a basic encoder-decoder RNN, the encoder may compress an entire input sequence into one final hidden state. The decoder must use that representation to generate the output. This creates an information bottleneck: a fixed-size vector must preserve all relevant details from a potentially long sequence. Details that are unimportant early in processing may be lost, even if they become important later. Attention reduces this pressure by allowing a decoder to access representations of multiple input positions instead of relying only on one final vector."
+        },
+        {
+            "id": "vanishing-gradients",
+            "title": "4. Vanishing and Exploding Gradients",
+            "type": "concept",
+            "content": "Training a recurrent network requires backpropagation through time. Gradients pass backward through repeated recurrent computations. If the relevant derivatives repeatedly have magnitudes smaller than one, the gradient can shrink exponentially. Earlier time steps then receive very weak learning signals, making long-term relationships difficult to learn. If derivatives repeatedly amplify gradients, the gradient can instead grow excessively, causing unstable updates. Gradient clipping helps with exploding gradients, while gated architectures such as LSTMs and GRUs help preserve information. Attention provides additional direct pathways between positions, although it does not eliminate every optimization difficulty."
+        },
+        {
+            "id": "gradient-equation",
+            "title": "5. Why Gradients Can Shrink",
+            "type": "math",
+            "content": "For a recurrent transition h_t = f(h_(t-1), x_t), the gradient from a later state to an earlier state contains a product of Jacobian matrices: ∂h_T/∂h_t = J_T J_(T-1) ... J_(t+1). If the relevant singular values of these Jacobians are consistently below one, the product can shrink rapidly with sequence length. In a simplified scalar illustration, multiplying by 0.5 across 20 steps gives 0.5^20, approximately 0.00000095. This example illustrates the mechanism rather than describing every RNN, whose behavior depends on its parameters and nonlinearities."
+        },
+        {
+            "id": "sequential-computation",
+            "title": "6. Sequential Computation and Parallelism",
+            "type": "concept",
+            "content": "The hidden state at time t depends on the hidden state at time t-1, so a conventional RNN cannot compute every time step independently during its forward pass. This dependency limits parallel processing across sequence positions. GPUs are especially effective when many operations can be executed in parallel. Self-attention allows representations for many positions to be processed together, although attention has its own memory and computation costs that grow with sequence length."
+        },
+        {
+            "id": "attention-motivation",
+            "title": "7. How Attention Changes the Problem",
+            "type": "concept",
+            "content": "Attention lets a model construct a representation of the current position by assigning weights to representations at other positions. A token can place high weight on a distant word when that word is relevant. Instead of forcing every useful detail through a single chain of recurrent states, attention creates direct information paths between positions. This makes it easier to represent long-distance relationships and provides an interpretable view of which positions contributed to a particular weighted combination. Attention weights can be informative, but they should not automatically be treated as complete explanations of model behavior."
+        },
+        {
+            "id": "rnn-example",
+            "title": "8. Worked Example: Resolving a Long-Distance Relationship",
+            "type": "example",
+            "content": "Consider the sentence: 'The keys to the old cabinet near the entrance are missing.' A model must associate 'are' with 'keys', even though several words separate them. A simple recurrent model must preserve the relevant number information through multiple state transitions. An attention-based model can allow the representation of 'are' to directly incorporate information from 'keys'. The model still needs to learn the appropriate relationship, but the architecture provides a shorter information path."
+        },
+        {
+            "id": "limitations",
+            "title": "9. RNNs Are Not Useless",
+            "type": "concept",
+            "content": "RNNs remain useful for streaming data, compact models, and situations where inputs arrive continuously. Their recurrent structure can naturally process one observation at a time. Attention-based models are often more effective for large-scale language modeling and parallel training, but full self-attention can become expensive for very long sequences. The right architecture depends on latency, memory, sequence length, data availability, and deployment constraints."
+        },
+        {
+            "id": "summary-concept",
+            "title": "10. Key Takeaway",
+            "type": "concept",
+            "content": "The major limitations of conventional RNNs are sequential computation, difficulty learning long-distance dependencies, and the possibility of vanishing or exploding gradients. Attention addresses the information-flow problem by allowing positions to interact more directly. This idea is central to the Transformer architecture, which is explored in later modules."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "rnn-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why does a conventional RNN process sequence positions sequentially?",
+            "correctAnswer": "Because the hidden state at each time step depends on the hidden state from the previous time step.",
+            "solution": "The dependency h_t = f(h_(t-1), x_t) means h_t cannot generally be computed until h_(t-1) is available."
+        },
+        {
+            "id": "rnn-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the hidden-state bottleneck in a basic encoder-decoder RNN?",
+            "correctAnswer": "The model must compress relevant input information into a fixed-size representation, which may lose details from long sequences.",
+            "solution": "A fixed-size final state may not retain every detail needed by the decoder. Attention provides access to multiple encoder representations."
+        },
+        {
+            "id": "rnn-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "In a simplified gradient model, a gradient is multiplied by 0.5 at each of 10 steps. What fraction of its original magnitude remains?",
+            "correctAnswer": "0.5^10 = 0.0009765625.",
+            "solution": "Repeated multiplication gives 0.5^10. The result is less than one-thousandth of the original magnitude, illustrating rapid gradient shrinkage."
+        },
+        {
+            "id": "rnn-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Does attention guarantee that a model will learn every long-distance dependency?",
+            "correctAnswer": "No. Attention provides direct information paths, but learning still depends on the data, architecture, objective, and optimization.",
+            "solution": "An architecture makes some computations easier to represent; it does not guarantee that training will discover every useful relationship."
+        },
+        {
+            "id": "rnn-ex-5",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "Give one situation where an RNN may be a reasonable choice despite the availability of attention-based models.",
+            "correctAnswer": "A low-latency streaming application that processes incoming sensor measurements one at a time.",
+            "solution": "An RNN can maintain a compact state and update it as each observation arrives, potentially making it attractive under strict memory or streaming constraints."
+        }
+    ],
+    "summary": "Conventional RNNs carry information through recurrent hidden states. This creates sequential computation, a potential information bottleneck, and difficulties learning long-distance dependencies due to repeated gradient transformations. Attention lets a position directly combine information from other positions and is a key step toward Transformer models.",
+    "relatedTopics": [
+        "module-06-attention-attention-intuition",
+        "module-06-attention-query-key-value",
+        "module-06-attention-self-attention",
+        "module-07-transformers-transformer-architecture"
+    ]
+}

@@ -1,1 +1,464 @@
-{}
+{
+    "id": "module-14-generative-models-gans",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 3,
+    "title": "Generative Adversarial Networks (GANs)",
+    "slug": "gans",
+    "href": "/curriculum/14-generative-models/gans",
+    "filePath": "content/curriculum/14-generative-models/03-gans.json",
+    "description": "Study adversarial generative modeling through generators and discriminators, minimax optimization, GAN training dynamics, conditional generation, Wasserstein objectives, evaluation, and practical implementation.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-14-generative-models-autoencoders",
+        "module-04-deep-learning",
+        "module-03-neural-networks"
+    ],
+    "learningObjectives": [
+        "Explain how a generator and discriminator learn through an adversarial objective.",
+        "Understand the original minimax loss and the non-saturating generator loss.",
+        "Implement separate discriminator and generator updates.",
+        "Describe common GAN instability, mode collapse, and vanishing-gradient problems.",
+        "Explain conditional GANs, DCGAN design practices, and Wasserstein GANs.",
+        "Evaluate generated data using complementary quality, diversity, and memorization checks.",
+        "Discuss responsible deployment of synthetic media generation systems."
+    ],
+    "sections": [
+        {
+            "id": "gan-introduction",
+            "title": "1. Introduction to Generative Adversarial Networks",
+            "type": "concept",
+            "content": "A generative adversarial network, or GAN, trains two neural networks in competition. The generator creates synthetic examples from latent noise, while the discriminator attempts to distinguish real training examples from generated examples. The generator improves by producing outputs that the discriminator classifies as real. The discriminator improves by learning to distinguish the training distribution from the generator's current distribution. Unlike a conventional autoencoder, a basic GAN does not require an encoder that maps each training example into a latent code. Instead, it learns a mapping from a chosen latent prior to synthetic observations. GANs have been used for image synthesis, translation, super-resolution, style transfer, and other generation tasks. Their adversarial training can produce sharp outputs, but the optimization is a dynamic game rather than a straightforward minimization of one fixed reconstruction error.",
+            "keyPoints": [
+                "The generator produces synthetic observations.",
+                "The discriminator distinguishes real from generated observations.",
+                "The two networks are trained through competing objectives.",
+                "Basic GANs sample latent noise rather than reconstructing each input.",
+                "Adversarial training can be unstable and requires careful evaluation."
+            ]
+        },
+        {
+            "id": "gan-components",
+            "title": "2. Generator and Discriminator",
+            "type": "concept",
+            "content": "The generator G maps a latent vector z to a synthetic observation G(z). The latent vector is sampled from a prior such as a standard normal or a uniform distribution. The discriminator D receives an observation and produces a score representing how likely the observation is to be real under its training objective. In the original GAN formulation, D(x) is interpreted as a probability between zero and one. During training, the discriminator sees real examples labeled real and generated examples labeled fake. The generator receives gradients through the discriminator and adjusts its parameters to make generated examples more convincing. Both networks can be multilayer perceptrons for simple vectors or convolutional networks for images. The architecture should match the dimensionality and structure of the data.",
+            "formula": "x_fake = G(z), where z ~ p_z(z); D(x) estimates a real-versus-generated score",
+            "example": "For 28 by 28 grayscale images, a generator can map a 100-dimensional noise vector to 784 output values, while a discriminator maps a 784-dimensional image representation to a single logit.",
+            "keyPoints": [
+                "The generator maps latent noise to data space.",
+                "The discriminator evaluates real and generated examples.",
+                "The latent prior determines how generation starts.",
+                "Architectures should match the data modality.",
+                "The discriminator score is not automatically a calibrated real-world probability."
+            ]
+        },
+        {
+            "id": "gan-minimax",
+            "title": "3. The Minimax Objective",
+            "type": "math",
+            "content": "The original GAN objective is a two-player minimax game. The discriminator maximizes its ability to classify real examples as real and generated examples as fake. The generator attempts to minimize the same value function by making generated examples indistinguishable from real examples. The objective contains an expectation over real data and an expectation over latent noise. The discriminator's real-data term rewards high scores for real observations, while the generated-data term rewards low scores for generated observations. The generator affects the second term through its outputs. The objective is elegant, but directly minimizing the original generator expression can lead to weak gradients when the discriminator becomes very confident early in training.",
+            "formula": "min_G max_D V(D,G) = E_{x~p_data}[log D(x)] + E_{z~p_z}[log(1-D(G(z)))]",
+            "keyPoints": [
+                "The discriminator maximizes the value function.",
+                "The generator minimizes the value function in the original formulation.",
+                "The real and generated distributions are compared indirectly.",
+                "The game is nonconvex and generally lacks simple optimization guarantees.",
+                "The original generator objective can suffer from weak gradients."
+            ]
+        },
+        {
+            "id": "gan-optimal-discriminator",
+            "title": "4. The Optimal Discriminator Intuition",
+            "type": "math",
+            "content": "For a fixed generator and an ideal discriminator with sufficient capacity, the original objective has an optimal discriminator that depends on the relative densities of the real and generated distributions. Where real data density is high relative to generated density, the discriminator favors real. Where generated density dominates, it favors fake. If the two distributions match, the optimal discriminator outputs one half everywhere the distributions overlap. This result provides a theoretical interpretation of the game: the generator is encouraged to make its distribution resemble the data distribution. In practice, neural networks have finite capacity, training is approximate, and the discriminator's score may not represent the theoretical optimum. The result is therefore a conceptual guide rather than a guarantee about a trained model.",
+            "formula": "D*(x) = p_data(x) / (p_data(x) + p_g(x))",
+            "keyPoints": [
+                "The optimal discriminator depends on real and generated densities.",
+                "When distributions match, the ideal discriminator cannot distinguish them.",
+                "The result assumes a fixed generator and an idealized discriminator.",
+                "Practical neural training only approximates this ideal."
+            ]
+        },
+        {
+            "id": "gan-nonsaturating",
+            "title": "5. The Non-Saturating Generator Loss",
+            "type": "math",
+            "content": "A widely used alternative trains the generator to maximize the discriminator's prediction that generated examples are real. Instead of minimizing log(1-D(G(z))), the generator minimizes negative log D(G(z)). This non-saturating objective has the same intended equilibrium as the original formulation under the usual theoretical assumptions, but often supplies stronger gradients early in training when the discriminator easily rejects generated examples. In code, if the discriminator returns logits, binary cross-entropy with a target of one can implement the non-saturating generator objective. The discriminator must not be updated during the generator step, although gradients must still flow through its operations to the generated images and then to the generator parameters.",
+            "formula": "L_G = -E_{z~p_z}[log D(G(z))]",
+            "keyPoints": [
+                "The non-saturating loss encourages generated samples to be classified as real.",
+                "It often provides stronger gradients early in training.",
+                "The discriminator parameters are not updated during the generator step.",
+                "Gradients must still pass through the discriminator to the generator."
+            ]
+        },
+        {
+            "id": "gan-bce-logits",
+            "title": "6. Binary Cross-Entropy with Logits",
+            "type": "concept",
+            "content": "A discriminator can return a raw logit instead of a sigmoid probability. The logit is an unrestricted real number, and sigmoid maps it to a value between zero and one. In PyTorch, BCEWithLogitsLoss combines the sigmoid and binary cross-entropy computation in a numerically stable operation. For discriminator training, real examples use targets of one and generated examples use targets of zero. For non-saturating generator training, generated examples use targets of one. When using BCEWithLogitsLoss, do not apply sigmoid to the discriminator output first. The label convention must remain consistent throughout the training loop, and the target tensor must have a compatible shape with the discriminator output.",
+            "keyPoints": [
+                "Logits are not probabilities.",
+                "BCEWithLogitsLoss expects raw logits.",
+                "Real examples use target one and fake examples use target zero for discriminator training.",
+                "Generated examples use target one during non-saturating generator training.",
+                "Stable loss implementations reduce numerical problems."
+            ]
+        },
+        {
+            "id": "gan-alternating",
+            "title": "7. Alternating Optimization",
+            "type": "concept",
+            "content": "GAN training typically alternates between discriminator and generator updates. During a discriminator update, real examples and detached generated examples are used to compute the discriminator loss. Detaching the generated examples prevents gradients from flowing into the generator during this step. During a generator update, fresh latent noise is sampled, the generator produces examples, and the discriminator evaluates them. The generator loss is backpropagated through the discriminator's computations, but only the generator optimizer performs an update. The discriminator parameters can have their gradients disabled temporarily during the generator step to save memory, provided gradients still propagate through the discriminator operations to the input. The number of discriminator updates per generator update is a design choice and can affect stability.",
+            "keyPoints": [
+                "Discriminator and generator updates have different targets.",
+                "Detach generated samples during discriminator training.",
+                "Update generator parameters during the generator step.",
+                "Gradient flow through the discriminator is needed for generator learning.",
+                "Update ratios are hyperparameters, not universal constants."
+            ]
+        },
+        {
+            "id": "gan-training-code",
+            "title": "8. A Minimal GAN Training Loop",
+            "type": "code",
+            "language": "python",
+            "content": "The following example illustrates alternating updates for a small GAN. It assumes that Generator and Discriminator are already defined, that the generator accepts a batch of noise vectors, and that the discriminator returns one logit per image. Images should be normalized consistently with the generator output. The discriminator update uses detached fake images, while the generator update uses non-detached generated images so gradients can reach the generator.",
+            "code": "import torch\nimport torch.nn as nn\n\ncriterion = nn.BCEWithLogitsLoss()\nG = Generator().to(device)\nD = Discriminator().to(device)\nopt_G = torch.optim.Adam(G.parameters(), lr=2e-4, betas=(0.5, 0.999))\nopt_D = torch.optim.Adam(D.parameters(), lr=2e-4, betas=(0.5, 0.999))\nz_dim = 100\n\nfor real_images, _ in train_loader:\n    real_images = real_images.to(device)\n    batch_size = real_images.size(0)\n\n    z = torch.randn(batch_size, z_dim, device=device)\n    fake_images = G(z)\n    real_logits = D(real_images)\n    fake_logits = D(fake_images.detach())\n    loss_D = criterion(real_logits, torch.ones_like(real_logits)) + criterion(fake_logits, torch.zeros_like(fake_logits))\n    opt_D.zero_grad()\n    loss_D.backward()\n    opt_D.step()\n\n    z = torch.randn(batch_size, z_dim, device=device)\n    generated = G(z)\n    fake_logits = D(generated)\n    loss_G = criterion(fake_logits, torch.ones_like(fake_logits))\n    opt_G.zero_grad()\n    loss_G.backward()\n    opt_G.step()",
+            "explanation": "The discriminator learns from real and generated examples. The generated images are detached during this update so generator parameters are not trained by the discriminator loss. The generator then receives a new noise batch and attempts to make the discriminator classify its outputs as real. The discriminator's weights are not updated by opt_G, but its operations remain part of the gradient path. In production code, consider whether discriminator gradients should be disabled during the generator update to reduce memory use, and ensure the architecture and normalization match the dataset."
+        },
+        {
+            "id": "gan-latent-prior",
+            "title": "9. Latent Noise and the Generator Input",
+            "type": "concept",
+            "content": "The generator begins with a latent vector sampled from a chosen prior distribution. Common choices include a standard Gaussian or a uniform distribution over a bounded interval. The dimension of the latent vector controls the input representation's size, but a larger latent dimension does not guarantee greater sample diversity. The generator learns a nonlinear mapping from latent space to the data distribution. Different latent directions may influence different output properties, but this organization is not guaranteed without additional objectives or training structure. Sampling several latent vectors and comparing their outputs is a basic way to inspect diversity. A model that produces nearly identical images for many distinct latent vectors may be experiencing mode collapse or may be ignoring parts of its input.",
+            "keyPoints": [
+                "The latent prior determines the generator's input distribution.",
+                "Latent dimensionality is a design choice.",
+                "Different latent vectors should ideally produce varied outputs.",
+                "Latent directions are not automatically interpretable.",
+                "Ignoring the latent input can be a sign of limited diversity."
+            ]
+        },
+        {
+            "id": "gan-mode-collapse",
+            "title": "10. Mode Collapse",
+            "type": "concept",
+            "content": "Mode collapse occurs when a generator produces a narrow set of outputs even though the real data distribution contains many modes. For example, a model trained on a dataset of many object categories may generate mostly one category or a few similar appearances. The generator can discover outputs that fool the current discriminator without learning broad coverage of the data distribution. Because the discriminator changes during training, the generator may repeatedly shift among limited strategies. Mode collapse can be difficult to detect using only a small sample grid or a single quality score. Evaluate many generated examples, examine nearest neighbors in the training set, and use metrics that consider both quality and diversity. Conditional generation can help organize outputs by labels, but it does not eliminate collapse automatically.",
+            "keyPoints": [
+                "Mode collapse reduces coverage of the real distribution.",
+                "A small set of convincing outputs can hide poor diversity.",
+                "The discriminator-generator game can reward narrow strategies.",
+                "Evaluate a sufficiently large set of generated samples.",
+                "Quality and coverage should be examined separately."
+            ]
+        },
+        {
+            "id": "gan-vanishing-gradients",
+            "title": "11. Vanishing Gradients and Training Instability",
+            "type": "concept",
+            "content": "If the discriminator becomes too strong relative to the generator, generated examples may be classified as fake with high confidence. Under the original minimax generator loss, this can lead to weak gradients that provide little learning signal. The non-saturating loss addresses this particular gradient issue but does not solve every instability. Other problems include oscillating losses, exploding gradients, sensitivity to learning rates, and imbalance between the two networks. GAN losses are not straightforward measures of sample quality: a lower generator loss does not necessarily mean more realistic images, and a discriminator loss near a particular value does not prove equilibrium. Track fixed-noise samples, architecture settings, learning rates, and diversity metrics alongside losses.",
+            "keyPoints": [
+                "A strong discriminator can weaken the original generator learning signal.",
+                "The non-saturating objective can improve early gradients.",
+                "Oscillating losses are common in adversarial optimization.",
+                "Loss values alone do not measure perceptual quality.",
+                "Fixed-noise visualizations help track changes during training."
+            ]
+        },
+        {
+            "id": "gan-hyperparameters",
+            "title": "12. Hyperparameter Balance",
+            "type": "concept",
+            "content": "GAN behavior is sensitive to learning rates, optimizer settings, batch size, latent dimensionality, model capacity, and the relative number of updates. If the discriminator learns too slowly, its feedback may be uninformative. If it learns too quickly, the generator may receive poor gradients or chase a rapidly changing decision boundary. Adam with beta settings such as (0.5, 0.999) has been common in classic DCGAN implementations, but those values are not universal recommendations. Keep experiments reproducible by recording random seeds, optimizer parameters, data normalization, augmentation, and update ratios. When training is unstable, change a small number of factors at a time rather than adjusting every setting simultaneously.",
+            "keyPoints": [
+                "The two networks must learn at a compatible pace.",
+                "Optimizer settings affect adversarial dynamics.",
+                "Batch size and data augmentation can alter stability.",
+                "Reproducible configuration tracking is essential.",
+                "No single hyperparameter recipe works for all GANs."
+            ]
+        },
+        {
+            "id": "gan-dcgan",
+            "title": "13. Deep Convolutional GANs",
+            "type": "concept",
+            "content": "Deep Convolutional GANs, commonly called DCGANs, established a practical set of architectural patterns for image generation. The generator commonly uses a fully connected projection followed by upsampling or transposed convolution layers. The discriminator uses strided convolutions to reduce spatial resolution and extract features. Batch normalization is often used in hidden layers, although its placement and use depend on the architecture. Classic DCGAN guidance generally avoids pooling operations in favor of learned strided convolutions and uses nonlinearities suited to each network. Generator outputs are often passed through tanh when training images are normalized to [-1, 1]. Matching the real image range to the generator output is critical. Architectural guidelines improve the starting point but do not guarantee stable or high-quality training.",
+            "keyPoints": [
+                "DCGANs use convolutional architectures for image generation.",
+                "The discriminator downsamples with learned convolutional operations.",
+                "The generator progressively increases spatial resolution.",
+                "Batch normalization and activation choices affect training.",
+                "Real data normalization must match the generator's output range."
+            ]
+        },
+        {
+            "id": "gan-output-scaling",
+            "title": "14. Data Normalization and Generator Outputs",
+            "type": "concept",
+            "content": "The range of real training images should match the range produced by the generator. If the generator uses tanh, its outputs are bounded between -1 and 1, so real image pixels are commonly normalized to the same interval. If the generator uses sigmoid, outputs lie between zero and one, which can match images normalized to [0, 1]. A mismatch makes discrimination easier for reasons unrelated to the semantic content of the images. For example, if all real images contain values between zero and one but generated images contain many negative values, the discriminator can learn a simple numerical cue. Consistent normalization, inverse transforms for visualization, and correct loss input types are basic requirements for meaningful training.",
+            "keyPoints": [
+                "Match real-data scaling to generator output scaling.",
+                "Tanh is commonly paired with inputs normalized to [-1, 1].",
+                "Sigmoid is commonly paired with outputs in [0, 1].",
+                "Normalization mismatch can create trivial discriminator cues.",
+                "Use inverse normalization when visualizing generated images."
+            ]
+        },
+        {
+            "id": "gan-conditional",
+            "title": "15. Conditional GANs",
+            "type": "concept",
+            "content": "A conditional GAN generates examples according to an additional condition, such as a class label, text embedding, or source image. The generator receives both latent noise and the condition. The discriminator also receives the condition so it can evaluate whether an example is realistic and compatible with the requested context. For class-conditional image generation, labels may be represented as one-hot vectors or learned embeddings. The condition can be concatenated with the latent vector or injected into intermediate layers. For image-to-image translation, the source image can be supplied to both networks. Conditional GANs provide control over generation, but successful conditioning must be measured rather than assumed. A model may generate realistic outputs while ignoring the requested label.",
+            "formula": "x_fake = G(z, c); D(x, c) evaluates both the example and its condition",
+            "keyPoints": [
+                "Conditions can include labels, text, or source images.",
+                "Both generator and discriminator can use conditioning information.",
+                "Conditioning can be concatenated or injected through intermediate layers.",
+                "Realism and condition adherence are separate evaluation goals.",
+                "A conditional model can still ignore its condition."
+            ]
+        },
+        {
+            "id": "gan-wgan",
+            "title": "16. Wasserstein GANs",
+            "type": "concept",
+            "content": "Wasserstein GANs replace the original discriminator probability objective with a critic that assigns real-valued scores to observations. The critic is trained to score real data higher than generated data. Under suitable conditions, the difference between expected critic scores relates to the Wasserstein-1 distance between distributions. This distance can provide a more useful learning signal when the real and generated distributions have limited overlap. The critic is not a probability classifier, so a sigmoid output is not generally used in the standard WGAN objective. The theory requires a Lipschitz constraint on the critic. Enforcing that constraint is a central design consideration, and the original weight-clipping approach has practical limitations.",
+            "formula": "L_critic = E[D(G(z))] - E[D(x)]; L_G = -E[D(G(z))]",
+            "keyPoints": [
+                "A WGAN critic produces scores rather than calibrated probabilities.",
+                "The critic scores real samples higher than generated samples.",
+                "The objective is related to Wasserstein-1 distance under required assumptions.",
+                "A Lipschitz constraint is essential to the formulation.",
+                "Critic scores should not be interpreted as probabilities."
+            ]
+        },
+        {
+            "id": "gan-gradient-penalty",
+            "title": "17. Gradient Penalty",
+            "type": "math",
+            "content": "WGAN-GP uses a gradient penalty to encourage the critic's input gradient norm to remain near one at interpolated points between real and generated samples. The method avoids the hard weight clipping used in the original WGAN formulation. For each pair of real and generated examples, an interpolation coefficient is sampled and used to construct an intermediate input. The gradient of the critic output with respect to that input is computed, and a penalty is applied when its norm differs from one. This encourages the desired Lipschitz behavior in sampled regions, although it is not a universal proof that the global constraint holds everywhere. The method requires gradients with respect to the input, so implementation must preserve the relevant computation graph.",
+            "formula": "L_GP = lambda * E_hat_x[(||grad_hat_x D(hat_x)||_2 - 1)^2]",
+            "example": "Interpolate between a real image and a generated image using a random coefficient between zero and one. Penalize the critic when the gradient norm at the interpolated image deviates from one.",
+            "keyPoints": [
+                "Gradient penalty regularizes critic input gradients.",
+                "Interpolated samples are formed between real and generated observations.",
+                "The penalty discourages gradient norms far from one.",
+                "The method avoids hard weight clipping.",
+                "Implementation requires gradients with respect to interpolated inputs."
+            ]
+        },
+        {
+            "id": "gan-wgan-training",
+            "title": "18. Training Considerations for WGAN-GP",
+            "type": "concept",
+            "content": "WGAN-GP often trains the critic several times for each generator update, allowing the critic to provide a more informative estimate of the current distribution difference. The appropriate update ratio depends on the task and model. The critic's loss includes the difference between real and generated scores plus the gradient penalty. During critic training, generated samples are generally detached so gradients update only the critic. During generator training, gradients must flow through the critic to the generator. Because the critic score is not a probability, standard binary cross-entropy is not used for the basic WGAN objective. Monitor generated samples and diversity as well as critic-related values; the numerical losses have different meanings from those of an original GAN.",
+            "keyPoints": [
+                "The critic may receive multiple updates per generator update.",
+                "The gradient penalty is part of the critic objective.",
+                "Detach generated examples during critic updates.",
+                "Do not use the original GAN BCE objective for a basic WGAN critic.",
+                "Interpret critic losses according to the chosen objective."
+            ]
+        },
+        {
+            "id": "gan-evaluation",
+            "title": "19. Evaluating GAN Outputs",
+            "type": "concept",
+            "content": "GAN evaluation should measure both sample quality and coverage of the data distribution. Visual inspection can reveal obvious artifacts, duplicated patterns, and failures to follow conditions. Fréchet Inception Distance compares statistics of real and generated images in a feature space produced by an Inception network. It is widely used, but it depends on the feature extractor, preprocessing, and sample count. Precision and recall approaches for generative models aim to separate sample fidelity from distribution coverage. Human evaluation can be valuable for domain-specific quality, but it needs a carefully designed protocol and should not be treated as automatically objective. A reliable evaluation combines multiple measures and includes a sufficiently large, held-out set of generated samples.",
+            "keyPoints": [
+                "Visual inspection is useful but incomplete.",
+                "FID depends on the feature representation and evaluation setup.",
+                "Precision and recall can help separate fidelity and coverage.",
+                "Human evaluation requires a defined protocol.",
+                "No single metric fully captures generative quality."
+            ]
+        },
+        {
+            "id": "gan-fid",
+            "title": "20. Understanding FID",
+            "type": "math",
+            "content": "Fréchet Inception Distance models real and generated image features as multivariate Gaussian distributions and computes a distance between their estimated means and covariance matrices. Lower FID is commonly interpreted as better agreement under this feature-based measure, but comparisons are meaningful only when evaluation procedures are consistent. Image resizing, normalization, feature extraction, and sample count can affect the result. Finite-sample bias means that scores from small sample sets can be misleading. FID also cannot reliably describe every semantic or application-specific property of generated images. A good FID score should therefore be complemented by diversity checks, memorization analysis, and task-specific review.",
+            "formula": "FID = ||mu_r - mu_g||^2 + Tr(Sigma_r + Sigma_g - 2(Sigma_r Sigma_g)^(1/2))",
+            "keyPoints": [
+                "FID compares Gaussian statistics of image features.",
+                "Lower values generally indicate closer feature distributions under the metric.",
+                "Preprocessing and sample counts must be consistent.",
+                "FID can miss semantic failures and some forms of memorization.",
+                "Use complementary metrics and qualitative review."
+            ]
+        },
+        {
+            "id": "gan-memorization",
+            "title": "21. Memorization and Nearest-Neighbor Checks",
+            "type": "concept",
+            "content": "A GAN can generate outputs that resemble training examples, and some models may memorize portions of their training data. This can create privacy, copyright, and evaluation concerns. A practical check compares generated samples with their nearest neighbors in both the training set and a held-out set, using suitable feature representations or domain-specific similarity measures. Exact pixel distance may miss semantic similarity, while a learned feature distance can introduce its own biases. Nearest-neighbor checks do not prove that a model has or has not memorized data, but they can identify suspiciously close matches. Training data provenance, deduplication, access controls, and privacy analysis are especially important when examples contain personal or sensitive information.",
+            "keyPoints": [
+                "Generated examples may closely resemble training examples.",
+                "Nearest-neighbor analysis can reveal suspicious similarities.",
+                "Similarity metrics have limitations and should match the data domain.",
+                "Deduplication and provenance checks help reduce risks.",
+                "Sensitive training data requires additional privacy safeguards."
+            ]
+        },
+        {
+            "id": "gan-latent-interpolation",
+            "title": "22. Latent Interpolation and Truncation",
+            "type": "concept",
+            "content": "Latent interpolation changes the generator input gradually between two points and observes the resulting output sequence. This can reveal whether the generator changes smoothly and whether its latent variables control diverse output attributes. Interpolation should be tested across many endpoint pairs because a single visually smooth sequence can hide limited overall diversity. Some GAN families use a truncation trick, sampling latent values from a restricted region or moving them toward a central value to trade diversity for sample quality. The effect depends on the generator and the latent distribution. Truncation can reduce unusual outputs but may also reduce coverage and suppress rare modes, so it should be evaluated rather than applied as an unconditional improvement.",
+            "formula": "z(t) = (1-t)z_a + t z_b, where t varies from 0 to 1",
+            "keyPoints": [
+                "Interpolation probes how the generator maps nearby latent inputs.",
+                "A few smooth interpolations do not prove broad diversity.",
+                "Truncation can trade coverage for perceived quality.",
+                "The effect of truncation depends on the model family.",
+                "Evaluate the same procedure across multiple seeds and samples."
+            ]
+        },
+        {
+            "id": "gan-conditional-evaluation",
+            "title": "23. Evaluating Conditional Fidelity",
+            "type": "concept",
+            "content": "Conditional generation has two requirements: outputs should be realistic, and outputs should match the requested condition. A class-conditional GAN might generate visually plausible images but fail to distinguish requested classes. Evaluation can measure class agreement using a separately trained classifier, inspect class-conditional sample grids, and test whether each condition produces meaningful variation. A classifier-based measure is imperfect because the classifier may share biases with the training data or fail on unusual but valid generated examples. For image translation, evaluate preservation of the source content as well as realism. A complete assessment should include condition adherence, diversity within each condition, and the failure modes relevant to the application.",
+            "keyPoints": [
+                "Realism and condition adherence are distinct.",
+                "Classifier-based condition checks have their own errors.",
+                "Evaluate diversity within each requested condition.",
+                "Image translation must preserve required source information.",
+                "Use multiple methods to assess conditional fidelity."
+            ]
+        },
+        {
+            "id": "gan-ethics",
+            "title": "24. Responsible Use of Generative Adversarial Networks",
+            "type": "concept",
+            "content": "Generative models can produce useful synthetic data and creative content, but they can also be used to create misleading imagery, impersonate people, or reproduce biased patterns from training data. Responsible development begins with lawful and consent-aware data collection, careful documentation, and risk assessment for the intended deployment. For synthetic media, provenance information and clear disclosure can help downstream users understand that content was generated or modified. Models should be tested for harmful bias, privacy leakage, and misuse scenarios relevant to their application. Access controls, monitoring, reporting procedures, and restrictions on high-risk uses may be appropriate. Technical quality alone is not sufficient evidence that a deployment is safe or socially beneficial.",
+            "keyPoints": [
+                "Training-data consent and provenance matter.",
+                "Synthetic media can be used to mislead or impersonate.",
+                "Models can reproduce biases from training data.",
+                "Privacy and memorization risks should be assessed.",
+                "Disclosure and monitoring can reduce some downstream risks."
+            ]
+        },
+        {
+            "id": "gan-debugging",
+            "title": "25. A Practical GAN Debugging Checklist",
+            "type": "concept",
+            "content": "When a GAN fails to train, first verify data normalization, tensor shapes, label conventions, and gradient flow. Confirm that the discriminator receives real examples and detached generated examples during its update. Confirm that generator training uses targets that encourage generated outputs to be classified as real. Inspect whether gradients are finite and whether each optimizer updates the intended parameters. Save outputs from fixed latent vectors across training so changes are comparable. If outputs collapse, evaluate a larger sample set and nearest-neighbor similarity rather than relying on one example. Adjust learning rates, model capacity, update ratios, and regularization methodically. Keep the dataset split, random seeds, and configuration logs so that changes can be compared fairly.",
+            "keyPoints": [
+                "Check normalization and tensor dimensions first.",
+                "Verify detach behavior and gradient paths.",
+                "Ensure the correct network is updated at each step.",
+                "Monitor fixed-latent samples and diversity.",
+                "Change hyperparameters systematically and preserve experiment records."
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "gan-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the two main networks in a basic GAN?",
+            "correctAnswer": "The generator and the discriminator.",
+            "solution": "The generator maps latent noise to synthetic examples. The discriminator attempts to distinguish real examples from generated ones."
+        },
+        {
+            "id": "gan-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why does the generator receive a target of one when trained with BCEWithLogitsLoss in the non-saturating GAN objective?",
+            "correctAnswer": "It is trained to make generated examples be classified as real by the discriminator.",
+            "solution": "The generator tries to increase the discriminator's score for generated samples. With logits and binary cross-entropy, target one expresses this objective."
+        },
+        {
+            "id": "gan-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why are generated images detached during the discriminator update?",
+            "correctAnswer": "To prevent the discriminator loss from updating the generator during that step.",
+            "solution": "Detaching breaks the gradient path from the discriminator loss to generator parameters. The discriminator can still learn from the generated image values."
+        },
+        {
+            "id": "gan-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is mode collapse?",
+            "correctAnswer": "A failure in which the generator produces a narrow range of outputs and fails to cover many modes of the real distribution.",
+            "solution": "The generator may discover a small set of outputs that fool the current discriminator. Sample diversity and distribution coverage must be checked in addition to image quality."
+        },
+        {
+            "id": "gan-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the main difference between the original GAN discriminator and a WGAN critic?",
+            "correctAnswer": "The original discriminator commonly estimates a real-versus-fake probability, while the WGAN critic produces real-valued scores.",
+            "solution": "The WGAN objective compares critic scores and is related to Wasserstein distance under a Lipschitz constraint. The critic score is not a probability."
+        },
+        {
+            "id": "gan-ex-6",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A generator uses tanh as its final activation. What image normalization range is commonly paired with this output?",
+            "correctAnswer": "The range [-1, 1].",
+            "solution": "Tanh outputs values between -1 and 1. Real training images are commonly normalized to the same interval to avoid giving the discriminator an easy numerical cue."
+        },
+        {
+            "id": "gan-ex-7",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can GAN losses be misleading when judging generated-image quality?",
+            "correctAnswer": "Adversarial losses describe the current optimization game and do not directly measure all aspects of realism, diversity, or semantic correctness.",
+            "solution": "The networks are continually changing their strategies. Loss values should be interpreted alongside generated samples and quantitative measures of quality and coverage."
+        },
+        {
+            "id": "gan-ex-8",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "A GAN's generated samples look realistic, but almost all belong to one class. Which failure mode is suggested, and what evaluation would help confirm it?",
+            "correctAnswer": "Mode collapse or poor class coverage; inspect a large sample set and evaluate class distribution and diversity.",
+            "solution": "Realistic individual samples do not guarantee coverage of the data distribution. Measure how frequently classes appear and inspect within-class variation across many generated examples."
+        },
+        {
+            "id": "gan-ex-9",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "What does the gradient penalty in WGAN-GP encourage?",
+            "correctAnswer": "It encourages the critic's input-gradient norm to be close to one at sampled interpolated points between real and generated observations.",
+            "solution": "The penalty discourages deviations from the target gradient norm in sampled regions and helps enforce the Lipschitz behavior required by the Wasserstein formulation."
+        },
+        {
+            "id": "gan-ex-10",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "Design an evaluation plan for a GAN that generates product images.",
+            "correctAnswer": "Combine visual inspection, distribution-based metrics, diversity and coverage analysis, nearest-neighbor checks against training images, and product-specific quality criteria.",
+            "solution": "Use a held-out real-image set and consistent preprocessing. Report sample counts and metrics, check for repeated or memorized images, and evaluate whether outputs preserve required product characteristics."
+        },
+        {
+            "id": "gan-ex-11",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A generator receives no useful gradients during its update. Name two implementation checks.",
+            "correctAnswer": "Ensure generated images are not detached during generator training, and ensure the generator optimizer updates the generator parameters.",
+            "solution": "During generator training, the loss must backpropagate through the discriminator to the generated images. Detaching the images or failing to update the generator optimizer can prevent learning."
+        },
+        {
+            "id": "gan-ex-12",
+            "type": "ethics",
+            "difficulty": "medium",
+            "question": "Why should a GAN project include training-data provenance and memorization checks?",
+            "correctAnswer": "To identify privacy, consent, copyright, and potential reproduction risks associated with training examples.",
+            "solution": "Generated samples can closely resemble training data. Provenance review, deduplication, nearest-neighbor checks, and appropriate privacy safeguards help identify and reduce some of these risks."
+        }
+    ],
+    "summary": "Generative adversarial networks train a generator and discriminator through competing objectives. The generator maps latent noise to synthetic observations, while the discriminator learns to distinguish real from generated data. Alternating updates, non-saturating generator loss, consistent normalization, and correct gradient flow are central implementation details. GANs can produce sharp outputs but are vulnerable to instability, vanishing gradients, and mode collapse. DCGANs provide useful convolutional design patterns, while WGAN and WGAN-GP use critic-based objectives and gradient regularization. Evaluation should cover quality, diversity, coverage, conditional fidelity, and potential memorization. Responsible deployment also requires attention to data provenance, privacy, bias, and synthetic-media misuse.",
+    "relatedTopics": [
+        "module-14-generative-models-autoencoders",
+        "module-14-generative-models-variational-autoencoders",
+        "module-14-generative-models-diffusion",
+        "module-04-deep-learning"
+    ]
+}

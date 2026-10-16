@@ -1,1 +1,321 @@
-{}
+{
+    "id": "probability-maximum-likelihood",
+    "title": "Maximum Likelihood Estimation (MLE)",
+    "slug": "maximum-likelihood",
+    "description": "Understand likelihood functions, maximum likelihood estimation, log-likelihood, common estimators, and applications in statistical modeling and machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Random Variables",
+        "Probability Distributions",
+        "Expectation & Variance",
+        "Conditional Probability"
+    ],
+    "learningObjectives": [
+        "Distinguish probability from likelihood.",
+        "Construct likelihood functions from observed data.",
+        "Find maximum likelihood estimates by optimization.",
+        "Use log-likelihood to simplify products.",
+        "Derive MLEs for Bernoulli, Gaussian mean, and categorical models.",
+        "Understand the connection between likelihood and common machine learning losses.",
+        "Recognize assumptions and limitations of maximum likelihood estimation."
+    ],
+    "sections": [
+        {
+            "id": "mle-introduction",
+            "title": "1. What Is Maximum Likelihood Estimation?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Maximum likelihood estimation is a method for estimating unknown model parameters from observed data. It chooses parameter values that make the observed data most likely under the assumed probabilistic model."
+                },
+                {
+                    "type": "formula",
+                    "label": "Maximum likelihood estimator",
+                    "value": "θ_MLE = argmax_θ L(θ; D)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here θ represents unknown parameters and D represents observed data. The likelihood L(θ; D) is the joint probability mass function or joint probability density of the observations, viewed as a function of θ with the data held fixed."
+                },
+                {
+                    "type": "text",
+                    "value": "Probability asks how likely data are for a specified parameter. Likelihood compares parameter values for the data already observed. A likelihood function is not generally a probability distribution over parameter values because it need not integrate or sum to one over θ."
+                }
+            ]
+        },
+        {
+            "id": "mle-likelihood-function",
+            "title": "2. Constructing the Likelihood",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "If observations x₁, x₂, ..., xₙ are independent and identically distributed under a model with parameter θ, their joint likelihood is the product of their individual probability masses or densities."
+                },
+                {
+                    "type": "formula",
+                    "label": "Likelihood for independent observations",
+                    "value": "L(θ; x₁,...,xₙ) = Πᵢ p(xᵢ | θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "For continuous observations, p(xᵢ | θ) in this expression represents a probability density rather than the probability of an exact point. The likelihood is constructed from the joint density evaluated at the observed data."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Bernoulli Likelihood",
+                    "problem": "Suppose three independent coin tosses produce heads, heads, tails. Let θ be the probability of heads. Construct the likelihood.",
+                    "steps": [
+                        "The probability of heads is θ.",
+                        "The probability of tails is 1 − θ.",
+                        "Multiply the probabilities of the observed sequence: θ × θ × (1 − θ)."
+                    ],
+                    "solution": "L(θ) = θ²(1 − θ)."
+                }
+            ]
+        },
+        {
+            "id": "mle-log-likelihood",
+            "title": "3. Log-Likelihood",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Likelihood functions often contain products of many small probabilities or densities. Taking the natural logarithm converts products into sums, which are easier to differentiate and more numerically stable to calculate."
+                },
+                {
+                    "type": "formula",
+                    "label": "Log-likelihood",
+                    "value": "ℓ(θ) = log L(θ) = Σᵢ log p(xᵢ | θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "Because the logarithm is strictly increasing, maximizing a positive likelihood is equivalent to maximizing its log-likelihood. The same maximizer is obtained, while the algebra often becomes simpler."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Bernoulli Log-Likelihood",
+                    "problem": "For the sequence heads, heads, tails, with heads probability θ, find the log-likelihood.",
+                    "steps": [
+                        "The likelihood is L(θ) = θ²(1 − θ).",
+                        "Take the natural logarithm: ℓ(θ) = log(θ²(1 − θ)).",
+                        "Use logarithm rules to separate the product."
+                    ],
+                    "solution": "ℓ(θ) = 2 log θ + log(1 − θ), for 0 < θ < 1."
+                }
+            ]
+        },
+        {
+            "id": "mle-bernoulli",
+            "title": "4. MLE for a Bernoulli Model",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A Bernoulli random variable takes values 1 and 0, representing success and failure. Let θ be the probability of success. For n independent observations, let s be the number of successes."
+                },
+                {
+                    "type": "formula",
+                    "label": "Bernoulli likelihood",
+                    "value": "L(θ) = θˢ(1 − θ)ⁿ⁻ˢ"
+                },
+                {
+                    "type": "formula",
+                    "label": "Bernoulli maximum likelihood estimate",
+                    "value": "θ_MLE = s/n = (1/n)Σᵢ xᵢ"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Estimate a Coin's Bias",
+                    "problem": "A coin is tossed 20 times and lands heads 13 times. Find the MLE of its heads probability.",
+                    "steps": [
+                        "The number of successes is s = 13.",
+                        "The total number of observations is n = 20.",
+                        "Use θ_MLE = s/n."
+                    ],
+                    "solution": "θ_MLE = 13/20 = 0.65."
+                },
+                {
+                    "type": "text",
+                    "value": "This estimate maximizes the likelihood of the observed outcomes under the Bernoulli model. It does not guarantee that the true probability is exactly 0.65; sampling uncertainty remains."
+                }
+            ]
+        },
+        {
+            "id": "mle-gaussian",
+            "title": "5. MLE for a Gaussian Mean",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Suppose observations are independent and normally distributed with an unknown mean μ and known variance σ². The likelihood is maximized when μ equals the sample mean."
+                },
+                {
+                    "type": "formula",
+                    "label": "Gaussian mean MLE when variance is known",
+                    "value": "μ_MLE = (1/n)Σᵢ xᵢ"
+                },
+                {
+                    "type": "text",
+                    "value": "If both the Gaussian mean and variance are unknown and the variance is parameterized as σ², the maximum likelihood estimate of the variance is (1/n)Σᵢ(xᵢ − x̄)². This differs from the unbiased sample variance, which uses n − 1 in the denominator."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Gaussian Mean",
+                    "problem": "Observed values are 2, 4, 6, and 8. Assuming a Gaussian model with known variance, estimate the mean by MLE.",
+                    "steps": [
+                        "Calculate the sample mean: (2 + 4 + 6 + 8)/4.",
+                        "Divide the sum by the number of observations."
+                    ],
+                    "solution": "μ_MLE = 20/4 = 5."
+                }
+            ]
+        },
+        {
+            "id": "mle-optimization",
+            "title": "6. Finding an MLE with Calculus",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "When the likelihood is differentiable, a common strategy is to maximize the log-likelihood by differentiating it with respect to the unknown parameters. Setting the derivative to zero identifies candidate stationary points. The candidates must still be checked against parameter constraints and boundary cases."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Derive the Bernoulli MLE",
+                    "problem": "Given s successes in n independent Bernoulli observations, derive the MLE of θ.",
+                    "steps": [
+                        "Write the log-likelihood: ℓ(θ) = s log θ + (n − s) log(1 − θ).",
+                        "Differentiate: dℓ/dθ = s/θ − (n − s)/(1 − θ).",
+                        "Set the derivative to zero: s/θ = (n − s)/(1 − θ).",
+                        "Multiply through: s(1 − θ) = θ(n − s).",
+                        "Simplify: s = nθ."
+                    ],
+                    "solution": "For an interior solution, θ_MLE = s/n. If s = 0 or s = n, the maximum occurs at the corresponding boundary θ = 0 or θ = 1."
+                },
+                {
+                    "type": "text",
+                    "value": "For complicated models, there may be no closed-form MLE. Numerical optimization methods, including gradient-based methods, are then used to maximize the log-likelihood or minimize the negative log-likelihood."
+                }
+            ]
+        },
+        {
+            "id": "mle-machine-learning",
+            "title": "7. MLE and Machine Learning Loss Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Maximum likelihood estimation connects probability models with optimization. Maximizing the log-likelihood is equivalent to minimizing the negative log-likelihood."
+                },
+                {
+                    "type": "formula",
+                    "label": "Negative log-likelihood objective",
+                    "value": "J(θ) = −Σᵢ log p(yᵢ | xᵢ, θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "For a classification model that predicts categorical probabilities, minimizing negative log-likelihood gives the cross-entropy loss between observed labels and predicted class probabilities. For regression with a Gaussian observation model and fixed variance, maximizing likelihood is equivalent to minimizing squared error up to constants and a positive scale factor."
+                },
+                {
+                    "type": "text",
+                    "value": "These connections explain why likelihood-based objectives appear throughout statistical learning. The interpretation depends on the assumed observation model and any additional regularization or constraints."
+                }
+            ]
+        },
+        {
+            "id": "mle-python",
+            "title": "8. MLE with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Bernoulli MLE",
+                    "value": "import numpy as np\n\nobservations = np.array([1, 1, 0, 1, 0, 1, 1, 0, 1, 1])\n\nn = len(observations)\nsuccesses = observations.sum()\ntheta_mle = successes / n\n\nprint('Observations:', n)\nprint('Successes:', successes)\nprint('MLE:', theta_mle)"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Gaussian Mean and Variance MLE",
+                    "value": "import numpy as np\n\nobservations = np.array([2.0, 4.0, 6.0, 8.0])\n\nmu_mle = observations.mean()\nvariance_mle = np.mean((observations - mu_mle)**2)\n\nprint('Mean MLE:', mu_mle)\nprint('Variance MLE:', variance_mle)"
+                },
+                {
+                    "type": "text",
+                    "value": "The Gaussian variance code uses the MLE denominator n. It should not be confused with the usual unbiased sample variance, which uses n − 1."
+                }
+            ]
+        },
+        {
+            "id": "mle-limitations",
+            "title": "9. Assumptions and Limitations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "MLE depends on the assumed statistical model. If the model is poorly specified, the fitted parameters may not describe the data well even when the optimization is performed correctly."
+                },
+                {
+                    "type": "text",
+                    "value": "An MLE can have high variance with limited data, may lie on a parameter-space boundary, and may fail to exist as a finite value for some models and datasets. Multiple local maxima can also make numerical optimization difficult."
+                },
+                {
+                    "type": "text",
+                    "value": "Under suitable regularity conditions, maximum likelihood estimators often have useful large-sample properties, including consistency and asymptotic normality. These properties are not unconditional guarantees and may fail when the assumptions are violated."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mle-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A coin is tossed 50 times and lands heads 32 times. Find the MLE of the heads probability.",
+            "correctAnswer": "0.64",
+            "solution": "For Bernoulli observations, θ_MLE = successes/n = 32/50 = 0.64."
+        },
+        {
+            "id": "mle-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A Bernoulli dataset contains 8 successes and 12 failures. Write its likelihood as a function of θ.",
+            "correctAnswer": "L(θ) = θ⁸(1 − θ)¹²",
+            "solution": "The likelihood is the product of θ for each success and 1 − θ for each failure, giving θ⁸(1 − θ)¹²."
+        },
+        {
+            "id": "mle-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the MLE of the mean for observations 3, 5, 7, and 9 under a Gaussian model with known variance.",
+            "correctAnswer": "6",
+            "solution": "The Gaussian mean MLE is the sample mean: (3 + 5 + 7 + 9)/4 = 24/4 = 6."
+        },
+        {
+            "id": "mle-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is log-likelihood usually easier to optimize than likelihood?",
+            "correctAnswer": "It converts products into sums and improves numerical stability while preserving the maximizer.",
+            "solution": "The logarithm is strictly increasing for positive likelihood values, so it preserves the location of the maximum. It also changes a product of terms into a sum of logarithms."
+        },
+        {
+            "id": "mle-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "How is maximum likelihood related to cross-entropy loss in classification?",
+            "correctAnswer": "Minimizing categorical negative log-likelihood corresponds to minimizing cross-entropy for observed class labels.",
+            "solution": "The negative log-likelihood for a labeled example is the negative logarithm of the model's predicted probability for the correct class. Averaging this quantity over examples gives the standard categorical cross-entropy objective."
+        }
+    ],
+    "summary": [
+        "MLE selects parameter values that maximize the likelihood of observed data.",
+        "The likelihood treats observed data as fixed and parameters as variable.",
+        "Log-likelihood turns products into sums and preserves the maximizer.",
+        "The Bernoulli MLE is the observed success fraction.",
+        "The Gaussian mean MLE is the sample mean; the Gaussian variance MLE uses denominator n when both parameters are estimated in the standard unconstrained model.",
+        "Negative log-likelihood connects MLE to cross-entropy and other common machine learning objectives.",
+        "MLE quality depends on the model assumptions, sample size, and optimization process."
+    ],
+    "relatedTopics": [
+        "random-variables",
+        "probability-distributions",
+        "expectation-variance",
+        "conditional-probability",
+        "maximum-a-posteriori",
+        "entropy"
+    ]
+}

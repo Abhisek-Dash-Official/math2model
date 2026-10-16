@@ -1,0 +1,194 @@
+{
+    "id": "module-06-attention-cross-attention",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 9,
+    "title": "Cross-Attention",
+    "slug": "cross-attention",
+    "href": "/curriculum/06-attention/cross-attention",
+    "filePath": "content/curriculum/06-attention/09-cross-attention.json",
+    "description": "Understand cross-attention, its mathematical formulation, how queries interact with keys and values from a different sequence, and how it connects encoders, decoders, translation systems, multimodal models, and modern Transformer architectures.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-06-attention-query-key-value",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-masked-attention"
+    ],
+    "learningObjectives": [
+        "Explain the difference between self-attention and cross-attention.",
+        "Understand why queries may come from one sequence while keys and values come from another.",
+        "Derive the cross-attention equation step by step.",
+        "Identify the dimensions of queries, keys, values, attention scores, and outputs.",
+        "Implement cross-attention using NumPy.",
+        "Understand cross-attention in encoder-decoder Transformers.",
+        "Explain how cross-attention supports machine translation and multimodal learning.",
+        "Recognize common implementation errors involving tensor dimensions and attention masks."
+    ],
+    "sections": [
+        {
+            "id": "cross-attention-01-introduction",
+            "title": "1. What Is Cross-Attention?",
+            "type": "concept",
+            "content": "Cross-attention is an attention mechanism in which one sequence uses information from another sequence. The queries are produced from one representation, while the keys and values are produced from a different representation. The query sequence determines what information is requested. The key sequence determines where relevant information may be found, and the value sequence provides the information that is retrieved. The resulting representation combines the query-side information with a weighted mixture of the source-side values. Cross-attention is especially important in encoder-decoder Transformers, where decoder states retrieve information from encoder outputs."
+        },
+        {
+            "id": "cross-attention-02-motivation",
+            "title": "2. Why Do We Need Cross-Attention?",
+            "type": "concept",
+            "content": "Imagine translating the English sentence 'The cat is sleeping' into French. An encoder reads the English sentence and creates contextual representations for its tokens. A decoder generates the French translation one token at a time. When generating a French word, the decoder may need information from one or more English words. Cross-attention lets the decoder inspect the encoder representations and retrieve the information relevant to the token currently being generated. Without this mechanism, the decoder would need to rely only on its own previous states or on a fixed summary of the source sentence. Cross-attention therefore provides a flexible information pathway between two representation spaces."
+        },
+        {
+            "id": "cross-attention-03-self-vs-cross",
+            "title": "3. Self-Attention Versus Cross-Attention",
+            "type": "comparison",
+            "content": "In self-attention, queries, keys, and values are derived from the same sequence representation. In cross-attention, queries come from one representation and keys and values come from another. For example, if X is a decoder representation and E is an encoder output, self-attention may use Q = XWQ, K = XWK, and V = XWV. Cross-attention instead uses Q = XWQ, K = EWK, and V = EWV. Both mechanisms calculate similarity scores, normalize those scores with softmax, and combine values. The major difference is the origin of the representations. Self-attention models relationships within a sequence; cross-attention retrieves information across sequences or modalities."
+        },
+        {
+            "id": "cross-attention-04-analogy",
+            "title": "4. An Intuitive Analogy",
+            "type": "concept",
+            "content": "Imagine a student answering a question while consulting a textbook. The question represents the query: it expresses what information the student needs. Headings and passages in the textbook act like keys: they help determine which sections are relevant. The actual passage contents act like values: they contain the information to retrieve. The student compares the question with the available sections, gives more weight to relevant passages, and combines the retrieved information into an answer. In cross-attention, the query-side sequence plays the role of the question, while the source-side sequence provides keys and values. This analogy is useful because it separates relevance estimation from information retrieval."
+        },
+        {
+            "id": "cross-attention-05-mathematical-notation",
+            "title": "5. Mathematical Notation",
+            "type": "math",
+            "content": "Let X be the query-side representation with shape (B, Tq, Dq), where B is batch size, Tq is the query sequence length, and Dq is its feature dimension. Let E be the source representation with shape (B, Tk, De), where Tk is the source sequence length and De is its feature dimension. Learned projection matrices map both representations into an attention space. Q = XWQ, K = EWK, and V = EWV. If Q and K use dimension dk, then Q has shape (B, Tq, dk), K has shape (B, Tk, dk), and V has shape (B, Tk, dv). The attention score matrix has shape (B, Tq, Tk). Every query position receives a distribution over source positions."
+        },
+        {
+            "id": "cross-attention-06-equation",
+            "title": "6. Scaled Dot-Product Cross-Attention",
+            "type": "math",
+            "content": "The central equation is CrossAttention(Q,K,V) = softmax(QK^T / sqrt(dk))V. First, compute the dot product between each query and each key. This produces a score describing how compatible each query is with each source position. Second, divide the scores by sqrt(dk) to control their scale. Third, apply softmax over the source-position dimension so that the weights for each query sum to one. Finally, use the weights to calculate a weighted sum of the value vectors. The result has one output vector for every query position. The source sequence length controls the number of keys and values, while the query sequence length controls the number of output positions."
+        },
+        {
+            "id": "cross-attention-07-worked-example",
+            "title": "7. Worked Numerical Example",
+            "type": "math",
+            "content": "Suppose one query is Q = [1, 0], and two source keys are K1 = [1, 0] and K2 = [0, 1]. Their unscaled dot products with the query are 1 and 0. With dk = 2, the scaled scores are approximately 0.707 and 0. After softmax, the first source position receives a weight of about 0.67 and the second about 0.33. Let the values be V1 = [10, 0] and V2 = [0, 6]. The output is approximately 0.67[10, 0] + 0.33[0, 6] = [6.7, 2.0]. The query retrieves more information from the first source position because its key is more compatible with the query. This simplified example illustrates the complete scoring, normalization, and value aggregation process."
+        },
+        {
+            "id": "cross-attention-08-shape-analysis",
+            "title": "8. Tensor Shape Analysis",
+            "type": "math",
+            "content": "Assume B = 2, Tq = 4, Tk = 7, dk = 8, and dv = 8. Queries have shape (2, 4, 8). Keys have shape (2, 7, 8), and transposed keys have shape (2, 8, 7). Matrix multiplication produces attention scores with shape (2, 4, 7). Softmax operates over the final dimension of length 7, because each query must distribute its weight across seven source positions. Values have shape (2, 7, 8). Multiplying the attention weights by values produces an output of shape (2, 4, 8). Notice that the output sequence length is four, not seven: cross-attention produces one output for every query position."
+        },
+        {
+            "id": "cross-attention-09-source-and-query",
+            "title": "9. Which Sequence Provides Queries?",
+            "type": "concept",
+            "content": "The query sequence is chosen according to the information flow required by the architecture. In a standard encoder-decoder Transformer, the decoder representation provides queries, and encoder outputs provide keys and values. This lets decoder positions retrieve source information. In image-text models, text representations may query image representations, allowing text tokens to retrieve visual features. Other architectures can reverse the direction or use a different query source. The general principle is not that queries must always come from a decoder. The principle is that the query side represents the positions that need information, while the key-value side represents the information source."
+        },
+        {
+            "id": "cross-attention-10-encoder-decoder",
+            "title": "10. Cross-Attention in Encoder-Decoder Transformers",
+            "type": "concept",
+            "content": "In a conventional encoder-decoder Transformer, the encoder processes the source sequence using self-attention and feed-forward layers. The encoder produces a sequence of contextual representations. The decoder processes target-side representations and usually applies masked self-attention before cross-attention. During cross-attention, decoder states generate queries and encoder outputs generate keys and values. The decoder can therefore use the source sentence while constructing its next representation. The decoder then applies additional transformations and predicts a distribution over the target vocabulary. During autoregressive generation, the decoder is prevented from using future target tokens through causal masking in its self-attention. Cross-attention generally does not need a causal mask over the source when the full source is already available."
+        },
+        {
+            "id": "cross-attention-11-python-numpy",
+            "title": "11. Implement Cross-Attention with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\n\ndef softmax(x, axis=-1):\n    x = x - np.max(x, axis=axis, keepdims=True)\n    exp_x = np.exp(x)\n    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)\n\n\ndef cross_attention(Q, K, V, mask=None):\n    \"\"\"Compute scaled dot-product cross-attention.\n\n    Q: (batch, query_length, key_dimension)\n    K: (batch, source_length, key_dimension)\n    V: (batch, source_length, value_dimension)\n    mask: optional broadcastable boolean array; True means blocked.\n    \"\"\"\n    dk = Q.shape[-1]\n    scores = Q @ np.swapaxes(K, -1, -2)\n    scores = scores / np.sqrt(dk)\n\n    if mask is not None:\n        scores = np.where(mask, -1e9, scores)\n\n    weights = softmax(scores, axis=-1)\n    output = weights @ V\n    return output, weights\n\n\nrng = np.random.default_rng(7)\nQ = rng.normal(size=(1, 2, 4))\nK = rng.normal(size=(1, 3, 4))\nV = rng.normal(size=(1, 3, 5))\n\noutput, weights = cross_attention(Q, K, V)\nprint('Attention weights:', weights)\nprint('Output shape:', output.shape)\nprint('Weights sum:', weights.sum(axis=-1))",
+            "explanation": "This implementation keeps the query sequence and source sequence separate. There are two query positions and three source positions, so the attention matrix has shape (1, 2, 3). The value dimension is five, so the final output has shape (1, 2, 5). The weights for each query sum to one. The mask convention in this example uses True to mean blocked; production libraries may use different conventions, so always check the API."
+        },
+        {
+            "id": "cross-attention-12-reading-output",
+            "title": "12. Interpreting Attention Weights",
+            "type": "concept",
+            "content": "Attention weights can help inspect which source positions contribute to a query's output. A larger weight means that a source value receives more weight in the current attention calculation. However, attention weights should not automatically be treated as a complete explanation of a model's decision. The final result also depends on learned projections, value vectors, output projections, residual connections, subsequent layers, and other computation. In addition, different attention heads can distribute their weights differently. Visualization is useful for debugging and intuition, but causal claims about model behavior require more careful analysis."
+        },
+        {
+            "id": "cross-attention-13-multimodal",
+            "title": "13. Cross-Attention in Multimodal Models",
+            "type": "concept",
+            "content": "Cross-attention can connect representations from different modalities. A vision-language model might encode image patches into visual vectors and text tokens into language vectors. A text query can attend to visual keys and values to retrieve information relevant to a word or phrase. For example, when processing 'What color is the car?', the language-side representation may retrieve image features associated with the car and its color. Cross-attention can also connect audio features with text representations, or connect retrieved documents with a language model's internal states. The representations must be projected into compatible attention dimensions, even if their original dimensions differ."
+        },
+        {
+            "id": "cross-attention-14-complexity",
+            "title": "14. Computational Complexity",
+            "type": "math",
+            "content": "For query length Tq, source length Tk, and attention dimension dk, the score computation costs approximately O(Tq Tk dk) operations per batch element and head. Multiplying attention weights by values costs approximately O(Tq Tk dv). The attention matrix contains Tq Tk elements per head. Cross-attention can be cheaper than full self-attention over one concatenated sequence when the query and source lengths differ substantially, but its cost still grows with the product of the two lengths. Memory-efficient attention implementations can reduce the need to materialize the complete attention matrix. Projection layers also contribute computation, especially when feature dimensions are large."
+        },
+        {
+            "id": "cross-attention-15-common-errors",
+            "title": "15. Common Mistakes and Debugging",
+            "type": "concept",
+            "content": "A common error is generating keys and values from the query sequence instead of the source sequence, accidentally implementing self-attention. Another is using incompatible key and query dimensions, making QK^T impossible. A third is applying softmax along the query dimension rather than the source dimension. The weights should normally sum to one across source positions for every query. A fourth mistake is masking every source position for a query, which can create undefined or uninformative softmax results. Developers may also confuse source padding masks with causal masks. Padding masks hide invalid source tokens; causal masks control future information in autoregressive target-side self-attention. Always check shapes, mask conventions, and normalization axes."
+        },
+        {
+            "id": "cross-attention-16-practical-applications",
+            "title": "16. Practical Applications",
+            "type": "concept",
+            "content": "Cross-attention is used in neural machine translation, image captioning, visual question answering, speech recognition, text-conditioned image generation, document-grounded generation, and encoder-decoder language models. In translation, the decoder retrieves source-language information. In image captioning, a text-generating decoder retrieves image features. In visual question answering, question representations interact with visual representations. In retrieval-augmented systems, query or generation representations can interact with retrieved document representations. These systems differ in architecture and training procedure, but they share the core idea of transferring context from a source representation to a query representation."
+        },
+        {
+            "id": "cross-attention-17-summary",
+            "title": "17. Key Takeaways",
+            "type": "summary",
+            "content": "Cross-attention allows one representation sequence to retrieve information from another. Queries come from the receiving or query-side sequence, while keys and values come from the source sequence. The scaled dot-product equation is softmax(QK^T / sqrt(dk))V. The output length matches the query length, while the attention matrix connects every query position to every source position. Cross-attention is a foundational component of encoder-decoder Transformers and many multimodal architectures. Correct tensor dimensions, softmax axes, and masking behavior are essential for reliable implementations."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "cross-attention-ex-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the main difference between self-attention and cross-attention?",
+            "correctAnswer": "Self-attention derives queries, keys, and values from the same sequence; cross-attention derives queries from one sequence and keys and values from another.",
+            "solution": "The distinction concerns the source of the representations, not the fundamental attention equation. Both mechanisms compute compatibility scores, apply softmax, and combine values."
+        },
+        {
+            "id": "cross-attention-ex-02",
+            "type": "shape-analysis",
+            "difficulty": "intermediate",
+            "question": "Queries have shape (2, 5, 16), keys have shape (2, 8, 16), and values have shape (2, 8, 12). What are the attention score and output shapes?",
+            "correctAnswer": "Scores: (2, 5, 8). Output: (2, 5, 12).",
+            "solution": "Transposed keys have shape (2, 16, 8), so query-key multiplication yields (2, 5, 8). Multiplying by values of shape (2, 8, 12) produces (2, 5, 12)."
+        },
+        {
+            "id": "cross-attention-ex-03",
+            "type": "mathematical",
+            "difficulty": "intermediate",
+            "question": "Why is the dot-product score divided by the square root of the key dimension?",
+            "correctAnswer": "To control score magnitude as the feature dimension grows and help keep softmax gradients well behaved.",
+            "solution": "Under common assumptions, dot-product variance grows with the dimension. Scaling by sqrt(dk) helps keep the score distribution at a more manageable scale."
+        },
+        {
+            "id": "cross-attention-ex-04",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "In an encoder-decoder translation model, which representations normally provide cross-attention queries, keys, and values?",
+            "correctAnswer": "Decoder states provide queries, while encoder outputs provide keys and values.",
+            "solution": "The decoder is generating the target sequence and uses its current states to retrieve relevant information from the encoded source sentence."
+        },
+        {
+            "id": "cross-attention-ex-05",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "Modify the NumPy example to use four query positions and six source positions. What should the attention-weight matrix shape be for one batch and one head?",
+            "correctAnswer": "(1, 4, 6).",
+            "solution": "The attention matrix contains one row per query position and one column per source position. Therefore, its shape is (batch_size, query_length, source_length), or (1, 4, 6)."
+        },
+        {
+            "id": "cross-attention-ex-06",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "A cross-attention implementation produces attention weights that sum to one over query positions instead of source positions. What is likely wrong?",
+            "correctAnswer": "Softmax is being applied along the wrong tensor axis.",
+            "solution": "The softmax axis should normally correspond to the source positions. For score shape (B, Tq, Tk), normalize along the final axis Tk."
+        }
+    ],
+    "summary": "Cross-attention transfers information between different sequences or modalities. Queries represent what the receiving sequence needs, while keys and values represent the source information. The equation softmax(QK^T / sqrt(dk))V produces one output per query position. This mechanism connects encoder outputs to decoder states in encoder-decoder Transformers and is widely used in translation, image-text learning, speech, and retrieval-based systems.",
+    "relatedTopics": [
+        "module-06-attention-query-key-value",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-07-transformers-encoder",
+        "module-07-transformers-decoder",
+        "module-07-transformers-encoder-decoder-models"
+    ]
+}

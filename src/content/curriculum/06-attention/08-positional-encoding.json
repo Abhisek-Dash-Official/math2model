@@ -1,0 +1,243 @@
+{
+    "id": "module-06-attention-positional-encoding",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 8,
+    "title": "Positional Encoding",
+    "slug": "positional-encoding",
+    "href": "/curriculum/06-attention/positional-encoding",
+    "filePath": "content/curriculum/06-attention/08-positional-encoding.json",
+    "description": "Study how Transformer models represent token order through sinusoidal positional encoding, learned position embeddings, relative position methods, and rotary positional embeddings.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Vectors and matrices",
+        "Self-Attention",
+        "Multi-Head Attention",
+        "Basic trigonometry",
+        "Transformer architecture fundamentals"
+    ],
+    "learningObjectives": [
+        "Explain why standard self-attention needs information about sequence order.",
+        "Understand the difference between token embeddings and positional representations.",
+        "Derive sinusoidal positional encoding equations.",
+        "Calculate simple positional encoding values.",
+        "Compare fixed sinusoidal and learned positional embeddings.",
+        "Understand absolute and relative position representations.",
+        "Explain the core idea behind rotary positional embeddings.",
+        "Implement sinusoidal positional encoding with NumPy.",
+        "Identify position-related generalization and context-length limitations."
+    ],
+    "sections": [
+        {
+            "id": "position-motivation",
+            "title": "1. Why Position Information Is Necessary",
+            "type": "concept",
+            "content": "Words and tokens are not merely an unordered collection. The order in 'dog bites person' differs from 'person bites dog', even though the words are similar. Standard self-attention calculates content-based relationships between positions, but the dot-product operation alone does not inherently identify whether a token appeared first, second, or last. A Transformer therefore needs a way to represent sequence position or relative order. Positional information can be added to token embeddings, incorporated into attention scores, or introduced through transformations of queries and keys."
+        },
+        {
+            "id": "token-vs-position",
+            "title": "2. Token Embeddings and Position Representations",
+            "type": "concept",
+            "content": "A token embedding represents a token identity or token-associated learned features. A positional representation supplies information about where the token occurs. In a common absolute-position design, the two vectors have the same dimension and are added: X_i = E_i + P_i, where E_i is the token embedding and P_i is the positional vector. The resulting vector combines token content and position before entering the Transformer layers. Other architectures inject positional information in different ways, so addition is a common design rather than a universal rule."
+        },
+        {
+            "id": "permutation-intuition",
+            "title": "3. The Permutation Problem",
+            "type": "concept",
+            "content": "Without position-dependent inputs or position-dependent attention rules, self-attention is permutation-equivariant: permuting the input positions permutes the output positions in the same way. It does not by itself identify the original ordering of tokens. This is different from saying attention ignores token content; content still affects query-key scores. The issue is that the architecture lacks an explicit signal identifying sequence order. Positional information breaks this symmetry and lets the model learn order-sensitive patterns."
+        },
+        {
+            "id": "sinusoidal-formula",
+            "title": "4. Sinusoidal Positional Encoding",
+            "type": "math",
+            "content": "The original Transformer uses fixed sinusoidal positional encodings. For position pos and dimension index i, PE(pos, 2i) = sin(pos / 10000^(2i/d_model)) and PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model)). Each pair of dimensions uses sine and cosine at the same frequency. As the dimension index increases, the denominator increases and the frequency becomes lower. Different dimensions therefore encode position at different scales. The encodings are deterministic and can be computed without learning separate parameters for every position."
+        },
+        {
+            "id": "sinusoidal-intuition",
+            "title": "5. Why Use Multiple Frequencies?",
+            "type": "concept",
+            "content": "A single sine wave repeats periodically, so it cannot uniquely identify arbitrarily many positions. Sinusoidal positional encoding combines many frequencies. Some dimensions change quickly with position, while others change slowly. The combined vector provides a multi-scale pattern that helps the model distinguish positions and learn relationships involving different offsets. The original construction also has useful algebraic properties related to shifts, although a model must still learn how to exploit those properties."
+        },
+        {
+            "id": "sinusoidal-example",
+            "title": "6. A Small Numerical Example",
+            "type": "example",
+            "content": "For a tiny model dimension d_model = 4, the first sine-cosine pair uses frequency 1 because 10000^(0/4) = 1. The second pair uses frequency 1/100 because 10000^(2/4) = 100. At position zero, the encoding is [sin(0), cos(0), sin(0), cos(0)] = [0, 1, 0, 1]. At position one, it is approximately [0.8415, 0.5403, 0.0100, 0.99995]. The first pair changes more quickly than the second pair."
+        },
+        {
+            "id": "learned-position",
+            "title": "7. Learned Absolute Position Embeddings",
+            "type": "concept",
+            "content": "Instead of calculating fixed sine and cosine values, a model can learn one positional vector for each supported position. These vectors are optimized during training and can adapt to the training data. Learned embeddings are straightforward and flexible, but a table with a fixed maximum position may not directly support longer sequences than those represented during training. Extrapolation to unseen positions depends on the model design and cannot be assumed to work well."
+        },
+        {
+            "id": "absolute-relative",
+            "title": "8. Absolute and Relative Position Information",
+            "type": "concept",
+            "content": "Absolute position methods represent a token's location relative to a sequence origin. Relative methods represent relationships between positions, such as whether one token is three positions away from another. Relative position information can be added to attention scores, used in learned biases, or incorporated into vector representations. Relative information can be useful because many language relationships depend more on the distance or ordering between tokens than on their absolute index in a long document."
+        },
+        {
+            "id": "relative-bias",
+            "title": "9. Relative Position Bias",
+            "type": "math",
+            "content": "A simple relative-position score can be written as s_ij = q_i^T k_j / sqrt(d_k) + b_(i-j), where b_(i-j) is a learned or predefined bias based on the relative offset between query position i and key position j. The bias changes the score before softmax. For example, a model could learn a preference for nearby positions by assigning different biases to short and long offsets. Relative-position bias is one family of methods; it is not equivalent to every relative-position architecture."
+        },
+        {
+            "id": "rotary-intuition",
+            "title": "10. Rotary Positional Embeddings: Core Idea",
+            "type": "concept",
+            "content": "Rotary positional embeddings, commonly called RoPE, inject position information by rotating pairs of coordinates in query and key vectors by position-dependent angles. Rather than simply adding a positional vector to the input embedding, RoPE applies a transformation to queries and keys before their dot product is computed. The resulting score can encode relative-position relationships through differences between the rotation angles. RoPE is widely used in modern decoder-only language models, though implementations vary in details such as scaling and long-context extensions."
+        },
+        {
+            "id": "rotary-math",
+            "title": "11. A Mathematical View of RoPE",
+            "type": "math",
+            "content": "For a two-dimensional coordinate pair, define a rotation matrix R(theta) = [[cos(theta), -sin(theta)], [sin(theta), cos(theta)]]. At position m, the pair is transformed using R(m*theta). A query pair becomes R(m*theta)q and a key pair becomes R(n*theta)k. Their dot product is q^T R(m*theta)^T R(n*theta)k. Because rotation matrices satisfy R(a)^T R(b) = R(b-a), the score depends on the relative offset n-m in this idealized two-dimensional derivation. Higher-dimensional RoPE applies different frequencies to multiple coordinate pairs."
+        },
+        {
+            "id": "rotary-limitations",
+            "title": "12. RoPE and Long Contexts",
+            "type": "concept",
+            "content": "RoPE provides position-dependent query and key transformations, but it does not guarantee unlimited context-length generalization. At large positions, phase behavior and the distribution of relative offsets may differ from those seen during training. Models can use scaling or interpolation strategies to improve long-context behavior, but these methods have trade-offs and are architecture-dependent. The configured context window also depends on training, attention implementation, memory constraints, and model-specific design choices."
+        },
+        {
+            "id": "position-code",
+            "title": "13. Implement Sinusoidal Encoding with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef sinusoidal_positional_encoding(max_length, d_model):\n    positions = np.arange(max_length)[:, None]\n    dimensions = np.arange(d_model)[None, :]\n    rates = 1.0 / np.power(\n        10000.0,\n        (2 * (dimensions // 2)) / d_model\n    )\n    angles = positions * rates\n\n    encoding = np.zeros((max_length, d_model))\n    encoding[:, 0::2] = np.sin(angles[:, 0::2])\n    encoding[:, 1::2] = np.cos(angles[:, 1::2])\n    return encoding\n\npe = sinusoidal_positional_encoding(max_length=6, d_model=8)\nprint('Shape:', pe.shape)\nprint('Position 0:', pe[0])\nprint('Position 1:', pe[1])",
+            "explanation": "The function creates a matrix with one row per position and one column per model dimension. Even dimensions receive sine values and odd dimensions receive cosine values. The integer division dimensions // 2 makes each sine-cosine pair share the same frequency. This version also works for odd model dimensions because the even and odd column slices can have different widths."
+        },
+        {
+            "id": "position-code-tests",
+            "title": "14. Verify Positional Encoding",
+            "type": "code",
+            "language": "python",
+            "content": "pe = sinusoidal_positional_encoding(10, 7)\nassert pe.shape == (10, 7)\nassert np.allclose(pe[:, 0::2], np.sin(np.arange(10)[:, None] * (1.0 / np.power(10000.0, (2 * (np.arange(7)[None, 0::2] // 2)) / 7))))\nassert np.all(np.isfinite(pe))\nprint('Positional encoding checks passed.')",
+            "explanation": "The tests verify output dimensions and finite values. For a production codebase, a clearer test suite should compare several manually calculated entries and verify that position zero has sine coordinates equal to zero and cosine coordinates equal to one. This avoids relying exclusively on a duplicate implementation of the formula."
+        },
+        {
+            "id": "position-integration",
+            "title": "15. Combining Token and Positional Embeddings",
+            "type": "code",
+            "language": "python",
+            "content": "sequence_length = 6\nd_model = 8\n\nrng = np.random.default_rng(42)\ntoken_embeddings = rng.normal(size=(sequence_length, d_model))\nposition_embeddings = sinusoidal_positional_encoding(sequence_length, d_model)\n\ninput_representations = token_embeddings + position_embeddings\nprint('Token embeddings:', token_embeddings.shape)\nprint('Position embeddings:', position_embeddings.shape)\nprint('Combined representations:', input_representations.shape)",
+            "explanation": "In the standard additive approach, token and position representations must have matching dimensions. Adding them creates the initial representations consumed by the Transformer. Other architectures may scale, normalize, or inject positional information through attention rather than using this exact addition."
+        },
+        {
+            "id": "position-comparison",
+            "title": "16. Comparing Positional Methods",
+            "type": "concept",
+            "content": "Fixed sinusoidal encodings introduce deterministic absolute-position patterns without a learned position table. Learned absolute embeddings adapt directly to the training objective but typically have a configured range. Relative-position methods represent pairwise offsets, often through score biases or relative vectors. RoPE rotates query and key coordinates so their dot products encode position-dependent relationships. No method is universally best; the choice depends on the model family, sequence lengths, data, and desired generalization behavior."
+        },
+        {
+            "id": "position-pitfalls",
+            "title": "17. Common Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include confusing token indices with embedding dimensions, using the wrong exponent in the sinusoidal formula, assigning sine to odd dimensions and cosine to even dimensions when the implementation expects the opposite convention, and adding position vectors with incompatible dimensions. A further mistake is assuming that fixed sinusoidal encodings guarantee strong extrapolation to arbitrary sequence lengths. For RoPE, coordinate-pair ordering and frequency conventions must match the intended model implementation."
+        },
+        {
+            "id": "position-applications",
+            "title": "18. Practical Applications",
+            "type": "concept",
+            "content": "Positional representations are important in language models, document encoders, image Transformers, and sequence models for audio or video. Language models use order information to represent syntax and narrative progression. Vision Transformers can use image-grid positions or relative spatial offsets. Audio models may use temporal positions or relative time differences. The best positional design depends on the geometry of the data and whether absolute location, relative distance, or both are important."
+        },
+        {
+            "id": "position-summary",
+            "title": "19. Key Takeaways",
+            "type": "concept",
+            "content": "Self-attention needs positional information or a position-dependent mechanism to represent sequence order. Sinusoidal encoding uses fixed sine and cosine functions at multiple frequencies. Learned absolute embeddings learn vectors for supported positions. Relative methods encode relationships between positions, and RoPE applies position-dependent rotations to query and key vectors. Each method has different strengths and limitations, particularly when handling sequences longer than those seen during training."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "position-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why does a standard Transformer need positional information?",
+            "correctAnswer": "Because content-only self-attention does not inherently identify the original order of sequence positions.",
+            "solution": "Without position-dependent inputs or attention rules, permuting the input positions permutes the outputs correspondingly. Positional information lets the model learn order-sensitive patterns."
+        },
+        {
+            "id": "position-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "What are the sine and cosine values at position zero for any sinusoidal frequency?",
+            "correctAnswer": "sin(0) = 0 and cos(0) = 1.",
+            "solution": "Every frequency is multiplied by position zero, so each sine coordinate is zero and each cosine coordinate is one."
+        },
+        {
+            "id": "position-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For d_model = 4, what is the denominator used for the second sine-cosine pair, whose dimension index i is 1?",
+            "correctAnswer": "100.",
+            "solution": "The denominator is 10000^(2i/d_model) = 10000^(2/4) = 10000^0.5 = 100."
+        },
+        {
+            "id": "position-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the key difference between absolute and relative position methods?",
+            "correctAnswer": "Absolute methods represent a token's location, while relative methods represent relationships or offsets between positions.",
+            "solution": "Relative methods can directly represent information such as the distance or ordering between a query and a key."
+        },
+        {
+            "id": "position-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What does RoPE do to query and key vectors?",
+            "correctAnswer": "It rotates coordinate pairs by position-dependent angles before computing their attention dot products.",
+            "solution": "The rotations introduce position-dependent changes in query-key compatibility, allowing relative offsets to influence the scores."
+        },
+        {
+            "id": "position-ex-6",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "Why might learned absolute position embeddings have difficulty with positions beyond the trained range?",
+            "correctAnswer": "The model may have no learned vectors for those positions, and extrapolation behavior is not guaranteed.",
+            "solution": "A learned position table typically has a fixed number of entries. Supporting longer sequences requires an explicit extension or a different positional design."
+        },
+        {
+            "id": "position-ex-7",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A positional encoding implementation returns shape [d_model, max_length] but the token embedding tensor has shape [max_length, d_model]. What is the likely issue?",
+            "correctAnswer": "The positional matrix has its sequence and feature axes reversed.",
+            "solution": "Transpose the positional matrix or construct it with one row per position and one column per feature so that addition aligns element by element."
+        },
+        {
+            "id": "position-ex-8",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Do sinusoidal positional encodings guarantee that a model will generalize perfectly to arbitrarily long sequences?",
+            "correctAnswer": "No.",
+            "solution": "Although the encoding can be calculated for unseen positions, the model's learned behavior and numerical or architectural constraints may not generalize to arbitrary context lengths."
+        },
+        {
+            "id": "position-ex-9",
+            "type": "implementation",
+            "difficulty": "hard",
+            "question": "Why do the sine and cosine coordinates use the same frequency within each pair?",
+            "correctAnswer": "The paired sine and cosine coordinates form a phase representation that changes systematically with position and supports useful shift relationships.",
+            "solution": "The two coordinates jointly describe a point on a unit circle at a position-dependent phase. Their combination provides more information than either sine or cosine alone."
+        },
+        {
+            "id": "position-ex-10",
+            "type": "comparison",
+            "difficulty": "hard",
+            "question": "Compare fixed sinusoidal encodings and learned absolute embeddings in terms of trainable parameters and position range.",
+            "correctAnswer": "Fixed sinusoidal encodings require no learned position table and can be calculated for arbitrary indices, while learned absolute embeddings use trainable vectors for a configured set of positions.",
+            "solution": "Computability for unseen indices does not guarantee model generalization. Learned embeddings are flexible within their trained range, while fixed encodings provide a deterministic extension beyond it."
+        }
+    ],
+    "summary": "Positional information allows Transformers to represent order and location. Sinusoidal encodings use fixed multi-frequency sine and cosine functions, learned embeddings use trainable position vectors, relative methods encode pairwise offsets, and RoPE rotates query-key coordinate pairs to introduce positional effects into attention scores. The choice of positional method affects generalization and long-context behavior.",
+    "relatedTopics": [
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-cross-attention",
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-positional-information"
+    ]
+}

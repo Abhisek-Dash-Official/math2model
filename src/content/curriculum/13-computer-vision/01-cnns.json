@@ -1,1 +1,450 @@
-{}
+{
+    "id": "module-13-computer-vision-cnns",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 1,
+    "title": "CNNs in Modern Vision",
+    "slug": "cnns",
+    "href": "/curriculum/13-computer-vision/cnns",
+    "filePath": "content/curriculum/13-computer-vision/01-cnns.json",
+    "description": "Understand convolutional neural networks, the mathematical foundations of convolution, feature maps, receptive fields, pooling, normalization, residual connections, modern CNN architectures, and practical computer vision pipelines.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Python programming",
+        "NumPy fundamentals",
+        "Linear algebra",
+        "Calculus and gradients",
+        "Neural networks and backpropagation"
+    ],
+    "learningObjectives": [
+        "Explain why convolutional architectures are effective for visual data.",
+        "Understand kernels, strides, padding, dilation, and feature maps.",
+        "Calculate convolution output dimensions and parameter counts.",
+        "Explain local connectivity and weight sharing.",
+        "Understand pooling, normalization, and activation functions.",
+        "Describe receptive fields and hierarchical visual representations.",
+        "Explain residual connections and their role in training deep networks.",
+        "Compare LeNet, AlexNet, VGG, Inception, ResNet, DenseNet, and EfficientNet.",
+        "Implement convolutional image classification using PyTorch.",
+        "Evaluate CNNs using appropriate metrics and diagnose common failures."
+    ],
+    "sections": [
+        {
+            "id": "cnn-introduction",
+            "title": "Why Convolutional Neural Networks?",
+            "type": "concept",
+            "content": "A convolutional neural network (CNN) is a neural architecture designed to learn useful representations from grid-like data, especially images. An image contains local spatial relationships: neighboring pixels often belong to the same edge, texture, or object part. A fully connected network can learn visual relationships, but connecting every pixel to every hidden unit creates many parameters and ignores the natural locality of images. CNNs exploit local connectivity and weight sharing. A small collection of learned filters scans across an image, detecting patterns at multiple positions. Early layers often respond to edges and textures, while deeper layers combine these features into object parts and semantic representations."
+        },
+        {
+            "id": "cnn-image-representation",
+            "title": "Representing an Image as a Tensor",
+            "type": "concept",
+            "content": "A digital image can be represented as a tensor. A grayscale image has height and width dimensions, while a color image commonly has height, width, and three color channels. Deep-learning libraries often use tensors with batch and channel dimensions, such as (N, C, H, W) in PyTorch. Here N is the number of images, C is the number of channels, H is the height, and W is the width. Pixel values may be integers in a range such as 0 to 255 or floating-point values normalized to a chosen range. Preprocessing must match the assumptions of the model and its training data."
+        },
+        {
+            "id": "cnn-pixel-normalization",
+            "title": "Pixel Normalization",
+            "type": "concept",
+            "content": "Neural networks generally train more reliably when input values have suitable scales. A common preprocessing step converts pixel values from integers in the range 0 to 255 into floating-point values in the range 0 to 1. Some pretrained models use channel-wise normalization with dataset-specific means and standard deviations. The normalization used during inference should match the preprocessing expected by the pretrained weights. Inconsistent preprocessing can reduce accuracy even when the architecture and model parameters are correct."
+        },
+        {
+            "id": "cnn-normalization-math",
+            "title": "Normalizing Pixel Values",
+            "type": "math",
+            "content": "A simple normalization maps a pixel intensity x from the interval [0, 255] to the interval [0, 1] by dividing by 255. Standardization can then subtract a channel mean and divide by its standard deviation.",
+            "formula": "x_scaled = x / 255; x_normalized = (x_scaled - mean) / standard_deviation",
+            "example": "For a pixel intensity of 128, scaling gives 128/255, approximately 0.502. If the channel mean is 0.5 and standard deviation is 0.25, the standardized value is approximately (0.502 - 0.5)/0.25 = 0.008."
+        },
+        {
+            "id": "cnn-convolution-intuition",
+            "title": "The Convolution Operation",
+            "type": "concept",
+            "content": "Convolution applies a small learnable kernel to local regions of an input. At each position, the kernel values are multiplied by the corresponding input values and summed, usually with a bias added. Repeating this operation across spatial positions creates a feature map. In deep-learning libraries, the operation commonly called convolution is technically cross-correlation because the kernel is not flipped before multiplication. This distinction does not prevent the network from learning useful filters, since the filter values are learned during training."
+        },
+        {
+            "id": "cnn-convolution-math",
+            "title": "Convolution Mathematics",
+            "type": "math",
+            "content": "For a single-channel input X and a kernel K of size k_h by k_w, the output at location (i,j) can be expressed as a sum of products between the kernel and the corresponding input patch, plus a bias. Multi-channel convolution sums contributions across all input channels.",
+            "formula": "Y[i,j] = b + sum_c sum_u sum_v K[c,u,v] * X[c,i+u,j+v]",
+            "example": "A 3 by 3 kernel contains nine weights for a single input channel. It multiplies nine nearby pixel values and sums the products to produce one output value. With three input channels, a single output filter contains 3 * 3 * 3 = 27 kernel weights, plus an optional bias."
+        },
+        {
+            "id": "cnn-edge-detection",
+            "title": "Kernels and Visual Patterns",
+            "type": "concept",
+            "content": "Different filters can respond to different visual patterns. A filter may respond strongly to a vertical edge, horizontal edge, texture, or color transition. In traditional image processing, filters are often designed manually. CNNs learn their filters from data through gradient-based optimization. A learned filter is not necessarily interpretable as one simple visual pattern, particularly in deeper layers. Nevertheless, examining feature maps and filter responses can help understand what information a model uses."
+        },
+        {
+            "id": "cnn-local-connectivity",
+            "title": "Local Connectivity",
+            "type": "concept",
+            "content": "A convolutional filter connects to only a local region of the input instead of every pixel. This local receptive field introduces an inductive bias: nearby pixels are assumed to have useful relationships. Local connectivity reduces the number of parameters compared with a fully connected layer operating directly on a large image. Stacking layers allows information to travel across increasingly large regions of the image, so local operations can eventually represent global structures."
+        },
+        {
+            "id": "cnn-weight-sharing",
+            "title": "Weight Sharing and Translation Equivariance",
+            "type": "concept",
+            "content": "A convolutional filter uses the same weights at every spatial location. This property is called weight sharing. It allows a learned edge detector to respond to the same pattern whether it appears near the top, bottom, left, or right of an image. Convolution is approximately translation equivariant under suitable boundary conditions: translating the input translates the resulting feature map. Equivariance differs from invariance. Invariance means the representation remains unchanged, while equivariance means the representation changes predictably with the input transformation. Pooling and later layers may provide some degree of translation tolerance, but ordinary CNNs are not perfectly invariant to all shifts."
+        },
+        {
+            "id": "cnn-parameter-count",
+            "title": "Convolutional Parameter Count",
+            "type": "math",
+            "content": "A convolutional layer with C_in input channels, C_out output channels, and a kernel of size k_h by k_w has a shared kernel for each input-output channel pair. If each output channel has one bias, the total parameter count is C_out * C_in * k_h * k_w + C_out. This count is independent of the image height and width, assuming the layer configuration remains fixed.",
+            "formula": "Parameters = C_out * (C_in * k_h * k_w + 1)",
+            "example": "A layer with 3 input channels, 32 output channels, and 3 by 3 kernels has 32 * (3 * 3 * 3 + 1) = 896 parameters."
+        },
+        {
+            "id": "cnn-output-dimensions",
+            "title": "Stride, Padding, and Output Dimensions",
+            "type": "concept",
+            "content": "Stride controls how far the kernel moves between adjacent positions. A stride of one evaluates neighboring locations, while a stride of two skips positions and usually reduces the output dimensions. Padding adds values around the input boundary, often zeros. Padding can preserve spatial dimensions when the kernel and stride permit it. Dilation inserts gaps between kernel elements, increasing the effective receptive field without increasing the number of kernel weights. These parameters influence spatial resolution, computation, and the information available near image boundaries."
+        },
+        {
+            "id": "cnn-output-dimensions-math",
+            "title": "Calculating Convolution Output Size",
+            "type": "math",
+            "content": "For one spatial dimension, an input of size n, padding p, kernel size k, stride s, and dilation d produces an output dimension determined by the effective kernel size d(k-1)+1. The floor operation accounts for how many valid positions fit.",
+            "formula": "Output = floor((n + 2p - d(k - 1) - 1) / s) + 1",
+            "example": "For an input of size 32, kernel size 3, padding 1, stride 1, and dilation 1, the output is floor((32 + 2 - 2 - 1)/1) + 1 = 32. The spatial dimension is preserved."
+        },
+        {
+            "id": "cnn-stride-example",
+            "title": "Understanding Stride",
+            "type": "concept",
+            "content": "A larger stride reduces the number of spatial positions evaluated by a convolution. This can reduce computation and produce lower-resolution feature maps. However, downsampling too early may discard small objects, thin structures, or fine-grained details. Stride is therefore an architectural choice rather than a free efficiency improvement. Networks for object detection and segmentation often use feature pyramids or multiple-resolution pathways to recover useful information at different scales."
+        },
+        {
+            "id": "cnn-padding",
+            "title": "Padding Strategies",
+            "type": "concept",
+            "content": "Zero padding adds zeros around the image or feature map. It allows filters to operate near the boundary and can preserve dimensions for selected kernel and stride combinations. Other padding strategies include reflection and replication padding. Padding choices can affect border artifacts because the artificial values may not resemble the real image. For image classification, zero padding is common. For image generation or certain restoration tasks, other boundary strategies may be appropriate."
+        },
+        {
+            "id": "cnn-dilation",
+            "title": "Dilated Convolution",
+            "type": "concept",
+            "content": "Dilated convolution spaces kernel elements apart. The effective kernel size grows with dilation even though the number of learned weights remains unchanged. This enables a layer to aggregate information over a wider region without immediately reducing spatial resolution. Dilated convolutions have been used in semantic segmentation, audio processing, and dense prediction. Excessive or poorly chosen dilation can create sampling gaps and reduce local continuity."
+        },
+        {
+            "id": "cnn-activation-functions",
+            "title": "Activation Functions in CNNs",
+            "type": "concept",
+            "content": "A convolution is usually followed by a nonlinear activation. Without nonlinearities, a stack of linear layers remains equivalent to a single linear transformation and cannot represent the full range of useful nonlinear mappings. ReLU maps negative values to zero and leaves positive values unchanged. Other choices include Leaky ReLU, GELU, SiLU, and variants designed for specific architectures. Activation functions affect optimization, sparsity, gradient flow, and computational behavior."
+        },
+        {
+            "id": "cnn-relu-math",
+            "title": "ReLU",
+            "type": "math",
+            "content": "The Rectified Linear Unit is a simple piecewise-linear activation function. It has derivative one for positive inputs and zero for negative inputs, except that the derivative at zero is convention-dependent.",
+            "formula": "ReLU(x) = max(0, x)",
+            "example": "For input values [-3, -1, 0, 2, 5], ReLU produces [0, 0, 0, 2, 5]. Negative activations are suppressed while positive activations pass through."
+        },
+        {
+            "id": "cnn-pooling",
+            "title": "Pooling and Spatial Downsampling",
+            "type": "concept",
+            "content": "Pooling aggregates values over local regions. Max pooling selects the maximum value, while average pooling computes the mean. Pooling can reduce spatial dimensions and provide some tolerance to small shifts. However, it discards information and may be undesirable when exact spatial locations matter. Modern architectures often use strided convolutions or carefully designed downsampling blocks instead of relying heavily on pooling. Global average pooling is frequently used near the end of classification networks to aggregate spatial feature maps."
+        },
+        {
+            "id": "cnn-pooling-math",
+            "title": "Max Pooling",
+            "type": "math",
+            "content": "For a local window R, max pooling returns the largest activation in that window. Average pooling returns the arithmetic mean. Max pooling can preserve a strong feature response even when its precise location shifts within the pooling window.",
+            "formula": "MaxPool(R) = max_{x in R} x; AveragePool(R) = (1 / |R|) * sum_{x in R} x",
+            "example": "For the window [[1, 4], [2, 3]], max pooling returns 4, while average pooling returns (1 + 4 + 2 + 3)/4 = 2.5."
+        },
+        {
+            "id": "cnn-feature-hierarchy",
+            "title": "Hierarchical Feature Learning",
+            "type": "concept",
+            "content": "CNNs build representations hierarchically. Early layers often capture simple local patterns, intermediate layers combine them into textures and shapes, and deeper layers can encode object parts or class-specific concepts. These are tendencies rather than fixed rules: learned features depend on architecture, data, objective, and training. Hierarchical processing enables a classifier to recognize objects despite changes in local appearance, but it can also cause the model to rely on background textures or other unintended correlations."
+        },
+        {
+            "id": "cnn-receptive-field",
+            "title": "The Receptive Field",
+            "type": "concept",
+            "content": "The receptive field of a feature is the region of the original input that can influence it. A small kernel in one layer has a small receptive field, but stacking layers increases the effective region. Receptive field size matters because recognizing a large object or understanding spatial context requires access to information beyond a single local patch. The theoretical receptive field may be larger than the region that contributes most strongly in practice. Strides and dilation change how quickly receptive fields expand."
+        },
+        {
+            "id": "cnn-receptive-field-math",
+            "title": "Computing Receptive Field Size",
+            "type": "math",
+            "content": "For a sequence of layers, receptive field size and effective stride can be tracked recursively. Let r_l be receptive field size and j_l the spacing between adjacent features measured in input pixels. For a layer with kernel size k_l, stride s_l, and dilation d_l, the update is r_l = r_(l-1) + (k_l - 1)d_l*j_(l-1), and j_l = j_(l-1)*s_l. Start with r_0 = 1 and j_0 = 1.",
+            "formula": "r_l = r_(l-1) + (k_l - 1)d_l*j_(l-1); j_l = j_(l-1)*s_l",
+            "example": "Two stride-one layers with 3 by 3 kernels and dilation one have a theoretical receptive field of 5 by 5: the first layer covers 3 pixels, and the second expands the field by two pixels on each dimension."
+        },
+        {
+            "id": "cnn-batch-normalization",
+            "title": "Batch Normalization",
+            "type": "concept",
+            "content": "Batch normalization normalizes activations using statistics estimated from a training batch and learns scale and shift parameters. It can improve optimization and help make training less sensitive to initialization. During inference, standard implementations use running estimates accumulated during training. Small or nonrepresentative batches can make batch statistics noisy. Alternatives such as group normalization and layer normalization are useful in settings where batch statistics are unreliable or where the architecture requires a different normalization behavior."
+        },
+        {
+            "id": "cnn-batchnorm-math",
+            "title": "Batch Normalization Formula",
+            "type": "math",
+            "content": "Batch normalization subtracts a batch mean, divides by the square root of the batch variance plus a small numerical stability constant, and then applies learned scale and shift parameters.",
+            "formula": "y = gamma * (x - mu_B) / sqrt(sigma_B^2 + epsilon) + beta",
+            "example": "If an activation is 5, the batch mean is 3, the standard deviation is 2, gamma is 1, and beta is 0, the normalized activation is approximately (5 - 3)/2 = 1."
+        },
+        {
+            "id": "cnn-residual-connections",
+            "title": "Residual Connections",
+            "type": "concept",
+            "content": "Very deep CNNs can be difficult to optimize because information and gradients must pass through many transformations. Residual connections add a block's input to its transformed output. Instead of learning a complete mapping H(x), the block learns a residual F(x) and returns x + F(x), assuming compatible dimensions. This creates a direct information path and can improve gradient flow. If the input and output shapes differ, a projection or other transformation may be needed to align dimensions."
+        },
+        {
+            "id": "cnn-residual-math",
+            "title": "Residual Learning",
+            "type": "math",
+            "content": "A residual block computes a learned transformation and adds the original input. The identity path can make it easier for the block to preserve information when the residual transformation is small or near zero.",
+            "formula": "y = F(x, W) + x",
+            "example": "If the input representation is x = [1, 2] and the residual branch outputs F(x) = [0.1, -0.2], the block output is [1.1, 1.8]."
+        },
+        {
+            "id": "cnn-lenet",
+            "title": "LeNet and Early CNNs",
+            "type": "concept",
+            "content": "LeNet demonstrated that convolutional feature extraction followed by learned classification could perform well on handwritten digit recognition. Its architecture combined convolution, subsampling, and fully connected layers. Although small by modern standards, it established important principles: local receptive fields, shared filters, hierarchical features, and end-to-end training. Early CNNs were limited by dataset size and hardware, but their core ideas remain relevant in modern vision systems."
+        },
+        {
+            "id": "cnn-alexnet",
+            "title": "AlexNet and Large-Scale Image Recognition",
+            "type": "concept",
+            "content": "AlexNet helped establish deep CNNs as a dominant approach to large-scale image classification. Its success was associated with deeper learned representations, GPU training, ReLU activations, data augmentation, dropout, and large-scale labeled data. The broader lesson is that architecture, data, hardware, regularization, and optimization work together. A model architecture cannot be evaluated independently of the training setup that makes learning possible."
+        },
+        {
+            "id": "cnn-vgg",
+            "title": "VGG-Style Networks",
+            "type": "concept",
+            "content": "VGG networks showed that stacking small 3 by 3 convolutions can build strong visual representations. Multiple small convolutions introduce nonlinearities between layers and can expand the receptive field while using a regular architectural pattern. However, VGG-style networks can have large parameter counts, especially in fully connected layers, and may be expensive in memory and computation. Their simple structure made them useful as research baselines and feature extractors."
+        },
+        {
+            "id": "cnn-inception",
+            "title": "Inception Architectures",
+            "type": "concept",
+            "content": "Inception-style networks process features using parallel branches with different operations or receptive field sizes. This allows the network to represent visual patterns at multiple scales within a block. Computationally expensive convolutions can be reduced using bottleneck projections, especially 1 by 1 convolutions. The architectural principle is to allocate computation to useful feature transformations rather than simply increasing every layer's width."
+        },
+        {
+            "id": "cnn-resnet-architecture",
+            "title": "ResNet",
+            "type": "concept",
+            "content": "Residual Networks use skip connections to enable the training of very deep CNNs. Residual blocks provide paths through which information can propagate without requiring every layer to learn an entirely new transformation. ResNet variants are widely used for classification, detection, segmentation, and feature extraction. Different variants trade depth, width, parameter count, and computational cost. Residual connections are now a general deep-learning design pattern rather than a feature limited to image models."
+        },
+        {
+            "id": "cnn-densenet",
+            "title": "DenseNet",
+            "type": "concept",
+            "content": "DenseNet connects each layer to later layers within a dense block by concatenating feature maps. This encourages feature reuse and provides short paths between layers. Concatenation differs from residual addition: concatenation preserves separate feature channels, while addition combines corresponding values. Dense connections can improve parameter efficiency in some settings but may increase memory consumption because many intermediate feature maps must remain available."
+        },
+        {
+            "id": "cnn-efficientnet",
+            "title": "EfficientNet and Compound Scaling",
+            "type": "concept",
+            "content": "EfficientNet-style scaling considers depth, width, and input resolution together instead of increasing only one dimension. Increasing depth provides more transformations, increasing width provides more channels, and increasing resolution preserves finer visual detail. These choices interact, so a balanced scaling strategy can provide a better accuracy-efficiency tradeoff than scaling a single dimension. Practical model selection should consider latency, memory, hardware support, and the target data distribution, not only benchmark accuracy."
+        },
+        {
+            "id": "cnn-transfer-learning",
+            "title": "Transfer Learning with CNNs",
+            "type": "concept",
+            "content": "Transfer learning reuses representations learned from a large source dataset. A pretrained CNN may provide useful edge, texture, shape, and semantic features for a smaller target dataset. A common approach freezes the backbone and trains a new classification head. Another approach fine-tunes some or all backbone layers using a smaller learning rate. Freezing reduces training cost but can limit adaptation; full fine-tuning can improve domain fit but may overfit or damage useful pretrained representations when the target dataset is small."
+        },
+        {
+            "id": "cnn-data-augmentation",
+            "title": "Data Augmentation",
+            "type": "concept",
+            "content": "Data augmentation creates varied training examples using transformations that preserve the target label. Common image transformations include horizontal flips, random crops, modest rotations, color jitter, and random erasing. Augmentation can improve generalization by reducing reliance on superficial training patterns. However, transformations must match the task. A horizontal flip may change the meaning of text or directional signs, and a large rotation may be unrealistic for a medical scan or document. Augmentation policy should be chosen according to domain knowledge and validated empirically."
+        },
+        {
+            "id": "cnn-overfitting",
+            "title": "Overfitting in Vision Models",
+            "type": "concept",
+            "content": "Overfitting occurs when a model performs well on training examples but fails to generalize to unseen data. Vision models can memorize backgrounds, watermarks, camera artifacts, or dataset-specific correlations. Common remedies include stronger data augmentation, weight decay, dropout where appropriate, transfer learning, early stopping, and more representative training data. A validation split should be separated from training data at the correct unit of independence. For example, images from the same video or patient may need to remain in one split to prevent leakage."
+        },
+        {
+            "id": "cnn-loss-functions",
+            "title": "Classification Loss Functions",
+            "type": "concept",
+            "content": "For single-label classification, cross-entropy loss is commonly used with class logits. The model produces a score for each class, and the loss encourages the correct class to receive a higher probability. Binary classification often uses binary cross-entropy with logits. Class imbalance may require class weights, balanced sampling, or other strategies. Loss should be interpreted alongside task metrics because a decreasing training loss does not guarantee better validation accuracy or calibration."
+        },
+        {
+            "id": "cnn-cross-entropy",
+            "title": "Cross-Entropy for Classification",
+            "type": "math",
+            "content": "For a single example with true class y and predicted probabilities p_k, cross-entropy is the negative logarithm of the probability assigned to the true class. The loss becomes large when the correct class receives a very small predicted probability.",
+            "formula": "L = -log(p_y)",
+            "example": "If the correct class receives probability 0.8, the loss is -log(0.8), approximately 0.223. If it receives probability 0.1, the loss is approximately 2.303."
+        },
+        {
+            "id": "cnn-training-loop",
+            "title": "The CNN Training Loop",
+            "type": "process",
+            "content": "A standard supervised training loop loads a batch of images and labels, runs a forward pass, computes a loss, clears old gradients, backpropagates the loss, and updates the parameters with an optimizer. The model should be placed in training mode during optimization. Validation should use evaluation mode and disable gradient tracking. Record metrics per epoch, save checkpoints, and monitor learning curves. Reproducibility requires controlling random seeds where possible and recording data preprocessing, architecture, optimizer settings, and dataset versions."
+        },
+        {
+            "id": "cnn-pytorch-model",
+            "title": "Implementing a Small CNN in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\nclass SmallCNN(nn.Module):\n    def __init__(self, num_classes: int = 10):\n        super().__init__()\n        self.features = nn.Sequential(\n            nn.Conv2d(3, 32, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(2),\n            nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU(), nn.MaxPool2d(2),\n            nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d((1, 1))\n        )\n        self.classifier = nn.Linear(128, num_classes)\n    def forward(self, x):\n        x = self.features(x)\n        return self.classifier(torch.flatten(x, 1))\n\nmodel = SmallCNN(num_classes=10)\nimages = torch.randn(8, 3, 64, 64)\nlogits = model(images)\nprint(logits.shape)",
+            "explanation": "The example uses three convolutional stages and adaptive average pooling. For a batch of eight RGB images, the model returns one vector of ten class logits per image. Random tensors are used only to demonstrate tensor shapes; meaningful training requires a labeled dataset and suitable preprocessing."
+        },
+        {
+            "id": "cnn-pytorch-training",
+            "title": "Training a CNN",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\nmodel = SmallCNN(num_classes=10).to(device)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-4)\ncriterion = nn.CrossEntropyLoss()\n\nfor epoch in range(num_epochs):\n    model.train()\n    total_loss = 0.0\n    for images, labels in train_loader:\n        images, labels = images.to(device), labels.to(device)\n        optimizer.zero_grad(set_to_none=True)\n        logits = model(images)\n        loss = criterion(logits, labels)\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item() * images.size(0)\n    print(f\"Epoch {epoch + 1}: loss={total_loss / len(train_loader.dataset):.4f}\")",
+            "explanation": "This training loop assumes that device, num_epochs, and train_loader have already been defined. The dataset must return image tensors and integer class labels. Validation and checkpointing should be added before using the model for real tasks."
+        },
+        {
+            "id": "cnn-validation",
+            "title": "Validation and Evaluation",
+            "type": "concept",
+            "content": "Evaluation estimates how well a trained model generalizes to data that was not used to update its parameters. Accuracy measures the proportion of correct predictions but can hide poor performance on rare classes. Precision measures how many predicted positives are correct, while recall measures how many actual positives are detected. Macro-averaged metrics give each class equal weight, whereas micro-averaged metrics aggregate decisions across examples. For safety-sensitive applications, evaluate false positives and false negatives separately and select thresholds according to the cost of each error."
+        },
+        {
+            "id": "cnn-confusion-matrix",
+            "title": "Confusion Matrices",
+            "type": "concept",
+            "content": "A confusion matrix counts the relationship between true labels and predicted labels. In multiclass classification, the diagonal entries represent correct predictions and off-diagonal entries show specific confusions. This can reveal whether a model consistently confuses visually similar classes or performs poorly on a minority class. Inspecting misclassified examples alongside the matrix often reveals data-quality problems, ambiguous labels, or spurious correlations."
+        },
+        {
+            "id": "cnn-class-imbalance",
+            "title": "Class Imbalance",
+            "type": "concept",
+            "content": "A dataset is imbalanced when some classes have many more examples than others. A model can achieve high overall accuracy by favoring common classes while failing on rare but important categories. Remedies include collecting more minority-class data, using class-weighted losses, sampling examples more carefully, and reporting macro metrics. Synthetic augmentation can help in some cases, but it cannot fully replace representative real examples. The appropriate approach depends on the data-generating process and the operational cost of errors."
+        },
+        {
+            "id": "cnn-interpretability",
+            "title": "Interpreting CNN Predictions",
+            "type": "concept",
+            "content": "Interpretability methods attempt to reveal which parts of an input influence a prediction. Gradient-based saliency, class activation maps, and occlusion tests can highlight regions associated with a class score. These explanations are approximations and can be unstable or misleading. A highlighted region does not prove that the model reasoned correctly. Compare explanations across methods, test whether masking a region changes the prediction, and use domain-specific validation before relying on visual explanations in consequential applications."
+        },
+        {
+            "id": "cnn-robustness",
+            "title": "Robustness and Distribution Shift",
+            "type": "concept",
+            "content": "A model trained on clear studio images may fail on low-light photographs, new camera types, unfamiliar backgrounds, or different geographic regions. This is a distribution shift: the deployment data differs from the training distribution. Evaluate on representative field data, monitor confidence and error patterns, and establish a process for reviewing failures. Input corruption tests can assess sensitivity to blur, noise, compression, and brightness changes. A model should be allowed to abstain or request review when its prediction is not sufficiently reliable."
+        },
+        {
+            "id": "cnn-deployment",
+            "title": "Deploying CNNs",
+            "type": "concept",
+            "content": "Deployment requires more than exporting weights. The inference pipeline must preserve image decoding, channel order, resizing, normalization, label mapping, and output interpretation. Measure end-to-end latency and memory usage on the target hardware. Batch inference can improve throughput but may increase response latency. Quantization and pruning can reduce resource use, although accuracy and hardware compatibility must be checked. Monitor data drift and model performance after deployment, and maintain a versioned rollback path."
+        },
+        {
+            "id": "cnn-quantization",
+            "title": "Quantization and Efficient Inference",
+            "type": "concept",
+            "content": "Quantization represents weights and sometimes activations using lower-precision numerical formats. It can reduce memory use and accelerate inference on supported hardware. Post-training quantization applies conversion after training, while quantization-aware training simulates quantization effects during optimization. Benefits depend on the model, hardware, and backend. Always compare accuracy, latency, and memory before and after conversion using representative data."
+        },
+        {
+            "id": "cnn-modern-role",
+            "title": "CNNs in the Modern Vision Landscape",
+            "type": "concept",
+            "content": "Vision Transformers and hybrid architectures have become important alternatives to conventional CNNs, but convolution remains valuable. CNNs offer strong local inductive biases, efficient spatial processing, and mature deployment support. They remain useful for mobile inference, dense prediction, image restoration, detection backbones, and hybrid systems. The practical choice depends on data availability, image resolution, hardware, latency, robustness, and the target task rather than on the assumption that one architectural family is universally superior."
+        },
+        {
+            "id": "cnn-project",
+            "title": "Project: Build and Evaluate an Image Classifier",
+            "type": "project",
+            "content": "Choose a labeled image dataset and create training, validation, and test splits that prevent leakage. Implement a small CNN and train it with cross-entropy loss. Compare a baseline model with data augmentation and a pretrained backbone. Track training loss, validation accuracy, per-class precision and recall, and inference latency. Inspect a confusion matrix and representative mistakes. Test robustness to moderate image corruption and document limitations. Save the final model together with preprocessing configuration, label mappings, and evaluation results."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "cnns-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why are CNNs well suited to image data?",
+            "correctAnswer": "They exploit local connectivity and weight sharing to learn spatial patterns efficiently.",
+            "solution": "Local filters detect nearby patterns, and shared weights allow the same pattern detector to operate across an image without creating separate parameters for every position."
+        },
+        {
+            "id": "cnns-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "How many parameters does a convolution with 3 input channels, 16 output channels, a 3 by 3 kernel, and one bias per output channel contain?",
+            "correctAnswer": "448 parameters.",
+            "solution": "Parameters = 16 * (3 * 3 * 3 + 1) = 16 * 28 = 448."
+        },
+        {
+            "id": "cnns-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "An input dimension is 64. A convolution uses kernel size 3, padding 1, stride 2, and dilation 1. What is the output dimension?",
+            "correctAnswer": "32.",
+            "solution": "Output = floor((64 + 2 - 2 - 1)/2) + 1 = floor(63/2) + 1 = 31 + 1 = 32."
+        },
+        {
+            "id": "cnns-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the difference between translation equivariance and translation invariance?",
+            "correctAnswer": "Equivariance means the representation changes predictably when the input moves; invariance means the representation remains unchanged.",
+            "solution": "Convolution is translation equivariant under suitable conditions. Pooling and later operations may introduce some translation tolerance but do not guarantee complete invariance."
+        },
+        {
+            "id": "cnns-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What problem do residual connections help address?",
+            "correctAnswer": "They improve information and gradient flow in deep networks by providing shortcut paths.",
+            "solution": "A residual block computes F(x) + x, allowing the block to learn a correction to the input rather than an entirely new mapping."
+        },
+        {
+            "id": "cnns-ex-6",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "What is the ReLU output for the input [-2, 0, 4]?",
+            "correctAnswer": "[0, 0, 4].",
+            "solution": "ReLU(x) = max(0, x), so negative values become zero and positive values remain unchanged."
+        },
+        {
+            "id": "cnns-ex-7",
+            "type": "applied",
+            "difficulty": "advanced",
+            "question": "A classifier achieves 96 percent accuracy but misses most examples of a rare defect class. What should be investigated?",
+            "correctAnswer": "Class imbalance, per-class recall, the confusion matrix, data representation, and the cost of false negatives.",
+            "solution": "Overall accuracy can conceal poor minority-class performance. Use class-specific metrics and consider additional data, weighted loss, or appropriate sampling."
+        },
+        {
+            "id": "cnns-ex-8",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why can a CNN perform well on training images but fail in real deployment?",
+            "correctAnswer": "The model may overfit or encounter a distribution shift in lighting, backgrounds, cameras, or other data characteristics.",
+            "solution": "Evaluation must use representative data and test realistic variations. Monitoring and a failure-review process are also important."
+        },
+        {
+            "id": "cnns-ex-9",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Which PyTorch module performs a two-dimensional convolution on batched image tensors?",
+            "correctAnswer": "torch.nn.Conv2d.",
+            "solution": "Conv2d accepts input tensors conventionally shaped (batch, channels, height, width) and applies learnable spatial filters."
+        },
+        {
+            "id": "cnns-ex-10",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a reliable CNN image-classification experiment.",
+            "correctAnswer": "Use leakage-safe dataset splits, documented preprocessing, a baseline architecture, controlled training settings, validation-based model selection, test-set evaluation, per-class metrics, and saved model metadata.",
+            "solution": "The experiment should distinguish training and model-selection data from the final test set. Report errors and deployment costs, not only aggregate accuracy."
+        }
+    ],
+    "summary": "CNNs learn visual features through local convolutional filters, weight sharing, nonlinear activations, and hierarchical processing. Stride, padding, dilation, pooling, normalization, and residual connections determine how information moves through a network. Architectures such as ResNet and EfficientNet demonstrate different approaches to depth, feature reuse, and computational efficiency. Practical CNN development requires sound data splits, appropriate augmentation, reliable training, per-class evaluation, robustness testing, and deployment-aware optimization.",
+    "relatedTopics": [
+        "vision-transformers",
+        "image-embeddings",
+        "object-detection",
+        "segmentation",
+        "diffusion-models",
+        "clip-style-models",
+        "multimodal-models"
+    ]
+}

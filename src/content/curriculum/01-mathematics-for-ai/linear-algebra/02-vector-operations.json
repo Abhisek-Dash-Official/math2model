@@ -1,1 +1,437 @@
-{}
+{
+    "id": "vector-operations",
+    "title": "Vector Operations",
+    "slug": "vector-operations",
+    "module": "mathematics-for-ai",
+    "description": "Learn how vectors are added, subtracted, scaled, measured, and combined, and understand how these operations represent changes in data, model parameters, embeddings, and optimization algorithms.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "Python for AI",
+        "NumPy"
+    ],
+    "learningObjectives": [
+        "Interpret vectors geometrically and algebraically.",
+        "Perform vector addition and subtraction.",
+        "Understand scalar multiplication and linear combinations.",
+        "Calculate L1, L2, and general Lp norms.",
+        "Calculate distances between vectors.",
+        "Understand unit vectors and normalization.",
+        "Use NumPy to implement vector operations.",
+        "Connect vector operations to embeddings, feature transformations, and gradient-based learning."
+    ],
+    "sections": [
+        {
+            "id": "intuition",
+            "title": "1. Intuition: Vectors as Quantities with Multiple Components",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A vector can describe a position, a direction, a collection of features, or a numerical representation learned by a machine learning model. Once data is represented as a vector, mathematical operations allow us to combine observations, measure differences, change magnitudes, and construct new representations."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose a robot moves 3 meters east and 2 meters north. We can represent that displacement as a vector with two components. If it then moves another 1 meter east and 4 meters north, the total displacement is found by adding the corresponding components. The same arithmetic applies to feature vectors and learned representations, although those vectors do not always correspond to physical directions."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a} = \\begin{bmatrix}3 \\\\ 2\\end{bmatrix}, \\quad \\mathbf{b} = \\begin{bmatrix}1 \\\\ 4\\end{bmatrix}, \\quad \\mathbf{a}+\\mathbf{b} = \\begin{bmatrix}4 \\\\ 6\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, adding or subtracting vectors is useful when comparing embeddings, combining representations, calculating prediction errors, and updating model parameters. Scaling a vector changes its magnitude, while normalization can make its length equal to one."
+                }
+            ]
+        },
+        {
+            "id": "vector-space-foundations",
+            "title": "2. Vector Spaces and Component-Wise Operations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For this lesson, we primarily work with real-valued vectors of a fixed length n. Such vectors belong to R^n. If two vectors have the same length, their components can be combined position by position."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a} = (a_1, a_2, \\ldots, a_n), \\quad \\mathbf{b} = (b_1, b_2, \\ldots, b_n)"
+                },
+                {
+                    "type": "text",
+                    "value": "Vector addition produces a new vector by adding corresponding components. Vector subtraction subtracts the components of the second vector from those of the first. These operations require corresponding coordinates to have compatible meanings if the vectors represent real-world features."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}+\\mathbf{b} = (a_1+b_1, a_2+b_2, \\ldots, a_n+b_n)"
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}-\\mathbf{b} = (a_1-b_1, a_2-b_2, \\ldots, a_n-b_n)"
+                },
+                {
+                    "type": "text",
+                    "value": "If a is a two-dimensional displacement and b is another displacement, the sum describes the combined displacement. If the vectors are model parameters, addition may represent combining parameter updates. If the vectors are feature measurements with incompatible units or meanings, component-wise addition might be mathematically valid but semantically inappropriate."
+                }
+            ]
+        },
+        {
+            "id": "vector-addition-subtraction",
+            "title": "3. Vector Addition and Subtraction",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider a = [2, 5] and b = [4, 1]. Add the first components, then add the second components. The result is [6, 6]. For subtraction, calculate 2 − 4 and 5 − 1, giving [-2, 4]."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}2 \\\\ 5\\end{bmatrix} + \\begin{bmatrix}4 \\\\ 1\\end{bmatrix} = \\begin{bmatrix}6 \\\\ 6\\end{bmatrix}"
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}2 \\\\ 5\\end{bmatrix} - \\begin{bmatrix}4 \\\\ 1\\end{bmatrix} = \\begin{bmatrix}-2 \\\\ 4\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Geometrically, vector addition can be visualized using the head-to-tail rule: place the start of the second displacement at the end of the first. The resultant vector connects the original starting point to the final endpoint. Vector subtraction a − b can be interpreted as the displacement from b to a when both vectors are treated as position vectors with the same origin."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([2, 5])\nb = np.array([4, 1])\n\nprint(\"Addition:\", a + b)\nprint(\"Subtraction:\", a - b)\nprint(\"Reverse subtraction:\", b - a)\n\nassert np.array_equal(a + b, np.array([6, 6]))\nassert np.array_equal(a - b, np.array([-2, 4]))"
+                },
+                {
+                    "type": "text",
+                    "value": "A useful property of addition is commutativity: a + b = b + a. Addition is also associative: (a + b) + c = a + (b + c). Subtraction is not commutative, because a − b is generally different from b − a."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}+\\mathbf{b}=\\mathbf{b}+\\mathbf{a}"
+                },
+                {
+                    "type": "math",
+                    "value": "(\\mathbf{a}+\\mathbf{b})+\\mathbf{c}=\\mathbf{a}+(\\mathbf{b}+\\mathbf{c})"
+                }
+            ]
+        },
+        {
+            "id": "scalar-multiplication",
+            "title": "4. Scalar Multiplication and Linear Combinations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Scalar multiplication multiplies every component of a vector by the same number. If a = [2, -3] and c = 4, then ca = [8, -12]. A positive scalar larger than one increases the magnitude, a scalar between zero and one reduces it, and a negative scalar also reverses the direction in a geometric interpretation."
+                },
+                {
+                    "type": "math",
+                    "value": "c\\mathbf{a} = (ca_1, ca_2, \\ldots, ca_n)"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([2.0, -3.0])\n\nprint(\"Original:\", a)\nprint(\"Scaled by 4:\", 4 * a)\nprint(\"Scaled by 0.5:\", 0.5 * a)\nprint(\"Scaled by -1:\", -1 * a)"
+                },
+                {
+                    "type": "text",
+                    "value": "A linear combination combines several vectors using scalar coefficients. For vectors a and b, an expression such as 2a − 3b is a linear combination. Linear combinations are foundational because many important operations in linear algebra, including matrix multiplication, can be understood as combinations of vectors."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{v} = c_1\\mathbf{v}_1 + c_2\\mathbf{v}_2 + \\cdots + c_k\\mathbf{v}_k"
+                },
+                {
+                    "type": "text",
+                    "value": "In a neural network layer, an output before applying an activation function is a weighted combination of input features plus a bias. Each feature contributes according to a learned coefficient. The coefficients are scalars, and the collection of input features is a vector."
+                },
+                {
+                    "type": "math",
+                    "value": "z = \\mathbf{w}^{T}\\mathbf{x} + b"
+                }
+            ]
+        },
+        {
+            "id": "norms-and-magnitude",
+            "title": "5. Vector Norms: Measuring Magnitude",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A norm is a function that measures the magnitude or length of a vector. Different norms measure magnitude in different ways. Norms are useful in geometry, distance calculations, regularization, optimization, and assessing the size of numerical errors."
+                },
+                {
+                    "type": "text",
+                    "value": "The L2 norm, also called the Euclidean norm, is the familiar geometric length of a vector. It is calculated by squaring each component, summing the squares, and taking the square root."
+                },
+                {
+                    "type": "math",
+                    "value": "\\|\\mathbf{x}\\|_2 = \\sqrt{\\sum_{i=1}^{n}x_i^2}"
+                },
+                {
+                    "type": "text",
+                    "value": "For x = [3, 4], the L2 norm is √(3² + 4²) = √25 = 5. This is the same relationship that appears in the Pythagorean theorem."
+                },
+                {
+                    "type": "math",
+                    "value": "\\|[3,4]\\|_2 = \\sqrt{9+16}=5"
+                },
+                {
+                    "type": "text",
+                    "value": "The L1 norm is the sum of the absolute values of the components. For [3, -4], the L1 norm is 3 + 4 = 7. Unlike the L2 norm, it does not square the components."
+                },
+                {
+                    "type": "math",
+                    "value": "\\|\\mathbf{x}\\|_1 = \\sum_{i=1}^{n}|x_i|"
+                },
+                {
+                    "type": "text",
+                    "value": "More generally, for p ≥ 1, the Lp norm is defined by raising absolute components to power p, summing, and taking the p-th root. The infinity norm is the largest absolute component. It measures the maximum coordinate magnitude."
+                },
+                {
+                    "type": "math",
+                    "value": "\\|\\mathbf{x}\\|_p = \\left(\\sum_{i=1}^{n}|x_i|^p\\right)^{1/p}"
+                },
+                {
+                    "type": "math",
+                    "value": "\\|\\mathbf{x}\\|_{\\infty}=\\max_i |x_i|"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nx = np.array([3.0, -4.0, 12.0])\n\nl1 = np.linalg.norm(x, ord=1)\nl2 = np.linalg.norm(x, ord=2)\nlinf = np.linalg.norm(x, ord=np.inf)\n\nprint(\"L1 norm:\", l1)\nprint(\"L2 norm:\", l2)\nprint(\"Infinity norm:\", linf)"
+                },
+                {
+                    "type": "text",
+                    "value": "For this vector, the L1 norm is 19, the L2 norm is 13, and the infinity norm is 12. The values differ because each norm measures magnitude using a different rule. Norm selection can affect an optimization problem, so the choice should match the intended objective."
+                }
+            ]
+        },
+        {
+            "id": "distance-and-normalization",
+            "title": "6. Distances, Unit Vectors, and Normalization",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A distance measures how far apart two vectors are. A common choice is Euclidean distance, which is the L2 norm of their difference. To calculate the distance between a and b, subtract b from a and then calculate the L2 norm."
+                },
+                {
+                    "type": "math",
+                    "value": "d(\\mathbf{a},\\mathbf{b})=\\|\\mathbf{a}-\\mathbf{b}\\|_2"
+                },
+                {
+                    "type": "text",
+                    "value": "For a = [1, 2] and b = [4, 6], their difference is [-3, -4]. The Euclidean distance is √(9 + 16) = 5. Distance is useful when measuring differences between observations, comparing representations, or identifying nearby points."
+                },
+                {
+                    "type": "math",
+                    "value": "d(\\mathbf{a},\\mathbf{b})=\\sqrt{\\sum_{i=1}^{n}(a_i-b_i)^2}"
+                },
+                {
+                    "type": "text",
+                    "value": "Normalization often means rescaling a vector to have unit L2 norm. For a nonzero vector x, its unit vector is x divided by its L2 norm. The resulting vector points in the same direction as x and has length one."
+                },
+                {
+                    "type": "math",
+                    "value": "\\hat{\\mathbf{x}}=\\frac{\\mathbf{x}}{\\|\\mathbf{x}\\|_2}, \\quad \\mathbf{x}\\ne\\mathbf{0}"
+                },
+                {
+                    "type": "text",
+                    "value": "For x = [3, 4], the norm is 5, so the normalized vector is [0.6, 0.8]. Its length is √(0.36 + 0.64) = 1. The zero vector cannot be normalized this way because division by its norm would require division by zero."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([1.0, 2.0])\nb = np.array([4.0, 6.0])\n\nprint(\"Difference:\", a - b)\nprint(\"Euclidean distance:\", np.linalg.norm(a - b))\n\nx = np.array([3.0, 4.0])\nnorm = np.linalg.norm(x)\nunit_x = x / norm\n\nprint(\"Original norm:\", norm)\nprint(\"Unit vector:\", unit_x)\nprint(\"Normalized norm:\", np.linalg.norm(unit_x))"
+                },
+                {
+                    "type": "text",
+                    "value": "Feature normalization and unit-vector normalization are not the same operation. Standardization commonly subtracts a feature mean and divides by a standard deviation. Min-max scaling maps values into a selected interval. Unit-vector normalization divides a vector by its norm. These methods serve different purposes and should not be used interchangeably without considering the data and model."
+                }
+            ]
+        },
+        {
+            "id": "vector-operations-in-numpy",
+            "title": "7. Implementing Vector Operations with NumPy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "NumPy supports vectorized operations that perform calculations over entire arrays without requiring explicit Python loops for each component. These operations are concise and typically more efficient for numerical workloads."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([1.0, 2.0, 3.0])\nb = np.array([4.0, 5.0, 6.0])\n\naddition = a + b\nsubtraction = a - b\nscaled = 2.5 * a\ncomponentwise_product = a * b\n\nprint(\"Addition:\", addition)\nprint(\"Subtraction:\", subtraction)\nprint(\"Scaled vector:\", scaled)\nprint(\"Component-wise product:\", componentwise_product)\nprint(\"L1 norm:\", np.linalg.norm(a, ord=1))\nprint(\"L2 norm:\", np.linalg.norm(a))\nprint(\"Distance:\", np.linalg.norm(a - b))"
+                },
+                {
+                    "type": "text",
+                    "value": "Notice that a * b performs element-wise multiplication in NumPy, producing [4, 10, 18]. It does not calculate the dot product. The dot product is a separate operation, introduced in the next lesson. Distinguishing element-wise multiplication from the dot product prevents a common source of confusion."
+                },
+                {
+                    "type": "text",
+                    "value": "For ordinary component-wise addition and subtraction, arrays generally need compatible shapes. Two vectors of different lengths cannot be added as ordinary vectors in the same space. NumPy broadcasting may allow certain operations between differently shaped arrays, but broadcasting follows specific shape rules and does not mean that all such arrays are mathematically interchangeable."
+                }
+            ]
+        },
+        {
+            "id": "linear-combinations-and-ai",
+            "title": "8. Linear Combinations in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear combination creates a new vector by scaling existing vectors and adding the results. This idea is central to feature construction, linear regression, neural network layers, and many numerical algorithms."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{z}=a\\mathbf{x}+b\\mathbf{y}"
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose x describes one representation of an object and y describes another representation of the same object. A weighted combination can emphasize one representation more than the other. The coefficients a and b control their contributions. In a learned model, these coefficients may be optimized from data."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider the gradient descent update rule. A parameter vector θ is adjusted by subtracting a scaled gradient. The gradient indicates a direction of local increase in the objective, so subtracting it moves the parameters in a local direction of decrease when the step size is appropriate."
+                },
+                {
+                    "type": "math",
+                    "value": "\\boldsymbol{\\theta}_{t+1}=\\boldsymbol{\\theta}_t-\\eta\\nabla L(\\boldsymbol{\\theta}_t)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, θ_t is the parameter vector at iteration t, η is the learning rate, and ∇L is the gradient vector. Scalar multiplication scales the gradient, and vector subtraction produces the updated parameters. This simple vector operation is part of the foundation of neural network training."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\n# Illustrative parameter vector and gradient\nparameters = np.array([0.5, -1.0, 2.0])\ngradient = np.array([0.1, -0.4, 0.2])\nlearning_rate = 0.05\n\nupdated_parameters = parameters - learning_rate * gradient\n\nprint(\"Before:\", parameters)\nprint(\"Gradient:\", gradient)\nprint(\"After:\", updated_parameters)"
+                },
+                {
+                    "type": "text",
+                    "value": "This code illustrates the update rule rather than training a complete model. In a real optimization process, the gradient is calculated from a loss function and depends on the current parameters and training data."
+                }
+            ]
+        },
+        {
+            "id": "common-mistakes",
+            "title": "9. Common Mistakes and Misconceptions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Assuming vector subtraction is commutative. In general, a − b is not equal to b − a. Reversing the order reverses the sign of every component."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Confusing element-wise multiplication with the dot product. In NumPy, a * b multiplies corresponding components, whereas np.dot(a, b) or a @ b calculates the dot product for one-dimensional vectors."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Assuming the L1 and L2 norms always have the same value. They use different formulas and generally produce different magnitudes."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Normalizing a zero vector by dividing by its norm. Its norm is zero, so ordinary unit-vector normalization is undefined. Robust code should explicitly handle zero-norm vectors."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Assuming a smaller Euclidean distance always means two real-world observations are more similar. The result depends on feature scales, units, representation quality, and the definition of similarity that matters for the application."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 6: Applying operations to vectors with the same shape but incompatible feature meanings. Mathematical shape compatibility is necessary for many operations, but semantic compatibility is also important when interpreting the results."
+                }
+            ]
+        },
+        {
+            "id": "mini-project",
+            "title": "10. Mini Project: Compare Student Profiles",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Create feature vectors for three students. Each vector contains standardized study hours, attendance, and practice-test performance. Calculate the Euclidean distance between each pair of students, normalize each student's vector to unit length, and discuss why feature scaling matters when comparing vectors."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nstudents = np.array([\n    [1.0, 0.8, 0.7],\n    [0.6, 0.9, 0.8],\n    [0.9, 0.5, 0.6]\n])\n\nnames = [\"Student A\", \"Student B\", \"Student C\"]\n\nfor i in range(len(students)):\n    for j in range(i + 1, len(students)):\n        distance = np.linalg.norm(students[i] - students[j])\n        print(f\"{names[i]} to {names[j]}: {distance:.4f}\")\n\nnorms = np.linalg.norm(students, axis=1, keepdims=True)\nnormalized_students = np.divide(\n    students,\n    norms,\n    out=np.zeros_like(students),\n    where=norms != 0\n)\n\nprint(\"Normalized profiles:\\n\", normalized_students)\nprint(\"Normalized row norms:\", np.linalg.norm(normalized_students, axis=1))"
+                },
+                {
+                    "type": "text",
+                    "value": "The example assumes the three features have already been placed on comparable scales. If raw attendance percentages were combined with study hours and test scores, the largest numerical scale could dominate Euclidean distance. A real application should choose preprocessing based on the feature meanings and the objective."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Given a = [3, -2, 5] and b = [1, 4, -3], calculate a + b and a − b by hand.",
+            "hints": [
+                "Combine corresponding components.",
+                "For subtraction, preserve the order a minus b."
+            ],
+            "solution": "a + b = [3 + 1, -2 + 4, 5 + (-3)] = [4, 2, 2]. a − b = [3 − 1, -2 − 4, 5 − (-3)] = [2, -6, 8]."
+        },
+        {
+            "id": "exercise-2",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Calculate the L1 norm and L2 norm of x = [6, 8]. Explain why the two answers differ.",
+            "hints": [
+                "The L1 norm adds absolute values.",
+                "The L2 norm takes the square root of the sum of squared components."
+            ],
+            "solution": "The L1 norm is |6| + |8| = 14. The L2 norm is √(6² + 8²) = √100 = 10. They differ because they use different mathematical definitions of magnitude."
+        },
+        {
+            "id": "exercise-3",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Write a NumPy program that creates two three-dimensional vectors, calculates their difference, and calculates the Euclidean distance between them.",
+            "hints": [
+                "Use np.array to construct the vectors.",
+                "Use np.linalg.norm on their difference."
+            ],
+            "solution": "import numpy as np\n\na = np.array([1.0, 2.0, 3.0])\nb = np.array([4.0, 6.0, 3.0])\ndifference = a - b\ndistance = np.linalg.norm(difference)\n\nprint(\"Difference:\", difference)\nprint(\"Distance:\", distance)\n# Expected difference: [-3. -4.  0.]\n# Expected distance: 5.0"
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Let a = [1, 2] and b = [3, -1]. Calculate 2a + 3b.",
+            "hints": [
+                "Scale each vector separately.",
+                "Add the resulting vectors component by component."
+            ],
+            "solution": "2a = [2, 4]. 3b = [9, -3]. Therefore, 2a + 3b = [2 + 9, 4 + (-3)] = [11, 1]."
+        },
+        {
+            "id": "exercise-5",
+            "type": "analysis",
+            "difficulty": "intermediate",
+            "question": "Explain why unit-vector normalization can be useful when comparing text embeddings, and describe one limitation of this approach.",
+            "hints": [
+                "Consider what happens to the magnitude of each vector.",
+                "Distinguish direction from magnitude."
+            ],
+            "solution": "Unit-vector normalization removes differences in vector magnitude, making comparisons focus more on direction. This can be useful when embedding magnitude is not intended to determine similarity. A limitation is that magnitude may carry meaningful information in some applications, and normalization can discard it. The usefulness of normalization depends on the embedding model and similarity measure."
+        },
+        {
+            "id": "exercise-6",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "Implement a function that returns the unit vector of a nonzero NumPy vector and raises a ValueError for a zero vector. Test it on [3, 4] and [0, 0].",
+            "hints": [
+                "Calculate the L2 norm.",
+                "Check whether the norm equals zero before dividing."
+            ],
+            "solution": "import numpy as np\n\ndef unit_vector(x):\n    x = np.asarray(x, dtype=float)\n    norm = np.linalg.norm(x)\n    if norm == 0:\n        raise ValueError(\"Cannot normalize a zero vector.\")\n    return x / norm\n\nprint(unit_vector([3, 4]))\n\ntry:\n    print(unit_vector([0, 0]))\nexcept ValueError as error:\n    print(error)\n\n# Expected unit vector: [0.6, 0.8]\n# Zero vector raises ValueError."
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations",
+        "gradients",
+        "optimization"
+    ]
+}

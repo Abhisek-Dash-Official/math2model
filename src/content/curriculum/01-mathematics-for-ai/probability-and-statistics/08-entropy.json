@@ -1,1 +1,285 @@
-{}
+{
+    "id": "probability-entropy",
+    "title": "Entropy",
+    "slug": "entropy",
+    "description": "Understand Shannon entropy as a measure of uncertainty, calculate entropy for discrete distributions, and connect information theory to machine learning and classification.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Random Variables",
+        "Probability Distributions",
+        "Expectation & Variance"
+    ],
+    "learningObjectives": [
+        "Define self-information and Shannon entropy.",
+        "Calculate entropy for discrete probability distributions.",
+        "Understand the effects of logarithm base and units.",
+        "Compare the entropy of uniform and concentrated distributions.",
+        "Explain conditional entropy and information gain.",
+        "Understand entropy in classification and decision trees.",
+        "Calculate entropy using Python."
+    ],
+    "sections": [
+        {
+            "id": "entropy-introduction",
+            "title": "1. Information and Uncertainty",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Information theory studies the mathematical representation and transmission of information. Shannon entropy measures the average uncertainty associated with a random variable's possible outcomes."
+                },
+                {
+                    "type": "text",
+                    "value": "An unlikely event carries more self-information when it occurs than a highly likely event. A common measure of the self-information of an event with probability p is the negative logarithm of p."
+                },
+                {
+                    "type": "formula",
+                    "label": "Self-information",
+                    "value": "I(x) = −log₂ P(x)"
+                },
+                {
+                    "type": "text",
+                    "value": "When logarithms use base 2, information is measured in bits. An event with probability 1 has zero self-information, while events with lower probabilities have greater self-information."
+                }
+            ]
+        },
+        {
+            "id": "shannon-entropy",
+            "title": "2. Shannon Entropy",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Entropy of a discrete random variable",
+                    "value": "H(X) = −Σₓ P(x) log₂ P(x)"
+                },
+                {
+                    "type": "text",
+                    "value": "Entropy is the expected self-information of the outcome. Terms with probability zero are interpreted by the limit 0 log 0 = 0."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Fair Coin",
+                    "problem": "Calculate the entropy of a fair coin toss.",
+                    "steps": [
+                        "The two outcomes each have probability 1/2.",
+                        "Use H(X) = −Σₓ P(x)log₂P(x).",
+                        "Substitute: H(X) = −[(1/2)log₂(1/2) + (1/2)log₂(1/2)].",
+                        "Since log₂(1/2) = −1, simplify the expression."
+                    ],
+                    "solution": "H(X) = 1 bit."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: A Biased Coin",
+                    "problem": "A coin has P(heads) = 0.9 and P(tails) = 0.1. Write its entropy.",
+                    "steps": [
+                        "Apply the entropy formula: H(X) = −[0.9log₂(0.9) + 0.1log₂(0.1)].",
+                        "Evaluate the logarithms and multiply by the corresponding probabilities.",
+                        "Add the terms and negate the sum."
+                    ],
+                    "solution": "H(X) ≈ 0.469 bits. The biased coin has less entropy than a fair coin because its outcome is more predictable."
+                }
+            ]
+        },
+        {
+            "id": "entropy-properties",
+            "title": "3. Properties of Entropy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a discrete random variable with k possible outcomes, entropy is nonnegative and is at most log₂(k) bits. The maximum occurs for the uniform distribution over those k outcomes."
+                },
+                {
+                    "type": "formula",
+                    "label": "Maximum discrete entropy",
+                    "value": "0 ≤ H(X) ≤ log₂(k)"
+                },
+                {
+                    "type": "text",
+                    "value": "Entropy is zero when one outcome has probability one and all other outcomes have probability zero. For a fixed number of possible outcomes, entropy increases as the distribution becomes more uniform in the sense of majorization."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Uniform Distribution",
+                    "problem": "A random variable has four equally likely outcomes. Calculate its entropy.",
+                    "steps": [
+                        "Each outcome has probability 1/4.",
+                        "Use H(X) = −Σₓ(1/4)log₂(1/4).",
+                        "Since there are four outcomes, the expression is −4(1/4)(−2)."
+                    ],
+                    "solution": "H(X) = 2 bits, which is the maximum entropy for four possible outcomes."
+                }
+            ]
+        },
+        {
+            "id": "entropy-conditional",
+            "title": "4. Conditional Entropy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Conditional entropy H(Y | X) measures the remaining uncertainty about Y after X is known. It is the average entropy of the conditional distributions of Y for each possible value of X."
+                },
+                {
+                    "type": "formula",
+                    "label": "Conditional entropy",
+                    "value": "H(Y | X) = −ΣₓΣᵧ P(x, y) log₂ P(y | x)"
+                },
+                {
+                    "type": "text",
+                    "value": "For discrete random variables, conditioning cannot increase Shannon entropy on average: H(Y | X) ≤ H(Y). This does not mean that learning a particular value of X must reduce uncertainty for every individual conditional distribution; the inequality applies to the average."
+                },
+                {
+                    "type": "formula",
+                    "label": "Entropy chain rule",
+                    "value": "H(X, Y) = H(X) + H(Y | X)"
+                },
+                {
+                    "type": "text",
+                    "value": "The entropy chain rule separates the uncertainty in a pair of variables into the uncertainty of the first variable and the remaining uncertainty of the second once the first is known."
+                }
+            ]
+        },
+        {
+            "id": "information-gain",
+            "title": "5. Information Gain",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Mutual information",
+                    "value": "I(X; Y) = H(Y) − H(Y | X)"
+                },
+                {
+                    "type": "text",
+                    "value": "Mutual information measures how much knowing one variable reduces uncertainty about another. For discrete variables, it is nonnegative and equals zero when the variables are independent."
+                },
+                {
+                    "type": "text",
+                    "value": "Information gain is often used in decision trees to evaluate a split. A split is useful when it reduces the weighted entropy of the target labels in the resulting groups."
+                },
+                {
+                    "type": "formula",
+                    "label": "Information gain for a split",
+                    "value": "IG = H(Y) − Σⱼ P(group j)H(Y | group j)"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Perfect Prediction",
+                    "problem": "Suppose a binary target Y has entropy 1 bit and a feature X determines Y perfectly. Find H(Y | X) and I(X; Y).",
+                    "steps": [
+                        "Because X determines Y perfectly, the conditional uncertainty is zero.",
+                        "Use I(X; Y) = H(Y) − H(Y | X).",
+                        "Substitute 1 − 0."
+                    ],
+                    "solution": "H(Y | X) = 0 bits and I(X; Y) = 1 bit."
+                }
+            ]
+        },
+        {
+            "id": "entropy-classification",
+            "title": "6. Entropy and Classification",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "In classification, entropy describes the uncertainty of a predicted categorical distribution. If a model assigns nearly all probability to one class, its predicted distribution has low entropy. If it spreads probability evenly across many classes, its predicted distribution has high entropy."
+                },
+                {
+                    "type": "text",
+                    "value": "Cross-entropy loss compares a target distribution with a model's predicted distribution. For one-hot classification labels, minimizing cross-entropy encourages the model to assign high probability to the correct class."
+                },
+                {
+                    "type": "formula",
+                    "label": "Cross-entropy between distributions",
+                    "value": "H(P, Q) = −Σₓ P(x)log Q(x)"
+                },
+                {
+                    "type": "text",
+                    "value": "Entropy of the target distribution and cross-entropy between target and prediction are different quantities. Cross-entropy depends on both P and Q, while H(P) depends only on P."
+                }
+            ]
+        },
+        {
+            "id": "entropy-python",
+            "title": "7. Calculating Entropy with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Shannon Entropy with NumPy",
+                    "value": "import numpy as np\n\ndef entropy(probabilities):\n    p = np.asarray(probabilities, dtype=float)\n    p = p[p > 0]\n    return -np.sum(p * np.log2(p))\n\nprint(entropy([0.5, 0.5]))\nprint(entropy([0.9, 0.1]))\nprint(entropy([0.25, 0.25, 0.25, 0.25]))"
+                },
+                {
+                    "type": "text",
+                    "value": "The results are 1 bit for a fair coin, approximately 0.469 bits for the biased coin, and 2 bits for four equally likely outcomes. The function omits zero-probability terms, consistent with the convention 0 log 0 = 0."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Cross-Entropy for a Target Distribution",
+                    "value": "import numpy as np\n\ndef cross_entropy(target, predicted):\n    target = np.asarray(target, dtype=float)\n    predicted = np.asarray(predicted, dtype=float)\n    predicted = np.clip(predicted, 1e-12, 1.0)\n    return -np.sum(target * np.log(predicted))\n\ntarget = [1.0, 0.0]\npredicted = [0.9, 0.1]\nprint(cross_entropy(target, predicted))"
+                },
+                {
+                    "type": "text",
+                    "value": "The cross-entropy example uses natural logarithms, so its result is in nats rather than bits. Clipping avoids taking the logarithm of zero in finite-precision code."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "entropy-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Find the entropy of a fair binary random variable.",
+            "correctAnswer": "1 bit",
+            "solution": "H = −[0.5log₂(0.5) + 0.5log₂(0.5)] = 1 bit."
+        },
+        {
+            "id": "entropy-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the entropy of a distribution with probabilities 0.5 and 0.5.",
+            "correctAnswer": "1 bit",
+            "solution": "Each outcome contributes −0.5log₂(0.5) = 0.5 bits, so the total entropy is 1 bit."
+        },
+        {
+            "id": "entropy-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A variable has eight equally likely outcomes. What is its entropy?",
+            "correctAnswer": "3 bits",
+            "solution": "For a uniform distribution over k outcomes, H = log₂(k). Here log₂(8) = 3."
+        },
+        {
+            "id": "entropy-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does a fair coin have more entropy than a coin that lands heads with probability 0.99?",
+            "correctAnswer": "The fair coin has greater uncertainty because its two outcomes are equally likely.",
+            "solution": "Entropy is maximized by a uniform distribution over a fixed finite set of outcomes. A coin with heads probability 0.99 is highly predictable and therefore has lower entropy."
+        },
+        {
+            "id": "entropy-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "What does information gain measure when splitting a decision tree node?",
+            "correctAnswer": "The reduction in target-label entropy caused by the split.",
+            "solution": "Information gain subtracts the weighted entropy of the child groups from the parent entropy. A larger value indicates a greater reduction in uncertainty about the target labels."
+        }
+    ],
+    "summary": [
+        "Self-information measures the surprise of an outcome using a negative logarithm of its probability.",
+        "Shannon entropy is the expected self-information of a random variable.",
+        "For k discrete outcomes, entropy is between zero and log₂(k) bits.",
+        "Conditional entropy measures remaining uncertainty after another variable is known.",
+        "Mutual information measures the reduction in uncertainty associated with observing another variable.",
+        "Entropy and cross-entropy are important in decision trees and classification models."
+    ],
+    "relatedTopics": [
+        "random-variables",
+        "probability-distributions",
+        "expectation-variance",
+        "conditional-probability",
+        "bayes-theorem",
+        "kl-divergence"
+    ]
+}

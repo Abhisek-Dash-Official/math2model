@@ -1,1 +1,151 @@
-{}
+{
+    "id": "random-forests",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 9,
+    "title": "Random Forests",
+    "slug": "random-forests",
+    "description": "Master ensemble learning with random forests, bootstrap sampling, feature randomness, voting, out-of-bag evaluation, feature importance, and practical model tuning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "decision-trees",
+        "training-validation-test-sets",
+        "evaluation-metrics",
+        "overfitting-underfitting"
+    ],
+    "learningObjectives": [
+        "Explain ensemble learning and why combining models can improve predictions.",
+        "Understand bootstrap sampling and bagging.",
+        "Explain how random feature selection decorrelates trees.",
+        "Distinguish random forests for classification and regression.",
+        "Understand out-of-bag evaluation and its limitations.",
+        "Interpret permutation importance and impurity-based importance.",
+        "Tune important random forest hyperparameters.",
+        "Build an end-to-end random forest pipeline and evaluate its generalization."
+    ],
+    "sections": [
+        {
+            "id": "ensemble-intuition",
+            "title": "1. What Is Ensemble Learning?",
+            "type": "concept",
+            "content": "Ensemble learning combines predictions from multiple models to produce one final prediction. The motivation is that different models may make different errors, allowing the combined prediction to be more reliable than an individual model.\n\nImagine asking one decision tree to predict whether a customer will cancel a subscription. That tree might depend heavily on one early split. Another tree trained on a slightly different sample may choose a different split and make different mistakes. Combining their predictions can reduce sensitivity to the particular training sample.\n\nA random forest is an ensemble of decision trees. For classification, the trees commonly vote for classes or contribute class probabilities. For regression, their numeric predictions are commonly averaged.\n\nEnsembles work best when their component models have useful predictive signal and their errors are not perfectly correlated. Combining many nearly identical models provides less benefit than combining models that make partly different errors.\n\nRandom forests are widely used for tabular datasets because they can capture nonlinear relationships and feature interactions, usually need limited feature scaling, and are relatively robust compared with a single unrestricted tree. They are not automatically superior to every alternative: gradient-boosted trees, linear models, neural networks, or domain-specific methods may perform better on particular datasets."
+        },
+        {
+            "id": "bootstrap-bagging",
+            "title": "2. Bootstrap Sampling and Bagging",
+            "type": "concept",
+            "content": "Bootstrap aggregation, usually called bagging, trains multiple models on different bootstrap samples and aggregates their predictions.\n\nSuppose the training set contains N observations. A bootstrap sample is created by drawing N observations with replacement. Because sampling is performed with replacement, an observation can appear multiple times in one sample while another observation may be omitted.\n\nFor each tree, the random forest generates a bootstrap sample and trains the tree on that sample. The resulting trees see different effective training datasets, creating diversity in their structures and predictions.\n\nIf N observations are sampled independently with replacement, the probability that one particular observation is not selected on any draw is (1 - 1/N)^N. As N grows, this approaches e^-1, approximately 0.368. Therefore, a bootstrap sample contains about 63.2% distinct observations on average, leaving about 36.8% out of that tree's sample.\n\nBagging is especially helpful for unstable learners such as decision trees. Small changes in the training sample can substantially change a single tree, but averaging across many trees can reduce variance.\n\nBagging does not necessarily reduce systematic bias. If every component model consistently misses the same underlying pattern, averaging may preserve that limitation. The value of an ensemble depends on both the quality and diversity of its members."
+        },
+        {
+            "id": "random-feature-selection",
+            "title": "3. Random Feature Selection",
+            "type": "concept",
+            "content": "Random forests introduce another source of diversity by considering only a randomly selected subset of features when searching for a split. This prevents every tree from always choosing the same globally strong feature at the root.\n\nSuppose a dataset has 100 features, but only 10 are considered at a particular split. Different trees and nodes may receive different candidate subsets. Even when one feature is highly predictive, it may not be available at every split, encouraging trees to explore alternative relationships.\n\nThis mechanism reduces correlation among the trees. Correlation matters because averaging highly correlated predictions provides less variance reduction than averaging diverse predictions.\n\nThe number of candidate features is a hyperparameter. Considering fewer features often increases diversity but may weaken individual trees. Considering more features can improve individual split quality but make the trees more similar. The best balance depends on the data and objective.\n\nThe exact feature-sampling convention varies by implementation. Some libraries use a square-root rule for classification by default, while regression defaults and other libraries may differ. Always inspect the estimator's defaults rather than assuming a universal setting."
+        },
+        {
+            "id": "forest-aggregation",
+            "title": "4. How a Random Forest Makes Predictions",
+            "type": "math",
+            "content": "For regression, suppose T trees predict values f_1(x), f_2(x), ..., f_T(x). A common forest prediction is their arithmetic mean:\n\nf_forest(x) = (1/T) * sum from t=1 to T of f_t(x).\n\nFor example, if five trees predict [120, 130, 125, 140, 135], the forest prediction is (120 + 130 + 125 + 140 + 135)/5 = 130.\n\nFor classification, a hard-voting forest predicts the class receiving the most votes. A probability-averaging forest averages the class probability estimates from its trees and then selects a class according to the implementation's decision rule. These approaches are related but are not always identical.\n\nAveraging can reduce variance. If component predictions have equal variance sigma squared and pairwise correlation rho, the variance of their average is approximately:\n\nVar(mean) = sigma^2 * [rho + (1-rho)/T].\n\nThis simplified expression assumes equal variances and a common pairwise correlation. As T increases, the uncorrelated component of variance decreases, but the correlated component remains. If rho is near one, adding trees gives little variance reduction.\n\nIn practice, increasing the number of trees often stabilizes predictions, but it also increases computation and memory use. More trees do not necessarily improve every evaluation metric indefinitely, and the forest's depth, features, data quality, and training procedure remain important."
+        },
+        {
+            "id": "oob",
+            "title": "5. Out-of-Bag Evaluation",
+            "type": "concept",
+            "content": "Out-of-bag evaluation uses the observations omitted from a tree's bootstrap sample to estimate its predictions on data that tree did not train on.\n\nFor each training observation, collect predictions from trees for which that observation was out of bag. Aggregate those predictions and compare them with the observation's known target. Repeating this for all training examples gives an out-of-bag estimate of model performance.\n\nOOB evaluation can provide a useful internal estimate without requiring a separate validation split solely for this purpose. It is convenient when bootstrap sampling is enabled and the implementation exposes OOB predictions or scores.\n\nHowever, OOB performance is not a substitute for a carefully designed final test when a reliable unbiased assessment is required. If the same OOB results are repeatedly used to tune many hyperparameters, they become part of the model-selection process and may yield optimistic results.\n\nOOB estimates can also be unreliable for small datasets, rare classes, or configurations where some observations receive too few out-of-bag predictions. Verify that the estimator supports OOB scoring for the chosen sampling setup and inspect the number and quality of available predictions.\n\nFor imbalanced classification, accuracy alone may hide poor minority-class performance. Consider OOB precision, recall, balanced accuracy, or other metrics where supported, and validate the final model on an appropriate held-out dataset."
+        },
+        {
+            "id": "forest-hyperparameters",
+            "title": "6. Important Hyperparameters",
+            "type": "concept",
+            "content": "n_estimators controls the number of trees. More trees generally make predictions more stable but increase training and inference cost. Increasing tree count does not automatically fix overfitting caused by data leakage or inappropriate features.\n\nmax_depth limits the depth of each tree. Shallower trees reduce complexity and can improve generalization when unrestricted trees overfit, but excessively shallow trees may miss useful interactions.\n\nmin_samples_split and min_samples_leaf control how many observations are required to split a node or create a leaf. Larger values produce less detailed trees and can reduce sensitivity to tiny groups of observations.\n\nmax_features controls how many features are considered at each split. It affects the diversity and strength of individual trees. Lower values often increase diversity, while higher values can improve individual splits.\n\nbootstrap controls whether trees are trained on bootstrap samples. max_samples can control the number or fraction of observations sampled per tree in implementations that support it. class_weight can be useful for imbalanced classification, although its effect should be validated against the desired error trade-off.\n\nTune a small number of meaningful parameters first. A practical sequence is to establish a baseline, select a reasonable tree count, tune depth and leaf size, then test feature-sampling settings. Use cross-validation or a dedicated validation set and keep the final test set separate."
+        },
+        {
+            "id": "feature-importance",
+            "title": "7. Understanding Feature Importance",
+            "type": "concept",
+            "content": "Feature importance tries to quantify how useful a feature is to a fitted model, but different importance methods answer different questions.\n\nImpurity-based importance aggregates how much a feature reduces the splitting criterion across trees, often weighted by the number of observations reaching each split. It is computationally efficient, but it can favor continuous features or high-cardinality categorical features that offer many possible split points.\n\nPermutation importance measures the change in a chosen evaluation score after randomly shuffling one feature. Shuffling breaks the association between that feature and the target while leaving other columns unchanged. If model performance drops substantially, the model relied on information carried by that feature under the selected metric and dataset.\n\nPermutation importance should generally be calculated on held-out data when the goal is to understand generalization. It can be misleading when features are strongly correlated: shuffling one feature may have little effect because another feature supplies similar information.\n\nNeither method establishes causality. A feature may be predictive because it is a proxy for another variable or because it reflects a data collection process. Importance can also change across samples, metrics, and model configurations.\n\nFor important decisions, combine feature-importance analysis with domain knowledge, stability checks, leakage investigations, and appropriate causal analysis when causal questions are actually being asked."
+        },
+        {
+            "id": "forest-code",
+            "title": "8. Training a Random Forest",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.metrics import accuracy_score, classification_report\nfrom sklearn.inspection import permutation_importance\n\nX, y = load_breast_cancer(return_X_y=True)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = RandomForestClassifier(\n    n_estimators=300,\n    max_features='sqrt',\n    min_samples_leaf=2,\n    random_state=42,\n    n_jobs=-1\n)\nmodel.fit(X_train, y_train)\n\npredictions = model.predict(X_test)\nprint('Test accuracy:', accuracy_score(y_test, predictions))\nprint(classification_report(y_test, predictions))\n\nimportance = permutation_importance(\n    model, X_test, y_test,\n    n_repeats=10,\n    random_state=42,\n    n_jobs=-1\n)\n\nranking = importance.importances_mean.argsort()[::-1]\nfor index in ranking[:10]:\n    print(index, importance.importances_mean[index])",
+            "explanation": "This example trains a classification forest, evaluates it on held-out data, and calculates permutation importance. Feature columns are represented by numeric indices because the dataset is loaded as arrays. In a production workflow, retain feature names and choose metrics appropriate to the application. Hyperparameters should be tuned without repeatedly optimizing on the final test set."
+        },
+        {
+            "id": "forest-limitations",
+            "title": "9. Strengths and Limitations",
+            "type": "concept",
+            "content": "Random forests are strong general-purpose baselines for many tabular classification and regression problems. They capture nonlinear patterns and interactions, tolerate mixed feature scales, and often perform well with limited feature engineering.\n\nThey are less transparent than a single small tree. Although explanations and feature importance can help, an ensemble containing hundreds of trees is not as easy to inspect as a short rule set.\n\nForests can be memory-intensive, and predictions may be slower than those of a compact linear model. Standard forests may also struggle to extrapolate beyond the range of target values seen during regression training because their leaf predictions are based on observed training targets.\n\nImbalanced classes require attention. A forest trained on highly skewed labels may favor the majority class. Use suitable metrics, consider class weighting or resampling within the training process, and choose decision thresholds according to the cost of errors.\n\nData leakage can make a forest appear extraordinarily accurate. Features derived from future information, identifiers that encode labels, or preprocessing performed before splitting can undermine the evaluation. Strong performance is not proof that the model learned a valid relationship.\n\nCompare the forest against simple baselines and alternative algorithms. Model selection should reflect predictive quality, calibration needs, interpretability, latency, memory, and maintenance requirements."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "rf-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the two main sources of randomness used in a conventional random forest?",
+            "correctAnswer": "Bootstrap sampling of observations and random selection of candidate features at splits.",
+            "solution": "Bootstrap samples make the trees see different training observations, while random feature subsets encourage trees to consider different split rules."
+        },
+        {
+            "id": "rf-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Five regression trees predict 12, 15, 13, 10, and 15. What is their mean forest prediction?",
+            "correctAnswer": "13.",
+            "solution": "The sum is 65. Dividing by five trees gives 13."
+        },
+        {
+            "id": "rf-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does averaging many highly correlated trees provide less benefit than averaging diverse trees?",
+            "correctAnswer": "Correlated trees tend to make similar errors, so averaging does not cancel those errors effectively.",
+            "solution": "Averaging reduces independent or weakly correlated variation. Shared errors remain in the ensemble prediction, limiting the variance reduction."
+        },
+        {
+            "id": "rf-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is an out-of-bag prediction?",
+            "correctAnswer": "A prediction for a training observation made using trees whose bootstrap samples did not contain that observation.",
+            "solution": "Each bootstrap sample omits a fraction of the training observations. Trees that omitted a given observation can provide predictions for it, which can be aggregated for an OOB estimate."
+        },
+        {
+            "id": "rf-ex-5",
+            "type": "diagnosis",
+            "difficulty": "hard",
+            "question": "A random forest achieves 99.8% training accuracy but only 72% validation accuracy. Adding more trees barely changes the validation score. What would you investigate?",
+            "correctAnswer": "Investigate tree complexity, data leakage, train-validation distribution differences, noisy labels, and feature quality; tune depth and minimum leaf size rather than only increasing tree count.",
+            "solution": "More trees primarily stabilize the ensemble and do not necessarily correct excessive tree complexity or invalid training features. Compare train and validation distributions, check whether preprocessing or target information leaked into features, and use validation-based tuning."
+        },
+        {
+            "id": "rf-ex-6",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A model must predict rare fraudulent transactions. Why might accuracy and impurity-based feature importance be insufficient for selecting and understanding the final forest?",
+            "correctAnswer": "Accuracy can hide poor fraud recall under class imbalance, and impurity-based importance can be biased by feature characteristics. Evaluate precision, recall, PR-AUC or cost-sensitive measures, and consider held-out permutation importance.",
+            "solution": "When fraud is rare, predicting every transaction as legitimate can produce high accuracy. Evaluate the relevant minority-class trade-off and tune the decision threshold. Permutation importance on held-out data provides a complementary view of feature reliance, though correlated features still require careful interpretation."
+        }
+    ],
+    "summary": [
+        "Random forests combine many decision trees to improve stability and predictive performance.",
+        "Bootstrap sampling and random feature selection create diversity among trees.",
+        "Classification forests aggregate classes or class probabilities; regression forests commonly average predictions.",
+        "Out-of-bag evaluation uses observations omitted from individual bootstrap samples.",
+        "Tree depth, leaf size, feature sampling, and tree count are important hyperparameters.",
+        "Permutation importance complements impurity-based importance but does not establish causality.",
+        "A separate test set and task-appropriate metrics remain essential."
+    ],
+    "relatedTopics": [
+        "decision-trees",
+        "evaluation-metrics",
+        "bias-variance",
+        "regularization",
+        "overfitting-underfitting"
+    ]
+}

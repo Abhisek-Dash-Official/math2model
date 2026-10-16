@@ -1,1 +1,233 @@
-{}
+{
+    "id": "probability-bayes-theorem",
+    "title": "Bayes Theorem",
+    "slug": "bayes-theorem",
+    "description": "Learn Bayes' theorem, prior and posterior probabilities, likelihood, evidence, and practical applications in classification and probabilistic reasoning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Random Variables",
+        "Probability Distributions",
+        "Conditional Probability"
+    ],
+    "learningObjectives": [
+        "State and derive Bayes' theorem.",
+        "Distinguish prior, likelihood, evidence, and posterior.",
+        "Calculate posterior probabilities using numerical examples.",
+        "Apply the law of total probability to calculate evidence.",
+        "Understand base-rate effects.",
+        "Explain the relationship between Bayes' theorem and Naive Bayes classification.",
+        "Implement simple Bayesian calculations in Python."
+    ],
+    "sections": [
+        {
+            "id": "bayes-introduction",
+            "title": "1. What Is Bayes' Theorem?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Bayes' theorem provides a way to update a probability when new evidence becomes available. It combines a prior probability with the likelihood of observing the evidence under a hypothesis."
+                },
+                {
+                    "type": "formula",
+                    "label": "Bayes' theorem",
+                    "value": "P(H | E) = P(E | H)P(H) / P(E), provided P(E) > 0"
+                },
+                {
+                    "type": "text",
+                    "value": "Here H is a hypothesis and E is observed evidence. P(H) is the prior, P(E | H) is the likelihood of the evidence under the hypothesis, P(E) is the evidence probability, and P(H | E) is the posterior."
+                },
+                {
+                    "type": "text",
+                    "value": "The prior represents information before the new evidence is considered. The posterior represents the updated probability after taking the evidence into account."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Basic Bayesian Update",
+                    "problem": "Suppose P(H) = 0.4, P(E | H) = 0.7, and P(E) = 0.5. Calculate P(H | E).",
+                    "steps": [
+                        "Use P(H | E) = P(E | H)P(H)/P(E).",
+                        "Substitute: (0.7 × 0.4)/0.5.",
+                        "Calculate 0.28/0.5."
+                    ],
+                    "solution": "P(H | E) = 0.56."
+                }
+            ]
+        },
+        {
+            "id": "bayes-evidence",
+            "title": "2. Calculating the Evidence",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The denominator P(E) is the marginal probability of the observed evidence. When the hypothesis and its alternatives form a partition, the law of total probability can be used to calculate this denominator."
+                },
+                {
+                    "type": "formula",
+                    "label": "Evidence for two complementary hypotheses",
+                    "value": "P(E) = P(E | H)P(H) + P(E | not H)P(not H)"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Evidence from Two Cases",
+                    "problem": "A condition occurs in 1% of a population. A test has sensitivity 90% and specificity 95%. Find the probability of a positive test.",
+                    "steps": [
+                        "Let H mean the condition is present. P(H) = 0.01 and P(not H) = 0.99.",
+                        "Sensitivity gives P(positive | H) = 0.90.",
+                        "Specificity of 95% gives P(positive | not H) = 0.05.",
+                        "Apply total probability: P(positive) = 0.90(0.01) + 0.05(0.99).",
+                        "Calculate 0.009 + 0.0495."
+                    ],
+                    "solution": "P(positive) = 0.0585, or 5.85%."
+                }
+            ]
+        },
+        {
+            "id": "bayes-base-rate",
+            "title": "3. Base Rates and Posterior Probabilities",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The base rate is the prior probability of a hypothesis before considering the current evidence. It can have a large effect on the posterior, especially when the event being predicted is rare."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Interpreting a Positive Test",
+                    "problem": "Using the previous example, calculate the probability that a person has the condition given a positive test.",
+                    "steps": [
+                        "The prior probability is 0.01.",
+                        "The probability of a positive result given the condition is 0.90.",
+                        "The overall probability of a positive result is 0.0585.",
+                        "Apply Bayes' theorem: P(H | positive) = 0.90(0.01)/0.0585.",
+                        "Calculate 0.009/0.0585."
+                    ],
+                    "solution": "P(H | positive) ≈ 0.1538, or 15.38%."
+                },
+                {
+                    "type": "text",
+                    "value": "Although the test has high sensitivity and specificity, a positive result does not imply near certainty when the condition is rare. This example is mathematical and does not substitute for clinical interpretation of a real test."
+                }
+            ]
+        },
+        {
+            "id": "bayes-odds",
+            "title": "4. Bayes' Theorem in Odds Form",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Posterior odds",
+                    "value": "Posterior odds = Prior odds × Likelihood ratio"
+                },
+                {
+                    "type": "formula",
+                    "label": "Likelihood ratio for evidence E",
+                    "value": "LR = P(E | H) / P(E | not H)"
+                },
+                {
+                    "type": "text",
+                    "value": "Odds express the probability of an event relative to its complement. If the likelihood ratio is greater than one, the evidence favors H over its alternative. If it is less than one, the evidence favors the alternative."
+                },
+                {
+                    "type": "text",
+                    "value": "For several conditionally independent observations, likelihood ratios can be multiplied to update the odds. The conditional independence assumption must be justified; multiplying dependent evidence as if it were independent can produce incorrect results."
+                }
+            ]
+        },
+        {
+            "id": "bayes-machine-learning",
+            "title": "5. Bayes' Theorem in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Bayesian classification estimates the probability of a class given observed features. For a class C and feature vector x, the posterior is proportional to the class likelihood multiplied by the class prior."
+                },
+                {
+                    "type": "formula",
+                    "label": "Bayesian classification",
+                    "value": "P(C | x) ∝ P(x | C)P(C)"
+                },
+                {
+                    "type": "text",
+                    "value": "The Naive Bayes classifier simplifies the feature likelihood by assuming that features are conditionally independent given the class. This gives P(x | C) = Πᵢ P(xᵢ | C) for discrete features or the corresponding product of conditional densities for continuous features."
+                },
+                {
+                    "type": "text",
+                    "value": "Bayes' theorem is also used in Bayesian networks, probabilistic inference, spam filtering, document classification, and other models that combine prior information with evidence."
+                }
+            ]
+        },
+        {
+            "id": "bayes-python",
+            "title": "6. Bayes' Theorem with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate a Posterior Probability",
+                    "value": "prior = 0.01\nsensitivity = 0.90\nspecificity = 0.95\n\nfalse_positive_rate = 1 - specificity\n\npositive_probability = (\n    sensitivity * prior\n    + false_positive_rate * (1 - prior)\n)\n\nposterior = sensitivity * prior / positive_probability\n\nprint('P(positive):', positive_probability)\nprint('P(condition | positive):', posterior)"
+                },
+                {
+                    "type": "text",
+                    "value": "The posterior is approximately 0.1538. The calculation explicitly includes both true positives and false positives in the evidence probability."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "bayes-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If P(H) = 0.2, P(E | H) = 0.6, and P(E) = 0.3, calculate P(H | E).",
+            "correctAnswer": "0.4",
+            "solution": "Bayes' theorem gives P(H | E) = 0.6 × 0.2 / 0.3 = 0.12/0.3 = 0.4."
+        },
+        {
+            "id": "bayes-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A condition has prevalence 2%. A test has sensitivity 95% and specificity 90%. Calculate the probability of a positive test.",
+            "correctAnswer": "0.117, or 11.7%",
+            "solution": "P(positive) = 0.95(0.02) + 0.10(0.98) = 0.019 + 0.098 = 0.117."
+        },
+        {
+            "id": "bayes-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Using prevalence 2%, sensitivity 95%, and specificity 90%, calculate P(condition | positive).",
+            "correctAnswer": "Approximately 0.1624, or 16.24%",
+            "solution": "P(condition | positive) = 0.95(0.02)/0.117 = 0.019/0.117 ≈ 0.1624."
+        },
+        {
+            "id": "bayes-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the difference between a prior and a posterior?",
+            "correctAnswer": "A prior is the probability before incorporating the evidence; a posterior is the updated probability after incorporating the evidence.",
+            "solution": "Bayes' theorem combines the prior with the likelihood and normalizes using the evidence probability to obtain the posterior."
+        },
+        {
+            "id": "bayes-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why can a positive test result still correspond to a relatively low posterior probability for a rare condition?",
+            "correctAnswer": "Because the condition's low prior probability means false positives can make up a substantial share of all positive results.",
+            "solution": "The denominator in Bayes' theorem includes both true positives and false positives. When the condition is rare, even a modest false-positive rate can contribute many positive results from people without the condition."
+        }
+    ],
+    "summary": [
+        "Bayes' theorem updates probabilities using observed evidence.",
+        "The prior is updated by the likelihood and normalized by the evidence probability.",
+        "The law of total probability helps calculate the evidence denominator.",
+        "Base rates can strongly influence posterior probabilities.",
+        "Bayesian classifiers use posterior class probabilities to make predictions.",
+        "Naive Bayes simplifies calculations through conditional independence assumptions."
+    ],
+    "relatedTopics": [
+        "conditional-probability",
+        "probability-distributions",
+        "maximum-likelihood",
+        "maximum-a-posteriori",
+        "entropy"
+    ]
+}

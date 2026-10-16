@@ -1,1 +1,195 @@
-{}
+{
+    "id": "module-07-transformers-transformer-architecture",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 1,
+    "title": "Transformer Architecture Overview",
+    "slug": "transformer-architecture",
+    "href": "/curriculum/07-transformers/transformer-architecture",
+    "filePath": "content/curriculum/07-transformers/01-transformer-architecture.json",
+    "description": "Learn the complete Transformer architecture, including token embeddings, positional information, attention, feed-forward networks, residual connections, normalization, encoder-decoder data flow, and the design principles behind modern language models.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-06-attention-self-attention",
+        "module-06-attention-masked-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-positional-encoding",
+        "module-06-attention-cross-attention"
+    ],
+    "learningObjectives": [
+        "Explain why Transformers became an important architecture for sequence modeling.",
+        "Describe the major components of a Transformer.",
+        "Trace information from input tokens to model outputs.",
+        "Distinguish encoder-only, decoder-only, and encoder-decoder architectures.",
+        "Understand the roles of self-attention, cross-attention, and feed-forward layers.",
+        "Explain residual connections and normalization at a high level.",
+        "Interpret the dimensions of Transformer representations.",
+        "Estimate the computational cost of self-attention.",
+        "Identify important Transformer design choices and their trade-offs."
+    ],
+    "sections": [
+        {
+            "id": "transformer-overview-01-motivation",
+            "title": "1. Why Transformers Matter",
+            "type": "concept",
+            "content": "Transformers are neural network architectures designed to process sequences using attention and position-wise transformations. They became central to language modeling, translation, summarization, code generation, vision, speech, and multimodal learning. Earlier sequence models such as recurrent neural networks processed tokens sequentially, which made long-range information flow and parallel training difficult. Transformers allow many token representations to be processed in parallel during training and use attention to exchange contextual information. This does not mean Transformers are always faster or better for every task. Their memory and computation can become expensive for long sequences, and they require appropriate data, objectives, and optimization."
+        },
+        {
+            "id": "transformer-overview-02-core-idea",
+            "title": "2. The Core Architectural Idea",
+            "type": "concept",
+            "content": "A Transformer repeatedly updates token representations by allowing them to gather information from other positions and then applying learned nonlinear transformations. Attention determines how information is mixed across positions. Feed-forward networks transform each position's representation independently after attention has combined contextual information. Residual connections preserve a path for earlier information, while normalization helps stabilize optimization. Positional information gives the model access to token order. Stacking many layers allows the network to build increasingly complex representations. The architecture is modular: a layer can be understood as a sequence of attention, residual, normalization, and feed-forward operations."
+        },
+        {
+            "id": "transformer-overview-03-high-level-pipeline",
+            "title": "3. From Tokens to Predictions",
+            "type": "process",
+            "content": "A typical language Transformer starts by converting input text into tokens using a tokenizer. Token IDs are mapped to learned embedding vectors. Positional information is incorporated so the model can distinguish different token positions. The resulting representations pass through multiple Transformer blocks. Each block uses one or more attention mechanisms and feed-forward transformations, together with residual connections and normalization. At the output, a task-specific head converts hidden representations into predictions. A language-modeling head commonly maps each hidden state to vocabulary logits. Softmax converts logits to probabilities when needed. During autoregressive generation, a decoding procedure selects or samples the next token and appends it to the context."
+        },
+        {
+            "id": "transformer-overview-04-tokenization",
+            "title": "4. Tokenization and Embeddings",
+            "type": "concept",
+            "content": "A tokenizer converts text into discrete token IDs. A token may represent a word, part of a word, punctuation, or another text unit. The embedding table maps each token ID to a dense vector of dimension d_model. If a batch contains B sequences of length T, the embedding output commonly has shape (B, T, d_model). These vectors are learned during training. Tokenization affects vocabulary size, sequence length, handling of rare words, and multilingual coverage. A model's tokenizer is therefore part of its overall design rather than an interchangeable detail. Padding or truncation may be used to create batches of compatible lengths."
+        },
+        {
+            "id": "transformer-overview-05-position",
+            "title": "5. Why Position Information Is Needed",
+            "type": "concept",
+            "content": "Attention compares content representations, but a basic attention operation does not automatically encode the order in which tokens appeared. Without positional information, permuting input token representations can permute the output correspondingly, which limits the model's ability to distinguish word order. Position can be represented using sinusoidal encodings, learned position embeddings, relative-position biases, or rotary positional embeddings. Different methods have different computational and generalization properties. Some modern architectures use rotary embeddings inside attention rather than adding a separate position vector to the input embedding. The central goal is to make sequence structure available to the model."
+        },
+        {
+            "id": "transformer-overview-06-attention",
+            "title": "6. Attention as Information Exchange",
+            "type": "concept",
+            "content": "Self-attention allows each position to construct a representation using information from other positions in the same sequence. Each representation is projected into queries, keys, and values. Query-key compatibility scores determine attention weights, and those weights combine value vectors. Multi-head attention performs several attention operations in parallel using different learned projections. Different heads can learn different relationships, though their roles are not guaranteed to be neatly separated. In encoder-decoder architectures, cross-attention allows decoder positions to retrieve information from encoder outputs. In decoder-only language models, causal self-attention prevents a position from using future tokens during next-token prediction."
+        },
+        {
+            "id": "transformer-overview-07-feed-forward",
+            "title": "7. Feed-Forward Networks",
+            "type": "concept",
+            "content": "After attention mixes information across positions, a position-wise feed-forward network applies learned transformations to each token representation. A common form is FFN(x) = W2 activation(W1x + b1) + b2. The hidden dimension is usually larger than d_model, allowing the network to transform information in a richer intermediate space. Common activation functions include GELU and variants of gated activations such as SwiGLU. The same feed-forward parameters are applied at each sequence position within a layer. Attention and the feed-forward network have complementary roles: attention mixes contextual information, while the feed-forward network transforms each position's resulting features."
+        },
+        {
+            "id": "transformer-overview-08-residual-normalization",
+            "title": "8. Residual Connections and Normalization",
+            "type": "concept",
+            "content": "Residual connections add a sublayer's input to its output, creating a direct path through which information and gradients can flow. Layer normalization or related normalization methods help keep activations at useful scales. Transformer implementations commonly use pre-normalization or post-normalization layouts. In a pre-normalization block, normalization is applied before the attention or feed-forward sublayer, followed by a residual addition. In a post-normalization block, normalization follows the residual addition. These layouts can have different optimization behavior, especially in deep networks. Exact details vary across model families, so architecture descriptions should distinguish the general principle from a particular implementation."
+        },
+        {
+            "id": "transformer-overview-09-encoder-decoder",
+            "title": "9. Encoder-Decoder Architecture",
+            "type": "concept",
+            "content": "The original encoder-decoder Transformer contains an encoder stack and a decoder stack. The encoder processes the source sequence with self-attention and feed-forward layers. The decoder uses masked self-attention to process target-side context, cross-attention to retrieve information from encoder outputs, and feed-forward layers to transform the resulting representations. This design is natural for tasks such as translation, where the input and output sequences can differ. The encoder can inspect the entire source sequence, while the autoregressive decoder generates the target sequence without looking at future target tokens. Training can use the known target sequence with causal masking, while inference generates target tokens incrementally."
+        },
+        {
+            "id": "transformer-overview-10-architecture-families",
+            "title": "10. Three Major Transformer Families",
+            "type": "comparison",
+            "content": "Encoder-only models, such as BERT-style systems, are commonly trained to build contextual representations of input text and are useful for classification, token labeling, and retrieval. Decoder-only models, such as GPT-style systems, use causal self-attention and are commonly trained to predict the next token. Encoder-decoder models, such as T5-style systems, encode an input and generate an output sequence through a decoder that can cross-attend to encoder outputs. These are architectural patterns rather than strict rules for every model. Modern systems may modify attention, normalization, positional encoding, or other components while retaining the broad family structure."
+        },
+        {
+            "id": "transformer-overview-11-mathematical-shapes",
+            "title": "11. Understanding the Main Tensor Shapes",
+            "type": "math",
+            "content": "Let the input token IDs have shape (B, T). Embedding lookup produces X with shape (B, T, d_model). Multi-head attention usually projects X into query, key, and value tensors, reshapes the feature dimension into H heads, and performs attention independently per head. If the head dimension is dh and H heads are concatenated, then Hdh is commonly equal to d_model. The attention output is projected back to d_model. The feed-forward network temporarily maps each position to an intermediate dimension d_ff and then projects back to d_model. Residual addition requires the two tensors to have compatible shapes. Maintaining these shape relationships is one of the most useful ways to debug Transformer code."
+        },
+        {
+            "id": "transformer-overview-12-attention-complexity",
+            "title": "12. Computational Complexity",
+            "type": "math",
+            "content": "For a sequence of length T and attention feature dimension d, dense self-attention has a score-computation cost proportional to T squared times d. Its attention matrix contains T squared values per head and sequence. Doubling sequence length therefore approximately quadruples the size of the attention matrix. The projection layers and feed-forward networks also contribute substantial computation, often with costs related to T and the model's feature dimensions. This quadratic sequence-length behavior motivates techniques such as sliding-window attention, sparse attention, grouped or multi-query key-value heads, and memory-efficient attention algorithms. Each technique changes particular cost or quality trade-offs and should be evaluated for the intended workload."
+        },
+        {
+            "id": "transformer-overview-13-training-objectives",
+            "title": "13. Training Objectives",
+            "type": "concept",
+            "content": "A Transformer architecture does not define a single training objective. Decoder-only language models commonly use next-token prediction, where each position predicts the following token. Encoder-only models may use masked-token objectives or other representation-learning objectives. Encoder-decoder models can use sequence-to-sequence objectives in which a decoder predicts target tokens conditioned on an encoded input. Training objectives determine which information pathways are permitted and which predictions are rewarded. For autoregressive language modeling, causal masking is essential to prevent target leakage. During training, many target positions can be evaluated in parallel because the full sequence is available and the mask controls which positions each query can access."
+        },
+        {
+            "id": "transformer-overview-14-inference",
+            "title": "14. Inference and Autoregressive Generation",
+            "type": "process",
+            "content": "At inference time, an autoregressive decoder receives a prompt and predicts a distribution over the next token. A decoding strategy selects a token, appends it to the context, and repeats the process until a stopping condition is reached. Greedy decoding selects the most probable token at each step. Sampling draws a token from a probability distribution, optionally modified by temperature, top-k, or nucleus sampling. These methods influence diversity and reliability. Key-value caching can reuse attention keys and values from previous tokens, avoiding recomputation of the full prefix in every generation step. Generation still requires sequential decisions across output positions even though training is highly parallelizable."
+        },
+        {
+            "id": "transformer-overview-15-implementation-roadmap",
+            "title": "15. A Roadmap for Building a Transformer",
+            "type": "process",
+            "content": "A reliable implementation can be built incrementally. First, implement token embeddings and confirm their shape. Second, add positional information. Third, implement scaled dot-product attention and test it with small tensors. Fourth, add multiple attention heads and verify the reshape and concatenation operations. Fifth, add residual connections and normalization. Sixth, implement the feed-forward network. Seventh, combine the components into an encoder or decoder block. Eighth, add the appropriate padding or causal masks. Finally, attach an output head, define a training objective, and test a complete forward pass. Small unit tests at each stage make shape errors and masking bugs easier to isolate."
+        },
+        {
+            "id": "transformer-overview-16-common-pitfalls",
+            "title": "16. Common Architectural Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include forgetting positional information, applying causal masks with the wrong orientation, applying softmax over the wrong dimension, and adding residual tensors with incompatible shapes. Another frequent error is confusing the number of heads with the feature dimension per head. If d_model is 512 and there are eight equally sized heads, the head dimension is commonly 64. A separate mistake is assuming every Transformer uses both an encoder and decoder. Decoder-only language models generally do not contain a separate encoder stack. Developers should also avoid treating attention weights as definitive explanations or assuming that every implementation uses the exact same normalization and positional-encoding scheme."
+        },
+        {
+            "id": "transformer-overview-17-summary",
+            "title": "17. Summary",
+            "type": "summary",
+            "content": "Transformers combine attention, feed-forward transformations, positional information, residual connections, and normalization into deep sequence-processing networks. Attention exchanges information across positions, while feed-forward layers transform each position's features. Encoder-only, decoder-only, and encoder-decoder architectures organize these components for different tasks. Understanding data flow and tensor dimensions is essential for both using and implementing Transformers. The architecture is flexible, and modern models vary in their attention patterns, normalization, positional methods, and training objectives."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "transformer-architecture-ex-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What are the two main computational operations repeated in a standard Transformer block?",
+            "correctAnswer": "An attention operation and a position-wise feed-forward network, typically combined with residual connections and normalization.",
+            "solution": "Attention exchanges information across sequence positions. The feed-forward network applies learned transformations independently at each position after contextual information has been mixed."
+        },
+        {
+            "id": "transformer-architecture-ex-02",
+            "type": "comparison",
+            "difficulty": "intermediate",
+            "question": "Which Transformer family is most directly associated with next-token prediction using causal self-attention?",
+            "correctAnswer": "Decoder-only Transformers.",
+            "solution": "Decoder-only language models use causal masks so each position can use the permitted preceding context but not future target tokens."
+        },
+        {
+            "id": "transformer-architecture-ex-03",
+            "type": "shape-analysis",
+            "difficulty": "intermediate",
+            "question": "A batch contains 16 sequences, each with 128 tokens, and the model dimension is 768. What is the embedding tensor shape?",
+            "correctAnswer": "(16, 128, 768).",
+            "solution": "The three axes represent batch size, sequence length, and feature dimension."
+        },
+        {
+            "id": "transformer-architecture-ex-04",
+            "type": "mathematical",
+            "difficulty": "intermediate",
+            "question": "If the sequence length doubles, how does the size of a dense self-attention score matrix change?",
+            "correctAnswer": "It becomes four times as large.",
+            "solution": "The matrix contains T squared entries. Replacing T with 2T gives (2T)^2 = 4T^2."
+        },
+        {
+            "id": "transformer-architecture-ex-05",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Why is an encoder-decoder architecture useful for machine translation?",
+            "correctAnswer": "The encoder represents the source sentence, and the decoder generates the target sentence while using cross-attention to retrieve source information.",
+            "solution": "The source and target may have different lengths and word orders. Cross-attention gives target-side states access to contextual source representations."
+        },
+        {
+            "id": "transformer-architecture-ex-06",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "A Transformer has d_model = 512 and eight equally sized attention heads. What is the dimension of each head?",
+            "correctAnswer": "64.",
+            "solution": "The usual relationship is d_head = d_model / number_of_heads, giving 512 / 8 = 64."
+        }
+    ],
+    "summary": "Transformers process sequences through attention and feed-forward blocks supported by positional information, residual connections, and normalization. The architecture supports encoder-only, decoder-only, and encoder-decoder designs. Correct tensor shapes, masking, and training objectives are essential to understanding and implementing the model.",
+    "relatedTopics": [
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-07-transformers-encoder",
+        "module-07-transformers-decoder",
+        "module-07-transformers-residual-connections-layer-norm",
+        "module-07-transformers-feed-forward-networks",
+        "module-07-transformers-build-tiny-transformer-from-scratch"
+    ]
+}

@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-bidirectional-networks",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 7,
+  "title": "Bidirectional Networks",
+  "slug": "bidirectional-networks",
+  "href": "/curriculum/05-sequence-models/bidirectional-networks",
+  "filePath": "content/curriculum/05-sequence-models/07-bidirectional-networks.json",
+  "description": "Understand forward and backward recurrent passes, how their representations are combined, and when bidirectional context is or is not appropriate.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "RNN",
+    "LSTM",
+    "GRU"
+  ],
+  "learningObjectives": [
+    "Explain forward and backward sequence processing.",
+    "Understand concatenated bidirectional output dimensions.",
+    "Identify suitable offline tasks for bidirectional models.",
+    "Avoid future-information leakage in forecasting."
+  ],
+  "sections": [
+    {
+      "id": "idea",
+      "title": "Two Directions of Context",
+      "type": "concept",
+      "content": "A bidirectional recurrent network processes a sequence in both directions. One recurrent layer reads from the first element to the last, and another reads from the last element to the first. Their representations are combined, often by concatenation, so a position can use context from both earlier and later elements in the provided sequence.\n\nThis is useful for tasks where the full input sequence is available before prediction, such as many text-labeling tasks. It is usually inappropriate for strict online prediction if the backward pass sees future observations that would not yet be available."
+    },
+    {
+      "id": "math",
+      "title": "Combining the Directions",
+      "type": "math",
+      "content": "Let h→_t be the forward state and h←_t be the backward state. A common combined representation is h_t=[h→_t; h←_t], where the semicolon denotes concatenation. If each direction has hidden size H, the combined feature dimension is 2H.\n\nFor example, with H=32, each time step's concatenated representation has 64 features. Some architectures sum or otherwise combine directions, but concatenation is a common default."
+    },
+    {
+      "id": "shapes",
+      "title": "State Shapes in PyTorch",
+      "type": "concept",
+      "content": "For a bidirectional recurrent layer with L layers and hidden size H, the number of recurrent directions is two. In PyTorch, output shape with batch_first=True is [batch, sequence_length, directions×H]. The final state shape is [directions×L, batch, H].\n\nThe output at each position combines directional hidden features. The final states for the forward and backward directions correspond to different ends of the input sequence, so do not assume they refer to the same temporal endpoint."
+    },
+    {
+      "id": "causality",
+      "title": "Causality and Leakage",
+      "type": "concept",
+      "content": "Bidirectional networks can use later tokens to interpret an earlier token, which is helpful when the entire sentence or document is known. In forecasting, however, a backward pass over a window can be valid only if every element in that window is already observed at prediction time. Using values from the future target period leaks information.\n\nAlways define the information available at the time of prediction, then ensure feature construction and model direction respect that constraint."
+    },
+    {
+      "id": "code",
+      "title": "Bidirectional GRU",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nmodel = nn.GRU(input_size=12, hidden_size=20, bidirectional=True, batch_first=True)\nx = torch.randn(5, 9, 12)\noutput, h_n = model(x)\nprint(output.shape)  # [5, 9, 40]\nprint(h_n.shape)     # [2, 5, 20]",
+      "language": "python",
+      "explanation": "Each time step has 20 forward and 20 backward features. Since this model has one layer and two directions, h_n contains two states per batch item. For multiple layers, the first dimension becomes num_layers×2."
+    },
+    {
+      "id": "alternatives",
+      "title": "When Bidirectionality Is Useful",
+      "type": "concept",
+      "content": "Bidirectionality can improve sequence tagging, named-entity recognition, offline speech processing, and text classification when both sides of a sequence are available. It increases computation and does not naturally support predictions that must be made before the full input arrives.\n\nFor causal language generation and live forecasting, use a causal architecture or carefully restricted context. Bidirectional context is a design decision about information access, not just a capacity upgrade."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "bi-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What does a bidirectional RNN combine?",
+      "correctAnswer": "A forward recurrent representation and a backward recurrent representation.",
+      "solution": "The two passes process the same sequence in opposite directions."
+    },
+    {
+      "id": "bi-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "If each direction has hidden size 48 and outputs are concatenated, how many features are produced per time step?",
+      "correctAnswer": "96 features.",
+      "solution": "Concatenation gives 48+48=96."
+    },
+    {
+      "id": "bi-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why can a bidirectional model be unsuitable for live next-value forecasting?",
+      "correctAnswer": "It may use later observations that are unavailable at prediction time.",
+      "solution": "This creates future-information leakage unless the backward context is limited to already observed data."
+    },
+    {
+      "id": "bi-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "For one bidirectional GRU layer with hidden size 20 and batch size 5, what is h_n shape in PyTorch?",
+      "correctAnswer": "[2, 5, 20].",
+      "solution": "The first dimension is directions×layers = 2×1."
+    }
+  ],
+  "summary": "Bidirectional networks combine forward and backward context, often doubling per-step feature size. They suit offline tasks with complete sequences but require care in causal forecasting and streaming applications.",
+  "relatedTopics": [
+    "rnn",
+    "lstm",
+    "gru",
+    "sequence-to-sequence-models"
+  ]
+}

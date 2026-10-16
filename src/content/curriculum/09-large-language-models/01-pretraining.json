@@ -1,1 +1,222 @@
-{}
+{
+    "id": "module-09-large-language-models-pretraining",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 1,
+    "title": "Pretraining Objectives & Paradigms",
+    "slug": "pretraining",
+    "href": "/curriculum/09-large-language-models/pretraining",
+    "filePath": "content/curriculum/09-large-language-models/01-pretraining.json",
+    "description": "Understand how large language models learn general-purpose representations from large text corpora through self-supervised learning, autoregressive prediction, masked language modeling, and other pretraining objectives.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "Language Modeling",
+        "Next-Token Prediction",
+        "Transformer Architecture",
+        "Cross-Entropy Loss",
+        "Gradient Descent"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of large-scale language model pretraining.",
+        "Distinguish supervised, unsupervised, and self-supervised learning.",
+        "Understand autoregressive and masked language modeling objectives.",
+        "Derive the next-token prediction loss.",
+        "Explain how pretrained models transfer knowledge to downstream tasks.",
+        "Understand data, compute, and model-size trade-offs.",
+        "Identify common limitations of pretraining."
+    ],
+    "sections": [
+        {
+            "id": "pretraining-introduction",
+            "title": "What Is LLM Pretraining?",
+            "type": "concept",
+            "content": "Pretraining is the process of learning model parameters from a large collection of data before adapting the model to a specific task. In a large language model, the training corpus commonly contains text from multiple domains, such as books, articles, educational material, documentation, and code. The model learns statistical relationships between tokens by optimizing a training objective. Pretraining provides a general-purpose initialization that can later be used for instruction tuning, fine-tuning, retrieval-based systems, or other downstream applications."
+        },
+        {
+            "id": "why-pretraining",
+            "title": "Why Pretraining Is Necessary",
+            "type": "concept",
+            "content": "Training a large model from scratch for every individual task would require substantial data and computation. Pretraining allows a model to learn reusable linguistic patterns, syntax, semantic associations, factual patterns present in the data, and domain-specific structures. A downstream task can then reuse these learned parameters rather than starting from random initialization. However, pretrained knowledge is imperfect: the model can memorize errors, inherit biases, and fail on information absent from its training distribution."
+        },
+        {
+            "id": "learning-paradigms",
+            "title": "Supervised, Unsupervised, and Self-Supervised Learning",
+            "type": "concept",
+            "content": "Supervised learning uses examples paired with explicit target labels, such as a sentence and its sentiment label. Traditional unsupervised learning discovers structure without externally supplied labels. Self-supervised learning constructs training targets from the data itself. Language modeling is commonly self-supervised because the next token or a masked token can provide the target automatically. Self-supervision makes it possible to train on very large text collections without manually labeling every example."
+        },
+        {
+            "id": "self-supervised-example",
+            "title": "A Self-Supervised Learning Example",
+            "type": "concept",
+            "content": "Consider the sentence 'Neural networks learn representations.' A causal language model can use 'Neural networks learn' as context and 'representations' as the next-token target. No human needs to annotate the correct next token because the target already exists in the text. Across a large corpus, the model repeats this process for many token positions. The resulting objective teaches the model to predict training text, although downstream abilities depend on data quality, architecture, optimization, and evaluation."
+        },
+        {
+            "id": "autoregressive-objective",
+            "title": "Autoregressive Pretraining",
+            "type": "concept",
+            "content": "Autoregressive pretraining predicts each token from preceding tokens. If a sequence contains x_1 through x_T, the model estimates P(x_t | x_1, ..., x_{t-1}) at every prediction position. A causal attention mask prevents the model from accessing future tokens while computing a prediction. This objective naturally supports left-to-right generation because inference follows the same conditional factorization learned during training."
+        },
+        {
+            "id": "autoregressive-equation",
+            "title": "Autoregressive Training Objective",
+            "type": "math",
+            "content": "The probability of a token sequence can be factorized as P(x_1, ..., x_T) = Π_t P(x_t | x_<t). Maximum-likelihood training maximizes the log-probability of the observed sequence. Equivalently, it minimizes negative log-likelihood: L(θ) = -Σ_t log P_θ(x_t | x_<t). Implementations often average this loss over valid prediction targets and exclude padding positions."
+        },
+        {
+            "id": "cross-entropy",
+            "title": "Cross-Entropy and Next-Token Prediction",
+            "type": "math",
+            "content": "At each position, the model produces a probability distribution over a vocabulary of V tokens. If the correct token has index y_t, the cross-entropy loss for that position is -log p_θ(y_t | x_<t). A model receives a smaller loss when it assigns a higher probability to the correct token. The loss is differentiable with respect to the model's logits and parameters, allowing gradients to update the network."
+        },
+        {
+            "id": "causal-pretraining-example",
+            "title": "Constructing Training Examples",
+            "type": "concept",
+            "content": "For token IDs [11, 24, 7, 39], a causal language model can predict [24, 7, 39] from preceding prefixes. The input and target arrays are shifted relative to each other. During training, the model may process the entire input sequence in one forward pass because causal masking ensures each position uses only permitted context. Exact shifting behavior depends on whether the dataset or model implementation performs the shift."
+        },
+        {
+            "id": "masked-language-modeling",
+            "title": "Masked Language Modeling",
+            "type": "concept",
+            "content": "Masked language modeling corrupts selected input tokens and trains a model to recover their original identities. For example, 'The model learns [MASK] patterns' may be used to predict the missing token. Because a bidirectional encoder can attend to both preceding and following context, it can use information on either side of a masked position. This objective is associated with encoder-style models such as BERT and is especially useful for contextual representations and many understanding tasks."
+        },
+        {
+            "id": "mlm-objective",
+            "title": "Masked Language Modeling Objective",
+            "type": "math",
+            "content": "Let M be the set of selected masked positions. A simplified masked-language-modeling objective is L(θ) = -Σ_{t∈M} log P_θ(x_t | corrupted_input). The loss is evaluated only at the selected prediction positions, although exact training procedures can include additional details such as replacement strategies or auxiliary objectives. Unlike causal language modeling, the model may use right-side context to predict a masked token."
+        },
+        {
+            "id": "causal-vs-masked",
+            "title": "Causal Versus Masked Pretraining",
+            "type": "concept",
+            "content": "Causal language modeling predicts tokens from preceding context and supports direct left-to-right generation. Masked language modeling predicts selected corrupted tokens from the remaining context and is often used to learn bidirectional encoder representations. Neither objective is universally best. The appropriate choice depends on whether the intended application emphasizes open-ended generation, text understanding, retrieval, classification, or a combination of tasks."
+        },
+        {
+            "id": "span-corruption",
+            "title": "Span Corruption and Denoising Objectives",
+            "type": "concept",
+            "content": "Some pretraining approaches corrupt spans rather than masking isolated tokens. The model learns to reconstruct missing or transformed portions of the original sequence. Denoising objectives can train models to recover meaningful text from corrupted inputs, while encoder-decoder architectures can learn to condition generated outputs on input representations. The corruption strategy determines which information the model must reconstruct and how it uses context."
+        },
+        {
+            "id": "encoder-decoder-pretraining",
+            "title": "Encoder-Decoder Pretraining",
+            "type": "concept",
+            "content": "Encoder-decoder models contain an encoder that processes an input sequence and a decoder that generates an output sequence. The encoder may attend bidirectionally to its input, while the decoder typically uses causal attention and cross-attention to the encoded input. This architecture is useful for conditional generation tasks such as summarization, translation, and text transformation. Pretraining objectives may ask the model to reconstruct corrupted text or generate a target sequence conditioned on the input."
+        },
+        {
+            "id": "data-scale",
+            "title": "The Role of Training Data",
+            "type": "concept",
+            "content": "Pretraining data influences the language, domains, facts, styles, and biases represented by the model. Large datasets can increase coverage, but raw size is not the only important factor. Duplicates, low-quality pages, spam, misleading information, benchmark contamination, and unbalanced language coverage can degrade the training process. Dataset curation aims to improve relevance and quality while respecting privacy, licensing, provenance, and applicable legal requirements."
+        },
+        {
+            "id": "tokenization-impact",
+            "title": "How Tokenization Affects Pretraining",
+            "type": "concept",
+            "content": "The tokenizer determines the sequence of IDs presented to the model. A tokenizer that represents common text efficiently can reduce the number of training tokens needed to encode a document. Conversely, an inefficient tokenizer may split technical terms or some languages into many pieces. Tokenizer choice affects vocabulary size, embedding parameters, context-window usage, and comparisons of training compute measured in tokens."
+        },
+        {
+            "id": "model-parameters",
+            "title": "Model Parameters and Learned Representations",
+            "type": "concept",
+            "content": "Parameters are the trainable numerical values in embeddings, attention projections, feed-forward layers, normalization layers, and output heads. Training changes these values through gradient-based optimization. A larger parameter count can increase representational capacity, but parameter count alone does not determine quality. Data quality, compute budget, architecture, optimization stability, and evaluation all contribute to final performance."
+        },
+        {
+            "id": "training-pipeline",
+            "title": "The Pretraining Pipeline",
+            "type": "concept",
+            "content": "A typical pretraining pipeline includes data acquisition, provenance checks, filtering, deduplication, tokenization, sequence packing, model initialization, forward passes, loss computation, backpropagation, optimizer updates, checkpointing, and validation. Large training runs also require distributed execution, monitoring, fault recovery, and careful handling of numerical instability. Each stage can affect final model quality, cost, and reproducibility."
+        },
+        {
+            "id": "training-step",
+            "title": "A Simplified Training Step",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nlogits = torch.tensor([[[2.0, 0.5, -1.0], [0.2, 1.7, 0.1]]], requires_grad=True)\ntargets = torch.tensor([[0, 1]])\nloss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), targets.reshape(-1))\nloss.backward()\nprint(\"Loss:\", loss.item())\nprint(\"Gradient shape:\", logits.grad.shape)",
+            "explanation": "This small example calculates cross-entropy for two vocabulary predictions and computes gradients. It demonstrates the loss and backpropagation stages but is not a complete language model or training loop. Real systems include model forward passes, optimizers, data loaders, masking, and checkpointing."
+        },
+        {
+            "id": "compute-and-efficiency",
+            "title": "Compute Requirements",
+            "type": "concept",
+            "content": "Large-scale pretraining can require extensive accelerator time, memory bandwidth, distributed communication, and storage. Costs depend on model architecture, parameter count, sequence length, batch size, training tokens, numerical precision, hardware utilization, and checkpoint frequency. Efficient systems reduce unnecessary padding, optimize data pipelines, use suitable precision, and distribute computation across devices. Efficient training must still preserve numerical stability and validate the quality of the resulting model."
+        },
+        {
+            "id": "scaling",
+            "title": "Scaling Pretraining",
+            "type": "concept",
+            "content": "Scaling research studies how performance changes with model size, data volume, and training compute. Increasing only one resource may produce diminishing returns if other resources become bottlenecks. A larger model trained on insufficient data may not use its capacity effectively, while a smaller model trained on high-quality data can be competitive on selected tasks. Scaling decisions should be based on empirical evaluation and the intended deployment constraints."
+        },
+        {
+            "id": "pretraining-transfer",
+            "title": "Transfer to Downstream Tasks",
+            "type": "concept",
+            "content": "After pretraining, model parameters can be reused for different tasks. A model may be fine-tuned on labeled examples, adapted with parameter-efficient methods, instruction-tuned on demonstrations, or used directly through prompting. These adaptation methods change how the pretrained representation is used. Successful transfer depends on the similarity between pretraining and target distributions and the quality of the adaptation data."
+        },
+        {
+            "id": "pretraining-limitations",
+            "title": "Limitations of Pretraining",
+            "type": "concept",
+            "content": "Pretraining does not guarantee factual reliability, logical consistency, fairness, privacy, or safe behavior. Models may reproduce biases, memorize sensitive material, or generate fluent falsehoods. They may also struggle with rare languages, out-of-distribution tasks, or recent information not present in their training data. Responsible development requires dataset governance, suitable evaluations, security testing, and downstream controls appropriate to the application."
+        },
+        {
+            "id": "pretraining-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "LLM pretraining learns general-purpose parameters from large datasets using self-supervised objectives. Autoregressive models predict the next token, masked models recover corrupted tokens, and encoder-decoder systems can learn conditional reconstruction. Training quality depends on data, tokenization, architecture, optimization, compute, and evaluation. Pretraining provides useful capabilities but does not independently guarantee truth, safety, or task success."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "pretraining-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is next-token prediction considered self-supervised learning?",
+            "correctAnswer": "The training target is created from the next token already present in the text rather than requiring a separately annotated human label.",
+            "solution": "The corpus supplies both the input context and the target token. The model learns by predicting tokens from naturally occurring text."
+        },
+        {
+            "id": "pretraining-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the main difference between causal language modeling and masked language modeling?",
+            "correctAnswer": "Causal modeling predicts tokens from preceding context, while masked modeling predicts selected corrupted tokens using the remaining context.",
+            "solution": "Causal training restricts attention to preceding positions for each prediction. Masked training commonly allows a bidirectional encoder to use both left and right context around a masked token."
+        },
+        {
+            "id": "pretraining-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "If the correct token receives probability 0.5, calculate its cross-entropy loss using natural logarithms.",
+            "correctAnswer": "Approximately 0.693.",
+            "solution": "The loss is -ln(0.5) = ln(2) ≈ 0.693."
+        },
+        {
+            "id": "pretraining-exercise-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A training corpus is extremely large but contains substantial duplication and low-quality text. Why can simply increasing its size fail to improve model quality?",
+            "correctAnswer": "Duplicate and low-quality data can waste compute, overemphasize repeated material, and introduce misleading patterns or contamination.",
+            "solution": "Raw data volume does not measure useful information. Deduplication, quality filtering, provenance checks, and representative validation are necessary to make training data more effective."
+        },
+        {
+            "id": "pretraining-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You need a model for multilingual educational content. What data-related checks should be included before pretraining?",
+            "correctAnswer": "Check language distribution, data quality, duplication, domain coverage, provenance, privacy, licensing, and evaluation coverage for each target language.",
+            "solution": "A multilingual model can perform unevenly when high-resource languages dominate its corpus. Measure coverage and quality per language, and evaluate representative educational tasks separately."
+        }
+    ],
+    "summary": "Pretraining provides the foundation for large language models by optimizing self-supervised objectives over large datasets. Autoregressive next-token prediction, masked language modeling, and encoder-decoder denoising encourage different capabilities. The resulting model depends on data quality, tokenization, architecture, optimization, compute, and evaluation. Pretraining creates reusable representations but does not guarantee factuality, fairness, or safety.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-language-modeling",
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-09-large-language-models-dataset-construction",
+        "module-09-large-language-models-tokenization",
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-training-objective-cross-entropy"
+    ]
+}

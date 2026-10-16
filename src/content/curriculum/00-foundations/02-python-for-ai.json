@@ -1,1 +1,332 @@
-{}
+{
+  "id": "python-for-ai",
+  "title": "Python for AI",
+  "slug": "python-for-ai",
+  "module": "Foundations",
+  "description": "Learn the Python practices and scientific-computing workflow used to prepare data, configure experiments, organize code, and make AI experiments reproducible.",
+  "difficulty": "Beginner",
+  "estimatedHours": 9,
+  "prerequisites": [
+    "programming-fundamentals"
+  ],
+  "learningObjectives": [
+    "Use modules, packages, virtual environments, and imports appropriately.",
+    "Use comprehensions, iterators, generators, and common functional patterns.",
+    "Read and write text, CSV, and JSON data safely.",
+    "Validate inputs and handle exceptions without hiding errors.",
+    "Organize small projects into reusable modules.",
+    "Record configuration, random seeds, dependencies, and experiment results.",
+    "Recognize common numerical and data-handling pitfalls in AI workflows."
+  ],
+  "sections": [
+    {
+      "id": "python-ai-ecosystem",
+      "title": "Why Python Is Used for AI",
+      "content": [
+        {
+          "type": "text",
+          "value": "Python is popular in AI because it combines readable syntax with a broad ecosystem for numerical computing, data analysis, visualization, and machine learning. The language often acts as the orchestration layer, while optimized libraries execute heavy numerical operations in compiled code."
+        },
+        {
+          "type": "text",
+          "value": "A typical workflow loads raw data, validates it, transforms it into arrays or tensors, splits it into training and evaluation sets, trains a model, measures performance, and records results. Python functions and modules help make each stage repeatable."
+        },
+        {
+          "type": "text",
+          "value": "Common tools include NumPy for numerical arrays, pandas for tabular data, Matplotlib for visualization, scikit-learn for classical machine learning, and PyTorch or TensorFlow for deep learning. You do not need to learn every library at once; understand the underlying concepts and add tools as a project requires them."
+        },
+        {
+          "type": "text",
+          "value": "A library is reusable code; a framework often also establishes a broader workflow or execution model. Learn to read documentation, check version compatibility, and create small experiments before combining many packages."
+        }
+      ],
+      "keyTakeaways": [
+        "Python connects readable code to optimized numerical libraries.",
+        "Learn the workflow as well as individual packages."
+      ]
+    },
+    {
+      "id": "modules-environments",
+      "title": "Modules, Packages, and Environments",
+      "content": [
+        {
+          "type": "text",
+          "value": "A Python module is a file that can define functions, classes, and constants. A package groups modules under a namespace. Imports make names available to a module, and explicit imports help readers understand dependencies."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# metrics.py\ndef mean_absolute_error(actual, predicted):\n    if len(actual) != len(predicted) or not actual:\n        raise ValueError(\"inputs must have equal non-zero length\")\n    return sum(abs(a - p) for a, p in zip(actual, predicted)) / len(actual)\n\n# another file\nfrom metrics import mean_absolute_error\nprint(mean_absolute_error([1, 2], [1.5, 1.5]))"
+        },
+        {
+          "type": "text",
+          "value": "Virtual environments isolate a project's installed packages from other projects. This reduces conflicts when two projects need different versions of the same library."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Create and activate a virtual environment (commands vary by shell)\npython -m venv .venv\n\n# macOS/Linux\nsource .venv/bin/activate\n\n# Windows PowerShell\n.venv\\Scripts\\Activate.ps1\n\npython -m pip install numpy\npython -m pip freeze > requirements.txt"
+        },
+        {
+          "type": "text",
+          "value": "Keep dependency manifests under version control, and avoid installing packages globally for every project. For reproducible work, document the Python version and library versions that were tested."
+        }
+      ],
+      "keyTakeaways": [
+        "Use a virtual environment per project.",
+        "Keep reusable functions in modules.",
+        "Document dependencies rather than relying on an undocumented local setup."
+      ]
+    },
+    {
+      "id": "iteration-comprehensions",
+      "title": "Comprehensions, Iterators, and Generators",
+      "content": [
+        {
+          "type": "text",
+          "value": "A list comprehension creates a list from an iterable. It is concise for simple transformations and filters, but deeply nested comprehensions can obscure logic. Use an ordinary loop when it is clearer."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "values = [1, 2, 3, 4, 5, 6]\nsquares = [x * x for x in values]\neven_squares = [x * x for x in values if x % 2 == 0]\nprint(squares)\nprint(even_squares)"
+        },
+        {
+          "type": "text",
+          "value": "An iterable can produce items one at a time. An iterator remembers its current position. A generator function uses yield to produce a sequence lazily, which can reduce memory use when processing large streams."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def read_batches(values, batch_size):\n    if batch_size <= 0:\n        raise ValueError(\"batch_size must be positive\")\n    for start in range(0, len(values), batch_size):\n        yield values[start:start + batch_size]\n\nfor batch in read_batches(list(range(10)), 4):\n    print(batch)"
+        },
+        {
+          "type": "text",
+          "value": "Lazy processing is useful for large datasets because it avoids building every intermediate result in memory. It does not automatically make every program faster; measure memory and runtime for the workload you actually have."
+        }
+      ],
+      "keyTakeaways": [
+        "Use comprehensions for simple transformations.",
+        "Use generators when incremental processing is valuable.",
+        "Prefer clarity over compactness."
+      ]
+    },
+    {
+      "id": "functions-validation",
+      "title": "Function Design and Input Validation",
+      "content": [
+        {
+          "type": "text",
+          "value": "AI code often fails because assumptions about shapes, types, missing values, or ranges are not checked. Validation at the boundary of a function makes failures easier to diagnose and prevents silent data corruption."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def make_batches(data, batch_size):\n    if batch_size <= 0:\n        raise ValueError(\"batch_size must be positive\")\n    if data is None:\n        raise TypeError(\"data must not be None\")\n\n    return [\n        data[i:i + batch_size]\n        for i in range(0, len(data), batch_size)\n    ]\n\nprint(make_batches([1, 2, 3, 4, 5], 2))"
+        },
+        {
+          "type": "text",
+          "value": "Avoid broad exception handling that catches every exception and continues as if nothing happened. Catch exceptions you can meaningfully handle, add context, and allow unexpected failures to surface. Logging is preferable to scattered print statements in larger applications."
+        },
+        {
+          "type": "text",
+          "value": "Type hints document intended inputs and outputs. They improve editor support and can help static analysis, but Python does not automatically enforce most annotations at runtime."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def normalize_score(score: float, maximum: float) -> float:\n    if maximum <= 0:\n        raise ValueError(\"maximum must be positive\")\n    return score / maximum"
+        }
+      ],
+      "keyTakeaways": [
+        "Validate assumptions at module boundaries.",
+        "Do not silently swallow exceptions.",
+        "Type hints document interfaces but are not runtime validation."
+      ]
+    },
+    {
+      "id": "data-files",
+      "title": "Working with JSON, CSV, and Text Files",
+      "content": [
+        {
+          "type": "text",
+          "value": "Data workflows often begin with files. JSON is useful for nested structured records and configuration. CSV is useful for rectangular tables. Plain text is useful for logs and documents. Select the format based on the shape and purpose of the data."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import json\n\nconfig = {\n    \"model\": \"linear\",\n    \"learning_rate\": 0.001,\n    \"epochs\": 50\n}\n\nwith open(\"config.json\", \"w\", encoding=\"utf-8\") as file:\n    json.dump(config, file, indent=2)\n\nwith open(\"config.json\", \"r\", encoding=\"utf-8\") as file:\n    loaded = json.load(file)\n\nprint(loaded[\"learning_rate\"])"
+        },
+        {
+          "type": "text",
+          "value": "Use a context manager such as with open(...) so the file is closed reliably. Specify an encoding for text files. Validate loaded data after parsing: syntactically valid JSON can still be missing required keys or contain invalid values."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import csv\n\nrows = [\n    {\"feature\": \"length\", \"value\": 2.4},\n    {\"feature\": \"width\", \"value\": 1.7}\n]\n\nwith open(\"features.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as file:\n    writer = csv.DictWriter(file, fieldnames=[\"feature\", \"value\"])\n    writer.writeheader()\n    writer.writerows(rows)"
+        },
+        {
+          "type": "text",
+          "value": "Never assume that data from a file is trustworthy just because it is local. Files can be incomplete, manually edited, or generated by another version of a program. Treat parsing and semantic validation as separate steps."
+        }
+      ],
+      "keyTakeaways": [
+        "Parsing checks format; validation checks meaning.",
+        "Use context managers for files.",
+        "Handle missing keys and invalid values deliberately."
+      ]
+    },
+    {
+      "id": "numerical-data",
+      "title": "Numerical Data and Missing Values",
+      "content": [
+        {
+          "type": "text",
+          "value": "Raw datasets commonly contain missing values, duplicate records, inconsistent units, strings where numbers are expected, and extreme observations. Preprocessing should be explicit and reproducible rather than a sequence of undocumented fixes."
+        },
+        {
+          "type": "text",
+          "value": "Missingness has different meanings. A value may be absent because it was not measured, not applicable, or intentionally withheld. Replacing every missing value with zero can distort the data because zero may be a valid measurement."
+        },
+        {
+          "type": "text",
+          "value": "For supervised learning, split data into training, validation, and test sets before fitting preprocessing steps that learn from data. Fit transformations such as imputation or scaling on the training set only, then apply the fitted transformation to validation and test data. This prevents data leakage."
+        },
+        {
+          "type": "text",
+          "value": "Units and ranges matter. A feature measured in millimeters should not silently be combined with one measured in meters. Inspect distributions and summary statistics before training. Use domain knowledge to decide whether an outlier is an error or a meaningful rare event."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import math\n\ndef parse_measurement(raw):\n    try:\n        value = float(raw)\n    except (TypeError, ValueError):\n        return None\n\n    if not math.isfinite(value):\n        return None\n    return value\n\nprint(parse_measurement(\"3.14\"))\nprint(parse_measurement(\"unknown\"))\nprint(parse_measurement(float(\"nan\")))"
+        }
+      ],
+      "keyTakeaways": [
+        "Missing values need an explicit policy.",
+        "Fit learned preprocessing only on training data.",
+        "Check units, ranges, and data leakage."
+      ]
+    },
+    {
+      "id": "reproducibility",
+      "title": "Reproducible Experiments",
+      "content": [
+        {
+          "type": "text",
+          "value": "A reproducible experiment records enough information for another run to be meaningfully comparable. Useful records include dataset version, preprocessing, model configuration, random seeds, dependency versions, code revision, training settings, and evaluation metrics."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import random\nimport numpy as np\n\nseed = 42\nrandom.seed(seed)\nrng = np.random.default_rng(seed)\n\nprint(random.random())\nprint(rng.random(3))"
+        },
+        {
+          "type": "text",
+          "value": "Seeding controls certain random number generators, but it does not guarantee identical outcomes across all software versions, hardware, parallel execution, or nondeterministic kernels. Reproducibility is a system-level practice, not just one seed value."
+        },
+        {
+          "type": "text",
+          "value": "Separate configuration from code where practical. Save the exact hyperparameters used in an experiment and avoid changing a configuration midway through a run without recording the change."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "experiment = {\n    \"name\": \"baseline-v1\",\n    \"seed\": 42,\n    \"learning_rate\": 0.001,\n    \"batch_size\": 32,\n    \"epochs\": 20\n}\nprint(experiment)"
+        }
+      ],
+      "keyTakeaways": [
+        "Record data, code, configuration, and metrics.",
+        "A seed helps but is not a universal guarantee.",
+        "Version experiments instead of relying on memory."
+      ]
+    },
+    {
+      "id": "testing-profiling",
+      "title": "Testing and Profiling Data Pipelines",
+      "content": [
+        {
+          "type": "text",
+          "value": "Test data transformations independently from model training. A preprocessing function should have known behavior for ordinary inputs, empty data, missing values, and invalid types. Small unit tests can catch problems long before an expensive training run."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def min_max_scale(values):\n    if not values:\n        raise ValueError(\"values must not be empty\")\n    low, high = min(values), max(values)\n    if low == high:\n        return [0.0 for _ in values]\n    return [(x - low) / (high - low) for x in values]\n\nassert min_max_scale([2, 4, 6]) == [0.0, 0.5, 1.0]\nassert min_max_scale([5, 5]) == [0.0, 0.0]"
+        },
+        {
+          "type": "text",
+          "value": "Profiling measures where a program spends time or memory. Avoid optimizing based only on intuition. First establish correctness, then measure representative workloads, identify the bottleneck, optimize it, and re-run tests to verify that behavior remains correct."
+        },
+        {
+          "type": "text",
+          "value": "For AI workloads, bottlenecks may come from data loading, Python loops, memory copies, CPU/GPU transfers, or model computation. Vectorization and batching often help, but the right choice depends on the actual workload."
+        }
+      ],
+      "keyTakeaways": [
+        "Test transformations separately.",
+        "Measure before optimizing.",
+        "Check that optimizations preserve correctness."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A small, reproducible data-preparation workflow",
+      "problem": "Parse numeric strings, remove invalid values, calculate a summary, and record the settings used.",
+      "solution": "import json\nimport math\n\ndef clean_numbers(raw_values):\n    cleaned = []\n    for raw in raw_values:\n        try:\n            value = float(raw)\n        except (TypeError, ValueError):\n            continue\n        if math.isfinite(value):\n            cleaned.append(value)\n    return cleaned\n\nraw = [\"1.2\", \"2.5\", \"missing\", None, \"4.0\"]\nvalues = clean_numbers(raw)\nif not values:\n    raise ValueError(\"no valid measurements\")\n\nsummary = {\n    \"count\": len(values),\n    \"mean\": sum(values) / len(values),\n    \"values\": values\n}\nprint(json.dumps(summary, indent=2))",
+      "explanation": "The example separates parsing from summarization, handles invalid values explicitly, and serializes the result. A production workflow should also record data provenance and avoid silently dropping values without monitoring how many were removed."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Configuration Validation",
+      "difficulty": "Beginner",
+      "problem": "Load a JSON configuration and validate that learning_rate is positive and epochs is a positive integer.",
+      "hints": [
+        "Separate JSON parsing from semantic validation."
+      ]
+    },
+    {
+      "id": "exercise-2",
+      "title": "Streaming Batches",
+      "difficulty": "Beginner",
+      "problem": "Write a generator that yields consecutive batches from a sequence without returning all batches at once.",
+      "hints": [
+        "Use yield and range with a step equal to the batch size."
+      ]
+    },
+    {
+      "id": "exercise-3",
+      "title": "Missing-Value Audit",
+      "difficulty": "Intermediate",
+      "problem": "Given a list of records represented as dictionaries, count missing values for each field.",
+      "hints": [
+        "Use a dictionary to accumulate counts and define what counts as missing."
+      ]
+    },
+    {
+      "id": "exercise-4",
+      "title": "Prevent Data Leakage",
+      "difficulty": "Intermediate",
+      "problem": "Describe how you would split a dataset and fit a standardization transformation without using test-set statistics.",
+      "hints": [
+        "Fit the transformation on training data, then reuse its parameters."
+      ]
+    },
+    {
+      "id": "exercise-5",
+      "title": "Reproducible Experiment Record",
+      "difficulty": "Intermediate",
+      "problem": "Design a JSON object that records the seed, dataset version, model configuration, dependency versions, and evaluation metrics for an experiment."
+    }
+  ],
+  "relatedTopics": [
+    "programming-fundamentals",
+    "numpy",
+    "data-structures-algorithms",
+    "basic-probability-intuition"
+  ]
+}

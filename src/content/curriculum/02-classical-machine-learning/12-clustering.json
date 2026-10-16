@@ -1,1 +1,157 @@
-{}
+{
+    "id": "clustering",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 12,
+    "title": "Clustering Algorithms",
+    "slug": "clustering",
+    "description": "Explore unsupervised learning through K-means, hierarchical clustering, DBSCAN, distance measures, cluster validation, and practical clustering workflows.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "linear-algebra",
+        "probability-and-statistics",
+        "knn",
+        "pca"
+    ],
+    "learningObjectives": [
+        "Explain the goals and limitations of unsupervised clustering.",
+        "Understand K-means and its iterative optimization process.",
+        "Compare K-means with hierarchical clustering and DBSCAN.",
+        "Choose distance and similarity measures appropriate to the data.",
+        "Evaluate cluster quality without relying solely on visual appearance.",
+        "Understand the elbow method and silhouette score.",
+        "Recognize the effects of feature scaling, initialization, noise, and cluster shape.",
+        "Build a clustering workflow and interpret its results cautiously."
+    ],
+    "sections": [
+        {
+            "id": "clustering-introduction",
+            "title": "1. What Is Clustering?",
+            "type": "concept",
+            "content": "Clustering is an unsupervised learning task that groups observations according to some notion of similarity. Unlike supervised classification, clustering does not require a known target label for each observation.\n\nImagine a business has customer data containing purchase frequency, average spending, and product diversity. Clustering may identify groups such as frequent low-spending customers, occasional high-spending customers, and customers with broad purchasing behavior. These groups can help analysts explore the dataset, but their practical meaning must be validated with domain knowledge.\n\nClustering is not a single objective with one universally correct answer. Different algorithms define clusters differently. K-means favors compact groups around centroids. Hierarchical clustering builds nested groups based on linkage rules. DBSCAN identifies dense regions separated by areas of lower density and can label some points as noise.\n\nThe resulting clusters depend on the chosen features, feature scaling, distance measure, algorithm, and hyperparameters. A different representation of the same raw data may produce different groupings.\n\nClusters should be treated as hypotheses about structure rather than unquestionable facts. A mathematically distinct group may not correspond to a useful business segment, and a useful operational grouping may require constraints not represented by an ordinary clustering algorithm."
+        },
+        {
+            "id": "distance-similarity",
+            "title": "2. Similarity, Distance, and Feature Representation",
+            "type": "concept",
+            "content": "Clustering algorithms need a way to compare observations or assess the compactness of groups. Common choices include Euclidean distance, Manhattan distance, cosine similarity, and domain-specific measures.\n\nEuclidean distance emphasizes geometric distance in numeric feature space. Manhattan distance sums absolute coordinate differences. Cosine similarity compares vector direction and is often useful for high-dimensional text vectors where magnitude may be less important than orientation.\n\nThe choice should reflect the semantics of the data. For example, the numeric encoding of a city name does not automatically make the difference between city codes meaningful. Categorical features require an appropriate representation or mixed-data distance. Binary, ordinal, textual, and time-series data may need specialized handling.\n\nFeature scaling is often essential. If spending is measured in thousands and age in years, raw Euclidean distance may be dominated by spending. Standardization or robust scaling can make dimensions more comparable, but scaling also changes the implicit importance assigned to each feature.\n\nBefore clustering, inspect missing values, outliers, redundant features, and the distribution of numeric variables. Scaling, imputation, feature selection, and dimensionality reduction must be chosen based on the data and should be applied consistently during later analysis."
+        },
+        {
+            "id": "kmeans-objective",
+            "title": "3. K-Means Clustering",
+            "type": "math",
+            "content": "K-means partitions observations into K clusters. Each observation is assigned to the cluster whose centroid is closest under the selected distance convention, and each centroid is updated to the mean of the observations assigned to that cluster.\n\nFor data points x_i and cluster centroids mu_1 through mu_K, the standard squared-Euclidean objective is:\n\nJ = sum from i=1 to N of ||x_i - mu_(c_i)||^2,\n\nwhere c_i is the cluster assignment for observation i. The algorithm attempts to reduce the within-cluster sum of squares.\n\nThe procedure alternates between two main steps. Assignment step: assign each point to its nearest current centroid. Update step: recompute each centroid as the mean of the points assigned to that cluster. Repeat until assignments stop changing, the objective improvement becomes small, or a maximum iteration limit is reached.\n\nThe mean is the optimal centroid for squared-Euclidean loss given fixed assignments. K-means is therefore tied to a specific geometric objective and is not equally suitable for every notion of similarity.\n\nK-means requires the user to choose K in advance. It is sensitive to initialization and outliers, and it works best when the desired groups are reasonably compact and roughly spherical under the feature representation. It can struggle with curved, elongated, or very different-density clusters."
+        },
+        {
+            "id": "kmeans-example",
+            "title": "4. A Small K-Means Example",
+            "type": "math",
+            "content": "Consider one-dimensional observations [1, 2, 3, 10, 11, 12] and K = 2. Suppose the initial centroids are 2 and 11.\n\nAssignment step: observations 1, 2, and 3 are closer to centroid 2, while 10, 11, and 12 are closer to centroid 11. The first cluster is [1, 2, 3] and the second is [10, 11, 12].\n\nUpdate step: the first centroid becomes (1 + 2 + 3)/3 = 2. The second centroid becomes (10 + 11 + 12)/3 = 11. The centroids do not change, so the algorithm has reached a stable assignment.\n\nThe within-cluster squared error is (1-2)^2 + (2-2)^2 + (3-2)^2 + (10-11)^2 + (11-11)^2 + (12-11)^2 = 1 + 0 + 1 + 1 + 0 + 1 = 4.\n\nThis simple example converges cleanly because the groups are well separated and the initialization is favorable. Real datasets may have overlapping groups or poor initial centroids, so repeated initializations are important.\n\nThe numerical labels assigned to clusters have no intrinsic meaning. Cluster 0 is not inherently better or earlier than cluster 1; labels can be permuted without changing the clustering."
+        },
+        {
+            "id": "kmeans-initialization",
+            "title": "5. Initialization, Convergence, and Choosing K",
+            "type": "concept",
+            "content": "K-means can converge to different local solutions depending on its starting centroids. A poor initialization may lead to a higher within-cluster squared error or an unhelpful partition.\n\nK-means++ initialization chooses initial centroids in a way designed to spread them across the data. It often improves convergence behavior compared with arbitrary random selection. Multiple initializations can be run, and the best result under the objective can be retained.\n\nThe elbow method runs K-means for several values of K and plots within-cluster sum of squares against K. The objective cannot increase when the optimal solution for a larger K is available, because additional clusters can split existing groups. The curve often decreases rapidly at first and then more slowly. A bend, or elbow, may suggest a useful trade-off, but it is not always clear or present.\n\nThe silhouette score measures how similar a point is to its own cluster compared with its nearest alternative cluster. A score near +1 suggests strong separation, a score near 0 suggests overlap, and a negative score can indicate that a point may be closer to another cluster. The score is not appropriate for every geometry and can favor particular cluster structures.\n\nChoose K using multiple forms of evidence: internal metrics, cluster stability, interpretability, operational usefulness, and domain constraints. A high internal score does not guarantee that the groups are meaningful for the intended decision."
+        },
+        {
+            "id": "hierarchical",
+            "title": "6. Hierarchical Clustering",
+            "type": "concept",
+            "content": "Hierarchical clustering builds a hierarchy of nested groups. Agglomerative hierarchical clustering begins with each observation in its own cluster and repeatedly merges clusters according to a linkage criterion. Divisive approaches begin with one large group and split it recursively, although agglomerative methods are more commonly used in general-purpose libraries.\n\nSingle linkage defines the distance between two clusters using the closest pair of observations. It can identify elongated structures but may create chaining, where a sequence of nearby points joins otherwise separated groups.\n\nComplete linkage uses the farthest pairwise distance between the clusters. It tends to favor compact groups but can be sensitive to outliers. Average linkage uses the average pairwise distance between observations in the two clusters.\n\nWard linkage merges clusters in a way that minimizes the increase in within-cluster variance under its standard Euclidean formulation. It often produces compact clusters but has assumptions and geometry that should be considered.\n\nA dendrogram visualizes the order and distance at which clusters merge. Cutting the dendrogram at a selected height produces a flat clustering. This gives analysts a view of structure at multiple levels, but the number of pairwise relationships and memory requirements can become expensive for large datasets.\n\nHierarchical clustering does not always require the number of clusters to be chosen at the beginning. However, a cut level or cluster count is still needed when a final flat assignment is required."
+        },
+        {
+            "id": "dbscan",
+            "title": "7. DBSCAN: Density-Based Clustering",
+            "type": "concept",
+            "content": "DBSCAN stands for Density-Based Spatial Clustering of Applications with Noise. It identifies groups of observations connected through sufficiently dense neighborhoods and can label isolated observations as noise.\n\nTwo central parameters are epsilon, the neighborhood radius, and min_samples, the number of nearby observations required for a point to count as a core point under the implementation's convention. Core points have sufficiently dense neighborhoods. Border points are near a core point but do not themselves satisfy the core criterion. Noise points are not assigned to a density-connected cluster under the final procedure.\n\nDBSCAN can find irregularly shaped clusters that K-means may fail to represent. It does not require the user to specify the number of clusters in advance, and its noise labels can be useful for anomaly exploration.\n\nIts limitations include sensitivity to epsilon and min_samples, difficulty with clusters that have substantially different densities, and challenges in high-dimensional spaces where distances become less informative. Feature scaling is particularly important because epsilon is interpreted in the feature-space distance units.\n\nDBSCAN's result can change sharply when epsilon changes. A value that is too small may label many points as noise; a value that is too large may merge separate groups. Use domain knowledge, neighborhood-distance plots, validation, and stability analysis to guide parameter selection."
+        },
+        {
+            "id": "cluster-evaluation",
+            "title": "8. Evaluating Clustering Results",
+            "type": "concept",
+            "content": "Clustering is difficult to evaluate because ground-truth labels are often unavailable. Internal metrics use the data and cluster assignments themselves. External metrics compare assignments with known labels when those labels exist, although such labels may not perfectly represent the intended structure.\n\nThe within-cluster sum of squares measures compactness and is the objective optimized by standard K-means. It always tends to decrease as more clusters are added, so it cannot alone identify the correct number of clusters.\n\nThe silhouette score compares within-cluster cohesion with separation from the nearest alternative cluster. It can be useful for many distance-based clusterings but is affected by cluster geometry and can be expensive on large datasets.\n\nThe Davies-Bouldin index compares within-cluster scatter with separation between clusters. Lower values are generally preferred under its definition, but the score has assumptions and should not be treated as a universal quality measure.\n\nWhen reference labels exist, adjusted Rand index and normalized mutual information can compare clustering assignments with those labels. These are external measures; they do not establish that the labels capture the most useful unsupervised structure.\n\nAlso evaluate cluster size, stability across random seeds or samples, interpretability, and downstream usefulness. If clusters are used for customer treatment, fraud investigation, or resource allocation, examine whether the resulting groups support the intended decisions and whether the procedure creates unfair or misleading segments."
+        },
+        {
+            "id": "clustering-code",
+            "title": "9. K-Means and DBSCAN in scikit-learn",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import make_blobs\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.cluster import KMeans, DBSCAN\nfrom sklearn.metrics import silhouette_score\nfrom sklearn.pipeline import make_pipeline\n\nX, _ = make_blobs(\n    n_samples=500,\n    centers=4,\n    cluster_std=1.0,\n    random_state=42\n)\n\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(X)\n\nkmeans = KMeans(\n    n_clusters=4,\n    n_init=10,\n    random_state=42\n)\nkmeans_labels = kmeans.fit_predict(X_scaled)\nprint('K-Means silhouette:', silhouette_score(X_scaled, kmeans_labels))\n\n# Illustrative DBSCAN parameters; tune for the data and distance scale.\ndbscan = DBSCAN(eps=0.3, min_samples=5)\ndbscan_labels = dbscan.fit_predict(X_scaled)\n\ncluster_ids = set(dbscan_labels) - {-1}\nnoise_count = int((dbscan_labels == -1).sum())\nprint('DBSCAN clusters:', len(cluster_ids))\nprint('DBSCAN noise points:', noise_count)\n\n# Cluster label -1 denotes noise in scikit-learn's DBSCAN.",
+            "explanation": "The example generates synthetic data, standardizes the features, and compares K-means and DBSCAN. The synthetic labels are intentionally not used to train the clustering algorithms. The DBSCAN epsilon value is illustrative and must be tuned to the feature representation and density structure. Silhouette scores should be interpreted in context and can be misleading for irregularly shaped clusters or when many points are noise."
+        },
+        {
+            "id": "clustering-workflow",
+            "title": "10. A Reliable Clustering Workflow",
+            "type": "concept",
+            "content": "Begin by defining the purpose of clustering. Exploratory segmentation, anomaly detection, data compression, and preprocessing for a downstream model can require different representations and evaluation criteria.\n\nInspect the dataset and choose features that describe the similarity you care about. Remove identifiers that do not represent meaningful attributes, handle missing values, and investigate outliers. Decide how categorical variables should be encoded and whether numeric features need scaling.\n\nEstablish simple baselines. For compact numeric clusters, K-means may be a reasonable starting point. For nested structure, try hierarchical clustering. For density-connected groups and noise detection, investigate DBSCAN or related density methods.\n\nTest plausible hyperparameters and evaluate more than one metric. Examine cluster sizes, separation, stability, and representative observations. Visualizations can help explore low-dimensional data, but a two-dimensional projection may distort distances or hide higher-dimensional structure.\n\nAfter choosing a configuration, describe each cluster using feature distributions and examples. Avoid assigning names such as 'high-value customers' until the data support that interpretation. Cluster IDs are arbitrary labels, and the same numeric ID may represent a different group after refitting.\n\nIf clustering becomes part of a production pipeline, monitor input distribution and cluster stability over time. Changes in customer behavior, data collection, or preprocessing may alter cluster assignments and require reassessment."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "cluster-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "For observations [1, 2, 3] assigned to one K-means cluster, calculate the centroid.",
+            "correctAnswer": "2.",
+            "solution": "The centroid is the mean: (1 + 2 + 3)/3 = 2."
+        },
+        {
+            "id": "cluster-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why does standard K-means require a value for K?",
+            "correctAnswer": "K-means begins with K centroids and partitions the data among those K clusters.",
+            "solution": "The algorithm alternates between assigning observations to K centroids and updating those centroids. The number of clusters is an input hyperparameter."
+        },
+        {
+            "id": "cluster-ex-3",
+            "type": "comparison",
+            "difficulty": "medium",
+            "question": "Give one situation where DBSCAN may be more appropriate than K-means.",
+            "correctAnswer": "When clusters have irregular shapes and isolated observations should be identified as noise.",
+            "solution": "K-means optimizes squared distance to centroids and favors compact, roughly spherical groups. DBSCAN uses density connectivity and can identify irregular clusters and noise, provided the density structure and parameters are suitable."
+        },
+        {
+            "id": "cluster-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the elbow method not a definitive way to select K?",
+            "correctAnswer": "The curve may not have a clear elbow, and within-cluster sum of squares always tends to decrease as K increases.",
+            "solution": "Adding clusters can improve compactness even when the additional groups are not meaningful. Combine the elbow plot with stability, silhouette scores, domain knowledge, and downstream usefulness."
+        },
+        {
+            "id": "cluster-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A clustering result has a silhouette score of 0.82. What does this suggest, and what does it not prove?",
+            "correctAnswer": "It suggests strong separation under the selected distance and silhouette definition, but it does not prove that the clusters are meaningful, stable, or useful for the intended task.",
+            "solution": "Silhouette values near +1 indicate that points tend to be closer to their own clusters than to the nearest alternative cluster. The score should be combined with stability analysis, feature interpretation, and domain validation."
+        },
+        {
+            "id": "cluster-ex-6",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "You are clustering customers using annual spending, age, and visit frequency. The algorithm produces one cluster dominated by annual spending. Suggest a likely reason and a practical response.",
+            "correctAnswer": "Feature scale may be dominating the distance calculation. Standardize or appropriately weight the features, then reassess cluster quality and business usefulness.",
+            "solution": "If annual spending has a much larger numerical range, Euclidean distance may be driven mostly by spending differences. Standardization can balance numeric scales, but the final feature weighting should reflect the intended notion of customer similarity."
+        }
+    ],
+    "summary": [
+        "Clustering groups observations without requiring labeled targets.",
+        "K-means alternates between centroid assignment and centroid updates to reduce within-cluster squared error.",
+        "Hierarchical clustering builds nested groups using linkage criteria.",
+        "DBSCAN identifies density-connected clusters and can label noise points.",
+        "Feature representation, distance metrics, and scaling strongly affect results.",
+        "The elbow method and silhouette score are useful diagnostics but do not reveal a universally correct clustering.",
+        "Interpret clusters through stability, domain knowledge, and downstream usefulness."
+    ],
+    "relatedTopics": [
+        "knn",
+        "pca",
+        "evaluation-metrics",
+        "random-forests",
+        "bias-variance"
+    ]
+}

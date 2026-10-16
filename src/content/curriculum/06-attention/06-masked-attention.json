@@ -1,0 +1,206 @@
+{
+    "id": "module-06-attention-masked-attention",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 6,
+    "title": "Masked Attention",
+    "slug": "masked-attention",
+    "href": "/curriculum/06-attention/masked-attention",
+    "filePath": "content/curriculum/06-attention/06-masked-attention.json",
+    "description": "Understand how attention masks control information flow, including causal masks, padding masks, Boolean conventions, numerical stability, batched tensor shapes, and practical implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Scaled Dot-Product Attention & Math",
+        "Self-Attention",
+        "Softmax",
+        "Basic tensor shapes"
+    ],
+    "learningObjectives": [
+        "Explain why attention requires masks in language modeling.",
+        "Distinguish causal masks from padding masks.",
+        "Construct a lower-triangular causal attention mask.",
+        "Explain why masks are applied before softmax.",
+        "Understand Boolean mask conventions and broadcasting.",
+        "Implement masked attention with NumPy.",
+        "Prevent future-token leakage during autoregressive training.",
+        "Identify numerical edge cases involving fully masked rows.",
+        "Explain how masks affect the information available to each token."
+    ],
+    "sections": [
+        {
+            "id": "mask-motivation",
+            "title": "1. Why Attention Masks Are Necessary",
+            "type": "concept",
+            "content": "An attention mask controls which key positions a query is permitted to use. Without masking, dense self-attention can allow every position to access every other position. That behavior is useful in many encoder models, but it creates a problem for autoregressive language modeling: a position must not use future tokens when predicting the next token. Padding introduces another problem because batches often contain artificial positions added to make sequences the same length. Masks let the model ignore forbidden future tokens and meaningless padding positions."
+        },
+        {
+            "id": "mask-equation",
+            "title": "2. Masked Attention Equation",
+            "type": "math",
+            "content": "Let S = QK^T / sqrt(d_k) be the scaled score matrix. Let M contain zero for allowed positions and negative infinity for blocked positions. The masked attention weights are A = softmax(S + M), and the output is O = AV. In this additive convention, adding negative infinity to a blocked score makes its softmax contribution zero. Implementations may instead use a Boolean mask and replace blocked scores internally. Be careful: different libraries use different Boolean conventions, so always verify whether True means allowed or blocked."
+        },
+        {
+            "id": "causal-masking",
+            "title": "3. Causal Masking",
+            "type": "concept",
+            "content": "Causal masking prevents a query at position i from attending to a future key at position j when j is greater than i. A standard lower-triangular allowed-position mask includes the diagonal, allowing each position to attend to itself and all earlier positions. This preserves the autoregressive constraint that the representation used for a prediction cannot access future target tokens. Causal masking is central to decoder-only language models such as GPT-style architectures."
+        },
+        {
+            "id": "causal-matrix",
+            "title": "4. Constructing a Causal Mask",
+            "type": "math",
+            "content": "For a sequence of length four, the allowed-position matrix is [[1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]]. Here 1 means allowed and 0 means blocked. Row zero can use only token zero; row one can use tokens zero and one; row two can use the first three tokens; and row three can use all four tokens. In NumPy, np.tril(np.ones((n, n), dtype=bool)) creates this allowed-position pattern."
+        },
+        {
+            "id": "causal-leakage",
+            "title": "5. Future-Token Leakage",
+            "type": "concept",
+            "content": "Suppose a language model is trained to predict the next token in 'The cat sat on the mat'. If the representation used to predict 'sat' can attend to the token 'sat' or later tokens through the input sequence, the training setup can leak the answer. A causal mask prevents a position from looking to the right in the sequence. During training, all positions can still be computed in parallel because the mask restricts information flow while allowing the score and value matrix operations to execute over the full sequence."
+        },
+        {
+            "id": "padding-mask",
+            "title": "6. Padding Masks",
+            "type": "concept",
+            "content": "Batches commonly combine sequences of different lengths. For example, a short sentence may be padded to match the length of a longer sentence. Padding positions are not meaningful tokens and should not be used as keys when constructing context for valid positions. A key-padding mask blocks those positions from receiving attention. Padding masks and causal masks solve different problems: a causal mask restricts access based on sequence order, while a padding mask restricts access based on which positions contain real tokens. They may be combined."
+        },
+        {
+            "id": "combined-mask",
+            "title": "7. Combining Causal and Padding Masks",
+            "type": "math",
+            "content": "If C_ij indicates that key j is not in the future of query i, and P_bj indicates that key j is a real token in batch example b, the combined allowed mask can be expressed as A_bij = C_ij AND P_bj. In an implementation, the causal mask may have shape [n, n], while a key-padding mask may have shape [batch, 1, n] or a related broadcastable form. Combining them requires carefully aligning batch, head, query, and key dimensions. A mask with an accidental shape mismatch can either raise an error or silently block the wrong positions."
+        },
+        {
+            "id": "mask-before-softmax",
+            "title": "8. Why Mask Before Softmax?",
+            "type": "math",
+            "content": "Softmax normalizes all entries in a row using the sum of their exponentials. If a blocked position is left in the row during normalization, it receives some probability mass. Setting its score to negative infinity before softmax makes its exponential contribution zero. If a mask is applied after softmax, the weights for the remaining positions usually need to be renormalized. Therefore, applying the mask to scores before softmax is the standard and less error-prone approach."
+        },
+        {
+            "id": "mask-example",
+            "title": "9. Worked Example",
+            "type": "example",
+            "content": "Suppose a query has scaled scores [1, 2, 3], but the third key is forbidden. Replace the third score with negative infinity, giving [1, 2, negative infinity]. The softmax weights become approximately [0.269, 0.731, 0]. Without the mask, the third position would receive the highest weight. With the mask, it contributes nothing to the weighted sum, regardless of its original score."
+        },
+        {
+            "id": "mask-bool-conventions",
+            "title": "10. Boolean Mask Conventions",
+            "type": "concept",
+            "content": "One implementation may define True as 'this position is allowed', while another may define True as 'this position is blocked'. This difference is a frequent source of bugs. A custom function can make its convention explicit by naming its argument allowed_mask and using np.where(allowed_mask, scores, -np.inf). When using a framework's built-in attention operation, consult the relevant API documentation and verify its convention with a small example. Never assume that Boolean masks mean the same thing across libraries."
+        },
+        {
+            "id": "mask-code",
+            "title": "11. NumPy Implementation of Masked Attention",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax(scores, axis=-1):\n    shifted = scores - np.max(scores, axis=axis, keepdims=True)\n    exp_scores = np.exp(shifted)\n    return exp_scores / np.sum(exp_scores, axis=axis, keepdims=True)\n\ndef masked_attention(Q, K, V, allowed_mask):\n    d_k = Q.shape[-1]\n    scores = Q @ K.T / np.sqrt(d_k)\n\n    if allowed_mask.shape != scores.shape:\n        raise ValueError('Mask must match the score matrix in this example')\n    if not np.all(np.any(allowed_mask, axis=-1)):\n        raise ValueError('Each query must have at least one allowed key')\n\n    scores = np.where(allowed_mask, scores, -np.inf)\n    weights = softmax(scores, axis=-1)\n    return weights @ V, weights\n\nQ = np.array([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]])\nK = Q.copy()\nV = np.array([[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]])\n\nn = Q.shape[0]\ncausal_mask = np.tril(np.ones((n, n), dtype=bool))\noutput, weights = masked_attention(Q, K, V, causal_mask)\n\nprint('Causal mask:\\n', causal_mask.astype(int))\nprint('Attention weights:\\n', weights)\nprint('Output:\\n', output)",
+            "explanation": "The function computes scaled scores, checks that the mask matches the score matrix, verifies that each query has at least one allowed key, and replaces forbidden scores with negative infinity before softmax. The lower-triangular mask makes future keys unavailable. This is an educational two-dimensional implementation; batched multi-head attention requires broadcastable masks with additional dimensions."
+        },
+        {
+            "id": "mask-test",
+            "title": "12. Testing Causal Constraints",
+            "type": "code",
+            "language": "python",
+            "content": "assert np.allclose(weights.sum(axis=-1), 1.0)\nassert np.all(weights >= 0.0)\nassert np.allclose(np.triu(weights, k=1), 0.0)\nassert np.allclose(output, weights @ V)\nprint('Masking checks passed.')",
+            "explanation": "The upper-triangular part above the main diagonal represents future positions. It should contain zero attention weight under this causal-mask convention. The tests also verify normalization and value aggregation. These checks can catch reversed triangular masks and incorrect Boolean semantics."
+        },
+        {
+            "id": "mask-broadcasting",
+            "title": "13. Broadcasting in Batched Attention",
+            "type": "concept",
+            "content": "For a batch of examples and multiple heads, attention scores often have shape [batch, heads, query_length, key_length]. A causal mask of shape [query_length, key_length] can often broadcast across batches and heads. A key-padding mask may be expanded to a shape such as [batch, 1, 1, key_length], allowing it to broadcast across heads and query positions. Exact requirements depend on the API. Incorrectly placing the sequence dimension in the batch or head axis can cause subtle errors, so print and test the shapes of scores and masks during development."
+        },
+        {
+            "id": "mask-edge-cases",
+            "title": "14. Numerical and Logical Edge Cases",
+            "type": "concept",
+            "content": "A fully masked query row has no valid key. Replacing every score in the row with negative infinity can produce NaNs during softmax. A robust design should ensure at least one valid key per query or explicitly handle fully masked rows. Another edge case arises with padded query positions: even if padded keys are blocked, padded query outputs may still be computed. Some architectures ignore those outputs in the loss or zero them explicitly. A correct key-padding mask does not automatically guarantee every padded query representation is zero."
+        },
+        {
+            "id": "mask-cross-attention",
+            "title": "15. Masks in Cross-Attention",
+            "type": "concept",
+            "content": "Cross-attention also supports masks. For example, a decoder may attend to encoded source tokens but must ignore source padding positions. In some tasks, additional restrictions determine which source positions are available. Unlike decoder self-attention, cross-attention does not automatically require a causal triangle over the source sequence; the appropriate mask depends on the task and architecture. The general rule is to encode the intended information-access constraints and apply them before normalization."
+        },
+        {
+            "id": "mask-summary",
+            "title": "16. Key Takeaways",
+            "type": "concept",
+            "content": "Masks control which key positions can contribute to an attention output. Causal masks prevent access to future tokens, padding masks exclude artificial positions, and combined masks enforce multiple constraints. Apply masks before softmax, verify the Boolean convention and tensor shapes, and avoid fully masked rows unless the implementation explicitly handles them. Masking is essential for correct autoregressive language modeling."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "masked-attention-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main purpose of causal masking?",
+            "correctAnswer": "To prevent each sequence position from attending to future positions.",
+            "solution": "Causal masking enforces the information-access constraint needed for autoregressive prediction."
+        },
+        {
+            "id": "masked-attention-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Write the allowed-position causal mask for a sequence of length three.",
+            "correctAnswer": "[[1,0,0],[1,1,0],[1,1,1]].",
+            "solution": "Each row allows keys at the same or earlier positions and blocks every later position."
+        },
+        {
+            "id": "masked-attention-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "How does a padding mask differ from a causal mask?",
+            "correctAnswer": "A padding mask blocks artificial padding positions, while a causal mask blocks future positions.",
+            "solution": "They encode different restrictions and may need to be combined in the same attention operation."
+        },
+        {
+            "id": "masked-attention-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A score row is [0, 2, 5], and the third position is blocked. What happens to its attention weight after masking before softmax?",
+            "correctAnswer": "Its attention weight becomes zero.",
+            "solution": "Replacing the third score with negative infinity makes its exponential contribution zero."
+        },
+        {
+            "id": "masked-attention-ex-5",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "Why might a causal attention matrix unexpectedly contain nonzero weights above the diagonal?",
+            "correctAnswer": "The causal mask may be reversed, applied with the wrong Boolean convention, or broadcast along the wrong dimensions.",
+            "solution": "Inspect the mask itself, verify whether True means allowed or blocked, and test the resulting weight matrix on a short sequence."
+        },
+        {
+            "id": "masked-attention-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can an entirely masked row cause NaNs?",
+            "correctAnswer": "Softmax has no valid entries to normalize, and subtracting the maximum from an all-negative-infinity row is undefined.",
+            "solution": "A valid probability distribution requires at least one allowed key, unless the implementation defines special behavior for empty rows."
+        },
+        {
+            "id": "masked-attention-ex-7",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "Why can all training positions in a causal language model be processed in parallel even though future-token attention is blocked?",
+            "correctAnswer": "The causal mask blocks forbidden information paths while the score and value operations are still computed with parallel matrix operations.",
+            "solution": "The architecture enforces causal information flow mathematically without requiring an RNN-style sequential hidden-state update."
+        },
+        {
+            "id": "masked-attention-ex-8",
+            "type": "implementation",
+            "difficulty": "hard",
+            "question": "What shape could a key-padding mask use when attention scores have shape [batch, heads, query_length, key_length]?",
+            "correctAnswer": "[batch, 1, 1, key_length], assuming the API supports this broadcasting convention.",
+            "solution": "The singleton head and query dimensions allow the padding restriction to broadcast across heads and query positions."
+        }
+    ],
+    "summary": "Masked attention enforces restrictions on information flow. Causal masks block future tokens, padding masks block artificial positions, and cross-attention can use source masks. Correct implementations apply masks before softmax, use the correct Boolean convention and broadcast dimensions, and handle queries with no valid keys safely.",
+    "relatedTopics": [
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-cross-attention",
+        "module-07-transformers-causal-masking"
+    ]
+}

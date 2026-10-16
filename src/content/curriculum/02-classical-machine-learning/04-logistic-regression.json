@@ -1,1 +1,180 @@
-{}
+{
+    "id": "logistic-regression",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 4,
+    "title": "Logistic Regression",
+    "slug": "logistic-regression",
+    "description": "Understand binary and multiclass logistic regression, the sigmoid function, log-odds, maximum likelihood, cross-entropy loss, decision thresholds, regularization, and probability-based evaluation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Linear regression basics",
+        "Basic probability",
+        "Exponential and logarithmic functions",
+        "Python and NumPy"
+    ],
+    "learningObjectives": [
+        "Explain why linear regression is not ideal for classification probabilities.",
+        "Derive and interpret the sigmoid function.",
+        "Understand odds, log-odds, and logistic regression coefficients.",
+        "Explain maximum likelihood and binary cross-entropy.",
+        "Understand the effect of decision thresholds.",
+        "Distinguish probability estimation from final class prediction.",
+        "Implement logistic regression using NumPy and scikit-learn.",
+        "Evaluate classifiers with confusion matrices, precision, recall, and ROC-AUC.",
+        "Explain regularization, class imbalance, and calibration considerations."
+    ],
+    "sections": [
+        {
+            "id": "classification-motivation",
+            "title": "1. Why Logistic Regression?",
+            "type": "concept",
+            "content": "Logistic regression is a supervised learning algorithm commonly used for classification. Despite its name, it is not ordinarily used to predict an unrestricted continuous outcome. It estimates the probability of a class based on input features. A linear regression model can produce values below zero or above one, which are unsuitable as probabilities without additional treatment. Logistic regression maps a linear score through a sigmoid function, yielding a value between zero and one. For binary classification, this value is interpreted as the model's estimated probability of the positive class, subject to the quality of the model and its assumptions. A decision threshold then converts the probability into a class label when a discrete decision is required."
+        },
+        {
+            "id": "sigmoid",
+            "title": "2. The Sigmoid Function",
+            "type": "math",
+            "content": "The sigmoid function is sigma(z) = 1 / (1 + exp(-z)). Its output approaches zero for very negative z, equals 0.5 when z = 0, and approaches one for very positive z. Logistic regression first computes a linear score z = b0 + b1*x1 + ... + bp*xp and then predicts p_hat = sigma(z). For example, if z = 0, the estimated probability is 0.5. If z is approximately 2, the probability is about 0.881. If z is approximately -2, the probability is about 0.119. The sigmoid provides a smooth mapping from an unrestricted score to a probability-like value."
+        },
+        {
+            "id": "odds-log-odds",
+            "title": "3. Odds and Log-Odds",
+            "type": "math",
+            "content": "For a probability p between zero and one, the odds are p/(1-p). A probability of 0.8 corresponds to odds of 0.8/0.2 = 4, meaning the event is four times as likely as the non-event under that probability model. The logit function is log(p/(1-p)). Logistic regression assumes that the log-odds are linear in the included features: log(p/(1-p)) = b0 + b1*x1 + ... + bp*xp. A coefficient b_j describes the change in log-odds associated with a one-unit increase in feature x_j, holding the other included features fixed. Exponentiating the coefficient gives an odds ratio exp(b_j). An odds ratio is not generally the same as a change in probability, because the probability effect depends on the starting probability."
+        },
+        {
+            "id": "worked-example",
+            "title": "4. Worked Example: From Score to Probability",
+            "type": "math",
+            "content": "Suppose a model produces z = -1 + 0.5*x, where x is the number of hours studied. For x = 4, z = -1 + 0.5(4) = 1. The estimated probability of passing is sigma(1) = 1/(1 + exp(-1)), approximately 0.731. Under a threshold of 0.5, the predicted class is pass. Under a threshold of 0.8, the predicted class is fail even though the estimated probability remains 0.731. Changing the threshold changes the decision rule, not the fitted probability. Thresholds should be selected based on the consequences of different errors and the operational needs of the application."
+        },
+        {
+            "id": "likelihood",
+            "title": "5. Maximum Likelihood Estimation",
+            "type": "math",
+            "content": "For binary labels y_i in {0, 1}, logistic regression assigns probability p_i to the positive class. Assuming conditional independence of observations for the likelihood formulation, the likelihood is the product over observations of p_i raised to y_i times (1-p_i) raised to (1-y_i). Maximizing this likelihood chooses parameters that assign high probability to observed labels. Products can be numerically inconvenient, so the logarithm is used. Maximizing log-likelihood is equivalent to minimizing negative log-likelihood. For one example, the binary loss is -[y log(p) + (1-y) log(1-p)]. Averaging this expression across observations produces binary cross-entropy. Implementations usually protect against logarithms of zero through numerically stable calculations."
+        },
+        {
+            "id": "cross-entropy",
+            "title": "6. Binary Cross-Entropy Loss",
+            "type": "math",
+            "content": "Binary cross-entropy is L = -(1/n) * sum_i [y_i log(p_i) + (1-y_i) log(1-p_i)]. For a positive example, the loss is -log(p); predicting a probability near one gives a small loss, while predicting a probability near zero gives a very large loss. For a negative example, the loss is -log(1-p), so assigning a probability near one to the negative example is heavily penalized. This loss rewards probability estimates that match observed outcomes and penalizes confident mistakes. Unlike accuracy, cross-entropy changes when the predicted probabilities change even if the predicted class labels remain the same."
+        },
+        {
+            "id": "gradient",
+            "title": "7. Training and the Gradient",
+            "type": "math",
+            "content": "Let X be the design matrix, y the binary target vector, and p = sigmoid(X beta). For average binary cross-entropy without regularization, the gradient with respect to beta is X transpose (p - y) divided by n. A gradient-based optimizer updates beta in the direction opposite the gradient. The sigmoid derivative is sigma(z)(1-sigma(z)), which helps derive the gradient. Logistic regression does not have the same general closed-form least-squares solution as ordinary linear regression, so iterative optimization is commonly used. Feature scaling can improve optimization, and regularization can control coefficient magnitudes. When the classes are perfectly separable, unregularized coefficient estimates may grow without bound, so regularization or other safeguards may be important."
+        },
+        {
+            "id": "thresholds",
+            "title": "8. Decision Thresholds and Confusion Matrix",
+            "type": "concept",
+            "content": "A binary classifier often predicts the positive class when p_hat is at least a chosen threshold. At the default threshold of 0.5, a probability of 0.7 is classified as positive. Increasing the threshold typically reduces positive predictions, often increasing precision while reducing recall; the exact effects depend on the score distributions. A confusion matrix records true positives, false positives, true negatives, and false negatives. Precision is TP/(TP+FP), and recall is TP/(TP+FN), when their denominators are nonzero. Accuracy is the fraction of correct predictions. F1 is the harmonic mean of precision and recall. In fraud detection or medical screening, false negatives and false positives can have very different costs, so threshold selection should reflect the use case."
+        },
+        {
+            "id": "multiclass",
+            "title": "9. Multiclass Logistic Regression",
+            "type": "concept",
+            "content": "Multiclass logistic regression can use a softmax function to produce a probability distribution over mutually exclusive classes. Given class scores z_k, softmax produces p_k = exp(z_k)/sum_j exp(z_j). The probabilities are nonnegative and sum to one. The model is trained using multiclass cross-entropy, which penalizes low probability assigned to the true class. Another strategy, one-vs-rest, trains a binary classifier for each class and combines the results. The appropriate strategy depends on the library, dataset, and intended interpretation. Multiclass classification should not be confused with multilabel classification, where multiple labels may be simultaneously true."
+        },
+        {
+            "id": "regularization",
+            "title": "10. Regularization and Feature Scaling",
+            "type": "concept",
+            "content": "Regularization adds a penalty to the training objective to discourage overly large coefficients. L2 regularization penalizes squared coefficient magnitudes, while L1 regularization penalizes absolute magnitudes and can drive some coefficients to zero. The strength of the penalty is a hyperparameter selected using validation data or cross-validation. Feature scaling is important because a penalty on coefficients can behave differently when features are measured on very different scales. Interpreting coefficients also requires care when features are correlated, transformed, or encoded. Regularization can improve stability and generalization, but it does not correct target leakage, poor labels, or a badly designed evaluation."
+        },
+        {
+            "id": "class-imbalance",
+            "title": "11. Class Imbalance, Calibration, and Limitations",
+            "type": "concept",
+            "content": "When the positive class is rare, a model can achieve high accuracy while failing to detect important positive cases. Examine precision, recall, PR-AUC, ROC-AUC, confusion matrices, and expected costs as appropriate. Class weighting or resampling may help, but these choices must be made using training data and evaluated realistically. Predicted probabilities are not automatically well calibrated: among examples assigned probability 0.8, roughly 80% should experience the outcome for that probability level to be well calibrated. Calibration can be checked with reliability diagrams or calibration metrics. Logistic regression is interpretable in many settings but still relies on its feature representation and linear log-odds structure. Nonlinear patterns may require interactions, transformations, or a different model."
+        },
+        {
+            "id": "numpy-example",
+            "title": "12. Logistic Regression Probability Calculation in NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef sigmoid(z):\n    return 1.0 / (1.0 + np.exp(-z))\n\n# One feature plus an intercept.\nX = np.array([0.0, 1.0, 2.0, 3.0])\ny = np.array([0.0, 0.0, 1.0, 1.0])\n\nX_design = np.column_stack([np.ones_like(X), X])\nbeta = np.zeros(X_design.shape[1])\nlearning_rate = 0.1\nn = len(y)\n\nfor _ in range(3000):\n    probabilities = sigmoid(X_design @ beta)\n    gradient = X_design.T @ (probabilities - y) / n\n    beta -= learning_rate * gradient\n\nprint('Coefficients:', beta)\nprint('Probabilities:', sigmoid(X_design @ beta))\nprint('Predicted classes:', (sigmoid(X_design @ beta) >= 0.5).astype(int))",
+            "explanation": "This educational implementation fits a one-feature logistic regression model by gradient descent. The intercept is represented by a column of ones. The sigmoid converts linear scores to probabilities, and the gradient uses the difference between predicted probabilities and binary labels. Production code should use numerically stable loss calculations and well-tested optimization implementations."
+        },
+        {
+            "id": "sklearn-example",
+            "title": "13. Logistic Regression with Scikit-Learn",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import confusion_matrix, classification_report, roc_auc_score\n\nX, y = load_breast_cancer(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = make_pipeline(\n    StandardScaler(),\n    LogisticRegression(max_iter=2000)\n)\nmodel.fit(X_train, y_train)\nprobabilities = model.predict_proba(X_test)[:, 1]\npredictions = model.predict(X_test)\n\nprint('Confusion matrix:\\n', confusion_matrix(y_test, predictions))\nprint(classification_report(y_test, predictions))\nprint('ROC-AUC:', roc_auc_score(y_test, probabilities))",
+            "explanation": "The pipeline standardizes features using training data and fits logistic regression. predict_proba returns class probability estimates, while predict applies the estimator's default decision rule. ROC-AUC evaluates ranking performance across thresholds and should be interpreted alongside class-specific metrics and the application's costs."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "q1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Calculate sigmoid(0).",
+            "correctAnswer": 0.5,
+            "solution": "sigmoid(0) = 1/(1 + exp(0)) = 1/(1+1) = 0.5."
+        },
+        {
+            "id": "q2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A model predicts a positive-class probability of 0.72. What class is predicted at threshold 0.5?",
+            "correctAnswer": "Positive class",
+            "solution": "Since 0.72 is greater than or equal to 0.5, the default threshold rule predicts the positive class."
+        },
+        {
+            "id": "q3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A positive example has predicted probability 0.8. Write its binary cross-entropy loss.",
+            "correctAnswer": "-ln(0.8), approximately 0.2231",
+            "solution": "For y = 1, binary cross-entropy is -[ln(p) + 0] = -ln(0.8), approximately 0.2231."
+        },
+        {
+            "id": "q4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A classifier has TP = 40, FP = 10, and FN = 20. Calculate precision and recall.",
+            "correctAnswer": "Precision = 0.8; recall approximately 0.6667.",
+            "solution": "Precision = 40/(40+10) = 0.8. Recall = 40/(40+20) = 40/60, approximately 0.6667."
+        },
+        {
+            "id": "q5",
+            "type": "short-answer",
+            "difficulty": "hard",
+            "question": "Why does increasing a classification threshold often increase precision and decrease recall?",
+            "correctAnswer": "A higher threshold makes the model label fewer examples as positive, often removing some false positives but also missing some true positives.",
+            "solution": "Only examples with larger predicted probabilities remain positive. The exact trade-off depends on the score distributions, so it should be measured on validation data."
+        },
+        {
+            "id": "q6",
+            "type": "scenario",
+            "difficulty": "hard",
+            "question": "A fraud model has 99% accuracy but detects only 5% of fraud cases. Is it necessarily useful? Explain.",
+            "correctAnswer": "No. High accuracy can be misleading when fraud is rare. The 5% recall means the model misses most fraudulent cases.",
+            "solution": "Evaluate precision, recall, PR-AUC, expected loss, and the cost of false alarms. Select thresholds using validation data and consider operational constraints such as investigation capacity."
+        }
+    ],
+    "summary": [
+        "Logistic regression models class probabilities through the sigmoid or softmax function.",
+        "The linear score models log-odds in binary logistic regression.",
+        "Maximum likelihood estimation leads to cross-entropy minimization.",
+        "Predicted probabilities and threshold-based class decisions are different outputs.",
+        "Precision, recall, F1, confusion matrices, and AUC provide complementary evaluation views.",
+        "Regularization can improve stability and generalization.",
+        "Class imbalance, calibration, leakage, and feature design require careful attention."
+    ],
+    "relatedTopics": [
+        "what-is-learning",
+        "training-validation-test-sets",
+        "loss-functions",
+        "gradient-descent",
+        "regularization",
+        "evaluation-metrics",
+        "bias-variance"
+    ]
+}

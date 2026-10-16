@@ -1,1 +1,178 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-instruction-tuning",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 1,
+    "title": "Instruction Tuning Overview",
+    "slug": "instruction-tuning",
+    "href": "/curriculum/10-llm-training-alignment/instruction-tuning",
+    "filePath": "content/curriculum/10-llm-training-alignment/01-instruction-tuning.json",
+    "description": "Understand how instruction tuning transforms a pretrained language model into an assistant that follows natural-language instructions and produces useful responses.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-09-large-language-models-pretraining",
+        "module-09-large-language-models-tokenization"
+    ],
+    "learningObjectives": [
+        "Explain why pretrained language models need instruction tuning.",
+        "Distinguish next-token pretraining from instruction tuning.",
+        "Understand instruction-response dataset structure.",
+        "Explain conversational formatting and response masking.",
+        "Describe supervised instruction tuning at a high level.",
+        "Identify common instruction-tuning failure modes."
+    ],
+    "sections": [
+        {
+            "id": "what-is-instruction-tuning",
+            "title": "What Is Instruction Tuning?",
+            "type": "concept",
+            "content": "Instruction tuning is a training procedure that teaches a pretrained language model to respond appropriately to explicit natural-language instructions. A pretrained model learns statistical patterns from large text collections, but it may continue text rather than directly solve a user's task. Instruction tuning exposes the model to examples containing instructions and desirable responses. For example, given the instruction 'Explain gradient descent in simple terms', the model learns to produce an explanation rather than merely continue the sentence. Instruction tuning is commonly implemented as supervised fine-tuning on instruction-response examples."
+        },
+        {
+            "id": "pretraining-vs-instruction-tuning",
+            "title": "Pretraining vs. Instruction Tuning",
+            "type": "concept",
+            "content": "Pretraining generally teaches a causal language model to predict the next token across large text corpora. Instruction tuning trains the model on examples designed to demonstrate how it should respond to requests. Pretraining provides broad language and world-pattern knowledge; instruction tuning encourages task following, response formatting, and conversational behavior. Instruction tuning does not automatically guarantee factual accuracy, reasoning ability, or safety. Its effectiveness depends on the quality, diversity, and coverage of training examples."
+        },
+        {
+            "id": "instruction-example",
+            "title": "An Instruction-Tuning Example",
+            "type": "example",
+            "content": "Consider a training example with the instruction 'Summarize the purpose of a database index.' A desirable response might be 'A database index helps the database locate records faster without scanning every row.' Repeated examples teach the model how to map requests to useful answers. A dataset may also contain multi-turn conversations, structured outputs, coding tasks, mathematical explanations, and examples that specify a particular tone or format."
+        },
+        {
+            "id": "dataset-schema",
+            "title": "Instruction Dataset Structure",
+            "type": "concept",
+            "content": "A simple instruction dataset can contain instruction, optional input context, and output fields. For conversational models, examples may instead use a messages array with role labels such as system, user, and assistant. Consistent formatting is important because the model must learn which tokens represent a request and which tokens belong to the response. Dataset construction should also define how conversations end, how multiple turns are separated, and how tool calls are represented."
+        },
+        {
+            "id": "instruction-json-example",
+            "title": "Representing an Instruction Example",
+            "type": "code",
+            "language": "json",
+            "content": "{\n  \"instruction\": \"Explain overfitting in machine learning.\",\n  \"input\": \"Use a simple example.\",\n  \"output\": \"Overfitting occurs when a model learns the training examples too closely and performs poorly on new data. For example, a student who memorizes practice questions but cannot solve new questions has overfit the practice set.\"\n}",
+            "explanation": "The instruction describes the task, input provides additional context, and output contains the target response. Real datasets usually contain many examples and may use a different schema depending on the training pipeline."
+        },
+        {
+            "id": "supervised-objective",
+            "title": "The Supervised Training Objective",
+            "type": "math",
+            "content": "For a causal language model, the target response is represented as a token sequence. The model predicts each target token conditioned on the preceding context. During instruction tuning, the loss is typically computed over assistant response tokens rather than every token in the entire conversation. This encourages the model to learn the desired answer while using the instruction as context.",
+            "formula": "L(θ) = -Σᵢ mᵢ log Pθ(yᵢ | x, y₍₁:ᵢ₋₁₎) / Σᵢ mᵢ",
+            "example": "Here, x is the instruction and context, yᵢ is the i-th target response token, and mᵢ is a mask indicating whether that token contributes to the loss. If a conversation contains user and assistant messages, the mask can exclude user tokens and include assistant response tokens."
+        },
+        {
+            "id": "response-masking",
+            "title": "Response Masking",
+            "type": "concept",
+            "content": "Many instruction-tuning pipelines mask loss on prompt tokens and compute it only on the desired assistant response. This prevents the objective from directly training the model to reproduce user instructions as targets. However, the model still conditions on those prompt tokens when predicting the response. Exact masking behavior depends on the training format and objective. Incorrect masks can cause the model to learn undesirable patterns, including reproducing prompts or mishandling conversation boundaries."
+        },
+        {
+            "id": "conversation-formatting",
+            "title": "Conversation Templates",
+            "type": "concept",
+            "content": "Conversational models often use a serialization template containing special tokens or delimiters for speaker roles and message boundaries. Templates may distinguish user messages, assistant messages, tool calls, and end-of-turn markers. Training and inference templates should be compatible. If training data uses one structure while production prompts use a substantially different structure, model behavior may degrade. Special tokens are structural signals rather than ordinary descriptive words."
+        },
+        {
+            "id": "data-diversity",
+            "title": "Instruction Diversity",
+            "type": "concept",
+            "content": "An effective dataset covers diverse task types, levels of difficulty, response formats, and user intents. Examples can include summarization, extraction, translation, explanation, coding, planning, and question answering. Diversity helps prevent the model from overfitting to a narrow response style. Data should include both short and long instructions, different phrasings of similar requests, and realistic context. Dataset balance matters because an excessive concentration of one task can bias the model toward that task."
+        },
+        {
+            "id": "quality-control",
+            "title": "Instruction Data Quality",
+            "type": "concept",
+            "content": "High-quality instruction data should have correct, relevant, coherent, and appropriately formatted responses. Quality-control pipelines may combine automated validation, duplicate detection, rule-based checks, model-assisted review, and human evaluation. Automatically generated examples can increase scale but may introduce fabricated facts, repetitive phrasing, or systematic errors. Dataset size alone is not a reliable indicator of quality."
+        },
+        {
+            "id": "synthetic-instructions",
+            "title": "Synthetic Instruction Generation",
+            "type": "concept",
+            "content": "Synthetic instruction data is generated by models, templates, programs, or other automated processes instead of being entirely written by humans. It can expand task coverage and generate examples for specific skills. However, synthetic data may inherit the generating model's mistakes and stylistic biases. Strong pipelines validate generated answers, filter low-quality samples, monitor diversity, and use human-written or independently verified examples as anchors."
+        },
+        {
+            "id": "instruction-tuning-code",
+            "title": "Inspecting Instruction Examples with Python",
+            "type": "code",
+            "language": "python",
+            "content": "examples = [\n    {\"instruction\": \"Define entropy.\", \"output\": \"Entropy measures uncertainty in a probability distribution.\"},\n    {\"instruction\": \"Define overfitting.\", \"output\": \"Overfitting occurs when a model fits training data too closely.\"}\n]\n\nfor example in examples:\n    assert example[\"instruction\"].strip()\n    assert example[\"output\"].strip()\n    print(\"Instruction:\", example[\"instruction\"])\n    print(\"Target:\", example[\"output\"], \"\\n\")",
+            "explanation": "This small example demonstrates basic dataset validation. Production pipelines should also check schema consistency, token lengths, language distribution, duplicates, privacy-sensitive content, and response quality."
+        },
+        {
+            "id": "evaluation",
+            "title": "Evaluating Instruction Following",
+            "type": "concept",
+            "content": "Instruction-tuned models should be evaluated on tasks that differ from their training examples. Useful dimensions include instruction adherence, factual correctness, completeness, formatting, robustness to paraphrases, and appropriate uncertainty. Automated metrics can help with narrow tasks, but open-ended responses often need human evaluation or carefully validated model-based assessment. Evaluation data should be separated from training data to reduce leakage and inflated performance estimates."
+        },
+        {
+            "id": "common-failures",
+            "title": "Common Instruction-Tuning Failures",
+            "type": "concept",
+            "content": "Common failures include memorized or repetitive answers, poor handling of unfamiliar instructions, incorrect response formatting, loss of general capabilities, overconfident factual errors, and sensitivity to prompt wording. Potential causes include low-quality labels, narrow data distributions, excessive fine-tuning, inconsistent templates, and insufficient evaluation. Mitigations include dataset improvements, balanced sampling, careful optimization, held-out evaluations, and comparisons with the original pretrained model."
+        },
+        {
+            "id": "instruction-vs-alignment",
+            "title": "Instruction Tuning and Alignment",
+            "type": "concept",
+            "content": "Instruction tuning improves the model's ability to follow demonstrated behaviors, but it is not the complete alignment process. A model can follow instructions while still generating unsafe, biased, misleading, or unhelpful content. Preference optimization, safety training, reward modeling, policy design, and evaluations can address additional behavioral goals. Alignment is an ongoing process involving data, training, evaluation, and deployment safeguards."
+        },
+        {
+            "id": "instruction-workflow",
+            "title": "A Practical Instruction-Tuning Workflow",
+            "type": "concept",
+            "content": "A typical workflow starts by defining target behaviors and evaluation criteria. Next, collect or generate instruction-response examples, validate their quality, remove duplicates, and split the dataset. Choose a pretrained model, establish a baseline, configure response masking and optimization, and train on the prepared data. Finally, evaluate task performance, robustness, safety, and regression against the baseline. Keep dataset versions and training configurations so results can be reproduced."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "instruction-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main purpose of instruction tuning?",
+            "correctAnswer": "To teach a pretrained language model to respond appropriately to instructions using examples of desired behavior.",
+            "solution": "Pretraining teaches broad token-prediction patterns. Instruction tuning uses labeled instruction-response examples to encourage useful task following."
+        },
+        {
+            "id": "instruction-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "How does instruction tuning differ from causal language-model pretraining?",
+            "correctAnswer": "Pretraining generally predicts tokens across a broad corpus, while instruction tuning emphasizes desired responses to task instructions.",
+            "solution": "Both can use next-token prediction, but their datasets, target behaviors, and loss masking strategies can differ."
+        },
+        {
+            "id": "instruction-ex-3",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Why might a training pipeline mask loss on user-message tokens?",
+            "correctAnswer": "To focus the supervised objective on desired assistant response tokens.",
+            "solution": "The user message remains conditioning context, but the loss is calculated only on the selected target tokens."
+        },
+        {
+            "id": "instruction-ex-4",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "A model performs well on training prompts but poorly on paraphrased instructions. Give two possible improvements.",
+            "correctAnswer": "Increase instruction diversity and evaluate on held-out paraphrases; also improve data quality and reduce overfitting.",
+            "solution": "Training examples should represent varied phrasings, and evaluation should test whether the learned behavior generalizes beyond memorized patterns."
+        },
+        {
+            "id": "instruction-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a basic quality-control pipeline for a synthetic instruction dataset.",
+            "correctAnswer": "Validate schema, remove duplicates, check response quality and factuality, filter unsuitable or privacy-sensitive content, inspect task diversity, and conduct human audits.",
+            "solution": "Combine automated checks with targeted human review. Keep held-out evaluation examples separate and measure quality across task categories rather than relying only on dataset size."
+        }
+    ],
+    "summary": "Instruction tuning adapts a pretrained language model to follow natural-language requests using supervised examples. Important design choices include dataset quality, task diversity, conversation formatting, target-token masking, and careful evaluation. Instruction tuning improves usability but does not independently guarantee factuality, safety, or complete alignment.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-rlhf",
+        "module-10-llm-training-alignment-safety-alignment"
+    ]
+}

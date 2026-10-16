@@ -1,1 +1,396 @@
-{}
+{
+    "id": "calculus-optimization",
+    "title": "Optimization",
+    "slug": "optimization",
+    "description": "Learn the mathematical foundations of optimization, including critical points, convexity, gradient descent, learning rates, and applications to machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Functions",
+        "Derivatives",
+        "Partial Derivatives",
+        "Gradients",
+        "Chain Rule"
+    ],
+    "learningObjectives": [
+        "Define optimization problems and objective functions.",
+        "Distinguish minimization from maximization.",
+        "Find critical points using derivatives and gradients.",
+        "Use second derivatives to classify critical points in one dimension.",
+        "Understand local and global optima.",
+        "Explain convexity and its significance in optimization.",
+        "Perform gradient descent updates.",
+        "Understand learning-rate effects and common optimization challenges.",
+        "Connect optimization concepts to machine learning training."
+    ],
+    "sections": [
+        {
+            "id": "optimization-introduction",
+            "title": "1. What Is Optimization?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Optimization is the process of finding input values that minimize or maximize an objective function. In machine learning, the objective is often a loss function that measures the difference between model predictions and target values."
+                },
+                {
+                    "type": "formula",
+                    "label": "General minimization problem",
+                    "value": "θ* = argmin_θ J(θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here θ represents the decision variables or model parameters, J is the objective function, and θ* is a parameter value that minimizes the objective over the allowed domain. The notation argmin identifies the input value that achieves the minimum, not the minimum function value itself."
+                },
+                {
+                    "type": "text",
+                    "value": "Maximization can be converted to minimization by negating the objective: maximizing f(θ) is equivalent to minimizing −f(θ), provided the domain remains the same."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Find the Minimum",
+                    "problem": "Find the minimum of J(x) = (x − 4)².",
+                    "steps": [
+                        "Differentiate: J'(x) = 2(x − 4).",
+                        "Set the derivative to zero: 2(x − 4) = 0.",
+                        "Solve for x: x = 4.",
+                        "Evaluate the objective: J(4) = 0."
+                    ],
+                    "solution": "The global minimum occurs at x = 4, with minimum value J(4) = 0."
+                }
+            ]
+        },
+        {
+            "id": "optimization-critical-points",
+            "title": "2. Critical Points and First-Order Conditions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a differentiable function of one variable, an interior local minimum or maximum must have derivative zero. More generally, a critical point occurs where the derivative is zero or fails to exist. For differentiable multivariable functions, stationary points have zero gradient."
+                },
+                {
+                    "type": "formula",
+                    "label": "One-variable stationary condition",
+                    "value": "J'(x*) = 0"
+                },
+                {
+                    "type": "formula",
+                    "label": "Multivariable stationary condition",
+                    "value": "∇J(θ*) = 0"
+                },
+                {
+                    "type": "text",
+                    "value": "These are necessary conditions for an unconstrained interior local optimum when the relevant differentiability assumptions hold. They are not sufficient by themselves to establish a minimum."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Find Stationary Points",
+                    "problem": "Find the stationary points of J(x) = x³ − 3x.",
+                    "steps": [
+                        "Differentiate: J'(x) = 3x² − 3.",
+                        "Set the derivative to zero: 3x² − 3 = 0.",
+                        "Solve: x² = 1, so x = −1 or x = 1."
+                    ],
+                    "solution": "The stationary points occur at x = −1 and x = 1. Their types can be investigated using the second derivative."
+                }
+            ]
+        },
+        {
+            "id": "optimization-second-derivative",
+            "title": "3. Second-Derivative Test",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The second derivative describes local curvature. At a stationary point of a twice-differentiable one-variable function, a positive second derivative indicates a strict local minimum, while a negative second derivative indicates a strict local maximum. A zero second derivative makes this test inconclusive."
+                },
+                {
+                    "type": "formula",
+                    "label": "Second-derivative test",
+                    "value": "J'(x*) = 0; J''(x*) > 0 implies a strict local minimum; J''(x*) < 0 implies a strict local maximum"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Classify Stationary Points",
+                    "problem": "Classify the stationary points of J(x) = x³ − 3x.",
+                    "steps": [
+                        "The first derivative is J'(x) = 3x² − 3, giving stationary points x = −1 and x = 1.",
+                        "The second derivative is J''(x) = 6x.",
+                        "At x = −1, J''(−1) = −6, so the function has a strict local maximum.",
+                        "At x = 1, J''(1) = 6, so the function has a strict local minimum."
+                    ],
+                    "solution": "There is a local maximum at x = −1 and a local minimum at x = 1."
+                },
+                {
+                    "type": "text",
+                    "value": "For multivariable functions, second-order behavior is described by the Hessian matrix, which contains second-order partial derivatives. At a stationary point, a positive-definite Hessian indicates a strict local minimum, and a negative-definite Hessian indicates a strict local maximum. An indefinite Hessian indicates saddle-like behavior. A semidefinite Hessian may be inconclusive."
+                }
+            ]
+        },
+        {
+            "id": "optimization-local-global",
+            "title": "4. Local and Global Optima",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A local minimum is a point whose objective value is no greater than values at sufficiently nearby points. A global minimum has an objective value no greater than that at every point in the allowed domain."
+                },
+                {
+                    "type": "text",
+                    "value": "Every global minimum is a local minimum under the usual non-strict definition, but a local minimum need not be global. The same distinction applies to maxima."
+                },
+                {
+                    "type": "text",
+                    "value": "Machine learning objectives may be non-convex, especially in deep neural networks. This means that many local geometric features can exist, and a stationary point is not automatically a global optimum."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Local Versus Global",
+                    "problem": "Consider a function with several valleys, one of which is the lowest across its entire domain. Explain the distinction between local and global minima.",
+                    "steps": [
+                        "A local minimum is lower than or equal to nearby function values.",
+                        "A global minimum is lower than or equal to all function values throughout the domain.",
+                        "A valley can be locally lowest in its neighborhood while another valley elsewhere has a smaller value."
+                    ],
+                    "solution": "The lowest point among all valleys is a global minimum. Other locally lowest points may be local minima but not global minima."
+                }
+            ]
+        },
+        {
+            "id": "optimization-convexity",
+            "title": "5. Convexity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Convexity is an important property of objective functions. Informally, a convex function has no valley that is lower than another valley while being hidden by a higher region between them. For a differentiable convex function, every local minimum is also a global minimum."
+                },
+                {
+                    "type": "formula",
+                    "label": "Convexity condition",
+                    "value": "f(λx + (1 − λ)y) ≤ λf(x) + (1 − λ)f(y), for 0 ≤ λ ≤ 1"
+                },
+                {
+                    "type": "text",
+                    "value": "For a twice-differentiable one-variable function on an interval, a nonnegative second derivative throughout the interval is sufficient to establish convexity. In multiple dimensions, a positive-semidefinite Hessian throughout a convex domain is a corresponding sufficient condition."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: A Convex Function",
+                    "problem": "Determine whether f(x) = x² + 2x is convex.",
+                    "steps": [
+                        "Differentiate once: f'(x) = 2x + 2.",
+                        "Differentiate twice: f''(x) = 2.",
+                        "Since f''(x) is positive for every real x, the function is strictly convex."
+                    ],
+                    "solution": "The function is strictly convex and has a unique global minimum at x = −1."
+                },
+                {
+                    "type": "text",
+                    "value": "Convexity is useful because it simplifies optimization guarantees. Many standard linear regression and logistic regression objectives are convex under common formulations, whereas neural network objectives are generally non-convex."
+                }
+            ]
+        },
+        {
+            "id": "optimization-gradient-descent",
+            "title": "6. Gradient Descent",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Gradient descent is an iterative optimization method that updates parameters by moving against the gradient. It is widely used to minimize machine learning loss functions."
+                },
+                {
+                    "type": "formula",
+                    "label": "Gradient descent update",
+                    "value": "θₜ₊₁ = θₜ − η∇J(θₜ)"
+                },
+                {
+                    "type": "text",
+                    "value": "The learning rate η controls the step size. The gradient indicates the direction of steepest local increase, so subtracting it produces a local descent direction when the gradient is nonzero."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Gradient Descent by Hand",
+                    "problem": "Minimize J(w) = (w − 3)² using gradient descent. Start at w = 0 and use η = 0.1 for two steps.",
+                    "steps": [
+                        "Calculate the derivative: J'(w) = 2(w − 3).",
+                        "At w₀ = 0, the gradient is −6. Update: w₁ = 0 − 0.1(−6) = 0.6.",
+                        "At w₁ = 0.6, the gradient is 2(0.6 − 3) = −4.8.",
+                        "Update again: w₂ = 0.6 − 0.1(−4.8) = 1.08."
+                    ],
+                    "solution": "After two steps, w₂ = 1.08. The parameter has moved toward the minimum at w = 3."
+                },
+                {
+                    "type": "text",
+                    "value": "Gradient descent does not usually reach an exact optimum in a finite number of steps. Its behavior depends on the objective function, the learning rate, the initialization, and the stopping criterion."
+                }
+            ]
+        },
+        {
+            "id": "optimization-learning-rate",
+            "title": "7. Learning Rate and Convergence",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The learning rate is one of the most important gradient descent settings. It controls how far parameters move at each update."
+                },
+                {
+                    "type": "text",
+                    "value": "If the learning rate is too small, progress can be slow. If it is too large, updates may overshoot a minimum, oscillate, or diverge. A suitable value depends on the scale and curvature of the objective."
+                },
+                {
+                    "type": "text",
+                    "value": "Convergence refers to an iterative process approaching a stable solution or stationary region. In practice, training may stop after a fixed number of iterations, when the loss improvement becomes small, or when a validation-based stopping criterion is met."
+                },
+                {
+                    "type": "text",
+                    "value": "Learning-rate schedules gradually change the learning rate during training. Adaptive optimizers such as Adam use estimates of gradient statistics to adjust effective step sizes for parameters."
+                }
+            ]
+        },
+        {
+            "id": "optimization-machine-learning",
+            "title": "8. Optimization in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Training a machine learning model typically involves minimizing an objective function over its parameters. The objective may combine a data-fitting loss with a regularization term that discourages undesirable parameter values."
+                },
+                {
+                    "type": "formula",
+                    "label": "Regularized objective",
+                    "value": "J(θ) = L_data(θ) + λR(θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here L_data measures prediction error, R is a regularization penalty, and λ controls the strength of regularization. The optimizer attempts to minimize the combined objective."
+                },
+                {
+                    "type": "text",
+                    "value": "Batch gradient descent computes the gradient using the entire training dataset. Stochastic gradient descent uses one example at a time, while mini-batch gradient descent uses a subset of examples per update. Mini-batches are common in modern deep learning because they balance computational efficiency with useful gradient estimates."
+                },
+                {
+                    "type": "text",
+                    "value": "Optimization and generalization are related but different. A low training loss does not guarantee strong performance on unseen data. Validation data and suitable evaluation procedures help assess generalization."
+                }
+            ]
+        },
+        {
+            "id": "optimization-python",
+            "title": "9. Optimization with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Gradient Descent for a Quadratic Objective",
+                    "value": "def objective(w):\n    return (w - 3)**2\n\ndef gradient(w):\n    return 2 * (w - 3)\n\nw = 0.0\nlearning_rate = 0.1\n\nfor step in range(20):\n    w = w - learning_rate * gradient(w)\n    print(step + 1, w, objective(w))\n\nprint('Final parameter:', w)"
+                },
+                {
+                    "type": "text",
+                    "value": "The parameter approaches the minimizer w = 3. Because the learning rate is below 0.5 for this quadratic, the updates move toward the minimum without overshooting it."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Using PyTorch to Optimize a Parameter",
+                    "value": "import torch\n\nw = torch.nn.Parameter(torch.tensor(0.0))\noptimizer = torch.optim.SGD([w], lr=0.1)\n\nfor step in range(20):\n    optimizer.zero_grad()\n    loss = (w - 3)**2\n    loss.backward()\n    optimizer.step()\n\nprint('Optimized parameter:', w.item())"
+                },
+                {
+                    "type": "text",
+                    "value": "PyTorch calculates the gradient through automatic differentiation. The SGD optimizer updates the parameter using that gradient and the specified learning rate."
+                }
+            ]
+        },
+        {
+            "id": "optimization-common-mistakes",
+            "title": "10. Common Mistakes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Assuming every stationary point is a minimum. Stationary points may be minima, maxima, or saddle points."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Confusing the minimum function value with the input at which it occurs. The argmin identifies the input, while the minimum gives the objective value."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Assuming a larger learning rate always speeds up training. Excessively large steps may cause instability or divergence."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Assuming gradient descent always finds a global minimum. This depends on the objective, initialization, optimization method, and assumptions."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Treating training loss as the only measure of model quality. Generalization must also be evaluated on appropriate unseen or validation data."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "opt-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Find the global minimum of J(x) = (x − 5)².",
+            "correctAnswer": "x = 5, with J(5) = 0",
+            "solution": "The derivative is 2(x − 5). Setting it to zero gives x = 5. Since the squared function is nonnegative and equals zero at x = 5, this is the global minimum."
+        },
+        {
+            "id": "opt-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find and classify the stationary point of J(x) = x² − 6x + 11.",
+            "correctAnswer": "x = 3 is the unique global minimum, with J(3) = 2",
+            "solution": "The first derivative is 2x − 6. Setting it to zero gives x = 3. The second derivative is 2, which is positive, so x = 3 is a strict local minimum. Since the function is a strictly convex quadratic, it is also the unique global minimum. Substitution gives 9 − 18 + 11 = 2."
+        },
+        {
+            "id": "opt-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For J(w) = (w − 4)², start at w = 1 and perform one gradient descent update with learning rate 0.2.",
+            "correctAnswer": "w_new = 2.2",
+            "solution": "The derivative is 2(w − 4). At w = 1, the gradient is −6. The update is w_new = 1 − 0.2(−6) = 2.2."
+        },
+        {
+            "id": "opt-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is convexity useful for optimization?",
+            "correctAnswer": "For a convex objective, every local minimum is a global minimum.",
+            "solution": "Convexity rules out local minima that are worse than a global minimum. Under appropriate assumptions, it provides stronger guarantees about the solutions found by optimization algorithms."
+        },
+        {
+            "id": "opt-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What can happen if the learning rate is too large?",
+            "correctAnswer": "Updates may overshoot the minimum, oscillate, or diverge.",
+            "solution": "A large step can move parameters past the low-loss region. Repeated overshooting can prevent convergence and may cause the objective to increase without bound."
+        },
+        {
+            "id": "opt-ex-6",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "Let J(x) = x⁴. Find its stationary point and explain why the second-derivative test is inconclusive there.",
+            "correctAnswer": "x = 0 is the unique global minimum; J''(0) = 0, so the second-derivative test is inconclusive.",
+            "solution": "The first derivative is 4x³, which is zero at x = 0. The second derivative is 12x², which is zero at x = 0. The second-derivative test therefore does not classify the point. However, x⁴ is nonnegative for every real x and equals zero only at x = 0, so x = 0 is the unique global minimum."
+        }
+    ],
+    "summary": [
+        "Optimization finds inputs that minimize or maximize an objective function.",
+        "First-order derivatives and gradients help identify stationary points.",
+        "Second derivatives can classify one-variable stationary points when the test is decisive.",
+        "Local and global optima are different concepts.",
+        "Convexity provides important guarantees, including that every local minimum of a convex function is global.",
+        "Gradient descent updates parameters by moving against the gradient.",
+        "The learning rate influences speed and stability.",
+        "Machine learning training commonly minimizes a data loss, optionally combined with regularization.",
+        "A low training objective does not by itself guarantee good generalization."
+    ],
+    "relatedTopics": [
+        "derivatives",
+        "partial-derivatives",
+        "gradients",
+        "jacobians",
+        "chain-rule"
+    ]
+}

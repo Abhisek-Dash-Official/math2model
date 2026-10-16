@@ -1,1 +1,180 @@
-{}
+{
+    "id": "module-16-ai-engineering-cuda-basics",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 3,
+    "title": "CUDA Fundamentals for AI",
+    "slug": "cuda-basics",
+    "href": "/curriculum/16-ai-engineering/cuda-basics",
+    "filePath": "content/curriculum/16-ai-engineering/03-cuda-basics.json",
+    "description": "Learn CUDA execution, kernel launches, thread indexing, memory management, synchronization, streams, error handling, and the fundamentals needed to reason about custom GPU operations for AI.",
+    "difficulty": "advanced",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "GPU Programming Concepts",
+        "Tensor indexing and matrix operations",
+        "Basic C or C++ programming is helpful"
+    ],
+    "learningObjectives": [
+        "Explain the CUDA host-device execution model.",
+        "Understand how grids, blocks, and threads organize parallel work.",
+        "Map a global element index to a CUDA thread.",
+        "Recognize device-memory ownership and lifetime requirements.",
+        "Understand synchronization, race conditions, and atomic operations.",
+        "Explain how streams and events support asynchronous execution.",
+        "Identify common CUDA error-handling and debugging practices.",
+        "Understand when custom CUDA kernels may be useful for AI workloads."
+    ],
+    "sections": [
+        {
+            "id": "host-device",
+            "title": "Host Code and Device Code",
+            "type": "concept",
+            "content": "CUDA programs typically coordinate CPU-side host code with GPU-side device kernels. Host code allocates or references buffers, launches kernels, orchestrates transfers, and handles errors. A device kernel executes many logical threads on the GPU. Launching a kernel does not necessarily mean it has completed. Work is generally queued asynchronously, and synchronization may be required before the CPU safely consumes the result."
+        },
+        {
+            "id": "cuda-kernels",
+            "title": "Understanding CUDA Kernels",
+            "type": "concept",
+            "content": "A CUDA kernel is a function designed to execute across many GPU threads. In CUDA C++, a function marked __global__ can be launched as a kernel. Each thread executes the same kernel code but can work on different data using built-in identifiers. This approach supports data-parallel operations such as vector addition, elementwise transformations, and portions of matrix computations. Kernel design must account for indexing, memory access, synchronization, and boundary conditions."
+        },
+        {
+            "id": "thread-indexing",
+            "title": "Thread, Block, and Grid Indexing",
+            "type": "math",
+            "content": "CUDA uses threadIdx to identify a thread within its block, blockIdx to identify a block within its grid, and blockDim to describe the block dimensions. For a one-dimensional launch, the global index is commonly calculated by multiplying the block index by the number of threads per block and adding the local thread index. This mapping assigns each thread a logical position in the overall problem.",
+            "formula": "global_index = blockIdx.x × blockDim.x + threadIdx.x",
+            "example": "If blockIdx.x is 2, blockDim.x is 256, and threadIdx.x is 7, the global index is 2 × 256 + 7 = 519."
+        },
+        {
+            "id": "vector-kernel",
+            "title": "A Simple CUDA Vector Kernel",
+            "type": "code",
+            "content": "The following CUDA C++ kernel adds one to each input element. It demonstrates thread indexing and bounds checking. A complete program must also allocate memory, transfer inputs, launch the kernel, check errors, and manage buffer lifetimes.",
+            "language": "cpp",
+            "code": "__global__ void add_one(const float* x, float* y, int n) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < n) {\n        y[i] = x[i] + 1.0f;\n    }\n}\n\n// Example host-side launch configuration:\n// int threads = 256;\n// int blocks = (n + threads - 1) / threads;\n// add_one<<<blocks, threads>>>(x_dev, y_dev, n);",
+            "explanation": "The bounds check prevents threads whose computed indices exceed n from accessing invalid memory. The host launch configuration rounds the thread count up to a whole number of blocks. The launch configuration is an example, not a universal performance optimum."
+        },
+        {
+            "id": "bounds-checking",
+            "title": "Bounds Checking and Edge Cases",
+            "type": "concept",
+            "content": "The number of launched threads is usually rounded up to a whole number of blocks. Consequently, the final block may contain threads that do not correspond to valid elements. Bounds checks prevent invalid reads and writes. Test sizes that are not divisible by the chosen block size, very small inputs, and boundary cases supported by the operation. If an empty input is allowed, ensure that the host code handles it without launching an invalid grid."
+        },
+        {
+            "id": "device-memory",
+            "title": "Device Memory Allocation and Lifetime",
+            "type": "concept",
+            "content": "Device pointers refer to device-accessible memory rather than ordinary host arrays. Allocate device buffers using an appropriate CUDA allocation API, verify that allocation succeeds, and release the buffers when they are no longer needed. Unified memory can simplify some data-management tasks, but migration and access patterns still affect performance. Never assume that an ordinary host pointer can be dereferenced by a conventional device kernel unless the memory model explicitly permits it."
+        },
+        {
+            "id": "memory-transfers",
+            "title": "Host-to-Device and Device-to-Host Transfers",
+            "type": "concept",
+            "content": "Many CUDA applications copy input data from host memory to device memory, launch kernels, and copy results back. These transfers have latency and bandwidth costs. For workloads involving small computations, transfer overhead can exceed kernel execution time. Batching operations, retaining reusable data on the device, and reducing unnecessary round trips can improve performance. Asynchronous transfer requires compatible memory and careful management of buffer lifetimes."
+        },
+        {
+            "id": "memory-coalescing",
+            "title": "Memory Coalescing and Tiling",
+            "type": "concept",
+            "content": "Neighboring threads should often access neighboring memory locations to make efficient use of memory transactions. Strided or scattered access patterns may waste bandwidth. Tiling allows threads to load a region of data into shared memory and reuse it for multiple computations. Matrix multiplication can benefit from loading tiles of input matrices and reusing those values to compute multiple outputs. Tiling must respect shared-memory capacity, register usage, synchronization requirements, and edge handling."
+        },
+        {
+            "id": "synchronization",
+            "title": "Synchronization and Race Conditions",
+            "type": "concept",
+            "content": "A race condition occurs when multiple threads access shared state in an order that can change the result, particularly when at least one access modifies the state and there is no valid synchronization. Threads within a block can cooperate using supported barriers. A block-level barrier does not provide a general grid-wide barrier because blocks may execute independently and in varying order. Global synchronization often requires separate kernel launches or specialized mechanisms with strict constraints."
+        },
+        {
+            "id": "atomic-operations",
+            "title": "Atomic Operations",
+            "type": "concept",
+            "content": "Atomic operations perform supported read-modify-write operations without allowing competing operations on the same memory location to interleave incorrectly. They are useful for counters, reductions, and scatter-style updates, but heavy contention can reduce performance. Atomic operations do not automatically solve every synchronization problem, and their ordering guarantees depend on the operation and memory model. Prefer designs that reduce contention when possible."
+        },
+        {
+            "id": "streams",
+            "title": "CUDA Streams",
+            "type": "concept",
+            "content": "A CUDA stream is an ordered sequence of operations. Operations in the same stream execute according to its ordering rules. Independent streams can sometimes overlap transfers and kernel execution when dependencies, memory requirements, and hardware resources permit it. Concurrency is not guaranteed merely because work is submitted to separate streams. Use a profiler to confirm that the intended overlap actually occurs."
+        },
+        {
+            "id": "events",
+            "title": "CUDA Events and Timing",
+            "type": "concept",
+            "content": "CUDA events can mark points in device execution, establish dependencies, and measure elapsed device time. They are useful when CPU wall-clock timing does not accurately represent asynchronous GPU execution. Place timing events around the intended workload and synchronize appropriately before reading the result. Keep initialization and warm-up costs separate from steady-state measurements unless cold-start latency is specifically being evaluated."
+        },
+        {
+            "id": "error-handling",
+            "title": "CUDA Error Handling",
+            "type": "concept",
+            "content": "Check return values from CUDA API calls and inspect kernel launch errors promptly. Because kernel execution is asynchronous, an error may be reported by a later synchronization or transfer rather than directly at the faulty launch. This can make the apparent failure location misleading. When debugging, isolate a small operation, check the launch, synchronize near the operation when appropriate, and use available memory or race-checking tools."
+        },
+        {
+            "id": "cuda-debugging",
+            "title": "A Practical Debugging Workflow",
+            "type": "concept",
+            "content": "Start with a tiny input and compare the kernel output against a trusted CPU or framework implementation. Test non-aligned dimensions, boundary indices, different supported data types, and repeated execution. Investigate out-of-bounds access, uninitialized memory, incorrect index arithmetic, race conditions, and invalid synchronization. Once correctness is established, benchmark larger representative inputs. Avoid optimizing a kernel whose correctness has not been demonstrated."
+        },
+        {
+            "id": "cuda-in-ai",
+            "title": "CUDA in AI Frameworks",
+            "type": "concept",
+            "content": "High-level frameworks often dispatch optimized libraries or generated kernels behind tensor operations. A custom CUDA kernel can be useful when profiling reveals redundant memory traffic, excessive launch overhead, or an operation that existing implementations handle poorly. However, custom kernels add maintenance costs: they need shape handling, numerical validation, architecture-aware benchmarking, and tests against framework behavior. Use a custom implementation only when the measured benefit justifies its complexity."
+        },
+        {
+            "id": "optimization-checklist",
+            "title": "CUDA Optimization Checklist",
+            "type": "concept",
+            "content": "Establish a correctness reference and a baseline benchmark before optimization. Inspect memory access patterns, data reuse, launch overhead, synchronization, register usage, and occupancy. Test multiple representative shapes rather than one favorable case. Avoid assuming a fixed block size or architecture-specific behavior is universally optimal. Record GPU, driver, toolkit, compiler, and framework versions with performance results. Re-run correctness tests after every meaningful optimization."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is a bounds check necessary in a simple one-dimensional CUDA kernel?",
+            "correctAnswer": "The launch grid is commonly rounded up to whole blocks, so some threads may calculate indices beyond the valid input range.",
+            "solution": "The host chooses a block count large enough to cover all elements. The final block can contain extra threads. A bounds check ensures those threads do not read or write outside the valid buffer."
+        },
+        {
+            "id": "exercise-02",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "A CUDA kernel error appears only when a later device-to-host copy occurs. What should you investigate?",
+            "correctAnswer": "Inspect the preceding kernel launch and check its error status, because asynchronous execution can defer error reporting.",
+            "solution": "Check API return values and kernel launch errors near the relevant operation. Synchronize during debugging when appropriate so the failure is associated with the operation that caused it."
+        },
+        {
+            "id": "exercise-03",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does a block-level barrier not provide a general grid-wide barrier?",
+            "correctAnswer": "Blocks can execute independently and in varying order, so all blocks are not guaranteed to be resident and waiting together.",
+            "solution": "A block barrier coordinates threads in the same block. General grid-wide coordination requires a different execution strategy, such as separate kernel launches or supported specialized mechanisms."
+        },
+        {
+            "id": "exercise-04",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Why can memory coalescing improve CUDA kernel performance?",
+            "correctAnswer": "Neighboring threads accessing neighboring addresses can allow memory requests to be combined into more efficient transactions.",
+            "solution": "Coalesced access reduces wasted memory transactions and improves the use of available memory bandwidth."
+        },
+        {
+            "id": "exercise-05",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "When should an AI engineer consider writing a custom CUDA kernel?",
+            "correctAnswer": "When profiling identifies a meaningful bottleneck that existing framework operations cannot adequately address, and the expected benefit justifies the maintenance cost.",
+            "solution": "A custom kernel should be compared against a trusted baseline for correctness, numerical behavior, latency, throughput, and memory use. Existing optimized libraries and compiler-generated kernels should be evaluated first."
+        }
+    ],
+    "summary": "CUDA exposes GPU parallelism through grids, blocks, and threads. Correctness depends on indexing, memory ownership, synchronization, and error handling. Effective optimization requires careful profiling, efficient memory access, and validation against a trusted reference.",
+    "relatedTopics": [
+        "GPU Programming Concepts",
+        "Mixed Precision Training (FP16 / BF16)",
+        "Distributed Training Engineering",
+        "Model Optimization & Kernel Fusion"
+    ]
+}

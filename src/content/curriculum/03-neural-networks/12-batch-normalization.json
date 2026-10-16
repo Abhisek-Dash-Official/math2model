@@ -1,1 +1,162 @@
-{}
+{
+    "id": "batch-normalization",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 12,
+    "title": "Batch Normalization",
+    "slug": "batch-normalization",
+    "description": "Learn how batch normalization standardizes intermediate neural network activations, including its mathematical formulation, trainable parameters, running statistics, training and inference behavior, benefits, limitations, and implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Neural network layers",
+        "Forward propagation",
+        "Backpropagation",
+        "Mean and variance",
+        "Mini-batch training",
+        "Basic Python"
+    ],
+    "learningObjectives": [
+        "Explain why normalization can help neural network training.",
+        "Understand batch means and variances.",
+        "Derive the batch normalization transformation.",
+        "Explain the roles of gamma, beta, epsilon, and running statistics.",
+        "Differentiate training-time and inference-time behavior.",
+        "Implement batch normalization for a simple feature matrix using NumPy.",
+        "Understand common placement patterns relative to linear layers and activation functions.",
+        "Recognize limitations involving small batches, distribution shifts, and data leakage."
+    ],
+    "sections": [
+        {
+            "id": "batchnorm-introduction",
+            "title": "1. What Is Batch Normalization?",
+            "type": "concept",
+            "content": "Batch normalization is a technique that normalizes intermediate activations in a neural network. It was introduced to improve the training behavior of deep neural networks and can make optimization more stable in many settings.\n\nDuring training, neural network layers produce activations whose distributions may vary across training steps. Batch normalization uses statistics computed from a mini-batch to normalize those activations and then applies a learned scale and shift.\n\nThe purpose is not simply to force every activation to have zero mean and unit variance permanently. The learned scale and shift allow the network to represent useful distributions after normalization.\n\nBatch normalization can improve optimization, permit higher learning rates in some settings, and provide a regularization effect due to variation in batch statistics. These benefits are not guaranteed for every architecture or batch size.\n\nBatch normalization is commonly used in convolutional and feedforward networks. Other normalization methods, including layer normalization and group normalization, may be preferable when batch statistics are unreliable or when the architecture has different requirements."
+        },
+        {
+            "id": "batchnorm-statistics",
+            "title": "2. Mean and Variance of a Mini-Batch",
+            "type": "math",
+            "content": "Consider one feature with activation values x1, x2, ..., xm in a mini-batch of m examples.\n\nThe batch mean is:\n\nμB = (1/m) Σ(i=1 to m) xi\n\nThe batch variance is:\n\nσ²B = (1/m) Σ(i=1 to m) (xi - μB)²\n\nBatch normalization standardizes each activation using the batch statistics:\n\nx̂i = (xi - μB) / sqrt(σ²B + ε)\n\nHere, ε is a small positive constant used to improve numerical stability.\n\nWorked example:\n\nSuppose a batch contains the values [2, 4, 6].\n\nThe mean is μB = (2 + 4 + 6) / 3 = 4.\n\nThe variance using the formula above is:\n\nσ²B = ((2 - 4)² + (4 - 4)² + (6 - 4)²) / 3 = 8/3.\n\nThe normalized values, ignoring the small epsilon for this illustration, are approximately [-1.225, 0, 1.225].\n\nThe normalized values have a mean of zero and variance approximately equal to one under this population-variance calculation. Implementations may differ in how they estimate and track variance."
+        },
+        {
+            "id": "batchnorm-scale-shift",
+            "title": "3. Learnable Scale and Shift",
+            "type": "math",
+            "content": "After normalization, batch normalization applies two trainable parameters:\n\nyᵢ = γx̂ᵢ + β\n\nGamma (γ) controls the scale of the normalized activation. Beta (β) controls its shift.\n\nWithout this transformation, normalization would constrain the intermediate activations to a particular batch-dependent scale and center. The learned parameters allow the network to adjust the normalized values when the task benefits from a different distribution.\n\nFor example, suppose a normalized activation is x̂ = 1.5, gamma is 2, and beta is -0.5.\n\nThe output is y = 2 × 1.5 - 0.5 = 2.5.\n\nGamma and beta are learned using backpropagation. They are separate from the running mean and running variance, which are statistics maintained to support inference.\n\nIf gamma and beta are chosen as gamma = sqrt(σ²B + ε) and beta = μB for a particular batch, the transformation can reproduce the original batch values for that batch. However, gamma and beta are trainable parameters, not generally set to those batch-specific values during ordinary training."
+        },
+        {
+            "id": "batchnorm-full-formula",
+            "title": "4. Complete Batch Normalization Formula",
+            "type": "math",
+            "content": "The complete transformation for one feature is:\n\nμB = (1/m) Σ xi\n\nσ²B = (1/m) Σ (xi - μB)²\n\nx̂i = (xi - μB) / sqrt(σ²B + ε)\n\nyi = γx̂i + β\n\nThe same operation is applied separately to each feature in a typical fully connected layer. In a convolutional layer, batch normalization commonly computes one set of statistics per channel, aggregating over the batch and spatial dimensions according to the framework's implementation.\n\nThe epsilon parameter prevents division by zero and reduces numerical problems when the variance is very small.\n\nThe order of operations matters. The activation is first centered and scaled using the selected statistics, then multiplied by gamma and shifted by beta.\n\nBecause gamma and beta are learned, batch normalization does not require the final activations to retain zero mean and unit variance. Its output distribution can change during training as the learned parameters and incoming activations change."
+        },
+        {
+            "id": "training-inference",
+            "title": "5. Training Mode vs Inference Mode",
+            "type": "concept",
+            "content": "Batch normalization behaves differently during training and inference.\n\nDuring training, the layer normally calculates mean and variance from the current mini-batch. The output for each example therefore depends partly on the other examples in that batch.\n\nMany implementations also maintain running estimates of the mean and variance across training batches. These statistics are updated over time and are used during inference.\n\nDuring inference, the model generally uses the stored running mean and variance rather than recalculating statistics from the current inference batch. This helps make predictions more consistent when requests arrive one example at a time or in differently sized groups.\n\nForgetting to switch a model into evaluation mode can cause incorrect or inconsistent inference behavior in frameworks where the layer's behavior depends on the model's training flag.\n\nThe running statistics are not the same as gamma and beta. Gamma and beta are trainable parameters updated through gradient-based optimization. Running statistics are accumulated from training batches according to the framework's update rule."
+        },
+        {
+            "id": "running-statistics",
+            "title": "6. Running Mean and Variance",
+            "type": "concept",
+            "content": "Running statistics approximate the activation distribution encountered during training. A common update rule uses exponential moving averages.\n\nFor the running mean:\n\nrunning_mean(new) = (1 - momentum) × running_mean(old) + momentum × batch_mean\n\nFor the running variance:\n\nrunning_var(new) = (1 - momentum) × running_var(old) + momentum × batch_variance\n\nFrameworks differ in their naming conventions. In some libraries, the parameter called momentum represents the contribution of the new batch; in others, the same word may represent the weight retained from the previous estimate. Always consult the relevant framework's definition.\n\nThe running statistics are approximations, not guaranteed to equal the exact mean and variance of the full training set. They depend on batch composition, the order of training batches, the momentum convention, and changes in the network's activations during learning.\n\nIf the inference data distribution differs substantially from the training distribution, running statistics may be less representative. This is one reason to inspect model behavior under distribution shifts."
+        },
+        {
+            "id": "batchnorm-code",
+            "title": "7. Implementing Batch Normalization with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef batch_normalize(X, gamma=None, beta=None, eps=1e-5):\n    \"\"\"Normalize a 2D batch, feature by feature.\"\"\"\n    X = np.asarray(X, dtype=float)\n\n    if X.ndim != 2:\n        raise ValueError(\"X must have shape (batch_size, features)\")\n    if X.shape[0] == 0:\n        raise ValueError(\"X must contain at least one example\")\n\n    feature_count = X.shape[1]\n    if gamma is None:\n        gamma = np.ones(feature_count)\n    if beta is None:\n        beta = np.zeros(feature_count)\n\n    gamma = np.asarray(gamma, dtype=float)\n    beta = np.asarray(beta, dtype=float)\n\n    if gamma.shape != (feature_count,):\n        raise ValueError(\"gamma must have one value per feature\")\n    if beta.shape != (feature_count,):\n        raise ValueError(\"beta must have one value per feature\")\n\n    batch_mean = X.mean(axis=0)\n    batch_var = X.var(axis=0)\n    X_hat = (X - batch_mean) / np.sqrt(batch_var + eps)\n    Y = gamma * X_hat + beta\n\n    return Y, batch_mean, batch_var\n\nX = np.array([\n    [1.0, 10.0],\n    [2.0, 20.0],\n    [3.0, 30.0],\n    [4.0, 40.0]\n])\n\ngamma = np.array([1.5, 0.5])\nbeta = np.array([0.2, -1.0])\n\nY, mean, variance = batch_normalize(X, gamma, beta)\n\nprint(\"Batch mean:\", mean)\nprint(\"Batch variance:\", variance)\nprint(\"Normalized and transformed values:\\n\", Y)\nprint(\"Output mean per feature:\", Y.mean(axis=0))",
+            "explanation": "The function expects a two-dimensional array with shape (batch_size, features). It calculates a separate mean and variance for each feature using axis=0, normalizes the feature values, and applies gamma and beta. This educational implementation illustrates the forward transformation only. It does not implement gradient calculation, trainable parameter updates, or running statistics for inference."
+        },
+        {
+            "id": "batchnorm-framework-example",
+            "title": "8. Batch Normalization in a Neural Network",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\nclass Classifier(nn.Module):\n    def __init__(self, input_features=20, hidden_features=64, num_classes=3):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(input_features, hidden_features),\n            nn.BatchNorm1d(hidden_features),\n            nn.ReLU(),\n            nn.Linear(hidden_features, hidden_features),\n            nn.BatchNorm1d(hidden_features),\n            nn.ReLU(),\n            nn.Linear(hidden_features, num_classes)\n        )\n\n    def forward(self, x):\n        return self.network(x)\n\nmodel = Classifier()\n\n# Example mini-batch: 32 examples with 20 input features\nx = torch.randn(32, 20)\nlogits = model(x)\nprint(\"Logits shape:\", logits.shape)\n\n# During training:\nmodel.train()\ntrain_logits = model(x)\n\n# During evaluation/inference:\nmodel.eval()\nwith torch.no_grad():\n    inference_logits = model(x)\n\nprint(\"Inference logits shape:\", inference_logits.shape)",
+            "explanation": "The example places BatchNorm1d after each hidden linear layer and before ReLU. This is a common pattern, though placement depends on the architecture. BatchNorm1d(hidden_features) normalizes each hidden feature using mini-batch statistics during training and running statistics during evaluation. The example illustrates the forward pass; a complete training loop would also calculate a loss, run backward propagation, and update trainable parameters with an optimizer."
+        },
+        {
+            "id": "batchnorm-placement",
+            "title": "9. Where Should Batch Normalization Be Placed?",
+            "type": "concept",
+            "content": "A common feedforward pattern is Linear → Batch Normalization → ReLU. In convolutional networks, a common pattern is Convolution → Batch Normalization → Activation.\n\nThis ordering normalizes the output of the linear or convolutional transformation before applying the nonlinearity. It is widely used, but it is not a universal rule for all network architectures.\n\nSome architectures use different arrangements, and residual networks may place normalization at different points depending on whether they use pre-activation or post-activation blocks.\n\nNormalization is often unnecessary or less suitable in some output layers. For example, applying batch normalization directly to final classification logits changes their distribution and may be inappropriate unless the architecture specifically calls for it.\n\nBatch normalization should also be evaluated alongside other normalization methods. Layer normalization normalizes features within an individual example, while batch normalization relies on batch statistics during training. This distinction makes layer normalization particularly common in transformer architectures."
+        },
+        {
+            "id": "batchnorm-limitations",
+            "title": "10. Benefits and Limitations",
+            "type": "concept",
+            "content": "Potential benefits include more stable activation scales, improved optimization behavior, faster training in some settings, and a regularization effect caused by the variability of batch statistics.\n\nBatch normalization is not a guarantee of better accuracy. Its behavior depends on the model architecture, batch size, data distribution, and training procedure.\n\nSmall or highly variable batches can produce noisy estimates of the mean and variance. In some cases, batch normalization performs poorly when batch statistics are unreliable.\n\nTraining and inference distributions may differ, making running statistics less representative. Domain adaptation and fine-tuning can therefore require careful handling of normalization statistics.\n\nLayer normalization and group normalization are alternatives when normalization should not depend on the other examples in a batch. The appropriate choice depends on the architecture and task.\n\nBatch normalization also introduces extra computation and state, including gamma, beta, running mean, and running variance. These details must be handled correctly when saving, loading, fine-tuning, or deploying a model."
+        },
+        {
+            "id": "batchnorm-pitfalls",
+            "title": "11. Common Mistakes",
+            "type": "concept",
+            "content": "Mistake 1: Using training mode during inference. The model may use current-batch statistics instead of the running estimates.\n\nMistake 2: Assuming gamma and beta are the running mean and variance. They are different quantities with different purposes.\n\nMistake 3: Using batch normalization with extremely small batches without considering the reliability of the batch statistics.\n\nMistake 4: Assuming normalized activations must always have zero mean and unit variance after the layer. The learned scale and shift change the distribution.\n\nMistake 5: Confusing framework-specific momentum definitions for running statistics.\n\nMistake 6: Fitting preprocessing transformations on validation or test data. Normalization layers do not justify data leakage.\n\nMistake 7: Forgetting that some frameworks use different batch-normalization variants for one-dimensional, two-dimensional, and three-dimensional data.\n\nMistake 8: Assuming batch normalization removes the need for proper initialization, suitable learning rates, or validation."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "bn-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A batch contains the values [2, 4, 6]. Calculate the mean and the population variance.",
+            "correctAnswer": "Mean = 4 and population variance = 8/3, approximately 2.667.",
+            "solution": "The mean is (2 + 4 + 6) / 3 = 4. The squared deviations are 4, 0, and 4. Their average is 8/3."
+        },
+        {
+            "id": "bn-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A normalized activation is 2, gamma is 1.5, and beta is -0.5. Calculate the batch-normalization output.",
+            "correctAnswer": "2.5.",
+            "solution": "Use y = gamma × x_hat + beta. Therefore, y = 1.5 × 2 - 0.5 = 2.5."
+        },
+        {
+            "id": "bn-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the purpose of epsilon in the batch-normalization formula?",
+            "correctAnswer": "It improves numerical stability and helps prevent division by zero when the variance is very small.",
+            "solution": "Epsilon is added inside the square root with the variance. It ensures the denominator remains positive and reduces numerical instability."
+        },
+        {
+            "id": "bn-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "How does batch normalization usually differ between training and inference?",
+            "correctAnswer": "Training normally uses current mini-batch statistics, while inference normally uses accumulated running statistics.",
+            "solution": "Current-batch statistics normalize activations during training. Running estimates provide more consistent behavior at inference, especially when requests arrive in batches of different sizes."
+        },
+        {
+            "id": "bn-exercise-5",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "A PyTorch model produces inconsistent inference results because it is accidentally left in training mode. Which operation should be performed before inference?",
+            "correctAnswer": "Call model.eval() before inference.",
+            "solution": "Calling model.eval() switches modules such as batch normalization and dropout to evaluation behavior. For inference without gradient tracking, it is also common to use torch.no_grad() or torch.inference_mode()."
+        },
+        {
+            "id": "bn-exercise-6",
+            "type": "programming",
+            "difficulty": "advanced",
+            "question": "A NumPy matrix X has shape (64, 10). Along which axis should the mean be calculated to normalize each feature across the batch?",
+            "correctAnswer": "Use axis=0, producing a mean vector with shape (10,).",
+            "solution": "Each column represents one feature and each row represents one example. Calculating X.mean(axis=0) computes one mean for each feature across the 64 examples."
+        }
+    ],
+    "summary": "Batch normalization normalizes intermediate activations using mini-batch statistics during training, then applies learned scale and shift parameters. Running statistics are maintained for inference. The method can improve optimization and training stability, but its effectiveness depends on batch size, architecture, and data distribution. Correct training and evaluation modes are essential for reliable predictions.",
+    "relatedTopics": [
+        "neurons",
+        "activation-functions",
+        "forward-propagation",
+        "backpropagation",
+        "mini-batch-training",
+        "weight-initialization",
+        "dropout",
+        "optimizers-momentum-rmsprop-adam"
+    ]
+}

@@ -1,1 +1,437 @@
-{}
+{
+    "id": "module-14-generative-models-autoencoders",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 1,
+    "title": "Autoencoders",
+    "slug": "autoencoders",
+    "href": "/curriculum/14-generative-models/autoencoders",
+    "filePath": "content/curriculum/14-generative-models/01-autoencoders.json",
+    "description": "Understand autoencoders as neural networks for representation learning, dimensionality reduction, reconstruction, denoising, and anomaly detection, including their mathematical objectives and practical PyTorch implementations.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-03-neural-networks",
+        "module-04-deep-learning"
+    ],
+    "learningObjectives": [
+        "Explain the encoder, latent representation, and decoder components of an autoencoder.",
+        "Derive and implement reconstruction losses for continuous and binary-valued data.",
+        "Distinguish undercomplete, overcomplete, sparse, denoising, convolutional, and sequence autoencoders.",
+        "Build and train a basic autoencoder using PyTorch.",
+        "Use reconstruction error for anomaly detection and understand its limitations.",
+        "Analyze latent representations, reconstruction quality, and generalization.",
+        "Explain why a conventional autoencoder is not automatically a reliable generative model."
+    ],
+    "sections": [
+        {
+            "id": "ae-introduction",
+            "title": "1. Introduction to Autoencoders",
+            "type": "concept",
+            "content": "An autoencoder is a neural network trained to reconstruct its input. Instead of directly predicting a different target, it receives an observation x and learns to produce a reconstruction x_hat that resembles x. The architecture usually contains an encoder, a latent representation, and a decoder. The encoder transforms the original input into a compact or otherwise constrained representation. The decoder uses that representation to reconstruct the observation. Autoencoders are commonly used for representation learning, dimensionality reduction, denoising, feature extraction, anomaly detection, and compression research. They are also historically important in generative modeling because they introduce the idea of learning a latent representation from data. However, a deterministic autoencoder trained only with reconstruction loss does not necessarily learn a latent space from which arbitrary points can be sampled to produce realistic new examples. That distinction motivates probabilistic approaches such as variational autoencoders.",
+            "keyPoints": [
+                "An autoencoder learns to reproduce its input.",
+                "The reconstruction target is usually the original input.",
+                "The latent representation can be lower-dimensional than the input.",
+                "Useful representations do not automatically imply a well-behaved generative distribution.",
+                "The training objective and architectural constraints determine what the model learns."
+            ]
+        },
+        {
+            "id": "ae-architecture",
+            "title": "2. Encoder, Latent Representation, and Decoder",
+            "type": "concept",
+            "content": "The encoder is a function f_phi that maps an input x to a latent code z. A simple encoder may consist of affine transformations and nonlinear activations. The latent code is a numerical representation that the decoder can use to reconstruct the input. The decoder g_theta maps z to x_hat. During training, the encoder and decoder parameters are optimized together. In a dense autoencoder for an image with 784 pixels, an encoder might map 784 values to 256 hidden units, then to 64 latent values. A decoder reverses the dimensional progression, mapping 64 values to 256 and then to 784 outputs. This architecture creates a bottleneck, although a bottleneck can also be imposed through sparsity, noise, regularization, or architectural constraints rather than simply reducing the number of units. The reconstruction is not guaranteed to equal the original input exactly. Instead, training encourages the network to preserve information that helps minimize the chosen reconstruction objective.",
+            "formula": "z = f_phi(x), x_hat = g_theta(z) = g_theta(f_phi(x))",
+            "example": "For a flattened 28 by 28 grayscale image, x has 784 values. An encoder maps x to a 32-dimensional latent vector. The decoder maps the vector back to 784 output values, which can be reshaped into a 28 by 28 reconstruction.",
+            "keyPoints": [
+                "Encoder: input to latent representation.",
+                "Latent code: intermediate representation of the observation.",
+                "Decoder: latent representation to reconstructed observation.",
+                "A bottleneck encourages selective information preservation.",
+                "The learned representation depends on the loss, data, architecture, and regularization."
+            ]
+        },
+        {
+            "id": "ae-objective",
+            "title": "3. The Reconstruction Objective",
+            "type": "math",
+            "content": "Training usually minimizes the average discrepancy between each input and its reconstruction. Let x_i be a training example and x_hat_i be its reconstruction. A reconstruction loss measures their difference. The empirical objective averages this loss over the dataset. Additional regularization can be included to encourage sparse activations, smooth representations, or other desirable properties. The loss is not merely a technical implementation choice: it expresses which kinds of reconstruction errors matter. Mean squared error penalizes large numerical deviations quadratically, while mean absolute error grows linearly with the magnitude of an error. Binary cross-entropy is appropriate for Bernoulli-style observations when the decoder output represents a probability for each target. A reconstruction objective should be selected based on the data representation and the statistical assumptions of the model.",
+            "formula": "L_reconstruction = (1/N) sum_{i=1}^{N} ell(x_i, x_hat_i)",
+            "example": "If a target pixel has value 0.8 and the reconstructed value is 0.6, the absolute error is 0.2 and the squared error is 0.04. The same absolute difference contributes more under squared error when the discrepancy is larger.",
+            "keyPoints": [
+                "The reconstruction loss defines what counts as a good reconstruction.",
+                "The training objective is averaged across examples or batches.",
+                "Regularization can be added to the reconstruction objective.",
+                "Loss reduction settings affect the numerical scale of the objective.",
+                "The loss should match the output parameterization and data assumptions."
+            ]
+        },
+        {
+            "id": "ae-mse",
+            "title": "4. Mean Squared Error",
+            "type": "math",
+            "content": "Mean squared error computes the average squared difference between target and reconstructed values. It is widely used for continuous-valued inputs such as normalized measurements, sensor values, and image intensities. Squaring makes the loss nonnegative and places greater emphasis on large errors. Under a Gaussian observation model with fixed variance, minimizing squared error is equivalent to minimizing a negative log-likelihood up to constants and a scale factor. This statistical interpretation helps explain why MSE is a natural choice for some continuous-data reconstruction tasks. However, a low MSE does not guarantee perceptually realistic image reconstruction. In image tasks, averaging several plausible details can produce a smooth or blurry result while achieving a reasonable pixel-wise error.",
+            "formula": "MSE(x, x_hat) = (1/D) sum_{j=1}^{D} (x_j - x_hat_j)^2",
+            "example": "For target values [0, 1] and predictions [0.2, 0.7], the squared errors are 0.04 and 0.09. Their mean is 0.065.",
+            "keyPoints": [
+                "MSE is suitable for many continuous targets.",
+                "Large errors have a disproportionately large contribution.",
+                "Fixed-variance Gaussian likelihood leads to a scaled squared-error objective.",
+                "Pixel-wise MSE does not fully capture perceptual similarity.",
+                "Normalization strongly affects the scale of MSE."
+            ]
+        },
+        {
+            "id": "ae-mae",
+            "title": "5. Mean Absolute Error",
+            "type": "math",
+            "content": "Mean absolute error averages the absolute differences between original and reconstructed values. Unlike MSE, it grows linearly with error magnitude. Consequently, an isolated large deviation has less relative influence than it does under squared error. MAE is useful when a robust linear penalty is preferred, although it is not completely insensitive to outliers. Its derivative is constant away from zero, while the absolute-value function is not differentiable at exactly zero; optimization libraries handle this point with a suitable subgradient. MSE and MAE can rank reconstructions differently, so their suitability should be assessed against the task rather than chosen solely from convention.",
+            "formula": "MAE(x, x_hat) = (1/D) sum_{j=1}^{D} |x_j - x_hat_j|",
+            "example": "For errors 0.2 and 0.3, MAE is 0.25. If the second error increases to 1.3, MAE becomes 0.75, whereas the squared-error average grows more sharply.",
+            "keyPoints": [
+                "MAE penalizes error linearly.",
+                "MAE can be less sensitive to extreme errors than MSE.",
+                "The loss is not differentiable at zero, but subgradients support optimization.",
+                "The best loss depends on data and application requirements."
+            ]
+        },
+        {
+            "id": "ae-bce",
+            "title": "6. Binary Cross-Entropy and Output Probabilities",
+            "type": "math",
+            "content": "Binary cross-entropy is commonly used when each output represents a Bernoulli probability. For an input feature or pixel with target x between zero and one and predicted probability p, the loss is negative x log(p) minus (1 minus x) log(1 minus p). When targets are binary, the loss strongly penalizes confident predictions that assign low probability to the observed target. It can also be used with fractional targets under an appropriate interpretation. The decoder output must be parameterized consistently with the chosen loss. A sigmoid output produces values between zero and one, so it can be paired with binary cross-entropy. In PyTorch, BCEWithLogitsLoss combines the sigmoid transformation and binary cross-entropy in a numerically stable operation. When using BCEWithLogitsLoss, the model should return logits rather than applying sigmoid inside the model.",
+            "formula": "BCE(x, p) = -(1/D) sum_j [x_j log(p_j) + (1-x_j) log(1-p_j)]",
+            "example": "For a target of 1, predicting probability 0.95 produces a small loss. Predicting probability 0.05 produces a large loss because the model is confidently wrong.",
+            "keyPoints": [
+                "Binary cross-entropy is associated with Bernoulli observations.",
+                "Probability predictions should remain within the valid interval.",
+                "BCEWithLogitsLoss expects logits, not sigmoid probabilities.",
+                "Input scaling and the observation model must be considered together."
+            ]
+        },
+        {
+            "id": "ae-bottlenecks",
+            "title": "7. Undercomplete and Overcomplete Autoencoders",
+            "type": "concept",
+            "content": "An undercomplete autoencoder has a latent representation with fewer dimensions than the input. The dimensional restriction can encourage the model to retain the most useful information for reconstruction. However, dimensionality alone does not guarantee meaningful features: a sufficiently complex model may still learn shortcuts, and the useful information depends on the training distribution. An overcomplete autoencoder has a latent representation with as many or more dimensions than the input. Without constraints, such a model can learn an identity mapping and avoid discovering a useful representation. Overcomplete models are therefore often paired with sparsity penalties, denoising objectives, weight regularization, or other restrictions. The distinction is about representational capacity, not a universal ranking of model quality.",
+            "formula": "Undercomplete: dim(z) < dim(x); Overcomplete: dim(z) >= dim(x)",
+            "keyPoints": [
+                "Undercomplete models restrict latent dimensionality.",
+                "Overcomplete models may need additional constraints.",
+                "An identity mapping can minimize reconstruction error without useful abstraction.",
+                "Representation quality must be evaluated beyond training reconstruction loss."
+            ]
+        },
+        {
+            "id": "ae-sparse",
+            "title": "8. Sparse Autoencoders",
+            "type": "concept",
+            "content": "A sparse autoencoder encourages only a small fraction of latent units to activate strongly for a given observation. Sparsity can be useful even when the latent representation is not smaller than the input. One approach penalizes the absolute values of latent activations, encouraging many values to remain near zero. Another approach penalizes deviations between the average activation of each unit and a small target activation rate. The exact penalty depends on the activation function and the desired statistical behavior. Sparsity does not guarantee that features are interpretable or independent. It is a modeling bias that can encourage selective representations, and its usefulness depends on the task, coefficient strength, and optimization behavior.",
+            "formula": "L_total = L_reconstruction + lambda * ||z||_1",
+            "example": "If a latent vector contains 128 values but only a small number are substantially nonzero for each input, the decoder may reconstruct the input using a selective collection of features.",
+            "keyPoints": [
+                "Sparsity restricts how many latent activations are strongly used.",
+                "L1 penalties are a common way to encourage sparse activations.",
+                "Sparsity strength must be tuned alongside reconstruction quality.",
+                "Sparse features are not automatically interpretable."
+            ]
+        },
+        {
+            "id": "ae-denoising",
+            "title": "9. Denoising Autoencoders",
+            "type": "concept",
+            "content": "A denoising autoencoder receives a corrupted version of an example and learns to reconstruct the clean target. Corruption can include additive Gaussian noise, randomly masked features, salt-and-pepper noise, or domain-specific perturbations. The training input and target are intentionally different: the input is corrupted, while the target is the original clean observation. This objective discourages the network from simply copying every input feature. Instead, the model must learn regularities that help recover the original data. The model may learn useful local structure, but it cannot reliably recover information that is entirely absent and unpredictable. Denoising behavior also depends on the corruption distribution: a model trained with one kind of noise may perform poorly on a different kind of corruption.",
+            "formula": "L_denoising = E_{x, epsilon}[ell(x, g_theta(f_phi(x + epsilon)))]",
+            "example": "A clean handwritten digit is randomly corrupted with Gaussian noise. The encoder processes the noisy digit, and the decoder is trained to match the clean digit rather than the noisy input.",
+            "keyPoints": [
+                "The input is corrupted; the target remains clean.",
+                "Corruption creates a useful reconstruction constraint.",
+                "Noise type and intensity affect the learned denoising behavior.",
+                "Denoising cannot reliably restore arbitrary missing information."
+            ]
+        },
+        {
+            "id": "ae-convolutional",
+            "title": "10. Convolutional Autoencoders",
+            "type": "concept",
+            "content": "Convolutional autoencoders are designed for spatial data such as images. The encoder uses convolutional layers, pooling, strided convolutions, or combinations of these operations to reduce spatial resolution and extract local patterns. The decoder uses upsampling, transposed convolutions, or other reconstruction layers to restore spatial dimensions. Convolutions share weights across spatial positions, which makes them more parameter-efficient than fully connected layers for many image tasks. The architecture must preserve compatible tensor shapes through the encoder and decoder. Transposed convolution can introduce checkerboard artifacts when kernel size and stride interact poorly, so interpolation followed by convolution is another common design. The right architecture depends on image resolution, data size, computational budget, and the spatial detail that must be reconstructed.",
+            "keyPoints": [
+                "Convolutions exploit local spatial structure.",
+                "Downsampling reduces spatial dimensions and computation.",
+                "The decoder restores spatial resolution.",
+                "Tensor dimensions must align with the target.",
+                "Upsampling choices can influence reconstruction artifacts."
+            ]
+        },
+        {
+            "id": "ae-sequence",
+            "title": "11. Sequence and Time-Series Autoencoders",
+            "type": "concept",
+            "content": "Sequence autoencoders compress ordered observations into representations that preserve information useful for reconstruction. Depending on the data, the encoder and decoder may use recurrent neural networks, temporal convolutions, or Transformers. A time-series autoencoder might reconstruct a window of sensor readings, while a text-oriented model may reconstruct a token sequence. Sequence length, padding, missing observations, and variable-length batches require careful handling. For padded sequences, the loss should generally exclude padding positions so that the model does not optimize for artificial tokens. For forecasting tasks, reconstructing the same observed window is not equivalent to predicting future values; the training target and evaluation protocol must match the intended use.",
+            "keyPoints": [
+                "Sequence autoencoders preserve temporal or token order.",
+                "Architectures can include recurrent networks, temporal convolutions, or Transformers.",
+                "Padding should not dominate the reconstruction loss.",
+                "Reconstruction and forecasting are different objectives.",
+                "Temporal train-test leakage must be avoided."
+            ]
+        },
+        {
+            "id": "ae-information",
+            "title": "12. Information Bottleneck Intuition",
+            "type": "concept",
+            "content": "The information bottleneck intuition is that a representation should retain information needed for a task while discarding irrelevant detail. An autoencoder does not automatically implement a formal information bottleneck objective, but an undercomplete latent code or a constrained architecture can encourage compression. Reconstruction-only training has an important limitation: information that appears unimportant to a human may still be necessary to reduce pixel-wise loss. Conversely, a representation that is useful for classification may discard details that are essential for exact reconstruction. Therefore, the quality of a latent representation depends on the intended downstream objective. A model trained to reconstruct every input detail should not be assumed to discover the most useful representation for every other task.",
+            "keyPoints": [
+                "Compression can encourage selective representations.",
+                "Reconstruction preserves information needed by the selected loss.",
+                "Task-relevant representations differ across applications.",
+                "Latent dimensionality alone does not guarantee semantic abstraction."
+            ]
+        },
+        {
+            "id": "ae-regularization",
+            "title": "13. Regularization and Generalization",
+            "type": "concept",
+            "content": "Regularization helps control overfitting and discourages undesirable solutions. Weight decay penalizes large model parameters. Dropout randomly removes activations during training. Denoising changes the input distribution. Sparsity penalties constrain latent activity, and architectural bottlenecks restrict capacity. These methods have different effects and are not interchangeable. A model can achieve very low training reconstruction error while reconstructing unseen data poorly. To measure generalization, separate training, validation, and test sets, and tune hyperparameters using validation data rather than the test set. When examples are correlated, such as windows from the same time series or multiple images of the same subject, the split should prevent near-duplicate information from leaking across partitions.",
+            "keyPoints": [
+                "Regularization can discourage memorization.",
+                "Training reconstruction loss alone is insufficient.",
+                "Use validation data for model selection.",
+                "Keep the final test set out of hyperparameter tuning.",
+                "Split correlated data in a way that reflects deployment conditions."
+            ]
+        },
+        {
+            "id": "ae-pytorch",
+            "title": "14. Implementing a Dense Autoencoder in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "The following example defines a small dense autoencoder for flattened grayscale images. The encoder maps 784 input values to a compact latent vector, and the decoder reconstructs 784 output values. The final sigmoid constrains reconstructed pixels to the interval [0, 1], so the example uses binary cross-entropy for normalized image targets. The model returns reconstructions rather than latent vectors by default. The encode method can be called separately when a latent representation is needed. The data loader is expected to return images that have been normalized to [0, 1].",
+            "code": "import torch\nfrom torch import nn\n\nclass Autoencoder(nn.Module):\n    def __init__(self, latent_dim=32):\n        super().__init__()\n        self.encoder = nn.Sequential(nn.Linear(784, 256), nn.ReLU(), nn.Linear(256, latent_dim))\n        self.decoder = nn.Sequential(nn.Linear(latent_dim, 256), nn.ReLU(), nn.Linear(256, 784), nn.Sigmoid())\n\n    def encode(self, x):\n        return self.encoder(x.flatten(start_dim=1))\n\n    def forward(self, x):\n        z = self.encode(x)\n        return self.decoder(z)\n\nmodel = Autoencoder(latent_dim=32)\noptimizer = torch.optim.Adam(model.parameters(), lr=1e-3)\ncriterion = nn.BCELoss()\n\nfor epoch in range(10):\n    model.train()\n    total_loss = 0.0\n    for images, _ in train_loader:\n        images = images.view(images.size(0), -1)\n        reconstruction = model(images)\n        loss = criterion(reconstruction, images)\n        optimizer.zero_grad()\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item() * images.size(0)\n    print(f\"Epoch {epoch + 1}: {total_loss / len(train_loader.dataset):.4f}\")",
+            "explanation": "The labels from the dataset are ignored because the target is the input image itself. The encoder creates a 32-dimensional latent vector. The decoder produces one value per input pixel. Training minimizes reconstruction loss, and Adam updates both encoder and decoder parameters. If the decoder instead returned raw logits, BCEWithLogitsLoss could be used without a final sigmoid. The chosen loss, output activation, and target scaling must remain consistent."
+        },
+        {
+            "id": "ae-training-loop",
+            "title": "15. Understanding the Training Loop",
+            "type": "concept",
+            "content": "The training loop follows the standard supervised optimization pattern, even though labels are not needed. The model enters training mode, a batch is moved through the network, and the reconstruction loss is computed against the same batch. Gradients are cleared before backpropagation, and the optimizer updates the parameters. The epoch loss should be computed as a sample-weighted average rather than a simple average of batch averages when the final batch may be smaller. The example accumulates loss multiplied by batch size, then divides by the total number of training examples. For larger models, the input and model should be moved to the same device. Evaluation should use model.eval() and torch.no_grad() to avoid gradient tracking and ensure layers such as dropout and batch normalization behave appropriately.",
+            "keyPoints": [
+                "The input image is also the reconstruction target.",
+                "optimizer.zero_grad() clears previous gradients.",
+                "loss.backward() computes gradients.",
+                "optimizer.step() updates parameters.",
+                "Sample-weighted epoch loss gives a consistent dataset average."
+            ]
+        },
+        {
+            "id": "ae-denoise-code",
+            "title": "16. Implementing Denoising",
+            "type": "code",
+            "language": "python",
+            "content": "A denoising autoencoder can use the same architecture as a standard autoencoder. The main change is in how training inputs and targets are prepared. Add noise to the input, clamp values to the valid image range when appropriate, and compare the reconstruction with the original clean image. The noise level should reflect plausible corruption in the target application. Clamping is suitable for bounded image values but should not be applied blindly to data with a different valid range.",
+            "code": "import torch\nimport torch.nn.functional as F\n\nmodel = Autoencoder(latent_dim=32).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=1e-3)\n\nfor epoch in range(10):\n    model.train()\n    for clean_images, _ in train_loader:\n        clean_images = clean_images.to(device).flatten(start_dim=1)\n        noisy_images = (clean_images + 0.25 * torch.randn_like(clean_images)).clamp(0, 1)\n        reconstructed = model(noisy_images)\n        loss = F.binary_cross_entropy(reconstructed, clean_images)\n        optimizer.zero_grad()\n        loss.backward()\n        optimizer.step()",
+            "explanation": "The network receives noisy_images but is supervised with clean_images. Noise is sampled independently for each training batch. The noise standard deviation controls corruption strength. If noise is too weak, the task may be nearly identical to ordinary reconstruction; if it is too strong, the original information may become unrecoverable."
+        },
+        {
+            "id": "ae-anomaly",
+            "title": "17. Reconstruction Error for Anomaly Detection",
+            "type": "concept",
+            "content": "Anomaly detection with autoencoders often relies on the idea that a model trained primarily on normal observations will reconstruct those observations better than unfamiliar anomalies. For an observation x, define an anomaly score from its reconstruction error. A high score indicates that the model failed to reconstruct some aspect of the input. This method is useful for exploring industrial sensor data, image defects, and unusual patterns, but it is not universally reliable. A sufficiently flexible autoencoder may also reconstruct anomalies well, and a normal observation that differs from the training distribution may receive a high score. The score and threshold should be evaluated on representative validation data. When anomalies are rare, accuracy alone can be misleading; precision, recall, false-positive rate, and precision-recall curves are often more informative.",
+            "formula": "score(x) = (1/D) sum_j (x_j - x_hat_j)^2",
+            "example": "A system trained on normal machine vibration windows assigns reconstruction scores to new windows. A threshold is selected using validation data, and windows exceeding it are flagged for inspection rather than automatically declared defective.",
+            "keyPoints": [
+                "Reconstruction error is a score, not proof of an anomaly.",
+                "Thresholds should be selected using validation data.",
+                "Rare-event evaluation should consider precision and recall.",
+                "Distribution shift can create false positives.",
+                "The system should be monitored after deployment."
+            ]
+        },
+        {
+            "id": "ae-threshold",
+            "title": "18. Calibrating an Anomaly Threshold",
+            "type": "concept",
+            "content": "A threshold converts a continuous anomaly score into a binary alert. One strategy uses a high percentile of scores from a representative normal validation set. For example, the 99th percentile produces a threshold that, under the validation distribution, is exceeded by roughly one percent of normal validation observations. This is not a guarantee of a one-percent false-positive rate in production because the distribution may change. If labeled anomalies are available, the threshold can be chosen to meet a recall target or to balance the costs of missed anomalies and false alarms. Threshold selection should be separated from final evaluation. The operational consequences matter: a threshold appropriate for a system that can review thousands of alerts may be unsuitable for a safety-critical system with limited inspection capacity.",
+            "formula": "threshold = percentile(scores_on_normal_validation_data, q)",
+            "keyPoints": [
+                "Threshold choice reflects operational costs.",
+                "A normal-data percentile is a baseline, not a universal guarantee.",
+                "Labeled validation anomalies can support task-specific threshold selection.",
+                "Report false positives and missed detections separately."
+            ]
+        },
+        {
+            "id": "ae-latent-visualization",
+            "title": "19. Latent Space Visualization and Interpolation",
+            "type": "concept",
+            "content": "When an autoencoder uses a two-dimensional latent representation, the codes can be plotted directly. For higher-dimensional representations, dimensionality-reduction methods such as PCA or UMAP can produce visual summaries. These visualizations may reveal clusters or structure, but they can also distort distances and relationships. Interpolation between two latent codes can be performed by taking weighted averages of the codes and decoding the intermediate points. This experiment helps investigate how the decoder responds to changes in the representation. However, a deterministic autoencoder does not necessarily learn a latent space in which all intermediate points correspond to realistic data. Smooth interpolation is an empirical property to evaluate, not a guarantee from the basic architecture.",
+            "formula": "z(t) = (1-t)z_a + t z_b, where 0 <= t <= 1",
+            "keyPoints": [
+                "Two-dimensional codes are directly plottable.",
+                "Dimensionality-reduction plots can distort structure.",
+                "Latent interpolation probes decoder behavior.",
+                "Intermediate points may decode to unrealistic observations.",
+                "A smooth latent space requires more than low reconstruction error."
+            ]
+        },
+        {
+            "id": "ae-evaluation",
+            "title": "20. Evaluating Autoencoders",
+            "type": "concept",
+            "content": "Autoencoder evaluation should include reconstruction quality, generalization, and task-specific utility. Numeric metrics such as MSE, MAE, and binary cross-entropy measure particular forms of discrepancy. For images, visual inspection can reveal blur, artifacts, and lost details that a scalar metric hides. For anomaly detection, assess detection quality using labeled examples when available. For representation learning, test whether latent codes improve a downstream task or support a meaningful retrieval or clustering workflow. Report validation and test metrics separately, and ensure preprocessing is fitted only on training data when it estimates statistics such as means and standard deviations. A model with excellent training reconstruction but poor held-out reconstruction may have memorized its examples or relied on shortcuts.",
+            "keyPoints": [
+                "No single reconstruction metric captures every quality dimension.",
+                "Held-out evaluation measures generalization.",
+                "Downstream utility may be more important than reconstruction alone.",
+                "Visual inspection complements numeric metrics.",
+                "Preprocessing must avoid data leakage."
+            ]
+        },
+        {
+            "id": "ae-limitations",
+            "title": "21. Limitations and Common Misconceptions",
+            "type": "concept",
+            "content": "A standard autoencoder does not automatically learn a normalized probability distribution over the input space. Its latent codes may occupy a narrow, irregular subset of the possible latent vectors, making random sampling from a simple distribution unreliable. Reconstruction quality can also conflict with perceptual quality: an output that minimizes pixel-wise error may appear blurry. A model may learn shortcuts that preserve low-level patterns rather than the features desired by a downstream task. Anomaly detection can fail if anomalies are reconstructed well or normal data changes after deployment. Finally, compression is not the same as semantic understanding. The representation reflects the training data, objective, and architecture, including any biases present in the data.",
+            "keyPoints": [
+                "Ordinary autoencoders are not automatically reliable generators.",
+                "Low reconstruction error is not equivalent to semantic understanding.",
+                "Anomaly detection requires empirical validation.",
+                "Latent spaces can be irregular and difficult to sample.",
+                "Data bias and distribution shift remain important."
+            ]
+        },
+        {
+            "id": "ae-workflow",
+            "title": "22. A Practical Autoencoder Workflow",
+            "type": "concept",
+            "content": "Start by defining the purpose: reconstruction, denoising, compression, feature learning, or anomaly detection. Inspect the data and determine its shape, value range, missingness, and dependency structure. Select a loss compatible with the observation type, then build the simplest architecture that can express the required mapping. Establish a baseline, split the data appropriately, and track training and validation metrics. Inspect actual reconstructions and error distributions rather than relying exclusively on a single number. Tune latent dimensionality, architecture, and regularization using validation data. Finally, test the chosen model on held-out data and document preprocessing, loss definitions, thresholds, and known failure modes. For anomaly detection, include a plan for recalibration and monitoring as normal behavior changes.",
+            "keyPoints": [
+                "Define the downstream objective before selecting the architecture.",
+                "Validate data assumptions and preprocessing.",
+                "Begin with a simple baseline.",
+                "Track validation performance and inspect examples.",
+                "Document thresholds and limitations for deployment."
+            ]
+        },
+        {
+            "id": "ae-summary-concepts",
+            "title": "23. Key Mathematical Relationships",
+            "type": "math",
+            "content": "The encoder and decoder compose into a reconstruction function. The reconstruction loss measures the difference between the original input and this composition. Regularized autoencoders add a penalty to discourage unwanted solutions. The precise objective depends on the loss and constraints chosen for the task.",
+            "formula": "x_hat = g_theta(f_phi(x)); L_total = L_reconstruction + lambda R(f_phi(x), theta, phi)",
+            "example": "For an L1 sparsity penalty, R may be the average absolute latent activation. For weight decay, R may be the squared norm of model parameters. For a denoising objective, the encoder receives a corrupted input while the loss compares the output to the clean target.",
+            "keyPoints": [
+                "The reconstruction function is the composition of encoder and decoder.",
+                "Regularization is added to the task-specific objective.",
+                "The form of the penalty expresses a modeling preference.",
+                "Different objectives can lead to different latent representations."
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ae-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the three main components of a conventional autoencoder?",
+            "correctAnswer": "An encoder, a latent representation, and a decoder.",
+            "solution": "The encoder transforms the input into a latent code. The code carries information used by the decoder, which reconstructs the input."
+        },
+        {
+            "id": "ae-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "The target is [0, 1] and the reconstruction is [0.2, 0.7]. Calculate the MSE.",
+            "correctAnswer": "0.065",
+            "solution": "The squared errors are (0 - 0.2)^2 = 0.04 and (1 - 0.7)^2 = 0.09. Their average is (0.04 + 0.09) / 2 = 0.065."
+        },
+        {
+            "id": "ae-ex-3",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why might an overcomplete autoencoder need additional regularization?",
+            "correctAnswer": "Its capacity may allow it to learn an identity mapping without learning a useful representation.",
+            "solution": "If the network can directly preserve every input feature, reconstruction loss alone may not encourage selective or robust latent features. Sparsity, denoising, or other constraints can discourage trivial solutions."
+        },
+        {
+            "id": "ae-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "How does the training target differ between a standard autoencoder and a denoising autoencoder?",
+            "correctAnswer": "A standard autoencoder reconstructs its input, while a denoising autoencoder receives a corrupted input and targets the clean original.",
+            "solution": "The denoising model cannot minimize its objective simply by reproducing the corruption. It must learn patterns that help reconstruct the original observation."
+        },
+        {
+            "id": "ae-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "An input has 784 values and its latent representation has 32 values. What is the compression ratio based only on these vector dimensions?",
+            "correctAnswer": "24.5 to 1",
+            "solution": "Divide the input dimension by the latent dimension: 784 / 32 = 24.5. This compares vector sizes, not the total storage cost of a complete system."
+        },
+        {
+            "id": "ae-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is binary cross-entropy commonly paired with a sigmoid output?",
+            "correctAnswer": "The sigmoid maps logits to values between zero and one, allowing them to represent Bernoulli probabilities.",
+            "solution": "Binary cross-entropy is defined for probability predictions. BCEWithLogitsLoss is an alternative that takes raw logits and performs the required computation more stably."
+        },
+        {
+            "id": "ae-ex-7",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "An anomaly detector flags almost every observation after a factory changes its production process. Give one possible explanation.",
+            "correctAnswer": "The normal-data distribution has changed, so observations no longer resemble the training distribution.",
+            "solution": "Distribution shift can increase reconstruction error for legitimate observations. The system should be investigated, evaluated on representative new data, and recalibrated only through a controlled process."
+        },
+        {
+            "id": "ae-ex-8",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does a low reconstruction error not prove that a latent representation is semantically meaningful?",
+            "correctAnswer": "The model may reconstruct inputs using low-level details or shortcuts without organizing its latent space around meaningful concepts.",
+            "solution": "Reconstruction loss measures agreement between inputs and outputs. Semantic organization is not directly enforced unless the objective or evaluation task provides an appropriate signal."
+        },
+        {
+            "id": "ae-ex-9",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "You have sensor data from multiple machines. How should you split the data to evaluate whether an autoencoder generalizes to unseen machines?",
+            "correctAnswer": "Use a machine-level split so that machines in the test set do not appear in training.",
+            "solution": "A random row split may put nearly identical windows from the same machine into both training and test sets. Grouping by machine provides a more realistic evaluation of generalization to unseen machines."
+        },
+        {
+            "id": "ae-ex-10",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "Design a basic denoising autoencoder experiment for grayscale images.",
+            "correctAnswer": "Normalize images, corrupt training inputs with a defined noise distribution, train the model to reconstruct clean targets, and evaluate both numeric error and visual quality on held-out images.",
+            "solution": "Choose an architecture and reconstruction loss compatible with the image range. Apply noise only to the input while retaining the clean image as the target. Compare against a baseline and test more than one corruption level."
+        },
+        {
+            "id": "ae-ex-11",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "A normal validation set has 1,000 anomaly scores. If the 99th percentile is 0.12, what threshold would a percentile-based approach use, and what does it imply?",
+            "correctAnswer": "A threshold of approximately 0.12, with roughly one percent of normal validation scores above it, subject to percentile conventions and ties.",
+            "solution": "The threshold is selected from the distribution of normal validation scores. This does not guarantee the same false-positive rate on future data if the distribution changes."
+        },
+        {
+            "id": "ae-ex-12",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A deterministic autoencoder reconstructs its training images well. Why should you not automatically generate new images by sampling random latent vectors?",
+            "correctAnswer": "The learned latent codes may occupy an irregular region that random samples do not match.",
+            "solution": "Ordinary reconstruction training does not require latent codes to follow a known prior distribution. A random point may therefore decode to an unrealistic output. Probabilistic generative objectives address this issue more directly."
+        }
+    ],
+    "summary": "Autoencoders learn to reconstruct observations through an encoder, a latent representation, and a decoder. Their behavior is determined by architecture, reconstruction loss, regularization, and training data. Undercomplete, sparse, denoising, convolutional, and sequence variants introduce different inductive biases. PyTorch implementations train by comparing reconstructions with the appropriate targets. Autoencoders can support dimensionality reduction, feature learning, and anomaly detection, but these applications require task-specific evaluation. Low reconstruction error alone does not guarantee semantic representations or a reliable sampling distribution, which motivates probabilistic models such as variational autoencoders.",
+    "relatedTopics": [
+        "module-14-generative-models-variational-autoencoders",
+        "module-14-generative-models-gans",
+        "module-04-deep-learning",
+        "module-03-neural-networks"
+    ]
+}

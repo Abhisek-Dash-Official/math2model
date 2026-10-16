@@ -1,1 +1,179 @@
-{}
+{
+    "id": "module-07-transformers-encoder-decoder-models",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 10,
+    "title": "Encoder-Decoder Models (T5)",
+    "slug": "encoder-decoder-models",
+    "href": "/curriculum/07-transformers/encoder-decoder-models",
+    "filePath": "content/curriculum/07-transformers/10-encoder-decoder-models.json",
+    "description": "Understand encoder-decoder Transformers through the T5 framework, including source encoding, target generation, cross-attention, sequence-to-sequence training, text-to-text task formulation, and practical applications.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-07-transformers-decoder",
+        "module-06-attention-cross-attention"
+    ],
+    "learningObjectives": [
+        "Explain the encoder-decoder Transformer architecture.",
+        "Describe how source representations are used by a decoder.",
+        "Understand cross-attention in sequence-to-sequence learning.",
+        "Explain the T5 text-to-text formulation.",
+        "Understand teacher forcing and shifted decoder targets.",
+        "Calculate source, target, and cross-attention tensor shapes.",
+        "Build a basic sequence-to-sequence training step.",
+        "Compare encoder-decoder models with encoder-only and decoder-only architectures."
+    ],
+    "sections": [
+        {
+            "id": "encdec-introduction",
+            "title": "1. What Is an Encoder-Decoder Transformer?",
+            "type": "concept",
+            "content": "An encoder-decoder Transformer separates source processing from target generation. The encoder reads the input sequence and produces contextual representations. The decoder generates an output sequence while consulting those representations through cross-attention. This design is useful when an input must be transformed into another sequence, such as translating text, summarizing a document, or converting a question into an answer. The source and target lengths can differ. The encoder processes the source, while the decoder's causal self-attention models dependencies among generated target tokens."
+        },
+        {
+            "id": "encdec-dataflow",
+            "title": "2. End-to-End Data Flow",
+            "type": "concept",
+            "content": "A typical workflow tokenizes a source text, embeds its token IDs, adds positional information, and passes the result through encoder layers. The resulting memory contains contextual source representations. Target tokens are shifted and supplied to the decoder during training. The decoder uses masked self-attention over its available target prefix, cross-attention over encoder memory, and feed-forward layers. A vocabulary projection generates target-token logits. During inference, the source is encoded once and the decoder generates output tokens sequentially, usually stopping at an end-of-sequence token or another configured limit."
+        },
+        {
+            "id": "encdec-cross-attention",
+            "title": "3. Cross-Attention Connects the Two Streams",
+            "type": "concept",
+            "content": "Cross-attention is the key connection between encoder and decoder. The decoder hidden states supply queries, while encoder outputs supply keys and values. The query length is the current target length, and the key/value length is the source length. This allows each target position to retrieve different source information. During translation, one target word may attend to a particular source phrase, while another target word may focus elsewhere. Learned attention patterns are flexible and do not require a manually specified alignment between source and target tokens."
+        },
+        {
+            "id": "encdec-equations",
+            "title": "4. Mathematical Formulation",
+            "type": "math",
+            "content": "Let X be the source token representations and Y the decoder's current target representations. The encoder computes E = Encoder(X). The decoder's causal self-attention produces a target representation H, and cross-attention computes C = softmax(Q_H K_E^T / sqrt(d_k))V_E, where Q_H = HWQ, K_E = EW_K, and V_E = EW_V. The decoder then applies feed-forward transformations and produces final hidden states. A vocabulary projection maps these states to logits. During training, cross-entropy compares each target-position distribution with the correct next target token."
+        },
+        {
+            "id": "encdec-shapes",
+            "title": "5. Tensor Shapes in Sequence-to-Sequence Models",
+            "type": "math",
+            "content": "Let batch size be B, source length S, target length T, model dimension D, and vocabulary size V. Source embeddings have shape (B, S, D), and encoder memory typically has the same shape. Decoder hidden states have shape (B, T, D). For H attention heads, cross-attention scores have shape (B, H, T, S). Decoder self-attention scores have shape (B, H, T, T). The output projection produces logits of shape (B, T, V). These dimensions are useful for debugging because source and target lengths need not match."
+        },
+        {
+            "id": "encdec-t5",
+            "title": "6. Introducing T5",
+            "type": "concept",
+            "content": "T5 stands for Text-to-Text Transfer Transformer. It frames many NLP tasks as mapping an input text to an output text. The input may include a task prefix, such as 'translate English to German:' or 'summarize:'. The model then generates the desired target text. This unified interface allows different tasks to use a shared sequence-to-sequence architecture. T5 uses an encoder-decoder design, but individual checkpoints can differ in scale, training objective, tokenizer, and implementation details. Task prefixes are part of the text interface rather than a universal requirement for all encoder-decoder models."
+        },
+        {
+            "id": "encdec-text-to-text",
+            "title": "7. The Text-to-Text Paradigm",
+            "type": "concept",
+            "content": "Under a text-to-text formulation, classification can be expressed as generating a label string, translation as generating translated text, and summarization as generating a shorter passage. For example, an input might be 'sentiment: this movie was excellent' and the output might be 'positive'. The same architecture can learn multiple task formats when trained appropriately. Output text must still be parsed and evaluated carefully. A generated label may contain extra text or an invalid answer, so practical applications often include validation and task-specific output constraints."
+        },
+        {
+            "id": "encdec-teacher-forcing",
+            "title": "8. Teacher Forcing and Target Shifting",
+            "type": "concept",
+            "content": "During training, the decoder receives the known target prefix rather than its own sampled predictions at every step. If the target sequence is 'I like models EOS', the decoder input can be a start token followed by 'I like models', while labels are 'I like models EOS' aligned to the prediction positions. This shift teaches the model to predict the next target token. A causal mask prevents target positions from accessing future target tokens. During inference, the model no longer has the complete reference target, so it uses its generated prefix instead."
+        },
+        {
+            "id": "encdec-loss",
+            "title": "9. Sequence-to-Sequence Loss",
+            "type": "math",
+            "content": "For target sequence y_1 through y_T, the model learns P(y_t | y_1 through y_{t-1}, source) at each target position. The negative log-likelihood objective is L = -sum over valid target positions t of log P(y_t | y_<t, source). Implementations often average the loss across non-padding labels. Padding labels should be ignored, and decoder inputs must be shifted consistently with labels. Teacher forcing makes parallel training possible across target positions while causal masking preserves the intended conditional probability structure."
+        },
+        {
+            "id": "encdec-applications",
+            "title": "10. Practical Applications",
+            "type": "concept",
+            "content": "Encoder-decoder models are well suited to translation, summarization, grammatical correction, structured text transformation, and many question-answering formulations. The encoder represents the source, and the decoder generates the output. Tasks with long inputs may require truncation, chunking, or architectures that support longer context. For constrained outputs, decoding and post-processing can enforce formats such as labels or structured fields. Performance should be measured using metrics that match the application, alongside human review where semantic quality matters."
+        },
+        {
+            "id": "encdec-pytorch",
+            "title": "11. Build a Small Encoder-Decoder Training Step",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\nclass TinySeq2Seq(nn.Module):\n    def __init__(self, vocab_size, d_model=64, nhead=4, layers=2, max_len=128):\n        super().__init__()\n        self.src_embedding = nn.Embedding(vocab_size, d_model)\n        self.tgt_embedding = nn.Embedding(vocab_size, d_model)\n        self.src_position = nn.Embedding(max_len, d_model)\n        self.tgt_position = nn.Embedding(max_len, d_model)\n        self.transformer = nn.Transformer(\n            d_model=d_model,\n            nhead=nhead,\n            num_encoder_layers=layers,\n            num_decoder_layers=layers,\n            dim_feedforward=4 * d_model,\n            batch_first=True\n        )\n        self.output = nn.Linear(d_model, vocab_size)\n\n    def add_positions(self, tokens, embedding, position_embedding):\n        batch, length = tokens.shape\n        positions = torch.arange(length, device=tokens.device)\n        return embedding(tokens) + position_embedding(positions)[None, :, :]\n\n    def forward(self, source_ids, decoder_input_ids, source_padding_mask=None, target_padding_mask=None):\n        source = self.add_positions(source_ids, self.src_embedding, self.src_position)\n        target = self.add_positions(decoder_input_ids, self.tgt_embedding, self.tgt_position)\n        target_length = decoder_input_ids.shape[1]\n        causal_mask = torch.triu(\n            torch.ones(target_length, target_length, device=target.device, dtype=torch.bool),\n            diagonal=1\n        )\n        hidden = self.transformer(\n            source,\n            target,\n            tgt_mask=causal_mask,\n            src_key_padding_mask=source_padding_mask,\n            tgt_key_padding_mask=target_padding_mask,\n            memory_key_padding_mask=source_padding_mask\n        )\n        return self.output(hidden)\n\nvocab_size = 500\nmodel = TinySeq2Seq(vocab_size)\nsource_ids = torch.randint(0, vocab_size, (2, 8))\nfull_target = torch.randint(0, vocab_size, (2, 7))\ndecoder_input = full_target[:, :-1]\nlabels = full_target[:, 1:]\n\nlogits = model(source_ids, decoder_input)\nloss = nn.functional.cross_entropy(\n    logits.reshape(-1, vocab_size),\n    labels.reshape(-1)\n)\nprint(\"Logits shape:\", logits.shape)\nprint(\"Loss:\", loss.item())",
+            "explanation": "This example demonstrates source encoding, causal target decoding, cross-attention, and next-token loss with a small PyTorch Transformer. Random token IDs are used only to illustrate tensor flow; they do not represent meaningful language. A real implementation needs a tokenizer, valid start and end tokens, padding masks, an optimizer, training data, evaluation, and an autoregressive decoding routine. Check mask conventions for your installed PyTorch version."
+        },
+        {
+            "id": "encdec-decoding",
+            "title": "12. Inference and Output Generation",
+            "type": "concept",
+            "content": "At inference time, the encoder processes the source input and returns memory. The decoder begins with a start token or model-specific initial prefix. It predicts a next-token distribution, selects a token, and appends it to the generated sequence. This repeats until an end token or maximum generation length is reached. Encoder memory is reusable across target steps, and decoder key-value caching can avoid recomputing earlier target projections. Decoding parameters influence output length, diversity, and accuracy."
+        },
+        {
+            "id": "encdec-comparison",
+            "title": "13. Compare Encoder-Only, Decoder-Only, and Encoder-Decoder Models",
+            "type": "concept",
+            "content": "Encoder-only models build bidirectional input representations and are often used for classification or extraction. Decoder-only models use causal attention to predict continuations within a shared sequence. Encoder-decoder models encode a source separately and generate a target through a decoder that can attend to source memory. These distinctions concern information flow and training objectives, not simply the names of model components. Hybrid and specialized architectures exist, and model selection should consider task requirements, latency, available data, and deployment constraints."
+        },
+        {
+            "id": "encdec-limitations",
+            "title": "14. Limitations and Failure Modes",
+            "type": "concept",
+            "content": "Sequence-to-sequence models can omit important source information, generate unsupported claims, repeat phrases, or produce malformed outputs. Source truncation may remove crucial context. Exposure bias describes a difference between training with reference prefixes and inference with model-generated prefixes, although its impact varies by task and system. Evaluation metrics may miss factual or semantic errors. Applications should include robust preprocessing, suitable metrics, source-grounding checks where appropriate, and human review for high-consequence outputs."
+        },
+        {
+            "id": "encdec-debugging",
+            "title": "15. Common Implementation Errors",
+            "type": "concept",
+            "content": "Common errors include shifting decoder inputs and labels incorrectly, forgetting the causal target mask, passing a source padding mask to the wrong argument, and confusing source and target sequence lengths. Another error is treating random token IDs as a real training example. The decoder must use compatible dimensions for cross-attention, and vocabulary logits must align with target labels. In evaluation, ensure that special tokens are removed or retained according to the chosen metric. Small synthetic tests can validate shapes and mask behavior before full training."
+        },
+        {
+            "id": "encdec-experiment",
+            "title": "16. Experiment: Change the Source and Target Lengths",
+            "type": "concept",
+            "content": "Run the example with different source and target lengths. Confirm that encoder memory tracks the source length, decoder hidden states track the decoder input length, and output logits preserve the target input length. Inspect the target causal mask and source padding mask separately. Then imagine decoding one target token at a time while reusing encoder memory. This exercise reinforces the central distinction between source processing and target generation."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "encdec-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the role of the encoder in an encoder-decoder Transformer?",
+            "correctAnswer": "It converts the source sequence into contextual representations used by the decoder.",
+            "solution": "The encoder builds source memory. The decoder uses that memory through cross-attention while generating the target sequence."
+        },
+        {
+            "id": "encdec-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "If the target length is 5 and source length is 9, what is the shape of a single-head cross-attention score matrix?",
+            "correctAnswer": "(5, 9)",
+            "solution": "Each target query compares against nine source keys, producing five rows and nine columns."
+        },
+        {
+            "id": "encdec-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What does T5 mean by a text-to-text framework?",
+            "correctAnswer": "It formulates many NLP tasks as generating output text from input text.",
+            "solution": "Translation, summarization, and classification can all be represented as source text mapped to a target text string, using task-appropriate training data."
+        },
+        {
+            "id": "encdec-ex-4",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Why must decoder inputs and target labels be shifted relative to each other during next-token training?",
+            "correctAnswer": "The decoder input provides the preceding target prefix, while the label at each position represents the next token to predict.",
+            "solution": "If the model receives the target token it is meant to predict at the same position without appropriate shifting and masking, training may not represent the intended next-token task."
+        },
+        {
+            "id": "encdec-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a high-level sequence-to-sequence summarization pipeline.",
+            "correctAnswer": "Tokenize the document, encode the source, train a decoder to predict shifted summary tokens using causal masking and cross-attention, and evaluate generated summaries on held-out documents.",
+            "solution": "The encoder represents the document, and the decoder learns to generate summaries conditioned on source memory. Evaluation should consider content coverage, factual consistency, and readability rather than relying on a single metric."
+        }
+    ],
+    "summary": "Encoder-decoder Transformers encode a source sequence into contextual memory and generate a target sequence through a decoder. Cross-attention connects the target representations to the source memory, while causal self-attention models target-prefix dependencies. T5 demonstrates a text-to-text formulation for many NLP tasks. Correct shifting, masking, tensor dimensions, and evaluation are necessary for a reliable sequence-to-sequence implementation.",
+    "relatedTopics": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-07-transformers-decoder",
+        "module-06-attention-cross-attention",
+        "module-07-transformers-build-tiny-transformer-from-scratch"
+    ]
+}

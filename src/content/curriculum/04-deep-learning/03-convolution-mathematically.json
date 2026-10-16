@@ -1,1 +1,103 @@
-{}
+{
+  "id": "module-04-convolution-mathematically",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 3,
+  "title": "Convolution Mathematically",
+  "slug": "convolution-mathematically",
+  "href": "/curriculum/04-deep-learning/convolution-mathematically",
+  "filePath": "content/curriculum/04-deep-learning/03-convolution-mathematically.json",
+  "description": "Work through discrete convolution-style operations used in CNNs, including kernels, stride, padding, channels, and parameter counts.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "CNNs",
+    "Linear Algebra"
+  ],
+  "learningObjectives": [
+    "Calculate a small 2D kernel operation by hand.",
+    "Compute output dimensions from stride and padding.",
+    "Distinguish cross-correlation from strict mathematical convolution.",
+    "Calculate convolutional parameter counts."
+  ],
+  "sections": [
+    {
+      "id": "kernel",
+      "title": "A Kernel Sliding Over an Input",
+      "type": "concept",
+      "content": "A 2D kernel is a small matrix of learnable coefficients. It is placed over a patch of the input; corresponding values are multiplied, summed, and often combined with a bias. The result is one output value. Moving the kernel over all permitted locations produces a feature map.\n\nMost deep-learning libraries implement the operation commonly called convolution as cross-correlation: the kernel is not flipped before sliding. Since the kernel is learned, this convention does not prevent a network from learning useful filters, but the distinction matters when doing hand calculations."
+    },
+    {
+      "id": "worked",
+      "title": "Worked Numerical Example",
+      "type": "math",
+      "content": "Consider input X = [[1,2,0],[0,1,3],[2,1,0]] and kernel K = [[1,0],[0,-1]]. With stride 1 and no padding, the top-left output is 1×1 + 2×0 + 0×0 + 1×(−1) = 0. The top-right output is 2×1 + 0×0 + 1×0 + 3×(−1) = −1. Repeat for each 2×2 patch to obtain a 2×2 feature map.\n\nThis local multiply-and-sum operation is the central computation of a convolutional layer."
+    },
+    {
+      "id": "dimensions",
+      "title": "Stride, Padding, and Output Size",
+      "type": "math",
+      "content": "For one spatial dimension, output size is floor((N + 2P − K)/S)+1, where N is input size, P is padding on each side, K is kernel size, and S is stride. Stride controls how far the kernel moves each step. Padding adds values—usually zeros—around the input so that border regions are processed and spatial dimensions can be preserved.\n\nExample: N=7, K=3, P=1, S=2 gives floor((7+2−3)/2)+1 = 4. Height and width are calculated independently."
+    },
+    {
+      "id": "channels",
+      "title": "Multiple Channels and Filters",
+      "type": "concept",
+      "content": "For an RGB input, a filter spans all three input channels. Each channel has its own spatial kernel; their responses are summed, then the bias is added. A layer with 32 filters outputs 32 feature maps. The parameter count is C_out×C_in×K_h×K_w plus one bias per output channel when bias is enabled.\n\nA 3×3 convolution from 16 channels to 32 channels has 32×16×3×3 = 4,608 weights and 32 biases, or 4,640 trainable parameters."
+    },
+    {
+      "id": "code",
+      "title": "Verify Shapes with PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nconv = nn.Conv2d(3, 8, kernel_size=3, stride=2, padding=1)\nx = torch.randn(4, 3, 32, 32)\ny = conv(x)\nprint(y.shape)  # [4, 8, 16, 16]\nprint(sum(p.numel() for p in conv.parameters()))  # 224",
+      "language": "python",
+      "explanation": "The spatial formula gives floor((32+2−3)/2)+1 = 16. Parameter count is 8×3×3×3 weights plus 8 biases, totaling 224. Testing shapes with small random tensors is a fast way to verify architectural calculations."
+    },
+    {
+      "id": "pitfalls",
+      "title": "Common Calculation Errors",
+      "type": "concept",
+      "content": "Frequent errors include forgetting that padding is applied on both sides, using integer division incorrectly, omitting input channels from parameter counts, and assuming all convolutions preserve size. For even kernels, asymmetric padding may be needed to preserve a chosen shape. Dilation expands the effective kernel footprint and changes the output-size formula."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "conv-math-ex1",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "Input size is 10, kernel 3, stride 1, and padding 0. What is output size?",
+      "correctAnswer": "8.",
+      "solution": "floor((10−3)/1)+1 = 8."
+    },
+    {
+      "id": "conv-math-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "Input size is 32, kernel 3, stride 2, padding 1. What is output size?",
+      "correctAnswer": "16.",
+      "solution": "floor((32+2−3)/2)+1 = floor(31/2)+1 = 15+1 = 16."
+    },
+    {
+      "id": "conv-math-ex3",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "How many parameters are in a biased 3×3 convolution from 8 channels to 12 channels?",
+      "correctAnswer": "876.",
+      "solution": "Weights = 12×8×3×3 = 864; biases = 12; total = 876."
+    },
+    {
+      "id": "conv-math-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why does a filter have a depth equal to the input channel count in a standard convolution?",
+      "correctAnswer": "It combines information across all input channels at each spatial location.",
+      "solution": "Each output channel aggregates spatial responses from every input channel."
+    }
+  ],
+  "summary": "Convolution is a repeated local multiply-and-sum operation. Output shape depends on kernel, stride, and padding; parameter count depends on both input and output channels.",
+  "relatedTopics": [
+    "cnns",
+    "pooling",
+    "image-classification"
+  ]
+}

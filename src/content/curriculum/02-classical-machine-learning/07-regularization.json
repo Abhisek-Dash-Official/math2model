@@ -1,1 +1,169 @@
-{}
+{
+    "id": "classical-ml-regularization",
+    "title": "Regularization",
+    "slug": "regularization",
+    "description": "Understand how regularization controls model complexity and improves generalization through L1, L2, Elastic Net, early stopping, and related techniques.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Linear Regression",
+        "Loss Functions",
+        "Gradient Descent",
+        "Overfitting and Underfitting"
+    ],
+    "learningObjectives": [
+        "Explain why regularization can improve generalization.",
+        "Distinguish L1, L2, and Elastic Net regularization.",
+        "Write regularized objective functions for regression models.",
+        "Explain how regularization strength affects bias and variance.",
+        "Understand the role of feature scaling in regularized models.",
+        "Distinguish coefficient regularization from early stopping and data augmentation.",
+        "Tune regularization using validation data or cross-validation."
+    ],
+    "sections": [
+        {
+            "id": "reg-intuition",
+            "title": "1. What Is Regularization?",
+            "type": "text",
+            "content": "Regularization is a family of techniques that discourage a model from becoming unnecessarily complex. A model can fit training data extremely well while learning patterns that do not generalize. Regularization modifies the training process to prefer solutions with useful structural properties, such as smaller coefficients or fewer active features. It does not guarantee better performance, and excessive regularization can cause underfitting. The goal is to improve performance on unseen data rather than simply minimizing training error."
+        },
+        {
+            "id": "reg-objective",
+            "title": "2. Regularized Objective",
+            "type": "formula",
+            "content": "A common regularized objective has the form J(theta) = DataLoss(theta) + lambda * Penalty(theta), where lambda >= 0 controls the regularization strength. When lambda = 0, the penalty has no effect. Increasing lambda generally places more emphasis on the penalty relative to fitting the training data. The precise effect depends on the model, penalty definition, feature scales, and optimizer. Regularization strength is a hyperparameter that should be selected using validation data or cross-validation."
+        },
+        {
+            "id": "reg-l2",
+            "title": "3. L2 Regularization",
+            "type": "formula",
+            "content": "L2 regularization adds a squared-coefficient penalty, commonly lambda * sum_j w_j^2, to the data loss. The exact constant factor varies by convention. L2 regularization discourages large coefficient magnitudes and usually shrinks weights toward zero without making them exactly zero. It is also known as ridge regularization in linear regression. The intercept or bias is often excluded from the penalty, although implementations differ. Check the objective and library convention when interpreting a regularization parameter."
+        },
+        {
+            "id": "reg-l1",
+            "title": "4. L1 Regularization",
+            "type": "formula",
+            "content": "L1 regularization adds lambda * sum_j |w_j| to the objective. Its geometry and optimization behavior can encourage some coefficients to become exactly zero, producing sparse solutions. In linear regression this is associated with Lasso. Sparse coefficients can simplify a model and act as a form of feature selection, but they do not prove that selected features are causally important. With highly correlated features, L1 methods may select one feature from a group in an unstable way."
+        },
+        {
+            "id": "reg-elastic-net",
+            "title": "5. Elastic Net",
+            "type": "formula",
+            "content": "Elastic Net combines L1 and L2 penalties: J(w) = DataLoss(w) + lambda1*sum_j |w_j| + lambda2*sum_j w_j^2. It can provide sparsity while also stabilizing coefficients, especially when features are correlated. Many software libraries express the mixture using one overall regularization parameter and a separate ratio controlling the L1 versus L2 contribution. Because conventions differ, consult the implementation's parameter definitions before transferring hyperparameter values between libraries."
+        },
+        {
+            "id": "reg-comparison",
+            "title": "6. Comparing L1, L2, and Elastic Net",
+            "type": "text",
+            "content": "L1 can set coefficients exactly to zero and is useful when sparse solutions are desirable. L2 shrinks coefficients smoothly and is often stable when many features contribute small amounts of signal. Elastic Net combines both behaviors. None of these penalties automatically resolves data leakage, mislabeled data, or poor feature engineering. Their usefulness depends on the dataset and objective. Compare alternatives through the same validation procedure rather than assuming one method is always best."
+        },
+        {
+            "id": "reg-bias-variance",
+            "title": "7. Regularization and Bias-Variance",
+            "type": "text",
+            "content": "Increasing regularization restricts the set of parameter values or solutions the model can express. This often increases bias and decreases variance. With too little regularization, the model may fit noise and have high variance. With too much regularization, it may fail to capture genuine structure and have high bias. The useful setting balances these effects and is estimated empirically using held-out data or cross-validation."
+        },
+        {
+            "id": "reg-feature-scaling",
+            "title": "8. Why Feature Scaling Matters",
+            "type": "text",
+            "content": "Coefficient penalties act on numerical parameter values. If one feature is measured in meters and another in millimeters, equivalent predictive effects may correspond to very different coefficient magnitudes. This can make regularization behave unevenly across features. Standardizing numerical features often makes coefficient penalties more comparable. Fit scaling transformations using training data only. For categorical features, choose an encoding and scaling strategy appropriate to the model and the meaning of the features."
+        },
+        {
+            "id": "reg-logistic",
+            "title": "9. Regularization in Logistic Regression",
+            "type": "text",
+            "content": "Logistic regression commonly minimizes cross-entropy plus a coefficient penalty. This can reduce excessively large coefficients, improve stability, and limit overfitting when features are numerous or correlated. The regularization parameter may be expressed as lambda, alpha, or an inverse strength parameter such as C depending on the library. In common scikit-learn estimators, a smaller C corresponds to stronger regularization. Always confirm the estimator's documentation and defaults before interpreting a parameter."
+        },
+        {
+            "id": "reg-early-stopping",
+            "title": "10. Early Stopping",
+            "type": "text",
+            "content": "Early stopping monitors validation performance while training and stops when improvement stalls for a chosen patience period. It limits how long the model can adapt to the training data and can act as an implicit form of regularization. The validation set should guide stopping, while the test set should remain reserved for final evaluation. Early stopping is especially common in iterative methods and neural networks, but the same principle applies whenever training progress can be monitored."
+        },
+        {
+            "id": "reg-other-techniques",
+            "title": "11. Other Ways to Reduce Overfitting",
+            "type": "text",
+            "content": "Additional strategies include collecting more representative training data, using data augmentation when transformations preserve the target, selecting a simpler model, reducing irrelevant features, pruning decision trees, and using ensembles appropriately. These techniques address model complexity or data limitations in different ways. Regularization is not a substitute for representative sampling, valid labels, correct splitting, or a leakage-free pipeline."
+        },
+        {
+            "id": "reg-validation",
+            "title": "12. Choosing Regularization Strength",
+            "type": "text",
+            "content": "Select regularization strength using a validation set or cross-validation. A logarithmic search over values spanning several orders of magnitude is often more efficient than trying only uniformly spaced values. Evaluate both predictive performance and relevant operational considerations, such as coefficient stability or sparsity. All preprocessing and feature selection must occur within each training fold during cross-validation. After selecting hyperparameters, evaluate the chosen workflow once on the untouched test set."
+        },
+        {
+            "id": "reg-python",
+            "title": "13. Ridge, Lasso, and Elastic Net in Python",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import Ridge, Lasso, ElasticNet\nfrom sklearn.model_selection import cross_val_score\nfrom sklearn.datasets import make_regression\nimport numpy as np\n\nX, y = make_regression(\n    n_samples=300,\n    n_features=12,\n    noise=20.0,\n    random_state=42\n)\n\nmodels = {\n    'Ridge': Ridge(alpha=1.0),\n    'Lasso': Lasso(alpha=0.1, max_iter=10000),\n    'ElasticNet': ElasticNet(alpha=0.1, l1_ratio=0.5, max_iter=10000)\n}\n\nfor name, estimator in models.items():\n    model = make_pipeline(StandardScaler(), estimator)\n    scores = cross_val_score(model, X, y, cv=5, scoring='neg_mean_squared_error')\n    mean_mse = -np.mean(scores)\n    print(f'{name}: mean CV MSE = {mean_mse:.2f}')",
+            "explanation": "The example compares three regularized regression models using five-fold cross-validation. StandardScaler is placed inside the pipeline so it is fitted separately on each training fold, avoiding leakage. The reported score is mean cross-validated MSE; lower is better for this metric. The numeric scores can vary with dataset generation and library versions."
+        },
+        {
+            "id": "reg-coefficient-interpretation",
+            "title": "14. Interpreting Coefficients Carefully",
+            "type": "text",
+            "content": "Regularized coefficients are shaped by both the predictive signal and the penalty. A coefficient shrinking toward zero does not prove its feature is useless, especially when predictors are correlated. Coefficient magnitude also depends on feature scaling and encoding. For reliable interpretation, document preprocessing, compare stability across folds, and consider domain knowledge. Predictive importance and causal importance are different concepts."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "reg-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the purpose of adding a regularization penalty to a model's training objective?",
+            "correctAnswer": "To discourage unnecessarily complex solutions and potentially improve generalization.",
+            "solution": "The penalty changes the preferred solution so that fitting the training data is balanced against a complexity-related cost, such as large coefficients."
+        },
+        {
+            "id": "reg-ex-2",
+            "type": "comparison",
+            "difficulty": "medium",
+            "question": "Which regularizer is more directly associated with sparse coefficients: L1 or L2?",
+            "correctAnswer": "L1 regularization.",
+            "solution": "The absolute-value penalty used by L1 can produce exact zeros. L2 generally shrinks coefficients continuously toward zero without typically setting them exactly to zero."
+        },
+        {
+            "id": "reg-ex-3",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A regression dataset contains many correlated features. Which approach could be worth comparing with Lasso?",
+            "correctAnswer": "Ridge regression or Elastic Net.",
+            "solution": "Ridge often stabilizes correlated coefficients through L2 shrinkage. Elastic Net combines L1 and L2 behavior and may be useful when sparsity is also desired."
+        },
+        {
+            "id": "reg-ex-4",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A preprocessing scaler is fitted on the complete dataset before cross-validation. Why is this problematic?",
+            "correctAnswer": "Information from validation folds influences the preprocessing fitted for training folds, creating data leakage.",
+            "solution": "The scaler must be fitted separately on each fold's training partition. Put the scaler and estimator in a pipeline so cross-validation applies the correct sequence."
+        },
+        {
+            "id": "reg-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "Training error is low, validation error is high, and increasing regularization improves validation performance up to a point. Explain the likely pattern.",
+            "correctAnswer": "The original model was likely overfitting; moderate regularization reduced variance, while excessive regularization could eventually cause underfitting.",
+            "solution": "Regularization can reduce sensitivity to training noise. However, a penalty that is too strong restricts the model too much, increasing bias. The best value is selected using validation data."
+        }
+    ],
+    "summary": [
+        "Regularization balances fitting data against a penalty on model complexity.",
+        "L1 can produce sparse coefficients; L2 usually shrinks coefficients smoothly.",
+        "Elastic Net combines L1 and L2 penalties.",
+        "Regularization strength is a hyperparameter and should be validated.",
+        "Feature scaling influences coefficient-based penalties.",
+        "Early stopping and model simplification can also reduce overfitting.",
+        "Leakage-free pipelines are essential when tuning regularized models."
+    ],
+    "relatedTopics": [
+        "loss-functions",
+        "gradient-descent",
+        "bias-variance",
+        "overfitting-underfitting",
+        "evaluation-metrics"
+    ]
+}

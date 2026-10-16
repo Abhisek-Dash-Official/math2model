@@ -1,1 +1,231 @@
-{}
+{
+    "id": "module-08-natural-language-processing-tokenization",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 1,
+    "title": "Tokenization Techniques",
+    "slug": "tokenization",
+    "href": "/curriculum/08-natural-language-processing/tokenization",
+    "filePath": "content/curriculum/08-natural-language-processing/01-tokenization.json",
+    "description": "Understand how raw text is converted into tokens that machine learning models can process, including whitespace, word-level, character-level, and subword tokenization.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Python Fundamentals",
+        "Basic String Manipulation",
+        "Introduction to Natural Language Processing"
+    ],
+    "learningObjectives": [
+        "Explain why computers require text preprocessing before numerical modeling.",
+        "Distinguish documents, sentences, words, tokens, and token IDs.",
+        "Implement whitespace and word-level tokenization in Python.",
+        "Understand character-level and subword tokenization.",
+        "Recognize the challenges of punctuation, contractions, Unicode, and multilingual text.",
+        "Evaluate how tokenization affects vocabulary size, sequence length, and model performance."
+    ],
+    "sections": [
+        {
+            "id": "what-is-tokenization",
+            "title": "What Is Tokenization?",
+            "type": "concept",
+            "content": "Tokenization is the process of dividing text into smaller units called tokens. Depending on the tokenizer, a token may represent a word, part of a word, a character, punctuation, or a special symbol. Consider the sentence 'Natural language processing is fascinating.' A simple word tokenizer might produce ['Natural', 'language', 'processing', 'is', 'fascinating', '.']. Tokenization creates a structured representation of text, but it does not automatically understand the meaning of the sentence. It only determines how the text is divided into units."
+        },
+        {
+            "id": "why-tokenization-matters",
+            "title": "Why Tokenization Matters",
+            "type": "concept",
+            "content": "Most neural networks operate on numerical tensors rather than arbitrary text strings. A tokenizer defines the units that will eventually be mapped to numerical IDs and embedding vectors. Its decisions influence the number of tokens in a sentence, the size of the model vocabulary, how rare words are represented, and the computational cost of processing a sequence. A poor tokenization strategy can split meaningful units awkwardly, produce unnecessarily long sequences, or struggle with languages and writing systems that do not use spaces consistently."
+        },
+        {
+            "id": "text-processing-pipeline",
+            "title": "From Raw Text to Model Input",
+            "type": "concept",
+            "content": "A common text-processing pipeline is raw text, optional normalization, tokenization, token-to-ID conversion, embedding lookup, and neural network processing. For example, the text 'AI learns from data.' may become ['AI', 'learns', 'from', 'data', '.']. A vocabulary maps these tokens to integers such as [17, 42, 8, 31, 4]. An embedding layer then maps each integer to a learned vector. The exact token IDs depend on the tokenizer and vocabulary; they do not have universal meanings."
+        },
+        {
+            "id": "tokenization-terminology",
+            "title": "Important Terminology",
+            "type": "concept",
+            "content": "A document is a complete text item, such as an article. A sentence is a linguistic unit within a document. A token is a unit produced by a tokenizer. A vocabulary is the collection of token types known to a tokenizer. A token ID is an integer assigned to a vocabulary entry. A token occurrence is one appearance of a token in a sequence. For example, 'data helps data science' contains four token occurrences under whitespace tokenization, but only three distinct token types: 'data', 'helps', and 'science'."
+        },
+        {
+            "id": "whitespace-tokenization",
+            "title": "Whitespace Tokenization",
+            "type": "concept",
+            "content": "Whitespace tokenization separates text wherever whitespace occurs. It is easy to implement and useful for understanding the basic idea of tokenization. However, punctuation remains attached to neighboring words, repeated whitespace can produce undesirable behavior in some implementations, and languages without spaces between words require different approaches. Python's split() method handles runs of whitespace naturally, making it a convenient starting point."
+        },
+        {
+            "id": "whitespace-python",
+            "title": "Implementing Whitespace Tokenization",
+            "type": "code",
+            "language": "python",
+            "content": "text = \"NLP helps computers process human language.\"\ntokens = text.split()\nprint(tokens)\nprint(\"Number of tokens:\", len(tokens))",
+            "explanation": "The split() method separates the sentence on whitespace. The period remains attached to 'language.' because this tokenizer does not treat punctuation as an independent unit. The resulting sequence is ['NLP', 'helps', 'computers', 'process', 'human', 'language.']."
+        },
+        {
+            "id": "word-level-tokenization",
+            "title": "Word-Level Tokenization",
+            "type": "concept",
+            "content": "Word-level tokenization attempts to represent each word as an independent token and commonly separates punctuation into its own units. It can make text easy to inspect and interpret. However, inflected words, spelling variations, names, and newly created terms may produce a very large vocabulary. For instance, 'connect', 'connected', 'connecting', and 'connection' may become four different vocabulary entries even though they are related."
+        },
+        {
+            "id": "regex-tokenization",
+            "title": "Tokenization with Regular Expressions",
+            "type": "code",
+            "language": "python",
+            "content": "import re\n\ndef tokenize_words(text):\n    return re.findall(r\"\\w+|[^\\w\\s]\", text, flags=re.UNICODE)\n\ntext = \"Hello, NLP! It's useful in 2026.\"\nprint(tokenize_words(text))",
+            "explanation": "The pattern extracts runs of word characters or individual non-whitespace punctuation characters. It separates commas and periods, but the apostrophe in 'It's' is treated as punctuation. Regular expressions provide control, but real production tokenizers need more careful rules for contractions, Unicode, language-specific conventions, and special tokens."
+        },
+        {
+            "id": "sentence-tokenization",
+            "title": "Sentence Tokenization",
+            "type": "concept",
+            "content": "Sentence tokenization divides a document into sentences rather than words. A naive approach splits on periods, but this fails on abbreviations such as 'Dr.', decimal values such as '3.14', and initials. More advanced sentence tokenizers use language-specific rules or statistical models. Sentence boundaries are useful for summarization, document segmentation, translation, and building sentence-level training examples."
+        },
+        {
+            "id": "sentence-tokenization-example",
+            "title": "A Simple Sentence Splitter",
+            "type": "code",
+            "language": "python",
+            "content": "import re\n\ntext = \"NLP is useful. Tokenization is important! Models learn from data?\"\nsentences = re.split(r\"(?<=[.!?])\\s+\", text.strip())\nprint(sentences)",
+            "explanation": "This regular expression splits when whitespace follows a period, exclamation mark, or question mark. It is a useful demonstration, not a universal sentence tokenizer. It may incorrectly split abbreviations or handle unusual punctuation poorly."
+        },
+        {
+            "id": "character-level-tokenization",
+            "title": "Character-Level Tokenization",
+            "type": "concept",
+            "content": "Character-level tokenization represents text as individual characters. The word 'model' becomes ['m', 'o', 'd', 'e', 'l']. It keeps the basic vocabulary relatively small and can represent unfamiliar words using known characters. The disadvantage is that sequences become longer and the model must learn word-level patterns from smaller units. Character-level models can be useful for spelling correction, morphological analysis, and text containing many unusual strings."
+        },
+        {
+            "id": "character-python",
+            "title": "Character Tokenization in Python",
+            "type": "code",
+            "language": "python",
+            "content": "text = \"model\"\ncharacters = list(text)\nprint(characters)\nprint(\"Character count:\", len(characters))",
+            "explanation": "Python converts the string into a sequence of Unicode code points represented as strings. Some visible symbols, especially combined emoji and accented characters, may consist of multiple code points. Therefore, list(text) is not always equivalent to splitting text into human-perceived characters."
+        },
+        {
+            "id": "subword-tokenization",
+            "title": "Subword Tokenization",
+            "type": "concept",
+            "content": "Subword tokenization splits words into reusable smaller units. A word such as 'unhappiness' might be represented as ['un', 'happi', 'ness'] by one tokenizer, although actual segmentation depends on its learned vocabulary. Subword methods balance word-level and character-level representations: common words can remain intact, while rare words can be assembled from smaller units. Modern language models commonly use subword or closely related tokenization schemes."
+        },
+        {
+            "id": "unknown-word-problem",
+            "title": "The Unknown-Word Problem",
+            "type": "concept",
+            "content": "A fixed word-level vocabulary cannot represent every possible word. New product names, misspellings, technical terms, and newly coined words may be absent from the training vocabulary. A basic tokenizer may map these words to an unknown token, often written as <UNK>. Subword tokenizers reduce this problem by composing unfamiliar words from known pieces. Byte-level approaches can represent arbitrary text bytes, although their segmentation and sequence-length behavior differ from word-based approaches."
+        },
+        {
+            "id": "normalization",
+            "title": "Text Normalization",
+            "type": "concept",
+            "content": "Normalization transforms text into a consistent representation before or during tokenization. Common operations include Unicode normalization, case folding, whitespace cleanup, and sometimes accent handling. For example, lowercasing makes 'Model' and 'model' identical. However, normalization can remove useful distinctions: names, acronyms, programming identifiers, and case-sensitive strings may carry important information. The right policy depends on the task and must be consistent between training and inference."
+        },
+        {
+            "id": "normalization-python",
+            "title": "A Basic Normalization Pipeline",
+            "type": "code",
+            "language": "python",
+            "content": "import unicodedata\n\ndef normalize_text(text):\n    text = unicodedata.normalize(\"NFC\", text)\n    text = \" \".join(text.split())\n    return text\n\nsample = \"  Natural   Language   Processing  \"\nprint(normalize_text(sample))",
+            "explanation": "Unicode NFC normalization combines canonically equivalent sequences when possible, while split-and-join collapses repeated whitespace. This function deliberately preserves capitalization and punctuation. Normalization should be chosen for the target language and application rather than applied blindly."
+        },
+        {
+            "id": "contractions-and-punctuation",
+            "title": "Contractions, Punctuation, and Special Cases",
+            "type": "concept",
+            "content": "Contractions such as 'don't', possessives such as 'model's', hyphenated terms, URLs, email addresses, hashtags, and source-code identifiers can be tokenized in multiple valid ways. The best choice depends on what the model needs to learn. A sentiment model might benefit from preserving negation in 'don't like'. A code model may need to preserve punctuation that defines operators or identifiers. A tokenizer designed for one task should not automatically be assumed suitable for another."
+        },
+        {
+            "id": "multilingual-tokenization",
+            "title": "Multilingual Tokenization",
+            "type": "concept",
+            "content": "Languages differ in their writing systems, word boundaries, morphology, and character usage. English often separates words with spaces, but Chinese text typically does not mark every word boundary with spaces. Some languages form many word variants through morphology. A multilingual tokenizer must allocate vocabulary capacity across languages while representing their text efficiently. If a language receives poor vocabulary coverage, the same sentence may require many more tokens, increasing computation and potentially affecting model quality."
+        },
+        {
+            "id": "token-count-and-compute",
+            "title": "Token Count and Computational Cost",
+            "type": "concept",
+            "content": "Tokenization determines sequence length, which affects memory and computation. In standard full self-attention, the attention-score matrix scales quadratically with sequence length. If a tokenizer represents the same text with twice as many tokens, the attention matrix can contain approximately four times as many entries, assuming other dimensions remain fixed. This is one reason efficient tokenization matters for long documents and large language models."
+        },
+        {
+            "id": "tokenization-comparison",
+            "title": "Comparing Tokenization Strategies",
+            "type": "concept",
+            "content": "Whitespace tokenization is simple but leaves punctuation attached. Word-level tokenization gives readable units but may require a large vocabulary. Character-level tokenization has broad coverage but creates long sequences. Subword tokenization offers a practical balance between vocabulary size and sequence length. Byte-level tokenization offers robust coverage of arbitrary text but may split common words into multiple units. There is no universally best tokenizer; evaluate vocabulary coverage, token count, language support, and downstream task performance."
+        },
+        {
+            "id": "tokenizer-evaluation",
+            "title": "How to Evaluate a Tokenizer",
+            "type": "concept",
+            "content": "Useful evaluation criteria include average tokens per word, average tokens per document, vocabulary size, unknown-token frequency, language-specific coverage, and the ability to preserve meaningful units. For an application with strict latency limits, token count may be particularly important. For scientific text, mathematical notation and chemical formulas deserve special attention. For source code, identifiers, whitespace, and operators can be semantically significant. Evaluation should use representative data rather than a handful of convenient examples."
+        },
+        {
+            "id": "build-tokenizer",
+            "title": "Build a Small Educational Tokenizer",
+            "type": "code",
+            "language": "python",
+            "content": "import re\n\ndef tokenize(text):\n    text = \" \".join(text.split())\n    return re.findall(r\"\\w+|[^\\w\\s]\", text, flags=re.UNICODE)\n\nexamples = [\"Hello, world!\", \"NLP is useful.\", \"AI models learn.\"]\nfor sentence in examples:\n    print(sentence, \"->\", tokenize(sentence))",
+            "explanation": "This compact tokenizer normalizes whitespace and separates punctuation from word-like sequences. It is suitable for learning and experiments, but it is not a replacement for a tested production tokenizer or a pretrained model's tokenizer."
+        },
+        {
+            "id": "common-tokenization-mistakes",
+            "title": "Common Tokenization Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include assuming that every token is a word, treating token IDs as meaningful numeric values, lowercasing text without considering the task, splitting sentences with a naive period rule, ignoring Unicode, and using a different tokenizer at inference time. Another frequent error is assuming that token boundaries are consistent across models. A word may be one token for one tokenizer and several tokens for another. Always use the tokenizer associated with the model being trained or evaluated."
+        },
+        {
+            "id": "tokenization-applications",
+            "title": "Applications of Tokenization",
+            "type": "concept",
+            "content": "Tokenization is used in sentiment analysis, document classification, search engines, information extraction, machine translation, speech-to-text pipelines, chatbots, and large language models. Search applications may preserve terms and punctuation that affect retrieval. Language models need tokenization that supports training and generation. Domain-specific systems may require special treatment for dates, measurements, chemical notation, source code, or product identifiers."
+        },
+        {
+            "id": "tokenization-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Tokenization converts raw text into a sequence of units suitable for numerical representation. Different strategies operate at whitespace, word, character, subword, or byte levels. Tokenization choices affect vocabulary size, sequence length, handling of rare words, and downstream model cost. Normalization must be task-aware, multilingual data needs careful evaluation, and model inference should use the correct tokenizer. Tokenization is a foundational design choice rather than a trivial preprocessing step."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "tokenization-exercise-1",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Use Python split() to tokenize 'Deep learning powers modern NLP' and count the resulting tokens.",
+            "correctAnswer": "['Deep', 'learning', 'powers', 'modern', 'NLP'] with 5 tokens.",
+            "solution": "text = 'Deep learning powers modern NLP'; tokens = text.split(); print(tokens); print(len(tokens)). The split() method separates the sentence at whitespace."
+        },
+        {
+            "id": "tokenization-exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why might character-level tokenization be more robust to unfamiliar words than a fixed word-level vocabulary?",
+            "correctAnswer": "An unfamiliar word can be composed from known characters even when the complete word is absent from the vocabulary.",
+            "solution": "A word-level vocabulary may map an unseen word to an unknown token. A character-level tokenizer represents its constituent characters separately, assuming those characters are supported."
+        },
+        {
+            "id": "tokenization-exercise-3",
+            "type": "analytical",
+            "difficulty": "intermediate",
+            "question": "A tokenizer represents a document with 100 tokens, while another represents it with 200 tokens. Approximately how does the number of entries in a full self-attention score matrix change?",
+            "correctAnswer": "It increases from 10000 to 40000 entries, approximately four times as many.",
+            "solution": "A full attention score matrix has sequence dimensions L by L. Doubling L multiplies its number of entries by 2 squared, or 4."
+        },
+        {
+            "id": "tokenization-exercise-4",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "You are building a sentiment classifier. Explain why blindly removing punctuation and lowercasing every character might be undesirable.",
+            "correctAnswer": "Punctuation and capitalization can express emphasis, abbreviations, named entities, or distinctions useful to the task.",
+            "solution": "Preprocessing should be evaluated empirically. For example, exclamation marks may indicate emphasis, and capitalization may distinguish names or acronyms. Normalization should preserve useful signals."
+        }
+    ],
+    "summary": "Tokenization transforms raw text into meaningful processing units. Whitespace, word-level, character-level, subword, and byte-level approaches have different trade-offs. The choice influences unknown-word handling, sequence length, vocabulary size, multilingual coverage, and computational cost. Effective NLP systems select and evaluate tokenization according to their data, model, and task.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-vocabulary",
+        "module-08-natural-language-processing-one-hot-encoding",
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-subword-tokenization-bpe"
+    ]
+}

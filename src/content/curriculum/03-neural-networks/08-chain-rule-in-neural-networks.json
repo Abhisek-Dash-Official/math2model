@@ -1,1 +1,159 @@
-{}
+{
+    "id": "chain-rule-in-neural-networks",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 8,
+    "title": "Chain Rule in Neural Networks",
+    "slug": "chain-rule-in-neural-networks",
+    "description": "Develop a mathematical understanding of the chain rule and how it enables neural network training, including nested functions, composite derivatives, computational paths, vector-Jacobian products, multilayer gradient calculations, and numerical verification.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Functions and derivatives",
+        "Basic differential calculus",
+        "Computational graphs",
+        "Forward propagation",
+        "Backpropagation fundamentals"
+    ],
+    "learningObjectives": [
+        "State and apply the chain rule for composite functions.",
+        "Calculate derivatives through nested mathematical expressions.",
+        "Explain how the chain rule enables backpropagation.",
+        "Calculate gradients through multiple neural network layers.",
+        "Understand the role of local derivatives and gradient signals.",
+        "Explain gradient accumulation across multiple computational paths.",
+        "Verify derivatives with numerical examples and automatic differentiation."
+    ],
+    "sections": [
+        {
+            "id": "chain-rule-introduction",
+            "title": "1. What Is the Chain Rule?",
+            "type": "concept",
+            "content": "The chain rule is a calculus rule used to differentiate composite functions. A composite function is created when one function is applied to the result of another function.\n\nSuppose:\n\ny = f(u)\nu = g(x)\n\nThen y depends on x through u. The chain rule states:\n\ndy/dx = (dy/du) * (du/dx)\n\nIn words, the derivative of the final output with respect to the original input equals the derivative of the outer function with respect to its input multiplied by the derivative of the inner function with respect to the original input.\n\nNeural networks are compositions of functions. Each layer receives the output of the previous layer and transforms it. The final loss therefore depends on earlier weights through many intermediate computations.\n\nThe chain rule allows us to calculate how the loss changes with respect to each parameter by combining local derivatives along the computation path. Backpropagation is an efficient application of this principle to neural networks."
+        },
+        {
+            "id": "chain-rule-simple",
+            "title": "2. A Simple Chain Rule Example",
+            "type": "math",
+            "content": "Consider:\n\ny = (3x + 2)^2\n\nDefine the inner function:\n\nu = 3x + 2\n\nThe outer function is:\n\ny = u^2\n\nFirst calculate the outer derivative:\n\ndy/du = 2u\n\nThen calculate the inner derivative:\n\ndu/dx = 3\n\nApply the chain rule:\n\ndy/dx = (dy/du)*(du/dx)\n\ndy/dx = 2u*3 = 6u\n\nSubstitute u = 3x + 2:\n\ndy/dx = 6(3x + 2) = 18x + 12\n\nAt x = 1:\n\ndy/dx = 18 + 12 = 30\n\nThe result matches the derivative obtained by expanding the expression first: y = 9x^2 + 12x + 4, so dy/dx = 18x + 12.\n\nThe chain rule becomes especially valuable when a function contains many nested operations, because each component can be differentiated separately."
+        },
+        {
+            "id": "chain-rule-neuron",
+            "title": "3. Chain Rule for a Single Neuron",
+            "type": "math",
+            "content": "Consider a single neuron with a sigmoid activation:\n\nz = wx + b\na = sigmoid(z)\nL = 0.5*(a - y)^2\n\nThe loss depends on a, a depends on z, and z depends on w and b.\n\nThe derivative with respect to the weight is:\n\ndL/dw = (dL/da)*(da/dz)*(dz/dw)\n\nCalculate each factor:\n\ndL/da = a - y\n\nda/dz = a*(1-a)\n\ndz/dw = x\n\nTherefore:\n\ndL/dw = (a-y)*a*(1-a)*x\n\nFor the bias:\n\ndL/db = (a-y)*a*(1-a)\n\nThese formulas assume the sigmoid activation and the specified half-squared-error loss. A different loss can produce a different derivative, and some combinations simplify the expression substantially.\n\nThis decomposition illustrates a core idea of backpropagation: the final loss gradient is assembled from local derivatives."
+        },
+        {
+            "id": "chain-rule-numerical",
+            "title": "4. Numerical Example for a Sigmoid Neuron",
+            "type": "math",
+            "content": "Suppose:\n\nx = 2\nw = 0\nb = 0\ny = 1\n\nThe pre-activation is:\n\nz = wx + b = 0\n\nThe sigmoid output is:\n\na = sigmoid(0) = 0.5\n\nThe loss is:\n\nL = 0.5*(0.5 - 1)^2 = 0.125\n\nNow calculate the weight gradient:\n\ndL/da = a-y = 0.5-1 = -0.5\n\nda/dz = a*(1-a) = 0.5*0.5 = 0.25\n\ndz/dw = x = 2\n\nThus:\n\ndL/dw = (-0.5)*(0.25)*(2) = -0.25\n\nFor the bias:\n\ndL/db = (-0.5)*(0.25)*(1) = -0.125\n\nThe gradients are negative. A small gradient-descent step therefore increases both w and b, which increases the neuron's pre-activation and its sigmoid output in this example.\n\nThe result shows how derivatives from the loss, activation, and affine transformation combine into the final parameter gradients."
+        },
+        {
+            "id": "chain-rule-multilayer",
+            "title": "5. The Chain Rule Across Multiple Layers",
+            "type": "math",
+            "content": "Consider a network with two layers:\n\nz1 = W1*x + b1\na1 = f1(z1)\n\nz2 = W2*a1 + b2\na2 = f2(z2)\n\nL = loss(a2, y)\n\nTo calculate the derivative of the loss with respect to W1, we follow the dependency chain from the loss to the first layer.\n\nIn a simplified scalar notation:\n\ndL/dW1 = (dL/da2)*(da2/dz2)*(dz2/da1)*(da1/dz1)*(dz1/dW1)\n\nFor a matrix-valued network, the corresponding derivatives involve vectors, matrices, and Jacobian-vector or vector-Jacobian products. The scalar expression captures the basic dependency pattern but is not a complete matrix formula.\n\nThe gradient must pass through the output activation, output affine transformation, hidden activation, and hidden affine transformation.\n\nBackpropagation calculates these contributions efficiently without explicitly constructing every large Jacobian matrix. It uses the local derivative of each operation and the gradient arriving from the next operation."
+        },
+        {
+            "id": "chain-rule-multiple-paths",
+            "title": "6. Multiple Computational Paths",
+            "type": "math",
+            "content": "A variable can affect a loss through more than one path. When this happens, the total derivative is the sum of the contributions from each path.\n\nConsider:\n\nu = x^2\nv = 3x\nL = u + v\n\nThe first path contributes:\n\ndL/du * du/dx = 1 * 2x = 2x\n\nThe second path contributes:\n\ndL/dv * dv/dx = 1 * 3 = 3\n\nTherefore:\n\ndL/dx = 2x + 3\n\nAt x = 2, the derivative is 7.\n\nThis principle matters in networks with residual connections. For example, if an output is h(x) + x, the gradient with respect to x contains contributions from both h(x) and the identity path.\n\nIt also matters when parameters are shared across operations. Each path through which a shared parameter influences the final loss contributes to its total gradient."
+        },
+        {
+            "id": "chain-rule-vector-jacobian",
+            "title": "7. Vector-Jacobian Products",
+            "type": "concept",
+            "content": "Neural network layers usually transform vectors or tensors rather than individual scalar values. The derivative of a vector-valued function with respect to another vector is represented mathematically by a Jacobian matrix.\n\nIf y = f(x), where x has n components and y has m components, the Jacobian contains the partial derivative of every output component with respect to every input component. Its shape is (m, n) under a common convention.\n\nExplicitly constructing the full Jacobian can be expensive for large neural networks.\n\nReverse-mode automatic differentiation instead propagates vector-Jacobian products. If a downstream gradient is represented by a row vector, multiplying it by the local Jacobian produces the gradient with respect to the previous variable.\n\nThis lets the system calculate the gradient of a scalar loss with respect to many parameters without storing a full Jacobian for every operation.\n\nFrameworks such as PyTorch automate these operations for supported tensor computations. Understanding the underlying concept helps explain why a call such as loss.backward() can calculate gradients through an entire network."
+        },
+        {
+            "id": "chain-rule-vanishing",
+            "title": "8. The Chain Rule and Vanishing Gradients",
+            "type": "concept",
+            "content": "In deep networks, a gradient may involve products of many local derivatives. If many of these derivatives have magnitudes substantially smaller than one, the product can become extremely small.\n\nFor example, multiplying 0.2 by itself ten times gives 0.2^10, approximately 0.0000001024. Repeated shrinkage of gradients can make learning difficult in earlier layers.\n\nThis phenomenon is called vanishing gradients. Saturated sigmoid and tanh activations can contribute to it because their derivatives become small for large-magnitude inputs.\n\nThe opposite issue is exploding gradients. If repeated derivative and weight-matrix products grow excessively, gradients may become very large and cause unstable updates.\n\nPossible approaches include appropriate initialization, suitable activation functions, residual connections, normalization where appropriate, careful learning-rate selection, and gradient clipping for exploding gradients.\n\nThese methods work through different mechanisms. The chain rule itself is mathematically correct; the problem arises from the numerical magnitudes produced when derivatives are composed across the network."
+        },
+        {
+            "id": "chain-rule-numpy",
+            "title": "9. Verifying a Derivative with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef sigmoid(x):\n    return 1 / (1 + np.exp(-x))\n\ndef loss_function(w, x, b, target):\n    prediction = sigmoid(w * x + b)\n    return 0.5 * (prediction - target) ** 2\n\ndef analytical_gradient(w, x, b, target):\n    z = w * x + b\n    prediction = sigmoid(z)\n\n    dL_da = prediction - target\n    da_dz = prediction * (1 - prediction)\n    dz_dw = x\n\n    return dL_da * da_dz * dz_dw\n\nw = 0.0\nx = 2.0\nb = 0.0\ntarget = 1.0\nepsilon = 1e-5\n\nanalytic = analytical_gradient(w, x, b, target)\n\nloss_plus = loss_function(w + epsilon, x, b, target)\nloss_minus = loss_function(w - epsilon, x, b, target)\nnumerical = (loss_plus - loss_minus) / (2 * epsilon)\n\nprint('Analytical gradient:', analytic)\nprint('Numerical gradient:', numerical)\nprint('Absolute difference:', abs(analytic - numerical))",
+            "explanation": "The analytical gradient applies the chain rule through the sigmoid activation and half-squared-error loss. The numerical gradient uses a central finite difference. Their values should be close for this smooth function when epsilon is appropriately chosen."
+        },
+        {
+            "id": "chain-rule-pytorch",
+            "title": "10. Applying the Chain Rule with PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\nx = torch.tensor(2.0)\nw = torch.tensor(0.0, requires_grad=True)\nb = torch.tensor(0.0, requires_grad=True)\ntarget = torch.tensor(1.0)\n\nz = w * x + b\nprediction = torch.sigmoid(z)\nloss = 0.5 * (prediction - target) ** 2\n\nloss.backward()\n\nprint('Prediction:', prediction.item())\nprint('Loss:', loss.item())\nprint('dL/dw:', w.grad.item())\nprint('dL/db:', b.grad.item())",
+            "explanation": "PyTorch automatically applies the chain rule through multiplication, addition, sigmoid, and squared error. The gradients should be approximately -0.25 for w and -0.125 for b. This example matches the hand calculation in the preceding section."
+        },
+        {
+            "id": "chain-rule-practical",
+            "title": "11. Practical Rules for Working with Gradients",
+            "type": "concept",
+            "content": "When calculating derivatives manually, write the computation as a sequence of intermediate variables. This makes the dependency structure explicit and reduces algebraic mistakes.\n\nFor each intermediate variable, identify the local derivative with respect to its immediate inputs. Then apply the chain rule to combine the local derivatives.\n\nFor vector and matrix computations, check the dimensions of every gradient. A gradient with respect to a weight matrix must have the same shape as that matrix.\n\nFor shared variables and branching graphs, add contributions from every path. Do not discard one path simply because another path reaches the same variable.\n\nWhen using automatic differentiation, verify that the loss is connected to the parameters whose gradients you expect. Check whether tensors were detached, whether gradients were cleared correctly, and whether the model contains nondifferentiable operations.\n\nUse hand calculations and finite-difference checks on small smooth examples before debugging a large model. These tests can isolate errors that are otherwise difficult to detect in a full training pipeline."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "chain-rule-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Differentiate y = (2x + 1)^3 using the chain rule.",
+            "correctAnswer": "dy/dx = 6(2x + 1)^2",
+            "solution": "Let u = 2x + 1 and y = u^3. Then dy/du = 3u^2 and du/dx = 2. Therefore, dy/dx = 3u^2*2 = 6(2x + 1)^2."
+        },
+        {
+            "id": "chain-rule-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For y = sigmoid(z), z = wx, x = 3, and w = 0, calculate dy/dw.",
+            "correctAnswer": "dy/dw = 0.75",
+            "solution": "At w = 0, z = 0 and sigmoid(z) = 0.5. The sigmoid derivative is 0.5*(1 - 0.5) = 0.25. Since dz/dw = x = 3, dy/dw = 0.25*3 = 0.75."
+        },
+        {
+            "id": "chain-rule-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Given u = x^2, v = 4x, and L = u + v, calculate dL/dx at x = 3.",
+            "correctAnswer": "dL/dx = 10",
+            "solution": "The derivative of u is 2x and the derivative of v is 4. Thus dL/dx = 2x + 4. At x = 3, the result is 6 + 4 = 10."
+        },
+        {
+            "id": "chain-rule-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "How does the chain rule help neural networks learn?",
+            "correctAnswer": "It allows the loss gradient to be propagated through successive operations to calculate gradients for earlier parameters.",
+            "solution": "Each layer is a function of the previous layer. The chain rule combines local derivatives to determine how the final loss depends on earlier activations, weights, and biases."
+        },
+        {
+            "id": "chain-rule-exercise-5",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "A variable affects a loss through two distinct computational paths. What must happen when calculating its total derivative?",
+            "correctAnswer": "The derivative contributions from both paths must be added.",
+            "solution": "The multivariable chain rule sums the contribution from each dependency path. Automatic differentiation accumulates these contributions at the shared variable."
+        },
+        {
+            "id": "chain-rule-exercise-6",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Write the PyTorch operations needed to calculate the gradient of a scalar loss with respect to a tracked parameter w.",
+            "correctAnswer": "Create w with requires_grad=True, compute the loss, call loss.backward(), and inspect w.grad.",
+            "solution": "For example: w = torch.tensor(2.0, requires_grad=True); loss = (w - 5) ** 2; loss.backward(); print(w.grad). The gradient is 2*(2 - 5) = -6."
+        }
+    ],
+    "summary": "The chain rule differentiates composite functions by combining local derivatives. Neural networks are compositions of affine transformations, activation functions, and loss calculations, so the chain rule is fundamental to backpropagation. Gradients are propagated backward through layers, and contributions from multiple paths are added. Understanding these principles helps explain automatic differentiation, vanishing gradients, and the mechanics of neural network training.",
+    "relatedTopics": [
+        "computational-graphs",
+        "backpropagation",
+        "forward-propagation",
+        "loss-functions",
+        "gradient-descent-sgd",
+        "weight-initialization",
+        "optimizers-momentum-rmsprop-adam"
+    ]
+}

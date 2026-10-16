@@ -1,1 +1,277 @@
-{}
+{
+    "id": "probability-kl-divergence",
+    "title": "KL Divergence",
+    "slug": "kl-divergence",
+    "description": "Learn Kullback-Leibler divergence as a measure of discrepancy between probability distributions, including its mathematical properties and applications in machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Probability Distributions",
+        "Expectation & Variance",
+        "Entropy",
+        "Bayes Theorem"
+    ],
+    "learningObjectives": [
+        "Define Kullback-Leibler divergence.",
+        "Calculate KL divergence for discrete probability distributions.",
+        "Explain why KL divergence is nonnegative.",
+        "Distinguish KL divergence from a distance metric.",
+        "Understand the difference between forward and reverse KL divergence.",
+        "Connect KL divergence to cross-entropy.",
+        "Recognize KL divergence in variational inference, language models, and generative modeling.",
+        "Calculate KL divergence using Python."
+    ],
+    "sections": [
+        {
+            "id": "kl-introduction",
+            "title": "1. What Is KL Divergence?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Kullback-Leibler divergence measures the discrepancy between two probability distributions. It quantifies the expected extra information or coding cost associated with using a distribution Q to represent data generated according to a distribution P, under the standard coding interpretation."
+                },
+                {
+                    "type": "formula",
+                    "label": "KL divergence for discrete distributions",
+                    "value": "D_KL(P || Q) = Σₓ P(x) log(P(x)/Q(x))"
+                },
+                {
+                    "type": "text",
+                    "value": "P is commonly called the reference or target distribution, and Q is the comparison or approximating distribution. The direction matters: D_KL(P || Q) is generally different from D_KL(Q || P)."
+                },
+                {
+                    "type": "text",
+                    "value": "When the logarithm uses base 2, divergence is measured in bits. With the natural logarithm, it is measured in nats. For continuous distributions, the sum is replaced by an integral over the relevant domain, using probability densities."
+                }
+            ]
+        },
+        {
+            "id": "kl-worked-example",
+            "title": "2. Calculating KL Divergence",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a discrete distribution, calculate the contribution from each outcome with positive probability under P, then sum those contributions. Outcomes where P(x) = 0 contribute zero by convention, provided the expression is interpreted through the appropriate limit."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Two Binary Distributions",
+                    "problem": "Let P = [0.5, 0.5] and Q = [0.9, 0.1]. Calculate D_KL(P || Q) using natural logarithms.",
+                    "steps": [
+                        "Use D_KL(P || Q) = Σᵢ Pᵢ ln(Pᵢ/Qᵢ).",
+                        "Substitute: 0.5 ln(0.5/0.9) + 0.5 ln(0.5/0.1).",
+                        "Simplify the ratios: 0.5 ln(5/9) + 0.5 ln(5).",
+                        "Evaluate the logarithms and add the terms."
+                    ],
+                    "solution": "D_KL(P || Q) ≈ 0.5108 nats."
+                },
+                {
+                    "type": "text",
+                    "value": "The result is nonnegative even though one individual term may be negative. KL divergence is the sum of all weighted log-ratio terms, not a requirement that every term be nonnegative."
+                }
+            ]
+        },
+        {
+            "id": "kl-properties",
+            "title": "3. Important Properties",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Nonnegativity",
+                    "value": "D_KL(P || Q) ≥ 0"
+                },
+                {
+                    "type": "text",
+                    "value": "KL divergence is nonnegative under the usual probability assumptions. For discrete distributions on the same support, it is zero precisely when P and Q are equal at every outcome with positive probability under P, with compatible zero-probability behavior. In standard probability settings, this is equality of the distributions."
+                },
+                {
+                    "type": "text",
+                    "value": "KL divergence is not a distance metric. It is generally asymmetric and does not satisfy the triangle inequality. Therefore, D_KL(P || Q) should not be interpreted as a symmetric geometric distance."
+                },
+                {
+                    "type": "text",
+                    "value": "If there is an outcome for which P(x) > 0 but Q(x) = 0, then D_KL(P || Q) is infinite. The comparison distribution assigns zero probability to an event that the reference distribution considers possible."
+                }
+            ]
+        },
+        {
+            "id": "kl-cross-entropy",
+            "title": "4. Relationship to Entropy and Cross-Entropy",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Cross-entropy",
+                    "value": "H(P, Q) = −Σₓ P(x) log Q(x)"
+                },
+                {
+                    "type": "formula",
+                    "label": "Entropy",
+                    "value": "H(P) = −Σₓ P(x) log P(x)"
+                },
+                {
+                    "type": "formula",
+                    "label": "KL divergence identity",
+                    "value": "D_KL(P || Q) = H(P, Q) − H(P)"
+                },
+                {
+                    "type": "text",
+                    "value": "For a fixed reference distribution P, its entropy H(P) does not depend on Q. Therefore, minimizing D_KL(P || Q) with respect to Q is equivalent to minimizing cross-entropy H(P, Q), assuming the same support and a valid comparison distribution."
+                },
+                {
+                    "type": "text",
+                    "value": "This connection explains why cross-entropy loss is common in classification: minimizing the loss encourages the predicted distribution to match the target distribution."
+                }
+            ]
+        },
+        {
+            "id": "kl-asymmetry",
+            "title": "5. Forward and Reverse KL",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Forward KL usually refers to D_KL(P || Q), where P is the reference distribution and Q is the approximation. Reverse KL refers to D_KL(Q || P). They penalize distribution mismatch differently because the expectation is taken under a different distribution."
+                },
+                {
+                    "type": "text",
+                    "value": "Forward KL strongly penalizes regions where P has probability mass but Q assigns very little probability. Reverse KL is averaged under Q and can strongly penalize placing Q's probability mass in regions where P is small."
+                },
+                {
+                    "type": "text",
+                    "value": "In approximate inference, these differences can affect whether an approximation attempts to cover multiple modes or concentrates on a subset of high-probability regions. The outcome depends on the distributions and optimization setup, so these descriptions are useful tendencies rather than universal guarantees."
+                }
+            ]
+        },
+        {
+            "id": "kl-machine-learning",
+            "title": "6. KL Divergence in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "KL divergence is used to compare target and predicted probability distributions. It appears in variational inference, probabilistic modeling, knowledge distillation, language modeling, and some generative learning objectives."
+                },
+                {
+                    "type": "text",
+                    "value": "In variational inference, an approximating distribution is optimized to be close to a posterior distribution under a chosen KL direction. The exact objective often includes an evidence lower bound and additional terms, so the full derivation depends on the model."
+                },
+                {
+                    "type": "text",
+                    "value": "In knowledge distillation, a student model can be trained to match the softened probability distribution produced by a teacher model. KL divergence provides one way to measure the mismatch between the teacher's and student's distributions."
+                },
+                {
+                    "type": "text",
+                    "value": "In a variational autoencoder, a KL term is commonly used to regularize the approximate latent posterior toward a prior distribution. This balances latent distribution structure with the reconstruction objective."
+                }
+            ]
+        },
+        {
+            "id": "kl-python",
+            "title": "7. KL Divergence with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate Discrete KL Divergence",
+                    "value": "import numpy as np\n\ndef kl_divergence(p, q):\n    p = np.asarray(p, dtype=float)\n    q = np.asarray(q, dtype=float)\n\n    if p.shape != q.shape:\n        raise ValueError('p and q must have the same shape')\n    if np.any(p < 0) or np.any(q < 0):\n        raise ValueError('Probabilities must be nonnegative')\n    if not np.isclose(p.sum(), 1.0) or not np.isclose(q.sum(), 1.0):\n        raise ValueError('p and q must each sum to 1')\n    if np.any((p > 0) & (q == 0)):\n        return float('inf')\n\n    mask = p > 0\n    return np.sum(p[mask] * np.log(p[mask] / q[mask]))\n\np = [0.5, 0.5]\nq = [0.9, 0.1]\nprint(kl_divergence(p, q))"
+                },
+                {
+                    "type": "text",
+                    "value": "The function uses natural logarithms, so the result is in nats. It returns infinity if the reference distribution assigns positive probability to an outcome that the comparison distribution assigns zero probability."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Compare Forward and Reverse KL",
+                    "value": "p = np.array([0.5, 0.5])\nq = np.array([0.9, 0.1])\n\nprint('Forward KL:', kl_divergence(p, q))\nprint('Reverse KL:', kl_divergence(q, p))"
+                },
+                {
+                    "type": "text",
+                    "value": "The two results differ because the KL divergence is generally asymmetric. The argument order is part of the definition and must be preserved when interpreting results."
+                }
+            ]
+        },
+        {
+            "id": "kl-common-mistakes",
+            "title": "8. Common Mistakes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Assuming KL divergence is symmetric. In general, D_KL(P || Q) is not equal to D_KL(Q || P)."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Treating KL divergence as an ordinary distance metric. It does not generally satisfy symmetry or the triangle inequality."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Ignoring zero probabilities. If P(x) > 0 and Q(x) = 0, the divergence is infinite."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Confusing entropy, cross-entropy, and KL divergence. They are related but distinct quantities."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Mixing logarithm bases when comparing values. Base 2 gives bits, while the natural logarithm gives nats."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "kl-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "What is D_KL(P || P) for any valid distribution P?",
+            "correctAnswer": "0",
+            "solution": "Each nonzero term is P(x)log(P(x)/P(x)) = P(x)log(1) = 0. Therefore, the total divergence is zero."
+        },
+        {
+            "id": "kl-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Let P = [0.5, 0.5] and Q = [0.9, 0.1]. Write D_KL(P || Q) using natural logarithms.",
+            "correctAnswer": "0.5 ln(0.5/0.9) + 0.5 ln(0.5/0.1) ≈ 0.5108 nats",
+            "solution": "Substitute each probability into the discrete KL formula. The first term is 0.5 ln(5/9), and the second is 0.5 ln(5). Their sum is approximately 0.5108."
+        },
+        {
+            "id": "kl-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Can KL divergence be negative?",
+            "correctAnswer": "No, not for valid probability distributions under the standard definition.",
+            "solution": "The nonnegativity property of KL divergence guarantees D_KL(P || Q) ≥ 0. Individual terms may be negative, but the total cannot be negative when the distributions satisfy the required assumptions."
+        },
+        {
+            "id": "kl-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is KL divergence not a distance metric?",
+            "correctAnswer": "It is generally asymmetric and does not satisfy the triangle inequality.",
+            "solution": "A metric must satisfy symmetry and the triangle inequality. KL divergence generally violates these requirements."
+        },
+        {
+            "id": "kl-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is minimizing KL divergence from a fixed target distribution equivalent to minimizing cross-entropy?",
+            "correctAnswer": "Because KL divergence equals cross-entropy minus the entropy of the fixed target distribution.",
+            "solution": "D_KL(P || Q) = H(P, Q) − H(P). Since H(P) is constant when P is fixed, minimizing D_KL with respect to Q is equivalent to minimizing H(P, Q)."
+        }
+    ],
+    "summary": [
+        "KL divergence measures discrepancy between a reference distribution and a comparison distribution.",
+        "It is nonnegative but generally asymmetric.",
+        "KL divergence is not a metric because it lacks symmetry and the triangle inequality.",
+        "KL divergence equals cross-entropy minus the entropy of the reference distribution.",
+        "Forward and reverse KL can favor different approximation behavior.",
+        "KL divergence is used in variational inference, knowledge distillation, and generative modeling."
+    ],
+    "relatedTopics": [
+        "probability-distributions",
+        "expectation-variance",
+        "bayes-theorem",
+        "maximum-likelihood",
+        "maximum-a-posteriori",
+        "entropy"
+    ]
+}

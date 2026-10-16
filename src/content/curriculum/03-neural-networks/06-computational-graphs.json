@@ -1,1 +1,156 @@
-{}
+{
+    "id": "computational-graphs",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 6,
+    "title": "Computational Graphs",
+    "slug": "computational-graphs",
+    "description": "Learn how computational graphs represent mathematical operations and dependencies in neural networks, including forward evaluation, intermediate values, reverse-mode automatic differentiation, gradients, and implementations using NumPy and PyTorch.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Basic algebra",
+        "Functions and derivatives",
+        "Forward propagation",
+        "Loss functions"
+    ],
+    "learningObjectives": [
+        "Define a computational graph and explain its purpose.",
+        "Represent a mathematical expression as a directed acyclic graph.",
+        "Identify nodes, operations, intermediate values, and dependencies.",
+        "Evaluate a computational graph from inputs to outputs.",
+        "Calculate local derivatives and propagate gradients backward.",
+        "Explain the relationship between computational graphs and automatic differentiation.",
+        "Inspect gradients using PyTorch autograd."
+    ],
+    "sections": [
+        {
+            "id": "graph-introduction",
+            "title": "1. What Is a Computational Graph?",
+            "type": "concept",
+            "content": "A computational graph is a representation of a calculation in which nodes represent values or operations and directed edges represent dependencies between them.\n\nConsider the expression:\n\nL = (x * w + b - y)^2\n\nThe expression can be broken into smaller operations: multiplication, addition, subtraction, and squaring. Each intermediate result depends on the outputs of earlier operations.\n\nThis representation is useful because neural networks contain many nested operations. Rather than treating an entire network as one enormous formula, a framework can track how intermediate values depend on one another.\n\nA computational graph supports two related processes:\n\n1. Forward evaluation calculates the output values.\n2. Reverse-mode automatic differentiation calculates derivatives of a selected output, such as the loss, with respect to earlier values and parameters.\n\nModern deep learning frameworks use computational graphs or equivalent operation-tracking systems to calculate gradients efficiently."
+        },
+        {
+            "id": "graph-components",
+            "title": "2. Nodes, Edges, and Operations",
+            "type": "concept",
+            "content": "A computational graph typically contains several kinds of objects.\n\nInput nodes represent supplied values such as features and target labels.\n\nParameter nodes represent trainable quantities such as weights and biases.\n\nOperation nodes represent calculations such as addition, multiplication, matrix multiplication, exponentiation, and activation functions.\n\nIntermediate nodes store or represent results of earlier operations.\n\nThe output node represents the final quantity being computed, often a model prediction or scalar loss.\n\nA directed edge indicates that one value is used by another operation. For example, in z = x*w + b, the value z depends on x, w, and b.\n\nA graph is directed because the dependency relationships have an orientation. A feedforward computation is normally represented as a directed acyclic graph, or DAG. Acyclic means there is no path that loops back to an earlier node in the same graph.\n\nThe graph structure makes it possible to organize the computation in a valid evaluation order and later determine how gradients should flow backward."
+        },
+        {
+            "id": "graph-example",
+            "title": "3. A Simple Computational Graph",
+            "type": "math",
+            "content": "Consider:\n\nL = (x*w + b - y)^2\n\nLet:\n\nx = 2\nw = 3\nb = 1\ny = 10\n\nDefine intermediate values:\n\nu = x*w\nv = u + b\n e = v - y\nL = e^2\n\nForward evaluation:\n\nu = 2*3 = 6\nv = 6 + 1 = 7\ne = 7 - 10 = -3\nL = (-3)^2 = 9\n\nThe graph follows the dependencies:\n\nx, w → multiplication u\nu, b → addition v\nv, y → subtraction e\ne → square L\n\nThe final loss is 9.\n\nThe value of each intermediate node can be stored during the forward pass. These values are useful during the backward pass because local derivatives often depend on the corresponding inputs or outputs."
+        },
+        {
+            "id": "graph-local-derivatives",
+            "title": "4. Local Derivatives",
+            "type": "math",
+            "content": "Each operation in a computational graph has a local derivative describing how its output changes with respect to its immediate inputs.\n\nFor u = x*w:\n\ndu/dx = w\ndu/dw = x\n\nFor v = u + b:\n\ndv/du = 1\ndv/db = 1\n\nFor e = v - y:\n\nde/dv = 1\nde/dy = -1\n\nFor L = e^2:\n\ndL/de = 2e\n\nUsing the numerical example where x = 2, w = 3, b = 1, y = 10, we have e = -3, so dL/de = -6.\n\nThe local derivative is not always the same as the derivative of the final loss with respect to the operation's input. To obtain the total derivative, the chain rule combines the local derivative with the gradient arriving from downstream operations.\n\nThis is the key principle that allows a computational graph to calculate gradients for complex expressions."
+        },
+        {
+            "id": "graph-backward-example",
+            "title": "5. Calculating Gradients Through the Graph",
+            "type": "math",
+            "content": "Continue with:\n\nL = (x*w + b - y)^2\n\nThe numerical values are x = 2, w = 3, b = 1, y = 10, and e = -3.\n\nFirst:\n\ndL/de = 2e = -6\n\nSince de/dv = 1:\n\ndL/dv = (dL/de)*(de/dv) = -6*1 = -6\n\nSince dv/du = 1:\n\ndL/du = (dL/dv)*(dv/du) = -6\n\nSince du/dw = x = 2:\n\ndL/dw = (dL/du)*(du/dw) = -6*2 = -12\n\nSince du/dx = w = 3:\n\ndL/dx = (dL/du)*(du/dx) = -6*3 = -18\n\nSimilarly:\n\ndL/db = -6\n\ndL/dy = (dL/de)*(de/dy) = (-6)*(-1) = 6\n\nThe target y is normally treated as fixed training data, so training focuses on gradients with respect to model parameters such as w and b.\n\nThis calculation demonstrates reverse-mode differentiation: start from the output loss and propagate derivatives backward through the graph."
+        },
+        {
+            "id": "graph-chain-rule",
+            "title": "6. Computational Graphs and the Chain Rule",
+            "type": "concept",
+            "content": "The chain rule provides the mathematical foundation for gradient propagation through computational graphs.\n\nIf z = f(y) and y = g(x), then:\n\ndz/dx = (dz/dy) * (dy/dx)\n\nA graph may contain many consecutive operations. The derivative of the final output with respect to an earlier variable is calculated by multiplying local derivatives along a path.\n\nWhen a value influences the output through multiple paths, the total derivative combines the contributions from those paths by summation.\n\nFor example, suppose:\n\nL = a*b + a\n\nThe variable a influences the loss in two ways: through the product a*b and through the separate addition of a.\n\nTherefore:\n\ndL/da = b + 1\n\nA graph-based differentiation system automatically accounts for both paths.\n\nThis is especially important in modern networks that contain residual connections, branching computations, attention mechanisms, and shared parameters."
+        },
+        {
+            "id": "graph-shared-values",
+            "title": "7. Shared Values and Multiple Paths",
+            "type": "math",
+            "content": "Suppose:\n\nu = x^2\nv = 3*x\nL = u + v\n\nThe input x affects L through two paths.\n\nThe derivative of u with respect to x is:\n\ndu/dx = 2x\n\nThe derivative of v with respect to x is:\n\ndv/dx = 3\n\nSince L = u + v:\n\ndL/dx = dL/du * du/dx + dL/dv * dv/dx\n\nBecause dL/du = 1 and dL/dv = 1:\n\ndL/dx = 2x + 3\n\nAt x = 2:\n\ndL/dx = 4 + 3 = 7\n\nThe graph must accumulate both gradient contributions at x. This is often called gradient accumulation or summation at a shared node.\n\nIn a neural network, one parameter may be reused in multiple calculations. Its final gradient includes the contributions from every path through which it influences the loss."
+        },
+        {
+            "id": "graph-numpy",
+            "title": "8. Building a Tiny Computational Graph Manually",
+            "type": "code",
+            "language": "python",
+            "content": "x = 2.0\nw = 3.0\nb = 1.0\ny = 10.0\n\n# Forward pass\nu = x * w\nv = u + b\ne = v - y\nloss = e ** 2\n\nprint('u:', u)\nprint('v:', v)\nprint('error:', e)\nprint('loss:', loss)\n\n# Backward pass: manually apply the chain rule.\ndloss_de = 2 * e\nde_dv = 1.0\ndv_du = 1.0\ndu_dw = x\ndu_dx = w\n\ndloss_dv = dloss_de * de_dv\ndloss_du = dloss_dv * dv_du\ndloss_dw = dloss_du * du_dw\ndloss_dx = dloss_du * du_dx\ndloss_db = dloss_dv\n\nprint('dL/dw:', dloss_dw)\nprint('dL/db:', dloss_db)\nprint('dL/dx:', dloss_dx)",
+            "explanation": "The example explicitly calculates intermediate values and local derivatives. It demonstrates how gradients flow backward from the loss. The manual calculation is useful for understanding the mathematics, although larger models should use automatic differentiation frameworks."
+        },
+        {
+            "id": "graph-pytorch",
+            "title": "9. Automatic Differentiation with PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\nx = torch.tensor(2.0, requires_grad=True)\nw = torch.tensor(3.0, requires_grad=True)\nb = torch.tensor(1.0, requires_grad=True)\ny = torch.tensor(10.0)\n\nu = x * w\nv = u + b\nerror = v - y\nloss = error ** 2\n\nprint('Loss:', loss.item())\n\nloss.backward()\n\nprint('dL/dx:', x.grad.item())\nprint('dL/dw:', w.grad.item())\nprint('dL/db:', b.grad.item())",
+            "explanation": "PyTorch tracks operations involving tensors that require gradients. Calling backward() on the scalar loss computes gradients with respect to the tracked leaf tensors. The expected gradients are dL/dx = -18, dL/dw = -12, and dL/db = -6. Gradients accumulate in the .grad attributes, so training loops normally clear them before calculating gradients for the next update."
+        },
+        {
+            "id": "graph-autodiff",
+            "title": "10. Automatic Differentiation vs. Numerical Differentiation",
+            "type": "concept",
+            "content": "Numerical differentiation approximates a derivative using nearby function evaluations. For example, a central-difference approximation is:\n\nf'(x) approximately equals [f(x + h) - f(x - h)] / (2h)\n\nHere h is a small step size. If h is too large, approximation error may be significant. If it is too small, floating-point rounding can become a problem.\n\nSymbolic differentiation manipulates mathematical expressions to produce derivative expressions. It can be effective for many formulas, but expressions may become large and complicated.\n\nAutomatic differentiation applies the chain rule to the sequence of elementary operations performed during computation. It can calculate derivatives to machine precision relative to the implemented operations, subject to floating-point error and the differentiability assumptions of those operations.\n\nForward-mode automatic differentiation propagates derivatives alongside values and can be efficient when there are relatively few input dimensions.\n\nReverse-mode automatic differentiation computes gradients of an output with respect to many inputs or parameters in one backward traversal. Since neural networks often have one scalar loss and many parameters, reverse-mode differentiation is especially useful for deep learning."
+        },
+        {
+            "id": "graph-debugging",
+            "title": "11. Debugging Computational Graphs",
+            "type": "concept",
+            "content": "A computational graph can produce incorrect gradients if an operation is accidentally disconnected from the tracked graph or if tensors are manipulated in a way that removes gradient history.\n\nIn PyTorch, converting a tensor to a Python number with .item() produces a regular value and should not be used in the middle of a differentiable computation when the gradient path must remain intact.\n\nUsing .detach() intentionally stops gradient tracking for the resulting tensor. This is useful for certain algorithms, but can break learning if applied unintentionally.\n\nAnother common mistake is forgetting that gradients accumulate in .grad. If an optimizer step is repeated without clearing gradients, gradients from different passes may be added together.\n\nFor numerical debugging, compare automatic gradients against finite-difference estimates on a tiny example. This is particularly useful when implementing custom differentiable operations.\n\nRemember that not every mathematical operation is differentiable everywhere. Frameworks use defined gradient conventions for certain nondifferentiable points, while operations with undefined or unsupported gradients may require special handling."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "graph-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Given u = x*w, x = 4, and w = 2, calculate u.",
+            "correctAnswer": "u = 8",
+            "solution": "Multiply the two inputs: u = 4 * 2 = 8."
+        },
+        {
+            "id": "graph-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For L = (x - 5)^2, calculate dL/dx and evaluate it at x = 2.",
+            "correctAnswer": "dL/dx = 2(x - 5); at x = 2, the derivative is -6.",
+            "solution": "Apply the chain rule. The outer derivative of e^2 is 2e, and the inner derivative of e = x - 5 is 1. Therefore, dL/dx = 2(x - 5). Substituting x = 2 gives -6."
+        },
+        {
+            "id": "graph-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why are gradients from multiple computational paths added at a shared variable?",
+            "correctAnswer": "The total derivative includes the contribution of every path through which the variable affects the output.",
+            "solution": "The multivariable chain rule sums the contributions of separate dependencies. Automatic differentiation accumulates these contributions when reverse-mode traversal reaches a shared node."
+        },
+        {
+            "id": "graph-exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Let u = x^2, v = 3x, and L = u + v. Calculate dL/dx at x = 4.",
+            "correctAnswer": "dL/dx = 11",
+            "solution": "The derivatives are du/dx = 2x and dv/dx = 3. Therefore dL/dx = 2x + 3. At x = 4, the result is 8 + 3 = 11."
+        },
+        {
+            "id": "graph-exercise-5",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "In PyTorch, what method is commonly called on a scalar loss to compute gradients for tracked tensors?",
+            "correctAnswer": "loss.backward()",
+            "solution": "Calling loss.backward() invokes reverse-mode automatic differentiation and accumulates gradients in the .grad attributes of relevant leaf tensors."
+        },
+        {
+            "id": "graph-exercise-6",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is reverse-mode automatic differentiation useful for training neural networks?",
+            "correctAnswer": "It efficiently computes gradients of one scalar loss with respect to a large number of parameters.",
+            "solution": "Neural networks commonly have many trainable parameters but one scalar training objective for a batch. Reverse-mode differentiation traverses the graph backward to calculate derivatives with respect to those parameters."
+        }
+    ],
+    "summary": "Computational graphs represent calculations as interconnected operations and values. The forward pass evaluates these operations, while reverse-mode automatic differentiation applies the chain rule backward to calculate gradients. When a variable influences an output through multiple paths, gradient contributions are summed. Understanding computational graphs explains how frameworks such as PyTorch calculate neural network gradients automatically.",
+    "relatedTopics": [
+        "forward-propagation",
+        "loss-functions",
+        "backpropagation",
+        "chain-rule-in-neural-networks",
+        "gradient-descent-sgd"
+    ]
+}

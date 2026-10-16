@@ -1,1 +1,113 @@
-{}
+{
+  "id": "module-05-sequence-to-sequence-models",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 8,
+  "title": "Sequence-to-Sequence Models",
+  "slug": "sequence-to-sequence-models",
+  "href": "/curriculum/05-sequence-models/sequence-to-sequence-models",
+  "filePath": "content/curriculum/05-sequence-models/08-sequence-to-sequence-models.json",
+  "description": "Study encoder-decoder models for mapping input sequences to output sequences, including teacher forcing, autoregressive decoding, attention, and evaluation.",
+  "difficulty": "intermediate",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "RNN",
+    "LSTM",
+    "GRU",
+    "Backpropagation Through Time"
+  ],
+  "learningObjectives": [
+    "Explain encoder and decoder responsibilities.",
+    "Describe teacher forcing and exposure bias.",
+    "Explain why attention helps with long input sequences.",
+    "Recognize tokenization, masking, and evaluation requirements."
+  ],
+  "sections": [
+    {
+      "id": "architecture",
+      "title": "Encoder-Decoder Design",
+      "type": "concept",
+      "content": "A sequence-to-sequence (seq2seq) model maps an input sequence to an output sequence that may have a different length. An encoder reads the input and creates representations; a decoder uses those representations to generate output tokens or values. Applications include translation, summarization, conversational systems, and time-series transformation.\n\nIn a basic recurrent encoder-decoder, the encoder's final state initializes or conditions the decoder. Compressing a long input into one fixed-size vector can create an information bottleneck, motivating attention mechanisms."
+    },
+    {
+      "id": "decoder",
+      "title": "Autoregressive Decoding",
+      "type": "concept",
+      "content": "An autoregressive decoder predicts the next output conditioned on the encoded input and previously generated output tokens. Generation starts from a special beginning-of-sequence token and stops at an end-of-sequence token or a maximum length. During inference, the model's own previous predictions become part of the next input.\n\nGreedy decoding selects the highest-scoring next token each step. Beam search keeps several partial sequences, trading compute for a broader search. Sampling can create more varied outputs but requires an appropriate decoding policy."
+    },
+    {
+      "id": "teacher",
+      "title": "Teacher Forcing and Exposure Bias",
+      "type": "concept",
+      "content": "During training with teacher forcing, the decoder receives the correct previous target token as input. This makes training efficient and stabilizes learning. During inference, the correct future targets are unknown, so the decoder conditions on its own generated tokens instead.\n\nThe mismatch can cause exposure bias: small generation errors may push the decoder into states it rarely saw during training. Scheduled sampling and other strategies have been explored, but each has trade-offs; teacher forcing remains a common baseline."
+    },
+    {
+      "id": "attention",
+      "title": "Attention Over Encoder States",
+      "type": "math",
+      "content": "Attention lets a decoder step compute a weighted combination of encoder representations rather than relying only on one final summary. With decoder query q and encoder keys k_i, a common score is s_i=q·k_i, and weights are α_i=softmax(s)_i. The context vector is c=sum_i α_i v_i, where v_i are encoder value vectors.\n\nAttention allows each output step to focus on different input positions. Modern transformer architectures build heavily on attention, though their details differ from recurrent encoder-decoder attention."
+    },
+    {
+      "id": "training",
+      "title": "Losses, Padding, and Teacher-Forced Inputs",
+      "type": "concept",
+      "content": "For token generation, training often uses cross-entropy between predicted vocabulary logits and the target token at each position. Padding positions must be ignored in the loss. The decoder input is usually shifted relative to the target: it receives a start token followed by earlier target tokens, while the label at each position is the next token.\n\nTokenization determines the model's output units and sequence lengths. Evaluation may use exact match, token-level accuracy, BLEU-like translation metrics, ROUGE-like summarization metrics, or task-specific measures. Automated metrics do not fully capture factuality or usefulness."
+    },
+    {
+      "id": "code",
+      "title": "A Minimal Recurrent Encoder-Decoder Skeleton",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nclass Seq2Seq(nn.Module):\n    def __init__(self, src_vocab, tgt_vocab, emb=32, hidden=64):\n        super().__init__()\n        self.src_embed = nn.Embedding(src_vocab, emb, padding_idx=0)\n        self.tgt_embed = nn.Embedding(tgt_vocab, emb, padding_idx=0)\n        self.encoder = nn.GRU(emb, hidden, batch_first=True)\n        self.decoder = nn.GRU(emb, hidden, batch_first=True)\n        self.output = nn.Linear(hidden, tgt_vocab)\n    def forward(self, src, tgt_input):\n        _, h = self.encoder(self.src_embed(src))\n        decoded, _ = self.decoder(self.tgt_embed(tgt_input), h)\n        return self.output(decoded)  # logits per target position",
+      "language": "python",
+      "explanation": "This skeleton assumes the source and target embeddings have compatible dimensions and shows teacher-forced decoder inputs. A full implementation should handle source lengths, padding masks, shifted targets, special tokens, inference-time autoregressive decoding, and ignored padding labels in the loss."
+    },
+    {
+      "id": "evaluation",
+      "title": "Evaluation and Failure Modes",
+      "type": "concept",
+      "content": "Evaluate the generated sequence as well as individual tokens. Inspect outputs for omissions, repeated phrases, unsupported claims, poor handling of rare words, and sensitivity to input length. Use a separate test set and prevent near-duplicate source-target pairs from leaking across splits.\n\nFor generation, report latency and output-length behavior as well as quality. Decoding choices can materially change results, so compare systems using a documented and consistent decoding configuration."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "s2s-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What are the two main components of a basic seq2seq architecture?",
+      "correctAnswer": "An encoder and a decoder.",
+      "solution": "The encoder represents the input; the decoder generates the output sequence."
+    },
+    {
+      "id": "s2s-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What is teacher forcing?",
+      "correctAnswer": "Feeding the correct previous target token to the decoder during training.",
+      "solution": "At inference, the decoder usually must use its own generated previous tokens."
+    },
+    {
+      "id": "s2s-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What problem does attention help address in a basic encoder-decoder?",
+      "correctAnswer": "The bottleneck of representing a long input only through one fixed-size final state.",
+      "solution": "Attention lets each decoder step use a weighted combination of encoder states."
+    },
+    {
+      "id": "s2s-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "Why should padding token positions usually be excluded from token-level cross-entropy loss?",
+      "correctAnswer": "They are artificial batch-alignment positions, not real target tokens.",
+      "solution": "Including them can bias training toward predicting padding; use an ignore index or a mask."
+    }
+  ],
+  "summary": "Seq2seq models use an encoder to represent inputs and a decoder to generate outputs. Teacher forcing supports training, attention provides flexible access to input positions, and careful masking and evaluation are essential.",
+  "relatedTopics": [
+    "rnn",
+    "lstm",
+    "gru",
+    "bidirectional-networks",
+    "sequential-data"
+  ]
+}

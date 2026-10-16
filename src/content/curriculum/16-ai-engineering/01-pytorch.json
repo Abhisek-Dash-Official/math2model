@@ -1,1 +1,171 @@
-{}
+{
+    "id": "module-16-ai-engineering-pytorch",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 1,
+    "title": "Production PyTorch",
+    "slug": "pytorch",
+    "href": "/curriculum/16-ai-engineering/pytorch",
+    "filePath": "content/curriculum/16-ai-engineering/01-pytorch.json",
+    "description": "Learn to build reliable, maintainable PyTorch training systems with reusable components, validation, checkpointing, reproducibility, profiling, and production-oriented testing.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "Python fundamentals",
+        "Tensor operations",
+        "Automatic differentiation",
+        "Basic neural network training"
+    ],
+    "learningObjectives": [
+        "Structure a PyTorch project into reusable model, data, training, and evaluation components.",
+        "Understand the differences between training mode, evaluation mode, and inference mode.",
+        "Implement reliable training and validation loops.",
+        "Save checkpoints and resume interrupted training.",
+        "Improve reproducibility through configuration and random seed management.",
+        "Profile training performance and identify bottlenecks.",
+        "Test models and training pipelines before production use."
+    ],
+    "sections": [
+        {
+            "id": "production-mindset",
+            "title": "From Notebook to Production",
+            "type": "concept",
+            "content": "A notebook is useful for experimentation, but a production training system needs reproducibility, observability, clear interfaces, and failure recovery. Separate configuration, data preparation, model definition, optimization, evaluation, and artifact management. Make important assumptions explicit, including input shapes, label encoding, device placement, random seeds, expected metrics, and checkpoint formats. A successful run should be understandable from its configuration and logs without relying on hidden notebook state."
+        },
+        {
+            "id": "project-structure",
+            "title": "Structuring a PyTorch Project",
+            "type": "concept",
+            "content": "A maintainable project might contain src/model.py, src/data.py, src/train.py, src/evaluate.py, configs/, tests/, and artifacts/. Keep model code independent from command-line parsing and filesystem paths. Represent hyperparameters with a validated configuration object or configuration file. Place executable behavior inside a main function so importing a module does not unexpectedly start training. Test tensor shapes, data transformations, and loss calculations before launching expensive experiments."
+        },
+        {
+            "id": "module-semantics",
+            "title": "Training Mode, Evaluation Mode, and Inference",
+            "type": "concept",
+            "content": "PyTorch exposes several controls that solve different problems. model.train() enables training behavior in modules such as Dropout and BatchNorm. model.eval() switches those modules to evaluation behavior but does not disable gradient recording. torch.no_grad() disables gradient recording within a scope. torch.inference_mode() provides additional inference-oriented optimizations when its restrictions are appropriate. Ordinary evaluation typically uses model.eval() together with torch.inference_mode()."
+        },
+        {
+            "id": "training-loop",
+            "title": "Building a Reliable Training Loop",
+            "type": "code",
+            "content": "A training loop should clear gradients, perform the forward pass, calculate a scalar loss, backpropagate, optionally clip gradients, and update parameters. Validation should be performed separately without gradient tracking. Aggregate losses using sample counts so that a smaller final batch does not receive the same weight as a full batch.",
+            "language": "python",
+            "code": "import torch\n\ndef train_one_epoch(model, loader, optimizer, loss_fn, device):\n    model.train(); total_loss = 0.0; total_items = 0\n    for x, y in loader:\n        x, y = x.to(device), y.to(device)\n        optimizer.zero_grad(set_to_none=True)\n        logits = model(x); loss = loss_fn(logits, y)\n        loss.backward(); optimizer.step()\n        n = y.size(0); total_loss += loss.detach().item() * n; total_items += n\n    return total_loss / max(total_items, 1)",
+            "explanation": "The function performs one complete training epoch. set_to_none=True can reduce memory writes when clearing gradients. Multiplying each batch's mean loss by its sample count produces a sample-weighted average. The function assumes loss_fn returns a mean loss for each batch."
+        },
+        {
+            "id": "validation",
+            "title": "Validation and Metric Correctness",
+            "type": "concept",
+            "content": "Keep training, validation, and test datasets conceptually separate. Training data updates parameters, validation data supports model selection, and test data provides a final estimate after development decisions are complete. Accuracy may hide poor performance on imbalanced datasets, so consider precision, recall, F1, calibration, and confusion matrices. Regression tasks may require MAE, RMSE, or domain-specific metrics. Define exactly how predictions become labels and how metrics are aggregated."
+        },
+        {
+            "id": "validation-code",
+            "title": "Implementing Validation",
+            "type": "code",
+            "content": "A validation function should disable gradient recording, avoid parameter updates, and calculate metrics across the complete validation dataset. The example below computes sample-weighted average loss and classification accuracy for a model that returns class logits.",
+            "language": "python",
+            "code": "import torch\n\ndef evaluate(model, loader, loss_fn, device):\n    model.eval(); total_loss = 0.0; total = 0; correct = 0\n    with torch.inference_mode():\n        for x, y in loader:\n            x, y = x.to(device), y.to(device)\n            logits = model(x); loss = loss_fn(logits, y)\n            n = y.size(0); total_loss += loss.item() * n\n            correct += (logits.argmax(dim=1) == y).sum().item(); total += n\n    return {\"loss\": total_loss / max(total, 1), \"accuracy\": correct / max(total, 1)}",
+            "explanation": "This example assumes a classification task with one target class per example and a mean-reduced loss. Other tasks need their own prediction logic and metric definitions."
+        },
+        {
+            "id": "checkpointing",
+            "title": "Saving and Resuming Training",
+            "type": "concept",
+            "content": "Saving only model weights is often enough for inference, but faithful training resumption requires more information. Save the model state, optimizer state, current epoch or step, configuration, best validation metric, and scheduler state when applicable. Mixed-precision training may also require gradient-scaler state. Exact continuation can require random-number-generator states and sampler state. Save checkpoints robustly and verify that a saved checkpoint can actually be restored."
+        },
+        {
+            "id": "checkpoint-code",
+            "title": "Checkpoint Implementation",
+            "type": "code",
+            "content": "A checkpoint stores the state required to reconstruct the current training process. The following example illustrates saving and restoring model and optimizer state. Adapt loading options to the installed PyTorch version and only load trusted artifacts.",
+            "language": "python",
+            "code": "checkpoint = {\"epoch\": epoch, \"model\": model.state_dict(), \"optimizer\": optimizer.state_dict(), \"config\": config, \"best_val_loss\": best_val_loss}\ntorch.save(checkpoint, checkpoint_path)\n\n# Restore into an already constructed model and optimizer.\ncheckpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nstart_epoch = checkpoint[\"epoch\"] + 1",
+            "explanation": "The model and optimizer must be constructed compatibly before their state is restored. weights_only=False may permit loading arbitrary serialized objects and should only be used with trusted files. A production checkpointing system should also consider atomic writes, scheduler state, mixed-precision state, and random-number-generator state."
+        },
+        {
+            "id": "reproducibility",
+            "title": "Reproducibility and Determinism",
+            "type": "concept",
+            "content": "Set Python, NumPy, and PyTorch random seeds when reproducibility matters. Seed data-loader workers and control data ordering. Deterministic algorithms can reduce run-to-run variation, but may be slower or unavailable for some operations. Hardware, library versions, distributed execution, and nondeterministic kernels can still affect results. A random seed alone is not a complete reproducibility strategy. Record software versions, dataset versions, configurations, and hardware details."
+        },
+        {
+            "id": "reproducibility-code",
+            "title": "Setting Random Seeds",
+            "type": "code",
+            "content": "A basic seed setup makes many common random operations repeatable within a controlled environment. Strict reproducibility may require additional settings and a compatible deterministic implementation for every operation.",
+            "language": "python",
+            "code": "import random\nimport numpy as np\nimport torch\n\ndef seed_everything(seed=42):\n    random.seed(seed); np.random.seed(seed)\n    torch.manual_seed(seed)\n    if torch.cuda.is_available(): torch.cuda.manual_seed_all(seed)\n\nseed_everything(42)",
+            "explanation": "This is a starting point, not a guarantee of bitwise-identical results across different hardware or software environments. Configure deterministic algorithms and data-loader worker seeding separately when required."
+        },
+        {
+            "id": "profiling",
+            "title": "Profiling Before Optimization",
+            "type": "concept",
+            "content": "Measure data loading, host-to-device transfer, forward computation, backward computation, optimizer work, and synchronization separately. CUDA operations are asynchronous, so naive wall-clock timing may produce misleading results. Use warm-up iterations and appropriate synchronization for simple timing experiments, or use a profiler to inspect operation and kernel timelines. Profile representative steady-state iterations and optimize the bottleneck identified by measurements."
+        },
+        {
+            "id": "profiling-code",
+            "title": "Basic CUDA Timing",
+            "type": "code",
+            "content": "A basic timing experiment should warm up the workload and synchronize before and after the measured region. This pattern is useful for a controlled microbenchmark but should not replace a full profiler.",
+            "language": "python",
+            "code": "import time\nimport torch\n\nfor _ in range(10): model(x)\ntorch.cuda.synchronize(); start = time.perf_counter()\nfor _ in range(100): model(x)\ntorch.cuda.synchronize()\nprint(f\"Mean latency: {(time.perf_counter() - start) * 1000 / 100:.3f} ms\")",
+            "explanation": "This example assumes model and x are already on CUDA. It measures only the operations inside the timing window and excludes unrelated data loading and preprocessing."
+        },
+        {
+            "id": "testing",
+            "title": "Testing Training Pipelines",
+            "type": "concept",
+            "content": "Useful tests include verifying output shapes, confirming that a tiny model can overfit a small synthetic dataset, checking that checkpoints round-trip, ensuring validation does not update parameters, and testing execution on CPU. Add checks for malformed batches, invalid labels, empty datasets, and non-finite losses. Keep small deterministic tests in continuous integration and reserve longer accelerator tests for suitable runners. Production code should fail clearly when assumptions are violated."
+        },
+        {
+            "id": "production-checklist",
+            "title": "Production Readiness Checklist",
+            "type": "concept",
+            "content": "Before deploying a training pipeline, verify configuration validation, data integrity, reproducibility controls, checkpoint recovery, metric correctness, logging, exception handling, and performance measurements. Confirm that training and evaluation use the intended dataset splits. Document the environment and dependencies. Make expensive operations configurable and ensure that failures leave enough diagnostic information to reproduce the problem."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is model.eval() not a replacement for torch.no_grad() or torch.inference_mode()?",
+            "correctAnswer": "model.eval() changes the behavior of modules such as Dropout and BatchNorm, while no_grad() and inference_mode() control gradient recording.",
+            "solution": "Evaluation mode and gradient tracking are separate mechanisms. Use model.eval() to select evaluation behavior and inference_mode() when ordinary inference does not require autograd."
+        },
+        {
+            "id": "exercise-02",
+            "type": "implementation",
+            "difficulty": "intermediate",
+            "question": "What information should be saved to resume a training run?",
+            "correctAnswer": "At minimum, model state, optimizer state, current epoch or step, and configuration. Scheduler, scaler, random-number-generator, and sampler states may also be necessary.",
+            "solution": "The optimizer contains momentum or adaptive statistics that affect future updates. Restoring only model weights starts a new optimization trajectory rather than faithfully resuming the old one."
+        },
+        {
+            "id": "exercise-03",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "Validation loss is calculated by averaging batch means equally, but the final batch contains fewer examples. What is the problem?",
+            "correctAnswer": "The final batch receives too much weight because it contributes equally despite containing fewer examples.",
+            "solution": "Multiply each batch mean by the number of examples in that batch, sum the results, and divide by the total number of examples."
+        },
+        {
+            "id": "exercise-04",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Training becomes slower after increasing the number of data-loader workers. What should you investigate?",
+            "correctAnswer": "Investigate CPU contention, storage throughput, memory pressure, worker startup overhead, and inter-process communication.",
+            "solution": "Worker count is not a monotonic performance control. Benchmark multiple configurations and profile the input pipeline to identify the limiting resource."
+        }
+    ],
+    "summary": "Production PyTorch is about turning a working model into a repeatable, testable, and observable system. Use clear component boundaries, correct train/eval semantics, sample-weighted metrics, resumable checkpoints, explicit reproducibility controls, and measurement-driven profiling.",
+    "relatedTopics": [
+        "GPU Programming Concepts",
+        "Mixed Precision Training (FP16 / BF16)",
+        "Distributed Training Engineering",
+        "High-Throughput Data Pipelines",
+        "Experiment Tracking & MLOps"
+    ]
+}

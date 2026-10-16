@@ -1,0 +1,149 @@
+{
+    "id": "module-06-attention-query-key-value",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 3,
+    "title": "Query, Key, Value Formulation",
+    "slug": "query-key-value",
+    "href": "/curriculum/06-attention/query-key-value",
+    "filePath": "content/curriculum/06-attention/03-query-key-value.json",
+    "description": "Explore the mathematical role of queries, keys, and values, including learned linear projections, tensor shapes, and the construction of attention outputs.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Vectors and matrices",
+        "Matrix multiplication",
+        "Softmax",
+        "Attention Intuition"
+    ],
+    "learningObjectives": [
+        "Explain the separate roles of queries, keys, and values.",
+        "Derive queries, keys, and values from input representations.",
+        "Understand the shapes of Q, K, and V.",
+        "Calculate attention scores and outputs using matrix operations.",
+        "Explain why key and value dimensions can differ.",
+        "Implement a simple attention operation using NumPy."
+    ],
+    "sections": [
+        {
+            "id": "qkv-intuition",
+            "title": "1. What Queries, Keys, and Values Represent",
+            "type": "concept",
+            "content": "Queries, keys, and values are three learned views of vector representations. A query represents the information a position is looking for. A key represents features that other positions can match against. A value represents the content that can be retrieved when a position receives attention. These descriptions are conceptual roles, not fixed semantic labels. During training, the model learns projections that make the representations useful for its objective."
+        },
+        {
+            "id": "learned-projections",
+            "title": "2. Learned Linear Projections",
+            "type": "math",
+            "content": "Let X be a sequence representation with shape [n, d_model], where n is the number of positions and d_model is the hidden dimension. Queries, keys, and values are computed as Q = X W_Q, K = X W_K, and V = X W_V. The projection matrices have shapes W_Q in R^(d_model × d_k), W_K in R^(d_model × d_k), and W_V in R^(d_model × d_v). Consequently, Q and K have shape [n, d_k], while V has shape [n, d_v]. Bias terms may be included in some implementations."
+        },
+        {
+            "id": "why-separate",
+            "title": "3. Why Use Three Different Projections?",
+            "type": "concept",
+            "content": "The matching features that make a position relevant to a query do not need to be identical to the information retrieved from that position. Separate projection matrices allow the model to learn these functions independently. For example, a position might use syntactic or positional features to determine relevance while retrieving semantic features as its value. The actual features are learned and distributed, so this example is an intuition rather than a strict decomposition."
+        },
+        {
+            "id": "score-matrix",
+            "title": "4. Computing All Query-Key Scores",
+            "type": "math",
+            "content": "For Q with shape [n_q, d_k] and K with shape [n_k, d_k], the score matrix is S = Q K^T. Its shape is [n_q, n_k]. Entry S_ij is the dot product between query i and key j. The transpose aligns the feature dimension for matrix multiplication. In scaled dot-product attention, S is divided by sqrt(d_k). A mask may then be applied before softmax, depending on the task."
+        },
+        {
+            "id": "softmax-axis",
+            "title": "5. Softmax and Attention Weights",
+            "type": "concept",
+            "content": "Softmax is applied across the key positions for each query. Each query therefore receives its own distribution of weights over the available keys. If there are no masks or exceptional numerical cases, each row of the attention-weight matrix sums to one. The normalized matrix A is commonly written A = softmax(Q K^T / sqrt(d_k)), where softmax is applied row-wise over keys."
+        },
+        {
+            "id": "output-matrix",
+            "title": "6. Producing the Context Vectors",
+            "type": "math",
+            "content": "The output is O = A V. If A has shape [n_q, n_k] and V has shape [n_k, d_v], then O has shape [n_q, d_v]. Each output row is a weighted sum of the value vectors. In self-attention, n_q and n_k are usually equal to the sequence length. In cross-attention, the query sequence and key-value sequence may have different lengths."
+        },
+        {
+            "id": "numerical-example",
+            "title": "7. Worked Example",
+            "type": "example",
+            "content": "Suppose there are two queries and two keys, with Q = [[1, 0], [0, 1]] and K = [[1, 0], [1, 1]]. Then QK^T = [[1, 1], [0, 1]]. The first query has equal raw scores for both keys. The second query scores the first key at 0 and the second key at 1. After row-wise softmax, the first row is [0.5, 0.5], and the second row is approximately [0.269, 0.731]. If V = [[2, 0], [0, 4]], the output rows are [1, 2] and approximately [0.538, 2.924]. This example omits scaling to make the arithmetic easier to follow."
+        },
+        {
+            "id": "numpy-implementation",
+            "title": "8. Implementing Attention with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax(x, axis=-1):\n    shifted = x - np.max(x, axis=axis, keepdims=True)\n    exp_x = np.exp(shifted)\n    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)\n\ndef scaled_dot_product_attention(Q, K, V, mask=None):\n    d_k = Q.shape[-1]\n    scores = Q @ K.T / np.sqrt(d_k)\n\n    if mask is not None:\n        scores = np.where(mask, scores, -1e9)\n\n    weights = softmax(scores, axis=-1)\n    output = weights @ V\n    return output, weights\n\nQ = np.array([[1.0, 0.0], [0.0, 1.0]])\nK = np.array([[1.0, 0.0], [1.0, 1.0]])\nV = np.array([[2.0, 0.0], [0.0, 4.0]])\n\noutput, weights = scaled_dot_product_attention(Q, K, V)\nprint('Weights:\\n', weights)\nprint('Output:\\n', output)",
+            "explanation": "The implementation computes all pairwise query-key dot products in one matrix multiplication, scales them, normalizes each row with a numerically stable softmax, and multiplies the resulting weights by V. The optional Boolean mask uses True for allowed positions and False for blocked positions. The use of -1e9 is a simple educational convention; production implementations often use dtype-aware negative infinity or specialized attention kernels."
+        },
+        {
+            "id": "dimension-design",
+            "title": "9. Understanding the Dimensions",
+            "type": "concept",
+            "content": "The key dimension d_k determines the feature size used in query-key comparisons and therefore the scaling factor. The value dimension d_v determines the size of the retrieved representation. They do not have to be equal. In multi-head attention, each head often uses smaller query, key, and value dimensions, and the head outputs are concatenated and projected back to the model dimension."
+        },
+        {
+            "id": "qkv-common-errors",
+            "title": "10. Common Implementation Errors",
+            "type": "concept",
+            "content": "Common mistakes include transposing the wrong matrix, applying softmax across the feature dimension instead of the key dimension, forgetting the scale factor, and using incompatible sequence dimensions for A and V. Another frequent issue is applying a mask after softmax rather than before it, which can leave invalid probability mass assigned to blocked positions. Shape checks are especially useful: QK^T should have shape [n_q, n_k], and multiplying it by V should produce [n_q, d_v]."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "qkv-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the role of a query in attention?",
+            "correctAnswer": "It represents the features used to search for relevant keys.",
+            "solution": "The query is compared with keys to determine attention scores, which are normalized into weights."
+        },
+        {
+            "id": "qkv-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If Q has shape [5, 8] and K has shape [7, 8], what is the shape of QK^T?",
+            "correctAnswer": "[5, 7].",
+            "solution": "K^T has shape [8, 7], so [5, 8] multiplied by [8, 7] produces [5, 7]."
+        },
+        {
+            "id": "qkv-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If the attention matrix has shape [5, 7] and V has shape [7, 12], what is the output shape?",
+            "correctAnswer": "[5, 12].",
+            "solution": "The inner dimensions of [5, 7] and [7, 12] match, leaving an output shape of [5, 12]."
+        },
+        {
+            "id": "qkv-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why are Q, K, and V usually produced by separate learned projections?",
+            "correctAnswer": "Because relevance matching and retrieved content can benefit from different learned representations.",
+            "solution": "Separate matrices allow the model to learn query, key, and value features suited to their different roles."
+        },
+        {
+            "id": "qkv-ex-5",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A developer computes scores = Q @ K and receives a dimension mismatch. What is the usual correction for standard attention when Q and K are stored as [sequence_length, feature_dimension]?",
+            "correctAnswer": "Use scores = Q @ K.T.",
+            "solution": "Transposing K changes its shape to [feature_dimension, sequence_length], allowing pairwise query-key scores to be computed."
+        },
+        {
+            "id": "qkv-ex-6",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "In cross-attention, can the query sequence length differ from the key-value sequence length?",
+            "correctAnswer": "Yes.",
+            "solution": "Queries can come from a decoder sequence while keys and values come from an encoded source sequence. The score matrix then has shape [n_q, n_k]."
+        }
+    ],
+    "summary": "Queries, keys, and values are learned projections of input representations. The score matrix QK^T measures query-key compatibility, softmax converts scores into attention weights, and multiplying by V creates context vectors. Understanding tensor shapes is essential for implementing attention correctly.",
+    "relatedTopics": [
+        "module-06-attention-attention-intuition",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-cross-attention"
+    ]
+}

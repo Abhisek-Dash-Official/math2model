@@ -1,1 +1,170 @@
-{}
+{
+    "id": "loss-functions",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 5,
+    "title": "Loss Functions",
+    "slug": "loss-functions",
+    "description": "Understand how loss functions measure prediction errors in neural networks, including regression losses, classification losses, mathematical derivations, numerical examples, implementation in NumPy and PyTorch, and practical loss-selection strategies.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Basic algebra",
+        "Probability fundamentals",
+        "Forward propagation",
+        "Activation functions"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of a loss function in neural network training.",
+        "Distinguish loss functions from evaluation metrics.",
+        "Calculate mean squared error and mean absolute error.",
+        "Understand binary and categorical cross-entropy.",
+        "Explain Huber loss and its robustness to outliers.",
+        "Implement common loss functions using NumPy.",
+        "Choose a loss function appropriate for a prediction task.",
+        "Understand logits, probabilities, and numerically stable classification losses."
+    ],
+    "sections": [
+        {
+            "id": "loss-introduction",
+            "title": "1. What Is a Loss Function?",
+            "type": "concept",
+            "content": "A loss function measures how different a model's prediction is from the correct target. During neural network training, the model tries to adjust its parameters to minimize this loss.\n\nSuppose a model predicts the price of a house as ₹45 lakh, while the actual price is ₹50 lakh. The prediction error is ₹5 lakh. A loss function converts this discrepancy into a numerical value that can be used during optimization.\n\nFor classification, the situation is different. A model might predict a probability of 0.90 for the correct class or 0.10 for the correct class. Cross-entropy assigns a much larger penalty to the second prediction.\n\nA typical training process consists of:\n\n1. Forward propagation produces predictions.\n2. A loss function compares predictions with targets.\n3. Backpropagation calculates gradients of the loss.\n4. An optimizer updates model parameters.\n5. The process repeats over training examples and epochs.\n\nThe loss function influences what the model learns. Two loss functions applied to the same predictions may assign different penalties to the same error, resulting in different optimization behavior."
+        },
+        {
+            "id": "loss-vs-metric",
+            "title": "2. Loss Functions vs. Evaluation Metrics",
+            "type": "concept",
+            "content": "Loss functions and evaluation metrics are related but serve different purposes.\n\nA training loss is generally designed to provide a useful optimization objective. It is often differentiable or has a suitable subgradient, allowing gradient-based learning.\n\nAn evaluation metric measures a property of model performance, such as accuracy, precision, recall, or mean absolute error. Some metrics, such as accuracy, are not convenient objectives for ordinary gradient-based optimization because small parameter changes may not change the predicted class.\n\nFor example, a binary classifier can be trained using binary cross-entropy and evaluated using accuracy, precision, recall, and F1-score.\n\nA regression model can be trained using mean squared error and evaluated using MAE, RMSE, and R-squared.\n\nThe loss and metric do not have to be identical. A model trained with squared error may be evaluated using absolute error when robustness to large prediction errors is important.\n\nAlways select evaluation metrics based on the real-world goal. In medical screening, for example, missing a positive case may be more costly than producing a false alarm, so recall and precision may be more informative than accuracy alone."
+        },
+        {
+            "id": "mse",
+            "title": "3. Mean Squared Error",
+            "type": "math",
+            "content": "Mean squared error, or MSE, measures the average squared difference between actual and predicted values.\n\nMSE = (1/N) * sum(i=1 to N) (y_i - y_pred_i)^2\n\nHere N is the number of examples, y_i is the true target, and y_pred_i is the model prediction.\n\nWorked example:\n\nActual values: [3, 5, 2]\nPredictions: [2, 5, 4]\n\nErrors: [1, 0, -2]\n\nSquared errors: [1, 0, 4]\n\nMSE = (1 + 0 + 4) / 3\nMSE = 5/3, approximately 1.667.\n\nWhy square the errors? Squaring prevents positive and negative errors from cancelling each other. It also penalizes large errors more strongly than small errors.\n\nFor one prediction, the derivative of squared error with respect to the prediction is:\n\ndL/dy_pred = 2 * (y_pred - y)\n\nFor the mean over N examples, the derivative includes a factor of 1/N.\n\nMSE is widely used in regression. However, because errors are squared, outliers can dominate the objective. MSE is also expressed in squared target units, which may be less intuitive than the original target units."
+        },
+        {
+            "id": "mae",
+            "title": "4. Mean Absolute Error",
+            "type": "math",
+            "content": "Mean absolute error, or MAE, calculates the average absolute difference between predictions and actual values.\n\nMAE = (1/N) * sum(i=1 to N) abs(y_i - y_pred_i)\n\nUsing the previous example:\n\nActual values: [3, 5, 2]\nPredictions: [2, 5, 4]\n\nAbsolute errors: [1, 0, 2]\n\nMAE = (1 + 0 + 2) / 3 = 1.\n\nMAE penalizes errors linearly rather than quadratically. A prediction error of 10 therefore contributes ten times as much as an error of 1, instead of one hundred times as much as it would under squared error.\n\nMAE is often more robust to large outliers than MSE. It is also measured in the same units as the target.\n\nThe absolute-value function is not differentiable at zero in the ordinary sense, but it has a valid subgradient. Modern optimization frameworks support MAE-based training.\n\nMAE and MSE optimize different notions of a good prediction. Under standard assumptions, minimizing expected squared error targets the conditional mean, while minimizing expected absolute error targets a conditional median."
+        },
+        {
+            "id": "huber-loss",
+            "title": "5. Huber Loss",
+            "type": "math",
+            "content": "Huber loss combines squared-error behavior for small errors with absolute-error behavior for large errors.\n\nLet e = y - y_pred and let delta be a positive threshold.\n\nL_delta(e) = 0.5 * e^2 when abs(e) <= delta\n\nL_delta(e) = delta * (abs(e) - 0.5 * delta) when abs(e) > delta\n\nFor small errors, the loss is quadratic. For large errors, it grows approximately linearly.\n\nSuppose delta = 1.\n\nIf e = 0.5:\n\nL = 0.5 * (0.5)^2 = 0.125.\n\nIf e = 3:\n\nL = 1 * (3 - 0.5) = 2.5.\n\nHuber loss can be useful when a dataset contains outliers but smooth behavior near zero error is still desirable.\n\nThe threshold delta controls where the function changes from quadratic to linear behavior. The appropriate value depends on the target scale and the noise characteristics of the dataset."
+        },
+        {
+            "id": "binary-cross-entropy",
+            "title": "6. Binary Cross-Entropy",
+            "type": "math",
+            "content": "Binary cross-entropy, or BCE, is a common loss for binary classification. It compares a target label y in {0, 1} with a predicted probability p.\n\nFor one example:\n\nL = -[y*log(p) + (1-y)*log(1-p)]\n\nFor N examples, average the individual losses.\n\nWhen y = 1:\n\nL = -log(p)\n\nWhen y = 0:\n\nL = -log(1-p)\n\nWorked example for a positive example:\n\nTrue label y = 1\nPredicted probability p = 0.8\n\nL = -log(0.8), approximately 0.223.\n\nIf the model instead predicts p = 0.1:\n\nL = -log(0.1), approximately 2.303.\n\nThe second prediction receives a much larger penalty because the model assigned low probability to the correct class.\n\nBCE strongly penalizes confident incorrect predictions. In practice, probabilities should not be passed to a loss function that expects logits. Frameworks such as PyTorch provide BCEWithLogitsLoss, which combines sigmoid and BCE in a numerically stable calculation."
+        },
+        {
+            "id": "categorical-cross-entropy",
+            "title": "7. Categorical Cross-Entropy",
+            "type": "math",
+            "content": "Categorical cross-entropy is commonly used for classification when exactly one class is correct among multiple classes.\n\nFor one-hot target vector y and predicted probability vector p:\n\nL = -sum(i=1 to K) y_i * log(p_i)\n\nSince exactly one target element is 1, the expression simplifies to the negative logarithm of the predicted probability assigned to the correct class.\n\nSuppose the true class is class 2, represented by target [0, 1, 0]. The model predicts:\n\np = [0.1, 0.7, 0.2]\n\nThe loss is:\n\nL = -log(0.7), approximately 0.357.\n\nIf the probability assigned to the correct class drops to 0.05, the loss increases to approximately 2.996.\n\nSoftmax is often used to convert class logits into probabilities, but many libraries provide a combined, numerically stable loss that accepts logits directly.\n\nSparse categorical cross-entropy uses integer class labels instead of one-hot vectors. For example, a target may be represented as the integer 1 rather than [0, 1, 0]. Confirm which representation your framework expects."
+        },
+        {
+            "id": "loss-selection",
+            "title": "8. Selecting a Loss Function",
+            "type": "concept",
+            "content": "The choice of loss function should match the prediction task and the costs of different errors.\n\nRegression:\n\n- MSE: useful when large errors should be penalized strongly.\n- MAE: useful when linear penalties and greater robustness to outliers are desirable.\n- Huber loss: combines quadratic behavior near zero with linear growth for large errors.\n\nBinary classification:\n\n- Binary cross-entropy is a common choice for binary labels.\n- BCEWithLogitsLoss in PyTorch expects raw logits and is usually preferred to manually applying sigmoid before BCE.\n\nMulticlass classification:\n\n- Categorical cross-entropy is common when exactly one class is correct.\n- Sparse categorical cross-entropy uses integer class labels.\n- PyTorch CrossEntropyLoss expects logits and integer class indices in its standard class-index mode.\n\nMultilabel classification:\n\n- Independent binary cross-entropy losses are commonly used for labels that can independently be present or absent.\n\nImbalanced data:\n\n- Class weighting or carefully selected alternatives may help when errors on some classes are more costly.\n- Focal loss can be useful in some highly imbalanced classification tasks, but should be evaluated rather than assumed to be better.\n\nThe loss is only one part of a training system. Data quality, model architecture, regularization, optimizer choice, and validation strategy also influence the result."
+        },
+        {
+            "id": "loss-numpy",
+            "title": "9. Implementing Loss Functions with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef mse(y_true, y_pred):\n    y_true = np.asarray(y_true, dtype=float)\n    y_pred = np.asarray(y_pred, dtype=float)\n    return np.mean((y_true - y_pred) ** 2)\n\ndef mae(y_true, y_pred):\n    y_true = np.asarray(y_true, dtype=float)\n    y_pred = np.asarray(y_pred, dtype=float)\n    return np.mean(np.abs(y_true - y_pred))\n\ndef huber(y_true, y_pred, delta=1.0):\n    y_true = np.asarray(y_true, dtype=float)\n    y_pred = np.asarray(y_pred, dtype=float)\n    error = y_true - y_pred\n    abs_error = np.abs(error)\n    quadratic = np.minimum(abs_error, delta)\n    linear = abs_error - quadratic\n    return np.mean(0.5 * quadratic**2 + delta * linear)\n\ndef binary_cross_entropy(y_true, probabilities, eps=1e-12):\n    y_true = np.asarray(y_true, dtype=float)\n    probabilities = np.asarray(probabilities, dtype=float)\n    probabilities = np.clip(probabilities, eps, 1 - eps)\n    losses = -(\n        y_true * np.log(probabilities)\n        + (1 - y_true) * np.log(1 - probabilities)\n    )\n    return np.mean(losses)\n\ny_true = np.array([3.0, 5.0, 2.0])\ny_pred = np.array([2.0, 5.0, 4.0])\n\nprint('MSE:', mse(y_true, y_pred))\nprint('MAE:', mae(y_true, y_pred))\nprint('Huber:', huber(y_true, y_pred, delta=1.0))\n\nlabels = np.array([1, 0, 1])\nprobabilities = np.array([0.8, 0.2, 0.6])\nprint('Binary cross-entropy:', binary_cross_entropy(labels, probabilities))",
+            "explanation": "The code implements four common losses. The BCE implementation clips probabilities to avoid taking log(0). This is a teaching implementation; for production neural network training, use stable framework losses that operate on logits where appropriate. All functions assume that target and prediction arrays are aligned."
+        },
+        {
+            "id": "loss-pytorch",
+            "title": "10. Loss Functions in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\n# Regression\nregression_predictions = torch.tensor([2.0, 5.0, 4.0])\nregression_targets = torch.tensor([3.0, 5.0, 2.0])\n\nmse_loss = nn.MSELoss()(regression_predictions, regression_targets)\nmae_loss = nn.L1Loss()(regression_predictions, regression_targets)\nhuber_loss = nn.HuberLoss(delta=1.0)(\n    regression_predictions,\n    regression_targets\n)\n\nprint('MSE:', mse_loss.item())\nprint('MAE:', mae_loss.item())\nprint('Huber:', huber_loss.item())\n\n# Binary classification: raw logits, not probabilities.\nlogits = torch.tensor([2.0, -1.0, 0.5])\nbinary_targets = torch.tensor([1.0, 0.0, 1.0])\n\nbce_loss = nn.BCEWithLogitsLoss()(logits, binary_targets)\nprint('BCE with logits:', bce_loss.item())\n\n# Multiclass classification: three examples and four classes.\nclass_logits = torch.tensor([\n    [2.0, 0.5, 0.1, -1.0],\n    [0.1, 1.8, 0.3, 0.2],\n    [-0.2, 0.4, 2.1, 0.0]\n])\nclass_targets = torch.tensor([0, 1, 2])\n\ncross_entropy = nn.CrossEntropyLoss()(class_logits, class_targets)\nprint('Multiclass cross-entropy:', cross_entropy.item())",
+            "explanation": "The example demonstrates standard regression and classification losses. MSELoss, L1Loss, and HuberLoss operate on predictions and targets. BCEWithLogitsLoss expects binary logits, while CrossEntropyLoss in its standard class-index mode expects unnormalized class logits and integer class labels. Neither classification loss requires manual sigmoid or softmax before the loss."
+        },
+        {
+            "id": "loss-reduction",
+            "title": "11. Reduction: None, Mean, and Sum",
+            "type": "concept",
+            "content": "Many framework loss functions support different reduction settings.\n\nNone returns an individual loss value for each relevant prediction or target element, subject to the function's output shape.\n\nMean calculates an average over the relevant elements. The precise averaging behavior depends on the loss function and its configuration.\n\nSum adds the losses together without averaging.\n\nReduction affects the numerical scale of the loss and gradients. If the number of examples in a batch changes, a summed loss may change in scale even when the average per-example error remains similar.\n\nThis matters when selecting learning rates, combining several losses, and comparing training runs. A weighted combination such as total_loss = classification_loss + 0.1 * regularization_loss also depends on the scales and reduction conventions of its components.\n\nAlways verify what a framework is averaging over, especially when predictions contain multiple dimensions, such as image pixels, time steps, or multilabel targets."
+        },
+        {
+            "id": "loss-common-mistakes",
+            "title": "12. Common Mistakes and Practical Guidance",
+            "type": "concept",
+            "content": "Common mistake 1: Choosing a classification loss for a continuous regression target without a specific reason.\n\nCommon mistake 2: Passing probabilities to a loss that expects logits.\n\nCommon mistake 3: Applying softmax manually before a logits-based multiclass loss.\n\nCommon mistake 4: Comparing loss values from different reduction settings as if they were directly equivalent.\n\nCommon mistake 5: Ignoring target scaling. Very large regression targets can produce large MSE values and gradients.\n\nCommon mistake 6: Assuming that minimizing training loss guarantees strong generalization. Validation performance must also be monitored.\n\nCommon mistake 7: Using accuracy as the only measure for imbalanced classification. A model can achieve high accuracy while failing on a minority class.\n\nPractical workflow:\n\n1. Identify whether the task is regression, binary classification, multiclass classification, or multilabel classification.\n2. Define what counts as a costly error.\n3. Select a loss compatible with the target representation and output layer.\n4. Use numerically stable implementations.\n5. Inspect both training loss and validation metrics.\n6. Test the loss on small examples whose correct values are known."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "loss-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Actual values are [2, 4] and predictions are [1, 6]. Calculate MSE.",
+            "correctAnswer": "MSE = 2.5",
+            "solution": "Errors are [1, -2]. Squared errors are [1, 4]. Their mean is (1 + 4) / 2 = 2.5."
+        },
+        {
+            "id": "loss-exercise-2",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "For the same actual values [2, 4] and predictions [1, 6], calculate MAE.",
+            "correctAnswer": "MAE = 1.5",
+            "solution": "Absolute errors are [1, 2]. Their mean is (1 + 2) / 2 = 1.5."
+        },
+        {
+            "id": "loss-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A positive example has true label 1 and predicted probability 0.25. Calculate its binary cross-entropy loss.",
+            "correctAnswer": "Approximately 1.386",
+            "solution": "For y = 1, BCE = -log(p). Therefore, -log(0.25) is approximately 1.386."
+        },
+        {
+            "id": "loss-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might MAE be preferred over MSE when a regression dataset contains extreme outliers?",
+            "correctAnswer": "MAE penalizes large errors linearly, while MSE penalizes them quadratically.",
+            "solution": "A large error contributes proportionally to its magnitude under MAE but proportionally to its square under MSE. Consequently, an extreme outlier can dominate MSE more strongly."
+        },
+        {
+            "id": "loss-exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Which loss function is commonly used with raw logits for binary classification in PyTorch?",
+            "options": [
+                "nn.MSELoss",
+                "nn.BCEWithLogitsLoss",
+                "nn.CrossEntropyLoss with one binary probability",
+                "nn.L1Loss"
+            ],
+            "correctAnswer": "nn.BCEWithLogitsLoss",
+            "solution": "BCEWithLogitsLoss combines sigmoid and binary cross-entropy in a numerically stable operation and expects logits as its input."
+        },
+        {
+            "id": "loss-exercise-6",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "You are classifying images into one of ten mutually exclusive categories. Which loss is a common choice when using PyTorch with integer class-index targets?",
+            "correctAnswer": "nn.CrossEntropyLoss applied to raw class logits.",
+            "solution": "CrossEntropyLoss combines a log-softmax operation and negative log-likelihood computation. In its standard class-index mode, it expects unnormalized logits and integer target indices."
+        }
+    ],
+    "summary": "Loss functions quantify prediction errors and provide the objective optimized during neural network training. MSE strongly penalizes large regression errors, MAE penalizes errors linearly, Huber loss combines both behaviors, and cross-entropy is widely used for classification. The loss must match the task, target representation, and output conventions. Stable implementations and validation-based evaluation are essential for reliable training.",
+    "relatedTopics": [
+        "forward-propagation",
+        "computational-graphs",
+        "backpropagation",
+        "chain-rule-in-neural-networks",
+        "gradient-descent-sgd",
+        "evaluation-metrics"
+    ]
+}

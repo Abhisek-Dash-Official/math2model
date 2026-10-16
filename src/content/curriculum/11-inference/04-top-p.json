@@ -1,1 +1,160 @@
-{}
+{
+    "id": "module-11-inference-top-p",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 4,
+    "title": "Top-p (Nucleus) Sampling",
+    "slug": "top-p",
+    "href": "/curriculum/11-inference/top-p",
+    "filePath": "content/curriculum/11-inference/04-top-p.json",
+    "description": "Learn how nucleus sampling selects the smallest high-probability candidate set whose cumulative probability reaches a configurable threshold.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-k"
+    ],
+    "learningObjectives": [
+        "Explain nucleus sampling and the meaning of the p threshold.",
+        "Calculate cumulative probabilities over sorted token candidates.",
+        "Implement Top-p sampling using Python and PyTorch.",
+        "Compare adaptive Top-p filtering with fixed-size Top-k filtering.",
+        "Understand how temperature affects the nucleus candidate set.",
+        "Evaluate Top-p sampling for different generation tasks."
+    ],
+    "sections": [
+        {
+            "id": "topp-introduction",
+            "title": "1. What Is Top-p Sampling?",
+            "type": "concept",
+            "content": "Top-p sampling, also called nucleus sampling, retains a set of the most probable next tokens whose cumulative probability reaches a threshold p. Unlike Top-k, which always keeps a fixed number of candidates, Top-p adapts the size of the candidate set to the model's probability distribution. If the distribution is concentrated, the nucleus may be small. If probability is spread across many tokens, the nucleus may be larger."
+        },
+        {
+            "id": "topp-motivation",
+            "title": "2. Why Use a Probability Threshold?",
+            "type": "concept",
+            "content": "A fixed number of candidates does not always reflect uncertainty in the model's prediction. Top-p uses cumulative probability to select candidates that collectively account for a chosen amount of the distribution. This makes the candidate count adaptive. Top-p still has limitations: the chosen threshold is a hyperparameter, and the probability distribution itself may not accurately reflect which continuations are actually useful or correct."
+        },
+        {
+            "id": "topp-mathematics",
+            "title": "3. Mathematical Definition",
+            "type": "math",
+            "content": "Sort candidate tokens by descending probability. The nucleus is the smallest prefix of this sorted list whose cumulative probability reaches or exceeds p. Probabilities outside this set are removed, and the remaining probabilities are renormalized before sampling.",
+            "formula": "S_p = smallest sorted set S such that Σ_{i ∈ S} P(x_i) ≥ p",
+            "example": "Suppose sorted probabilities are [0.50, 0.25, 0.15, 0.07, 0.03]. For p = 0.80, the first three tokens are retained because their cumulative probability is 0.90, the first cumulative sum that reaches or exceeds 0.80."
+        },
+        {
+            "id": "topp-cumulative",
+            "title": "4. Understanding Cumulative Probability",
+            "type": "concept",
+            "content": "Cumulative probability is calculated by adding probabilities in descending order. The process continues until the cumulative sum reaches or exceeds p. The token that crosses the threshold is normally retained, while lower-ranked tokens are excluded. Exact implementation details matter at the boundary, especially for batched tensors and floating-point values. The retained probabilities are then normalized to sum to one."
+        },
+        {
+            "id": "topp-example",
+            "title": "5. Worked Example",
+            "type": "concept",
+            "content": "Consider five candidates with probabilities [0.40, 0.30, 0.15, 0.10, 0.05]. For p = 0.70, the first two candidates have cumulative probability 0.70, so they form the nucleus under the standard smallest-prefix rule. For p = 0.90, the first four candidates are retained because their cumulative probability is 0.95. The resulting distributions are renormalized after filtering."
+        },
+        {
+            "id": "topp-hyperparameter",
+            "title": "6. Choosing p",
+            "type": "concept",
+            "content": "The threshold p is generally between zero and one. A smaller threshold creates a narrower candidate set, while a larger threshold allows more candidates. Many generation libraries use values near 0.9 or 0.95 as starting points, but there is no universally optimal value. Some implementations define special behavior for p = 1, which typically means no nucleus filtering. Applications should follow the exact semantics of their inference library."
+        },
+        {
+            "id": "topp-python",
+            "title": "7. Implementing Top-p Sampling",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef top_p_sample(logits, p=0.9, temperature=1.0):\n    if not 0 < p <= 1:\n        raise ValueError(\"p must be in (0, 1]\")\n    if temperature <= 0:\n        raise ValueError(\"Temperature must be positive\")\n    scaled = logits / temperature\n    sorted_logits, sorted_indices = torch.sort(scaled, descending=True, dim=-1)\n    sorted_probs = torch.softmax(sorted_logits, dim=-1)\n    cumulative_probs = torch.cumsum(sorted_probs, dim=-1)\n    remove = cumulative_probs - sorted_probs >= p\n    sorted_logits = sorted_logits.masked_fill(remove, float(\"-inf\"))\n    filtered = torch.full_like(scaled, float(\"-inf\"))\n    filtered.scatter_(-1, sorted_indices, sorted_logits)\n    probabilities = torch.softmax(filtered, dim=-1)\n    return torch.multinomial(probabilities, num_samples=1), probabilities\n\nlogits = torch.tensor([4.0, 3.0, 1.0, 0.0, -1.0])\ntoken_id, probabilities = top_p_sample(logits, p=0.9)\nprint(token_id)\nprint(probabilities)",
+            "explanation": "The code sorts logits, calculates the corresponding cumulative probabilities, masks tokens that fall outside the nucleus, restores the original vocabulary order, and samples from the filtered distribution. The expression cumulative_probs - sorted_probs ensures that the token that first crosses the threshold is retained. Production implementations should carefully handle batched shapes, invalid values, and their framework's exact Top-p semantics."
+        },
+        {
+            "id": "topp-adaptive",
+            "title": "8. Adaptive Candidate Set Size",
+            "type": "concept",
+            "content": "Suppose one token has probability 0.85 and the remaining probability is distributed among many alternatives. At p = 0.90, only a small number of tokens may be needed to reach the threshold. In a different context where probabilities are distributed more evenly, many candidates may be required to reach the same p. This adaptive behavior is the defining difference between nucleus sampling and fixed-k sampling."
+        },
+        {
+            "id": "topp-vs-topk",
+            "title": "9. Top-p Versus Top-k",
+            "type": "concept",
+            "content": "Top-k retains a fixed number of highest-scoring candidates, while Top-p retains a variable number based on cumulative probability. Top-k offers direct control over candidate count. Top-p adapts to the distribution's concentration. Both methods filter low-ranked candidates and renormalize the remaining probabilities. Some systems combine them to limit the maximum candidate count while also applying a cumulative-probability threshold."
+        },
+        {
+            "id": "topp-temperature",
+            "title": "10. Interaction with Temperature",
+            "type": "concept",
+            "content": "Temperature changes the probability distribution before nucleus filtering. Lower temperature usually concentrates probability on the highest-scoring tokens, which can produce a smaller nucleus for a fixed p. Higher temperature usually spreads probability more evenly, which can produce a larger nucleus. Since Top-p depends on probabilities rather than only token ranking, temperature can change both the candidate set and the probabilities used for sampling."
+        },
+        {
+            "id": "topp-diversity",
+            "title": "11. Diversity and Output Quality",
+            "type": "concept",
+            "content": "Top-p sampling can preserve likely continuations while allowing the candidate count to adapt to uncertainty. It is often useful for conversational and creative generation. However, a larger nucleus can include less suitable alternatives, and a smaller nucleus can reduce variety. The best threshold depends on the task and model. Top-p does not guarantee factuality, logical consistency, or freedom from repetition."
+        },
+        {
+            "id": "topp-limitations",
+            "title": "12. Limitations and Edge Cases",
+            "type": "concept",
+            "content": "Top-p depends on the quality and calibration of the model's predicted probabilities. A token with high probability is not necessarily the correct token for the task. Very small thresholds may retain only a few candidates, while thresholds close to one may retain most of the vocabulary. Implementations must avoid accidentally removing every candidate, preserve at least the highest-probability token, and handle floating-point rounding near the cumulative threshold."
+        },
+        {
+            "id": "topp-evaluation",
+            "title": "13. Evaluating Nucleus Sampling",
+            "type": "concept",
+            "content": "Compare several p thresholds on a fixed prompt set while holding other settings constant. Use repeated samples to account for randomness. Measure task-specific quality, diversity, repetition, factual accuracy, and format validity as appropriate. For applications requiring strict structure or reliable actions, combine sampling with schema validation, permission checks, and other application-level controls."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "topp-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What determines the number of candidates retained by Top-p sampling?",
+            "correctAnswer": "The number of highest-probability tokens required for their cumulative probability to reach or exceed p.",
+            "solution": "Top-p sorts tokens by probability and retains the smallest prefix whose cumulative probability reaches the specified threshold."
+        },
+        {
+            "id": "topp-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Sorted probabilities are [0.45, 0.30, 0.15, 0.10]. Which candidates are retained for p = 0.75?",
+            "correctAnswer": "The first three candidates.",
+            "solution": "The cumulative sums are 0.45, 0.75, and 0.90. Under the standard smallest-prefix rule, the first two candidates already reach 0.75, so only the first two are required. The answer is therefore the first two candidates."
+        },
+        {
+            "id": "topp-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can Top-p retain more tokens in one context than another when p is fixed?",
+            "correctAnswer": "Because the probability distribution may be concentrated in one context and spread across many candidates in another.",
+            "solution": "Top-p uses cumulative probability, so a diffuse distribution requires more tokens to reach the same threshold."
+        },
+        {
+            "id": "topp-ex-4",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "What effect might increasing temperature have on the Top-p candidate set?",
+            "correctAnswer": "It often spreads probability more evenly and may increase the number of candidates needed to reach p.",
+            "solution": "Temperature changes the probability distribution before filtering. A flatter distribution generally requires more candidates to reach the same cumulative probability, although the exact result depends on the logits."
+        },
+        {
+            "id": "topp-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "How would you choose a Top-p value for a creative-writing assistant?",
+            "correctAnswer": "Compare several thresholds using multiple generations per prompt and evaluate creativity, coherence, repetition, and user preference.",
+            "solution": "Keep the model, prompts, temperature, and other decoding settings fixed during comparison. Repeated sampling helps reveal the trade-off between output diversity and quality."
+        }
+    ],
+    "summary": "Top-p, or nucleus sampling, retains the smallest set of highest-probability tokens whose cumulative probability reaches a threshold p. Unlike Top-k, it adapts the number of candidates to the shape of the probability distribution. Temperature can change the nucleus by changing the distribution before filtering. Top-p is a flexible sampling method, but its quality depends on the model, threshold, task, and other decoding settings.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-k",
+        "module-11-inference-beam-search",
+        "module-11-inference-kv-cache"
+    ]
+}

@@ -1,1 +1,171 @@
-{}
+{
+    "id": "module-09-large-language-models-checkpointing",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 10,
+    "title": "Checkpointing & Fault Tolerance",
+    "slug": "checkpointing",
+    "href": "/curriculum/09-large-language-models/checkpointing",
+    "filePath": "content/curriculum/09-large-language-models/10-checkpointing.json",
+    "description": "Learn how to save and restore model parameters, optimizer and scheduler state, training progress, random-number-generator state, and distributed checkpoints for reliable large-scale language-model training.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-learning-rate-schedules",
+        "module-09-large-language-models-distributed-training"
+    ],
+    "learningObjectives": [
+        "Explain why checkpointing is essential for long-running training jobs.",
+        "Distinguish model weights from a complete resumable training checkpoint.",
+        "Save and restore model, optimizer, scheduler, and progress state in PyTorch.",
+        "Understand random-number-generator state and reproducibility.",
+        "Design checkpoint naming, retention, and validation policies.",
+        "Recognize the differences between training checkpoints and inference artifacts.",
+        "Explain checkpointing challenges in distributed training.",
+        "Understand atomic writes, integrity checks, and interrupted saves.",
+        "Estimate checkpoint storage requirements and overhead.",
+        "Build a robust checkpoint recovery workflow."
+    ],
+    "sections": [
+        {
+            "id": "checkpointing-motivation",
+            "title": "1. Why Checkpointing Matters",
+            "type": "concept",
+            "content": "Training a large language model can take days or weeks. Hardware failures, preemption, software errors, storage interruptions, and planned maintenance can interrupt the process. Without checkpoints, a failure may force the entire training run to restart.\n\nA checkpoint captures enough state to resume training from a saved point. The required state depends on the recovery goal. An inference-only artifact may need model weights and configuration, while a resumable training checkpoint typically needs model parameters, optimizer state, scheduler state, progress counters, and possibly random-number-generator states.\n\nCheckpointing introduces overhead because state must be serialized and written to storage. A good policy balances the cost of saving against the amount of training work that could be lost after a failure. For distributed runs, saving must also account for sharded tensors and coordinated worker behavior."
+        },
+        {
+            "id": "model-weights-vs-training-state",
+            "title": "2. Model Weights Versus Training Checkpoints",
+            "type": "concept",
+            "content": "Model weights contain learned parameter values. They are usually sufficient to perform inference when combined with the correct model architecture, tokenizer, and configuration. However, model weights alone are generally insufficient to continue optimization exactly from the previous training state.\n\nAdaptive optimizers such as AdamW maintain moving averages of gradients and squared gradients. If training resumes with only model weights, these internal estimates are lost unless they are reconstructed or restored separately. The learning-rate scheduler's state and the global update count may also be lost, causing the resumed run to follow a different schedule.\n\nA complete checkpoint may include model state, optimizer state, scheduler state, mixed-precision scaler state, global step, tokens processed, random-number-generator state, and data-loader or sampler progress. The precise contents depend on how strictly the run must be resumed and how the training system manages data iteration."
+        },
+        {
+            "id": "checkpoint-contents",
+            "title": "3. What Should a Checkpoint Contain?",
+            "type": "concept",
+            "content": "A practical checkpoint schema should clearly identify the model state and the training state. Common fields include model_state_dict, optimizer_state_dict, scheduler_state_dict, global_step, epoch or data position, tokens_seen, configuration, and random states. If automatic mixed precision uses a gradient scaler, its state may also need to be saved.\n\nThe data pipeline matters too. Exact resumption may require the sampler position, shuffle state, dataset version, sequence-packing state, and any streaming-data cursor. If the next batch differs after restart, the training trajectory may differ even when the model and optimizer states are restored.\n\nNot every project needs bitwise-identical continuation. Some systems prioritize practical recovery and accept small changes in data order or nondeterministic kernels. The recovery requirements should be defined before deciding which state must be persisted."
+        },
+        {
+            "id": "saving-checkpoint-pytorch",
+            "title": "4. Saving a PyTorch Training Checkpoint",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom pathlib import Path\n\ncheckpoint_dir = Path(\"checkpoints\")\ncheckpoint_dir.mkdir(parents=True, exist_ok=True)\n\ncheckpoint = {\n    \"model\": model.state_dict(),\n    \"optimizer\": optimizer.state_dict(),\n    \"scheduler\": scheduler.state_dict(),\n    \"global_step\": global_step,\n    \"tokens_seen\": tokens_seen\n}\ntorch.save(checkpoint, checkpoint_dir / f\"step-{global_step}.pt\")",
+            "explanation": "This example stores the model, optimizer, scheduler, and progress counters in one checkpoint. The variables model, optimizer, scheduler, global_step, and tokens_seen must already exist. A production pipeline should also consider random states, mixed-precision scaler state, configuration, distributed state, file integrity, and safe storage procedures."
+        },
+        {
+            "id": "restoring-checkpoint",
+            "title": "5. Restoring a Checkpoint",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ncheckpoint = torch.load(\"checkpoints/step-10000.pt\", map_location=\"cpu\", weights_only=False)\nmodel.load_state_dict(checkpoint[\"model\"])\noptimizer.load_state_dict(checkpoint[\"optimizer\"])\nscheduler.load_state_dict(checkpoint[\"scheduler\"])\nglobal_step = checkpoint[\"global_step\"]\ntokens_seen = checkpoint[\"tokens_seen\"]\nmodel.train()",
+            "explanation": "Create the model, optimizer, and scheduler with the intended configuration before loading their saved states. The exact loading API varies by PyTorch version. Only load trusted checkpoint files: unrestricted object deserialization can execute unsafe code. If the checkpoint contains only tensors and supported primitive values, prefer the safer loading options available in your installed PyTorch version."
+        },
+        {
+            "id": "resume-order",
+            "title": "6. Correct Resume Order",
+            "type": "concept",
+            "content": "A reliable resume procedure reconstructs the same model architecture and compatible optimizer and scheduler objects, then loads their saved states. The scheduler configuration and optimizer parameter groups must match the checkpoint's expected structure. Loading a state into an incompatible model or optimizer can fail or produce incorrect behavior.\n\nThe global step and token counter should be restored consistently with the scheduler state. If the scheduler is recreated and its state is not restored, the learning rate may restart at an unintended value. Likewise, restarting a warmup schedule from step zero can produce a large change in update behavior.\n\nThe data pipeline should resume at the intended location if exact continuation is required. For distributed training, rank-specific states and sampler positions may need to be restored. After loading, inspect the current learning rate, global step, model parameters, and a small batch before continuing the full run."
+        },
+        {
+            "id": "rng-state",
+            "title": "7. Random-Number-Generator State",
+            "type": "concept",
+            "content": "Randomness influences parameter initialization, dropout, data shuffling, sampling, and many augmentation or packing operations. Saving random-number-generator state helps a resumed run continue from a comparable point in the random sequence.\n\nA checkpoint may need Python's random state, NumPy's random state, PyTorch's CPU RNG state, and CUDA RNG states. Distributed runs can require a separate state for each worker. Reproducibility may still be limited by nondeterministic kernels, changes in software versions, different hardware, or altered worker ordering.\n\nSaving random states is especially useful when investigating training regressions or attempting to reproduce a particular run. It should be combined with recording the code version, configuration, data version, and relevant library versions.",
+            "code": "import random\nimport numpy as np\nimport torch\n\nrng_state = {\n    \"python\": random.getstate(),\n    \"numpy\": np.random.get_state(),\n    \"torch_cpu\": torch.get_rng_state(),\n    \"torch_cuda\": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None\n}\n\nrandom.setstate(rng_state[\"python\"])\nnp.random.set_state(rng_state[\"numpy\"])\ntorch.set_rng_state(rng_state[\"torch_cpu\"])\nif rng_state[\"torch_cuda\"] is not None and torch.cuda.is_available():\n    torch.cuda.set_rng_state_all(rng_state[\"torch_cuda\"])",
+            "explanation": "The snippet demonstrates capturing and restoring common RNG states. A full checkpoint should store these values alongside the model and optimizer states. Use a trusted serialization format and handle version compatibility when restoring NumPy or Python state objects."
+        },
+        {
+            "id": "checkpoint-frequency",
+            "title": "8. Choosing Checkpoint Frequency",
+            "type": "concept",
+            "content": "Saving too frequently wastes time and storage bandwidth. Saving too rarely risks losing a large amount of compute when a job fails. The right interval depends on checkpoint duration, failure rate, job length, recovery cost, and storage capacity.\n\nSuppose saving a checkpoint takes several minutes. If the interval is very short, a significant fraction of training time may be spent writing checkpoints. If the interval is very long, a failure can erase many hours of work. A practical system measures checkpoint duration and tunes the interval based on the expected cost of interruption.\n\nSome training systems save periodic recovery checkpoints and separate best-validation checkpoints. A recovery checkpoint protects progress, while a best-model checkpoint records a model selected by an evaluation metric. These purposes should not be confused, because the most recent training state is not necessarily the best model for a downstream task."
+        },
+        {
+            "id": "checkpoint-storage",
+            "title": "9. Storage Size and Retention",
+            "type": "math",
+            "content": "Checkpoint storage depends on the number of tensors, their dtypes, optimizer state, sharding layout, and serialization overhead. If N parameters are stored using b bytes per parameter, the raw parameter storage is approximately N multiplied by b bytes. A training checkpoint can be substantially larger because it includes gradients, optimizer states, or other metadata.\n\nFor example, one billion float32 parameters require approximately four gigabytes in decimal units for weights alone. Two float32 Adam moment tensors add approximately eight gigabytes if they are fully stored. This simple estimate excludes gradients, activations, temporary buffers, and additional copies.\n\nRetention policies can keep the most recent recovery checkpoints, a small number of periodic snapshots, and selected best checkpoints. Deleting old checkpoints should happen only after confirming that newer checkpoints are complete and recoverable. Storage cleanup must not race with active writes."
+        },
+        {
+            "id": "atomic-checkpoint-writes",
+            "title": "10. Atomic Writes and Integrity",
+            "type": "concept",
+            "content": "A process can fail while writing a checkpoint, leaving a partial file. A recovery system should distinguish a complete checkpoint from an incomplete write. One common local-filesystem pattern is to write to a temporary path, flush and close the file, and then rename it to the final path. Atomic rename behavior depends on the filesystem and whether the source and destination are on the same filesystem.\n\nObject stores and distributed filesystems may require different commit protocols. A manifest or completion marker can identify a fully written checkpoint. Checksums, expected file sizes, metadata validation, and a small load test can help detect corruption.\n\nFor large distributed checkpoints, every rank or shard may need to finish writing before the checkpoint is declared complete. A single manifest can record the expected shards and their locations. Recovery should reject incomplete checkpoints rather than silently combining incompatible shards."
+        },
+        {
+            "id": "distributed-checkpointing",
+            "title": "11. Distributed and Sharded Checkpoints",
+            "type": "concept",
+            "content": "Distributed training can partition model parameters, gradients, and optimizer states across devices. In such systems, a complete checkpoint may consist of many shards rather than one file. The checkpoint metadata must describe the sharding layout, parameter names, tensor shapes, and the mapping between shards and model state.\n\nSome frameworks provide distributed checkpointing APIs that allow multiple ranks to write shards concurrently. This can improve throughput and reduce the memory required to consolidate all state onto a single device. The trade-off is that recovery must understand the checkpoint format and the expected distributed configuration.\n\nChanging world size during recovery may require resharding. Not every checkpoint format supports this transparently. Before a large run begins, test whether the intended checkpoint system supports the required recovery scenarios, including restart on another node, changed rank placement, and partial hardware failure."
+        },
+        {
+            "id": "inference-artifacts",
+            "title": "12. Training Checkpoints Versus Inference Artifacts",
+            "type": "concept",
+            "content": "An inference artifact is designed to load a model for prediction or text generation. It commonly includes model weights, model configuration, tokenizer files, and any required generation configuration. It usually does not need optimizer moments or the training data cursor.\n\nA training checkpoint is designed to continue optimization. It may include all model and optimizer states, scheduler progress, random states, scaler state, and data progress. Training checkpoints are therefore often larger and more closely tied to the original training implementation.\n\nExporting a model for inference may involve converting tensor formats, consolidating shards, or saving only selected parameters. This export should be validated independently. A successful training checkpoint restore does not automatically guarantee that the exported inference artifact has the correct tokenizer, architecture configuration, or generation behavior."
+        },
+        {
+            "id": "checkpoint-security",
+            "title": "13. Checkpoint Security and Operational Safety",
+            "type": "concept",
+            "content": "Checkpoint files can contain proprietary model weights, sensitive training information, and configuration metadata. Access should be restricted according to the project's security requirements. Do not place credentials, API keys, or other secrets inside checkpoint metadata.\n\nSerialization formats differ in their security properties. Some formats support only tensor data and structured metadata, while unrestricted object deserialization can execute code when loading an untrusted file. Load only trusted checkpoints and use safer loading mechanisms whenever possible.\n\nMaintain version information and checksums for important artifacts. Validate that checkpoints originate from an expected training run before loading them into production or a shared compute environment. Retention and deletion policies should also consider privacy, intellectual property, and storage governance."
+        },
+        {
+            "id": "checkpoint-recovery-testing",
+            "title": "14. Testing Recovery Before a Long Run",
+            "type": "concept",
+            "content": "Checkpoint recovery should be tested before launching an expensive training run. A useful test trains for several updates, saves a checkpoint, records the loss and selected parameter values, restarts the process, restores the state, and verifies that training continues without errors.\n\nFor stricter reproducibility, compare a continuous run with a save-and-resume run under the same software, hardware, data order, and deterministic settings. Exact equality may not be achievable in nondeterministic distributed systems, but the comparison can reveal missing optimizer or scheduler state.\n\nAlso test failure cases: interrupted writes, missing shards, incompatible configuration, insufficient storage, and a restart on a different worker. A robust checkpoint design includes both a save procedure and a verified recovery procedure."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "checkpointing-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why are model weights alone usually insufficient for exact continuation of AdamW training?",
+            "correctAnswer": "They do not contain the optimizer's moving moments, scheduler state, or other required training progress.",
+            "solution": "AdamW maintains moving averages of gradients and squared gradients. Resuming with only model weights resets these states and can change the optimization trajectory. Scheduler and progress state may also be lost."
+        },
+        {
+            "id": "checkpointing-exercise-2",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Name three important objects or values to save alongside model weights when creating a resumable training checkpoint.",
+            "correctAnswer": "Optimizer state, scheduler state, and global step.",
+            "solution": "A typical checkpoint includes model.state_dict(), optimizer.state_dict(), scheduler.state_dict(), and global_step. Depending on the training system, save RNG states, scaler state, tokens seen, and data progress as well."
+        },
+        {
+            "id": "checkpointing-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Approximately how much raw storage do two billion float32 model parameters require, ignoring all additional state and overhead?",
+            "correctAnswer": "Approximately 8 GB in decimal units.",
+            "solution": "Each float32 parameter uses four bytes. Two billion multiplied by four bytes is eight billion bytes, or approximately 8 GB in decimal units."
+        },
+        {
+            "id": "checkpointing-exercise-4",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "After resuming training, the learning rate unexpectedly returns to its warmup value. What should you inspect?",
+            "correctAnswer": "Scheduler state, global step restoration, scheduler construction, and scheduler stepping order.",
+            "solution": "Check whether scheduler.load_state_dict() was called, whether the global update count was restored, and whether the scheduler was unintentionally restarted. Verify the current optimizer learning rate before the next update."
+        },
+        {
+            "id": "checkpointing-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a safe checkpoint-save workflow for distributed training.",
+            "correctAnswer": "Write all required shards, verify completion and integrity, commit a manifest or completion marker, and retain the previous valid checkpoint until the new one is confirmed.",
+            "solution": "Coordinate the participating ranks, write to temporary or versioned paths, verify expected shard counts and metadata, and publish a completion marker only after successful writes. Keep a previous valid recovery point until the new checkpoint can be validated."
+        }
+    ],
+    "summary": "Checkpointing protects expensive training runs from interruptions. A resumable checkpoint generally includes model, optimizer, scheduler, progress, and relevant random states. Reliable systems validate writes, retain known-good recovery points, manage distributed shards, and test restoration before large runs. Inference artifacts and training checkpoints serve different purposes and should be exported and validated accordingly.",
+    "relatedTopics": [
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-learning-rate-schedules",
+        "module-09-large-language-models-distributed-training",
+        "module-09-large-language-models-scaling-laws"
+    ]
+}

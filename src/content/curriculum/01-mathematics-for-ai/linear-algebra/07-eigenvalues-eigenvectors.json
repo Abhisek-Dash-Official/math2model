@@ -1,1 +1,803 @@
-{}
+{
+    "id": "eigenvalues-eigenvectors",
+    "title": "Eigenvalues and Eigenvectors",
+    "slug": "eigenvalues-eigenvectors",
+    "module": "mathematics-for-ai",
+    "description": "Understand eigenvalues and eigenvectors, their geometric meaning, characteristic equations, eigendecomposition, and applications in dimensionality reduction, PCA, graph analysis, and machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality"
+    ],
+    "learningObjectives": [
+        "Define eigenvalues and eigenvectors of a square matrix.",
+        "Understand eigenvectors as directions preserved by a linear transformation.",
+        "Calculate eigenvalues using the characteristic equation.",
+        "Calculate eigenvectors by solving a homogeneous linear system.",
+        "Understand algebraic and geometric multiplicity.",
+        "Determine whether a matrix is diagonalizable.",
+        "Understand eigendecomposition and its limitations.",
+        "Connect eigenvectors to principal component analysis.",
+        "Explore eigenvalues in graph analysis, stability, and iterative algorithms.",
+        "Use NumPy to calculate and verify eigenvalues and eigenvectors."
+    ],
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. Introduction to Eigenvalues and Eigenvectors",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A matrix represents a linear transformation. Most vectors change both direction and magnitude when a transformation is applied. However, some special nonzero vectors preserve their direction: the transformation only stretches, compresses, or reverses them. These vectors are called eigenvectors."
+                },
+                {
+                    "type": "text",
+                    "value": "The scalar describing the amount of stretching, compression, or reversal is called the eigenvalue associated with that eigenvector."
+                },
+                {
+                    "type": "math",
+                    "value": "Av=\\lambda v"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, A is a square matrix, v is a nonzero eigenvector, and lambda is its corresponding eigenvalue. The equation says that multiplying v by A has the same effect as multiplying v by the scalar lambda."
+                },
+                {
+                    "type": "text",
+                    "value": "If lambda is greater than 1, the vector's magnitude is scaled up. If lambda lies between 0 and 1, the magnitude is scaled down. If lambda is negative, the vector's direction is reversed as well as scaled. If lambda is zero, the vector is mapped to zero."
+                },
+                {
+                    "type": "text",
+                    "value": "Eigenvectors are defined only for square matrices in the standard eigenvalue problem because the output must belong to the same vector space as the input. Generalizations exist for transformations between different spaces, including singular value decomposition."
+                }
+            ]
+        },
+        {
+            "id": "geometric-intuition",
+            "title": "2. Geometric Intuition",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Imagine a transformation that stretches the horizontal axis by a factor of 3 and the vertical axis by a factor of 2."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}3&0\\\\0&2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The vector (1, 0) becomes (3, 0). Its direction remains horizontal, so it is an eigenvector with eigenvalue 3."
+                },
+                {
+                    "type": "math",
+                    "value": "A\\begin{bmatrix}1\\\\0\\end{bmatrix}=3\\begin{bmatrix}1\\\\0\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Similarly, the vector (0, 1) becomes (0, 2). Its direction remains vertical, making it an eigenvector with eigenvalue 2."
+                },
+                {
+                    "type": "math",
+                    "value": "A\\begin{bmatrix}0\\\\1\\end{bmatrix}=2\\begin{bmatrix}0\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Not every vector is an eigenvector. For example, the vector (1, 1) becomes (3, 2), which is not a scalar multiple of (1, 1). Its direction changes."
+                },
+                {
+                    "type": "math",
+                    "value": "A\\begin{bmatrix}1\\\\1\\end{bmatrix}=\\begin{bmatrix}3\\\\2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "An eigenvector is a direction preserved by the transformation, not necessarily a vector whose coordinates remain unchanged. Any nonzero scalar multiple of an eigenvector is also an eigenvector associated with the same eigenvalue."
+                },
+                {
+                    "type": "math",
+                    "value": "A(cv)=cAv=c\\lambda v=\\lambda(cv)"
+                }
+            ]
+        },
+        {
+            "id": "formal-definition",
+            "title": "3. The Mathematical Definition",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a square matrix A of size n by n, a nonzero vector v is an eigenvector if there exists a scalar lambda such that Av = lambda v."
+                },
+                {
+                    "type": "math",
+                    "value": "Av=\\lambda v,\\qquad v\\ne 0"
+                },
+                {
+                    "type": "text",
+                    "value": "Rearranging the equation gives:"
+                },
+                {
+                    "type": "math",
+                    "value": "(A-\\lambda I)v=0"
+                },
+                {
+                    "type": "text",
+                    "value": "This is a homogeneous system of linear equations. It must have a nonzero solution v. A homogeneous system has a nonzero solution precisely when its coefficient matrix is singular."
+                },
+                {
+                    "type": "math",
+                    "value": "\\det(A-\\lambda I)=0"
+                },
+                {
+                    "type": "text",
+                    "value": "This determinant equation is called the characteristic equation. Its solutions are the eigenvalues of A, counted with algebraic multiplicity."
+                },
+                {
+                    "type": "text",
+                    "value": "The identity matrix I has the same dimensions as A. Subtracting lambda I changes the diagonal entries of A by subtracting lambda."
+                },
+                {
+                    "type": "text",
+                    "value": "Once an eigenvalue is known, substitute it into (A - lambda I)v = 0 and solve for a nonzero vector v. The resulting solution space is the eigenspace associated with that eigenvalue."
+                }
+            ]
+        },
+        {
+            "id": "characteristic-equation",
+            "title": "4. Finding Eigenvalues",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider the matrix:"
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}4&0\\\\0&2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "To find the eigenvalues, subtract lambda from each diagonal entry and calculate the determinant."
+                },
+                {
+                    "type": "math",
+                    "value": "\\det(A-\\lambda I)=\\det\\begin{bmatrix}4-\\lambda&0\\\\0&2-\\lambda\\end{bmatrix}"
+                },
+                {
+                    "type": "math",
+                    "value": "(4-\\lambda)(2-\\lambda)=0"
+                },
+                {
+                    "type": "text",
+                    "value": "The characteristic equation gives lambda = 4 or lambda = 2. These are the two eigenvalues."
+                },
+                {
+                    "type": "text",
+                    "value": "For a 2 by 2 matrix, the determinant can be calculated using ad - bc. For larger matrices, determinant calculations may become expensive, so numerical algorithms are generally used."
+                },
+                {
+                    "type": "text",
+                    "value": "For an n by n matrix, the characteristic polynomial has degree n. Over the complex numbers, it has n roots when multiplicity is counted, although some roots may be complex even if all matrix entries are real."
+                }
+            ]
+        },
+        {
+            "id": "finding-eigenvectors",
+            "title": "5. Finding Eigenvectors",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "After calculating an eigenvalue, solve (A - lambda I)v = 0 to find its eigenvectors."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider A = [[4, 0], [0, 2]] and the eigenvalue lambda = 4."
+                },
+                {
+                    "type": "math",
+                    "value": "(A-4I)v=\\begin{bmatrix}0&0\\\\0&-2\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\begin{bmatrix}0\\\\0\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The second equation gives y = 0, while x can be any nonzero value. Therefore, the eigenvectors associated with lambda = 4 lie along the horizontal axis."
+                },
+                {
+                    "type": "math",
+                    "value": "v=c\\begin{bmatrix}1\\\\0\\end{bmatrix},\\qquad c\\ne 0"
+                },
+                {
+                    "type": "text",
+                    "value": "For lambda = 2, the first equation gives x = 0 while y can be any nonzero value. The corresponding eigenvectors lie along the vertical axis."
+                },
+                {
+                    "type": "math",
+                    "value": "v=c\\begin{bmatrix}0\\\\1\\end{bmatrix},\\qquad c\\ne 0"
+                },
+                {
+                    "type": "text",
+                    "value": "An eigenvector is not unique because every nonzero scalar multiple of it is also an eigenvector. Numerical libraries often return eigenvectors normalized to have length 1."
+                }
+            ]
+        },
+        {
+            "id": "worked-example",
+            "title": "6. Complete Worked Example",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider the matrix:"
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Step 1: Form the characteristic equation."
+                },
+                {
+                    "type": "math",
+                    "value": "\\det(A-\\lambda I)=\\det\\begin{bmatrix}2-\\lambda&1\\\\1&2-\\lambda\\end{bmatrix}=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Step 2: Expand the determinant."
+                },
+                {
+                    "type": "math",
+                    "value": "(2-\\lambda)^2-1=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Step 3: Factor the expression."
+                },
+                {
+                    "type": "math",
+                    "value": "(1-\\lambda)(3-\\lambda)=0"
+                },
+                {
+                    "type": "text",
+                    "value": "The eigenvalues are lambda = 1 and lambda = 3."
+                },
+                {
+                    "type": "text",
+                    "value": "Step 4: Find the eigenvector for lambda = 3."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}-1&1\\\\1&-1\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=0"
+                },
+                {
+                    "type": "text",
+                    "value": "The equation gives x = y. Therefore, one eigenvector is (1, 1)."
+                },
+                {
+                    "type": "math",
+                    "value": "v_1=\\begin{bmatrix}1\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Step 5: Find the eigenvector for lambda = 1."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}1&1\\\\1&1\\end{bmatrix}\\begin{bmatrix}x\\\\y\\end{bmatrix}=0"
+                },
+                {
+                    "type": "text",
+                    "value": "The equation gives x + y = 0, so x = -y. One eigenvector is (1, -1)."
+                },
+                {
+                    "type": "math",
+                    "value": "v_2=\\begin{bmatrix}1\\\\-1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The matrix stretches the direction (1, 1) by a factor of 3 and the direction (1, -1) by a factor of 1. These directions are perpendicular, which is consistent with the matrix being symmetric."
+                }
+            ]
+        },
+        {
+            "id": "eigenvalue-properties",
+            "title": "7. Important Eigenvalue Properties",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The trace of a square matrix is the sum of its diagonal entries. The sum of its eigenvalues, counted with algebraic multiplicity, equals its trace."
+                },
+                {
+                    "type": "math",
+                    "value": "\\sum_{i=1}^{n}\\lambda_i=\\operatorname{tr}(A)"
+                },
+                {
+                    "type": "text",
+                    "value": "The determinant equals the product of the eigenvalues, also counted with algebraic multiplicity."
+                },
+                {
+                    "type": "math",
+                    "value": "\\prod_{i=1}^{n}\\lambda_i=\\det(A)"
+                },
+                {
+                    "type": "text",
+                    "value": "A matrix is singular if and only if at least one eigenvalue is zero. A matrix with no zero eigenvalues is invertible."
+                },
+                {
+                    "type": "math",
+                    "value": "\\det(A)=0\\iff 0\\text{ is an eigenvalue of }A"
+                },
+                {
+                    "type": "text",
+                    "value": "For a triangular matrix, the eigenvalues are its diagonal entries. This makes eigenvalues especially easy to determine for diagonal and triangular matrices."
+                },
+                {
+                    "type": "text",
+                    "value": "If v is an eigenvector of A with eigenvalue lambda, then v is an eigenvector of A raised to the power k with eigenvalue lambda raised to the power k, for nonnegative integers k."
+                },
+                {
+                    "type": "math",
+                    "value": "A^kv=\\lambda^kv"
+                },
+                {
+                    "type": "text",
+                    "value": "If A is invertible, the eigenvalue of A inverse associated with v is 1 divided by lambda. Eigenvalues of A transpose are the same as those of A, although the eigenvectors need not be the same."
+                }
+            ]
+        },
+        {
+            "id": "multiplicity",
+            "title": "8. Algebraic and Geometric Multiplicity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "An eigenvalue may appear more than once as a root of the characteristic polynomial. Its algebraic multiplicity is the number of times it appears as a root, counting repetitions."
+                },
+                {
+                    "type": "text",
+                    "value": "The geometric multiplicity of an eigenvalue is the dimension of its eigenspace, which is the number of independent eigenvectors associated with that eigenvalue."
+                },
+                {
+                    "type": "math",
+                    "value": "1\\leq \\text{geometric multiplicity}\\leq \\text{algebraic multiplicity}"
+                },
+                {
+                    "type": "text",
+                    "value": "For the identity matrix I₂, the eigenvalue 1 has algebraic multiplicity 2 and geometric multiplicity 2. Every nonzero vector is an eigenvector because I₂v = v."
+                },
+                {
+                    "type": "text",
+                    "value": "Now consider the matrix [[1, 1], [0, 1]]. Its characteristic polynomial is (1 - lambda)², so the eigenvalue 1 has algebraic multiplicity 2. However, solving (A - I)v = 0 gives y = 0, leaving only one independent eigenvector direction. Its geometric multiplicity is 1."
+                },
+                {
+                    "type": "text",
+                    "value": "The distinction matters because a matrix is diagonalizable only if it has enough linearly independent eigenvectors to form a basis for its entire vector space."
+                }
+            ]
+        },
+        {
+            "id": "diagonalization",
+            "title": "9. Eigendecomposition and Diagonalization",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A diagonalizable matrix can be expressed as a similarity transformation of a diagonal matrix. Its columns in the transformation matrix are linearly independent eigenvectors."
+                },
+                {
+                    "type": "math",
+                    "value": "A=PDP^{-1}"
+                },
+                {
+                    "type": "text",
+                    "value": "The matrix P contains eigenvectors as columns, while D contains the corresponding eigenvalues on its diagonal. P must be invertible."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider the matrix A = [[2, 1], [1, 2]]. Its eigenvectors (1, 1) and (1, -1) can be placed into P, and its eigenvalues 3 and 1 form D."
+                },
+                {
+                    "type": "math",
+                    "value": "P=\\begin{bmatrix}1&1\\\\1&-1\\end{bmatrix},\\quad D=\\begin{bmatrix}3&0\\\\0&1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The diagonal representation makes repeated matrix multiplication easier to understand."
+                },
+                {
+                    "type": "math",
+                    "value": "A^k=PD^kP^{-1}"
+                },
+                {
+                    "type": "text",
+                    "value": "Because raising a diagonal matrix to a power simply raises each diagonal entry to that power, eigendecomposition can simplify mathematical analysis of iterative processes."
+                },
+                {
+                    "type": "text",
+                    "value": "Not every matrix is diagonalizable. A matrix with repeated eigenvalues may lack enough independent eigenvectors. Eigendecomposition can also be numerically sensitive for certain matrices, so it is important to use appropriate numerical algorithms."
+                }
+            ]
+        },
+        {
+            "id": "symmetric-matrices",
+            "title": "10. Symmetric Matrices and Orthogonal Eigenvectors",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A real symmetric matrix satisfies A = A transpose. Symmetric matrices have particularly useful eigenvalue properties."
+                },
+                {
+                    "type": "math",
+                    "value": "A=A^T"
+                },
+                {
+                    "type": "text",
+                    "value": "Every real symmetric matrix has real eigenvalues and can be diagonalized using an orthonormal basis of eigenvectors. This means the eigenvectors can be chosen to have unit length and to be mutually perpendicular."
+                },
+                {
+                    "type": "math",
+                    "value": "A=Q\\Lambda Q^T"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, Q contains orthonormal eigenvectors, and Lambda is a diagonal matrix of eigenvalues. Because Q is orthogonal, its inverse equals its transpose."
+                },
+                {
+                    "type": "text",
+                    "value": "Covariance matrices are symmetric and positive semidefinite. Their eigenvalues are therefore real and nonnegative, making their eigendecomposition central to principal component analysis."
+                },
+                {
+                    "type": "text",
+                    "value": "Positive semidefinite means that x transpose A x is nonnegative for every real vector x. For a real symmetric matrix, this is equivalent to all eigenvalues being nonnegative."
+                },
+                {
+                    "type": "math",
+                    "value": "x^TAx\\geq 0\\quad\\text{for all }x"
+                }
+            ]
+        },
+        {
+            "id": "pca-application",
+            "title": "11. Eigenvectors in Principal Component Analysis",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Principal component analysis, or PCA, is a dimensionality-reduction technique that identifies orthogonal directions of high variance in a dataset."
+                },
+                {
+                    "type": "text",
+                    "value": "The process begins by centering the data, typically by subtracting the mean of each feature. A covariance matrix is then calculated to describe how features vary together."
+                },
+                {
+                    "type": "math",
+                    "value": "C=\\frac{1}{n-1}X^TX"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, X is a centered data matrix with n observations stored as rows. The covariance matrix C is symmetric and positive semidefinite."
+                },
+                {
+                    "type": "text",
+                    "value": "The eigenvectors of C give the principal directions, while the corresponding eigenvalues indicate the variance along those directions. Eigenvectors associated with larger eigenvalues explain more variance."
+                },
+                {
+                    "type": "math",
+                    "value": "Cv_i=\\lambda_i v_i"
+                },
+                {
+                    "type": "text",
+                    "value": "PCA sorts the eigenvalues from largest to smallest and retains the eigenvectors associated with the largest values. Projecting data onto these directions produces a lower-dimensional representation."
+                },
+                {
+                    "type": "math",
+                    "value": "Z=XV_k"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, Vₖ contains the selected k eigenvectors as columns. If the original data has d features, the transformed data has k features, where k is smaller than d."
+                },
+                {
+                    "type": "text",
+                    "value": "PCA is unsupervised: it does not use target labels when choosing principal directions. A direction with high variance is not guaranteed to be the most useful direction for a particular prediction task."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\nfrom sklearn.decomposition import PCA\n\nrng = np.random.default_rng(42)\n\n# Create correlated features.\nt = rng.normal(size=1000)\nX = np.column_stack([\n    3 * t + rng.normal(scale=0.4, size=1000),\n    2 * t + rng.normal(scale=0.3, size=1000),\n    -t + rng.normal(scale=0.2, size=1000)\n])\n\npca = PCA(n_components=2)\nZ = pca.fit_transform(X)\n\nprint(\"Original shape:\", X.shape)\nprint(\"Reduced shape:\", Z.shape)\nprint(\"Explained variance ratios:\", pca.explained_variance_ratio_)\nprint(\"Total variance retained:\", pca.explained_variance_ratio_.sum())"
+                },
+                {
+                    "type": "text",
+                    "value": "This example reduces three correlated features to two principal components. The explained variance ratios indicate the fraction of the total variance captured by each retained component."
+                }
+            ]
+        },
+        {
+            "id": "graph-applications",
+            "title": "12. Eigenvalues in Graphs and Networks",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Graphs represent relationships between objects. Examples include social networks, website links, transportation systems, and connections between scientific papers. Matrices can encode the structure of these graphs."
+                },
+                {
+                    "type": "text",
+                    "value": "The adjacency matrix of a graph records which nodes are connected. Eigenvalues and eigenvectors of graph-related matrices can reveal structural information about the network."
+                },
+                {
+                    "type": "math",
+                    "value": "A_{ij}=\\begin{cases}1&\\text{if nodes }i\\text{ and }j\\text{ are connected}\\\\0&\\text{otherwise}\\end{cases}"
+                },
+                {
+                    "type": "text",
+                    "value": "For an undirected graph, the adjacency matrix is symmetric. Its eigenvectors can be used to study network structure, while its largest eigenvalue is related to connectivity patterns and some network growth processes."
+                },
+                {
+                    "type": "text",
+                    "value": "The graph Laplacian is another important matrix, commonly defined as L = D - A, where D is the diagonal degree matrix and A is the adjacency matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "L=D-A"
+                },
+                {
+                    "type": "text",
+                    "value": "The eigenvalues of a graph Laplacian reveal information about connected components and connectivity. In spectral clustering, eigenvectors associated with selected Laplacian eigenvalues are used to construct representations that help separate groups of nodes."
+                },
+                {
+                    "type": "text",
+                    "value": "These ideas support graph machine learning, recommendation systems, community detection, and analysis of relational data."
+                }
+            ]
+        },
+        {
+            "id": "stability-and-dynamics",
+            "title": "13. Eigenvalues and Stability",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Eigenvalues help analyze repeated application of a linear transformation. Consider a discrete dynamical system:"
+                },
+                {
+                    "type": "math",
+                    "value": "x_{t+1}=Ax_t"
+                },
+                {
+                    "type": "text",
+                    "value": "After k steps, the state becomes xₖ = Aᵏx₀. If A is diagonalizable, each eigenvector direction evolves according to powers of its eigenvalue."
+                },
+                {
+                    "type": "math",
+                    "value": "A^kv=\\lambda^kv"
+                },
+                {
+                    "type": "text",
+                    "value": "When all eigenvalues have magnitude less than 1, powers of A approach zero as k increases. For a finite-dimensional discrete linear system, this condition ensures asymptotic stability."
+                },
+                {
+                    "type": "math",
+                    "value": "|\\lambda_i|<1\\quad\\text{for every eigenvalue}"
+                },
+                {
+                    "type": "text",
+                    "value": "If an eigenvalue has magnitude greater than 1, repeated application can amplify components along its associated eigenvector direction. Eigenvalues with magnitude exactly 1 require additional analysis, especially when non-diagonalizable matrices are involved."
+                },
+                {
+                    "type": "text",
+                    "value": "This analysis is useful in control systems, iterative algorithms, recurrent computations, and understanding how repeated transformations affect signals. It also offers intuition for why repeated multiplication can cause values to shrink or grow rapidly."
+                }
+            ]
+        },
+        {
+            "id": "numerical-computation",
+            "title": "14. Computing Eigenvalues with NumPy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For real-world matrices, eigenvalues are usually computed using numerical algorithms rather than manually expanding the characteristic polynomial."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.array([\n    [2.0, 1.0],\n    [1.0, 2.0]\n])\n\neigenvalues, eigenvectors = np.linalg.eig(A)\n\nprint(\"Eigenvalues:\")\nprint(eigenvalues)\n\nprint(\"Eigenvectors as columns:\")\nprint(eigenvectors)\n\nfor i, eigenvalue in enumerate(eigenvalues):\n    vector = eigenvectors[:, i]\n    left = A @ vector\n    right = eigenvalue * vector\n    print(f\"Eigenpair {i + 1} verified:\", np.allclose(left, right))"
+                },
+                {
+                    "type": "text",
+                    "value": "NumPy returns eigenvectors as columns. The eigenvalue at index i corresponds to the eigenvector in column i. The ordering of eigenvalues is not guaranteed to be sorted."
+                },
+                {
+                    "type": "text",
+                    "value": "For symmetric matrices, use np.linalg.eigh. It is designed for real symmetric or complex Hermitian matrices and generally offers better numerical behavior for those cases."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nC = np.array([\n    [4.0, 1.0],\n    [1.0, 3.0]\n])\n\neigenvalues, eigenvectors = np.linalg.eigh(C)\n\nprint(\"Eigenvalues:\", eigenvalues)\nprint(\"Eigenvectors:\")\nprint(eigenvectors)\n\n# Eigenvalues from eigh are returned in ascending order.\nfor i in range(len(eigenvalues)):\n    v = eigenvectors[:, i]\n    print(np.allclose(C @ v, eigenvalues[i] * v))"
+                },
+                {
+                    "type": "text",
+                    "value": "Numerical results can contain small rounding errors. Verification should use a tolerance-based comparison such as np.allclose rather than exact equality."
+                }
+            ]
+        },
+        {
+            "id": "limitations",
+            "title": "15. Common Misconceptions and Limitations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Misconception 1: Every vector is an eigenvector. Most vectors are not eigenvectors of a given matrix because their directions change under the transformation."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 2: Eigenvectors are unique. Eigenvectors can be scaled by any nonzero scalar without changing their eigenvalue. For repeated eigenvalues, the eigenspace may contain multiple independent directions."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 3: Every matrix has real eigenvalues. A real matrix can have complex eigenvalues. For example, a two-dimensional rotation by 90 degrees has complex eigenvalues even though its entries are real."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 4: Every matrix is diagonalizable. A matrix may not have enough linearly independent eigenvectors to form a basis."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 5: The largest eigenvalue always gives the best feature for prediction. In PCA, the largest eigenvalue identifies the direction of greatest variance, not necessarily the direction most relevant to a supervised learning target."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 6: Eigenvectors of every matrix are perpendicular. Orthogonal eigenvectors are guaranteed for real symmetric matrices when an orthonormal eigenbasis is chosen, but not for arbitrary matrices."
+                },
+                {
+                    "type": "text",
+                    "value": "Numerical warning: eigenvectors can be sensitive to small perturbations when eigenvalues are close together. Interpret numerical results with attention to conditioning and the structure of the matrix."
+                }
+            ]
+        },
+        {
+            "id": "summary",
+            "title": "16. Key Takeaways",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "An eigenvector is a nonzero vector whose direction is preserved by a square matrix transformation, while its eigenvalue describes the scaling factor."
+                },
+                {
+                    "type": "math",
+                    "value": "Av=\\lambda v"
+                },
+                {
+                    "type": "text",
+                    "value": "Eigenvalues are found by solving the characteristic equation det(A - lambda I) = 0. Eigenvectors are then found by solving (A - lambda I)v = 0."
+                },
+                {
+                    "type": "text",
+                    "value": "Trace equals the sum of eigenvalues, and determinant equals their product, counting algebraic multiplicity."
+                },
+                {
+                    "type": "text",
+                    "value": "A matrix is diagonalizable when it has enough independent eigenvectors to form a basis. Real symmetric matrices have real eigenvalues and an orthonormal eigenbasis."
+                },
+                {
+                    "type": "text",
+                    "value": "PCA uses eigenvectors of a covariance matrix to identify principal directions and eigenvalues to quantify variance along those directions."
+                },
+                {
+                    "type": "text",
+                    "value": "Eigenvalues also support graph analysis, stability analysis, iterative algorithms, and many other applications in mathematics and machine learning."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the difference between an eigenvalue and an eigenvector?",
+            "hints": [
+                "Start with Av = lambda v.",
+                "Identify the vector and the scalar."
+            ],
+            "solution": "An eigenvector is a nonzero vector whose direction is preserved by a square matrix transformation. An eigenvalue is the scalar that describes how the eigenvector is scaled. They satisfy Av = lambda v."
+        },
+        {
+            "id": "exercise-2",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Find the eigenvalues of A = [[5, 0], [0, 2]].",
+            "hints": [
+                "A diagonal matrix has its diagonal entries as eigenvalues.",
+                "Alternatively, solve det(A - lambda I) = 0."
+            ],
+            "solution": "The eigenvalues are 5 and 2 because A is diagonal. Its characteristic equation is (5 - lambda)(2 - lambda) = 0."
+        },
+        {
+            "id": "exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Find the eigenvalues of A = [[3, 1], [0, 2]].",
+            "hints": [
+                "This is an upper triangular matrix.",
+                "The eigenvalues of a triangular matrix are its diagonal entries."
+            ],
+            "solution": "The eigenvalues are 3 and 2. The characteristic polynomial is (3 - lambda)(2 - lambda), which equals zero at lambda = 3 and lambda = 2."
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For A = [[2, 1], [1, 2]], verify that v = (1, 1) is an eigenvector and find its eigenvalue.",
+            "hints": [
+                "Calculate Av.",
+                "Compare the result with a scalar multiple of v."
+            ],
+            "solution": "Av = (3, 3) = 3(1, 1). Therefore, v is an eigenvector with eigenvalue 3."
+        },
+        {
+            "id": "exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Can a real matrix have complex eigenvalues? Explain briefly.",
+            "hints": [
+                "Consider a rotation matrix.",
+                "Real matrix entries do not guarantee real roots of the characteristic polynomial."
+            ],
+            "solution": "Yes. A real matrix can have complex eigenvalues. For example, the 90-degree rotation matrix [[0, -1], [1, 0]] has eigenvalues i and -i."
+        },
+        {
+            "id": "exercise-6",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A 3 by 3 matrix has eigenvalues 2, 4, and 5. What are its trace and determinant?",
+            "hints": [
+                "Trace equals the sum of the eigenvalues.",
+                "Determinant equals their product."
+            ],
+            "solution": "The trace is 2 + 4 + 5 = 11. The determinant is 2 × 4 × 5 = 40."
+        },
+        {
+            "id": "exercise-7",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Use NumPy to calculate the eigenvalues and eigenvectors of [[4, 1], [1, 4]]. Verify each eigenpair numerically.",
+            "hints": [
+                "Use np.linalg.eig.",
+                "Eigenvectors are stored as columns.",
+                "Compare A @ v with lambda * v using np.allclose."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nA = np.array([[4.0, 1.0], [1.0, 4.0]])\nvalues, vectors = np.linalg.eig(A)\n\nfor i, value in enumerate(values):\n    vector = vectors[:, i]\n    print(value, np.allclose(A @ vector, value * vector))\n\nThe eigenvalues are 5 and 3, and each eigenpair verification should return True."
+        },
+        {
+            "id": "exercise-8",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Why are eigenvectors of the covariance matrix useful in PCA?",
+            "hints": [
+                "Think about the directions of maximum variance.",
+                "Connect covariance eigenvalues to variance along eigenvectors."
+            ],
+            "solution": "The covariance matrix describes how centered features vary together. Its eigenvectors provide orthogonal principal directions, and the associated eigenvalues quantify variance along those directions. PCA selects directions with the largest eigenvalues to create a lower-dimensional representation that preserves as much variance as possible for the selected number of linear components."
+        },
+        {
+            "id": "exercise-9",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A discrete linear system follows x(t + 1) = Ax(t). What does it imply if every eigenvalue of A has magnitude strictly less than 1?",
+            "hints": [
+                "Repeated application produces powers of A.",
+                "Consider how eigenvalue powers behave as the number of steps increases."
+            ],
+            "solution": "If every eigenvalue has magnitude strictly less than 1, the powers of the matrix approach zero as the number of steps increases. The discrete linear system is asymptotically stable, and its state approaches zero for every initial state."
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality",
+        "svd",
+        "principal-component-analysis",
+        "probability-distributions",
+        "neural-networks",
+        "graph-machine-learning"
+    ]
+}

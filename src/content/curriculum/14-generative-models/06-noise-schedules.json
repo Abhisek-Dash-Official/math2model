@@ -1,1 +1,299 @@
-{}
+{
+    "id": "module-14-generative-models-noise-schedules",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 6,
+    "title": "Noise Schedules and Samplers",
+    "slug": "noise-schedules",
+    "href": "/curriculum/14-generative-models/noise-schedules",
+    "filePath": "content/curriculum/14-generative-models/06-noise-schedules.json",
+    "description": "Explore diffusion noise schedules, signal-to-noise ratios, timestep sampling, reverse-process variance, numerical solvers, accelerated sampling, and practical methods for balancing generation quality with inference cost.",
+    "difficulty": "advanced",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-score-matching",
+        "module-01-mathematics-for-ai"
+    ],
+    "learningObjectives": [
+        "Explain how beta schedules determine the corruption process.",
+        "Compare linear, cosine, and continuous-time noise schedules.",
+        "Interpret cumulative signal retention and signal-to-noise ratio.",
+        "Understand how timestep sampling and loss weighting affect training.",
+        "Compare reverse-process variance conventions.",
+        "Explain the principles behind DDPM, DDIM, and higher-order sampling.",
+        "Measure the tradeoff between sampling steps, quality, and latency.",
+        "Implement schedule construction and numerical checks in PyTorch."
+    ],
+    "sections": [
+        {
+            "id": "noise-schedule-introduction",
+            "title": "1. Why Noise Schedules Matter",
+            "type": "concept",
+            "content": "A diffusion model is defined partly by how noise is introduced during the forward process. The noise schedule controls how quickly a clean sample becomes corrupted, which determines the difficulty of denoising at each timestep and the distribution presented to the neural network. A schedule that destroys information too quickly may leave intermediate timesteps difficult to learn or may allocate too few steps to useful noise ranges. A schedule that corrupts data too slowly may spend too many steps near the clean distribution and leave the final sample insufficiently close to the chosen prior. Schedules also affect numerical stability and the relationship between model predictions and reverse transitions. Sampling algorithms interpret the schedule to decide how much to update the sample at each step. Therefore, schedule design is both a training decision and an inference decision."
+        },
+        {
+            "id": "beta-alpha-definitions",
+            "title": "2. Beta, Alpha, and Cumulative Alpha",
+            "type": "math",
+            "content": "In a discrete diffusion process, beta_t is the variance of the Gaussian noise introduced at a forward step. Alpha_t = 1 − beta_t determines how much of the previous sample is retained in the transition mean. The cumulative product alpha-bar_t = product from s = 1 to t of alpha_s determines the total retained signal coefficient after many transitions. The direct marginal is q(x_t | x_0) = N(sqrt(alpha-bar_t)x_0, (1 − alpha-bar_t)I). Beta values are usually small positive numbers, while alpha-bar decreases over time. Alpha-bar is not itself the signal coefficient; the coefficient multiplying x₀ is its square root. This distinction is important when implementing the forward process and calculating the signal-to-noise ratio.",
+            "formula": "alpha_t = 1 - beta_t; alpha_bar_t = product_{s=1}^t alpha_s; x_t = sqrt(alpha_bar_t)x_0 + sqrt(1-alpha_bar_t)epsilon",
+            "example": "If alpha-bar_t = 0.25, the clean-signal coefficient is 0.5 and the noise coefficient is sqrt(0.75), approximately 0.866."
+        },
+        {
+            "id": "linear-schedule",
+            "title": "3. Linear Beta Schedules",
+            "type": "concept",
+            "content": "A linear schedule defines beta values by linearly interpolating between beta_start and beta_end. This makes schedule construction simple and has been used in many early DDPM implementations. The resulting cumulative alpha values are products of one minus each beta, so the effective signal-to-noise ratio does not decline linearly. A linear beta schedule can work well for particular image resolutions and training settings, but its behavior may be less suitable when the number of timesteps or data representation changes. Very small beta values can preserve too much signal for too long, while overly large values can remove useful information rapidly. Schedule endpoints should be validated numerically rather than copied blindly from a configuration designed for another dataset."
+        },
+        {
+            "id": "linear-schedule-math",
+            "title": "4. Constructing a Linear Schedule",
+            "type": "math",
+            "content": "For T timesteps, a linear schedule can be expressed as beta_t = beta_start + (t − 1)/(T − 1)(beta_end − beta_start), for t from 1 to T. Implementations may use zero-based indices, but the conceptual schedule is the same. Alpha_t is one minus beta_t, and alpha-bar is computed with a cumulative product. The schedule must satisfy 0 < beta_t < 1 so that the transition has positive retained signal and a valid noise variance. For numerical stability, computations involving cumulative products may use appropriate floating-point precision and should be checked for finite values. Some modern schedules use rescaled parameters to preserve desirable behavior when the number of steps changes.",
+            "formula": "beta_t = beta_start + ((t - 1)/(T - 1))(beta_end - beta_start)",
+            "example": "With T = 5, beta_start = 0.001, and beta_end = 0.005, the five values are 0.001, 0.002, 0.003, 0.004, and 0.005."
+        },
+        {
+            "id": "cosine-schedule",
+            "title": "5. Cosine Schedules",
+            "type": "concept",
+            "content": "Cosine schedules construct cumulative signal retention using a smooth cosine-shaped function rather than directly interpolating beta. The motivation is to control how signal-to-noise ratio evolves over the diffusion trajectory. A common construction defines a continuous curve based on cos² of a rescaled time, then derives beta values from the ratio of adjacent cumulative-alpha values. This can allocate corruption more smoothly across timesteps than a simple linear beta schedule. A small offset avoids extreme behavior at the start, and derived beta values are commonly clipped below one. The cosine curve is not a universal guarantee of better results: its performance depends on the dataset, number of steps, prediction target, and sampling procedure. The schedule should be evaluated together with the full model configuration."
+        },
+        {
+            "id": "cosine-schedule-formula",
+            "title": "6. Deriving a Cosine Schedule",
+            "type": "math",
+            "content": "Let f(t) = cos²(((t/T + s)/(1+s))π/2), where t ranges from zero to T and s is a small offset. Normalize the curve by f(0), then define alpha-bar_t = f(t)/f(0). Derive each beta_t from 1 − alpha-bar_t/alpha-bar_{t−1}. Since extreme endpoint values can produce large betas, implementations clip beta values to a maximum below one. The exact index conventions must be handled carefully: alpha-bar at time zero represents the clean sample's initial signal retention, while later values describe progressively corrupted marginals. This construction makes the cumulative curve the primary design object and derives the discrete transition variances from it.",
+            "formula": "f(t) = cos^2(((t/T + s)/(1+s)) pi/2); alpha_bar_t = f(t)/f(0); beta_t = 1 - alpha_bar_t/alpha_bar_{t-1}",
+            "example": "If adjacent cumulative-alpha values are 0.90 and 0.85, then the derived beta for that transition is 1 − 0.85/0.90, approximately 0.0556."
+        },
+        {
+            "id": "signal-to-noise-ratio",
+            "title": "7. Signal-to-Noise Ratio",
+            "type": "math",
+            "content": "The signal-to-noise ratio, or SNR, compares the power contributed by the clean signal with the power contributed by noise. Under the standard DDPM parameterization with unit-variance data assumptions, a common expression is SNR_t = alpha-bar_t/(1 − alpha-bar_t). At early timesteps, alpha-bar is relatively large and the SNR is high. At later timesteps, alpha-bar decreases and the SNR approaches zero. The log-SNR is often used because it spans a wide range more conveniently and can be used as a continuous noise-level coordinate. Many training and sampling methods are easier to compare in terms of SNR than raw timestep index. However, data scaling changes the effective SNR, so normalization conventions must be included when interpreting it.",
+            "formula": "SNR_t = alpha_bar_t / (1 - alpha_bar_t); logSNR_t = log(alpha_bar_t) - log(1 - alpha_bar_t)",
+            "example": "If alpha-bar_t = 0.8, then SNR = 0.8/0.2 = 4. If alpha-bar_t = 0.1, then SNR = 0.1/0.9, approximately 0.111."
+        },
+        {
+            "id": "logsnr-conditioning",
+            "title": "8. Log-SNR as a Time Coordinate",
+            "type": "concept",
+            "content": "Raw integer timesteps are an implementation choice rather than the only meaningful way to describe noise. A continuous model can be conditioned on log-SNR or another monotonic noise-level coordinate. This can make it easier to train or sample using nonuniform time grids. A model trained with one time parameterization must receive a compatible representation during inference. If a sampler maps discrete indices to continuous log-SNR values incorrectly, the network may behave as if it is at the wrong noise level. This can cause artifacts even when the numerical solver itself is correct. When changing schedules, verify how the model's time embedding interprets its input and ensure the inference code uses the same mapping as training."
+        },
+        {
+            "id": "schedule-endpoints",
+            "title": "9. Choosing Schedule Endpoints",
+            "type": "concept",
+            "content": "The starting and ending noise levels determine the range over which the model learns to denoise. The initial end of the schedule should preserve enough signal for the first corrupted examples to remain meaningful. The final end should move the data distribution close enough to the chosen prior that generation can begin from that prior without a severe distribution mismatch. If the final alpha-bar is not sufficiently small, a standard normal initialization may not match the forward terminal distribution well. If the schedule becomes too extreme, numerical instability or loss imbalance may arise. Latent diffusion systems require special care because latent representations may have a different variance from pixel values. Schedule endpoints should be chosen with the representation, model target, and sampler in mind."
+        },
+        {
+            "id": "timestep-sampling",
+            "title": "10. Sampling Timesteps During Training",
+            "type": "concept",
+            "content": "A common DDPM training loop samples a timestep uniformly from the discrete range. This provides an unbiased Monte Carlo estimate of an objective that averages across timesteps, assuming the loss weighting is applied consistently. Uniform sampling is simple, but it does not imply equal difficulty or equal contribution to useful learning. Some noise levels may produce larger gradients or more important perceptual information. Alternative approaches can sample timesteps nonuniformly and compensate with importance weights so the intended objective remains unchanged. Without the correct correction factor, nonuniform sampling changes the effective training objective. It is useful to log losses and gradient statistics by noise range before changing the sampling distribution."
+        },
+        {
+            "id": "loss-weighting",
+            "title": "11. Loss Weighting Across Noise Levels",
+            "type": "math",
+            "content": "The simplified noise-prediction objective averages squared prediction error, but different parameterizations and weighting functions can emphasize different noise regimes. A general weighted objective is E[w(t)||epsilon − epsilon_theta(x_t,t)||²]. The weight can depend on timestep, SNR, log-SNR, or another measure of corruption. Weighting influences the gradients the model receives and can change sample quality even if the network and schedule remain fixed. A weight that is too large for a narrow range may cause the model to prioritize that range at the expense of others. The best weighting depends on the parameterization, architecture, and data representation. When comparing weighting methods, keep the schedule and training budget fixed and evaluate both per-range losses and final generated samples.",
+            "formula": "L(theta) = E_{x_0,t,epsilon}[w(t)||epsilon - epsilon_theta(x_t,t)||^2]",
+            "example": "If two timesteps have identical prediction errors but their weights are 1 and 4, the second timestep contributes four times as much to the weighted objective."
+        },
+        {
+            "id": "prediction-parameterizations",
+            "title": "12. Noise, Data, and Velocity Prediction",
+            "type": "concept",
+            "content": "Diffusion models can predict the injected noise epsilon, the clean sample x₀, or a velocity-like target v. These parameterizations are related algebraically but differ in how they distribute numerical difficulty across noise levels. Noise prediction has a simple target sampled directly from a standard normal distribution. Data prediction directly estimates the clean example but may have different error behavior at high noise. Velocity prediction combines signal and noise in a parameterization designed to behave usefully across the trajectory. Conversion formulas depend on the definitions of alpha-bar, signal coefficient, and noise coefficient. A checkpoint's prediction type is part of its model configuration; it cannot safely be changed at inference without converting the network output correctly."
+        },
+        {
+            "id": "reverse-variance",
+            "title": "13. Reverse-Process Variance",
+            "type": "concept",
+            "content": "The reverse transition in a DDPM requires both a mean estimate and a variance. The true posterior q(x_{t−1} | x_t, x₀) has a variance that can be derived from the forward Gaussian process. Since x₀ is unknown at generation time, the model uses a learned estimate or a schedule-based approximation. Some implementations use the forward beta as a simple reverse variance, while others use the posterior variance or a learned interpolation between variance bounds. These choices affect stochasticity and sample quality. A sampler that uses a variance convention inconsistent with training may produce over-smoothed, noisy, or unstable outputs. The implementation should make explicit whether it uses beta_t, posterior variance, or a learned variance, and how the final step is handled."
+        },
+        {
+            "id": "posterior-variance-math",
+            "title": "14. Posterior Variance Formula",
+            "type": "math",
+            "content": "For the standard DDPM forward process, the posterior q(x_{t−1} | x_t, x₀) is Gaussian. Its variance is beta-tilde_t = ((1 − alpha-bar_{t−1})/(1 − alpha-bar_t)) beta_t. This is the conditional variance when the clean sample is known. At the first reverse transition near the clean endpoint, the posterior variance can approach zero under the usual indexing convention. Implementations often clip log variance for numerical stability, especially when taking logarithms. Carefully distinguish the posterior variance from beta_t: they are related but not generally equal. Correct indexing is crucial because the formula uses the cumulative alpha from the preceding timestep.",
+            "formula": "beta_tilde_t = ((1 - alpha_bar_{t-1}) / (1 - alpha_bar_t)) beta_t",
+            "example": "If beta_t = 0.02, alpha-bar at the previous step is 0.8, and current alpha-bar is 0.75, then beta-tilde = ((0.2)/(0.25))0.02 = 0.016."
+        },
+        {
+            "id": "ddpm-sampling",
+            "title": "15. DDPM Ancestral Sampling",
+            "type": "concept",
+            "content": "Ancestral sampling evaluates the denoiser at each selected timestep and draws the next state from a Gaussian reverse transition. This is the most direct discrete implementation of a DDPM. It is easy to understand and provides a reference point for evaluating faster methods. Its cost is often high because each reverse step requires a neural-network evaluation. The number of steps can be reduced by skipping selected timesteps, but a naive reduction can produce inaccurate transitions. The variance and mean formulas must be adapted to the chosen subsequence rather than simply reusing every adjacent-step expression. Sampling quality should be measured as a function of both the number of evaluations and the wall-clock cost, including model overhead."
+        },
+        {
+            "id": "ddim-sampling",
+            "title": "16. DDIM Sampling",
+            "type": "concept",
+            "content": "DDIM defines a family of trajectories that can use fewer steps than the original training chain. It derives a clean-sample estimate from the current noisy sample and the predicted noise, then constructs a selected earlier timestep using signal and noise coefficients. A stochasticity parameter controls whether extra noise is introduced during the update. With zero stochasticity, a fixed initial sample follows a deterministic trajectory under deterministic model execution. DDIM can produce useful results with a small subset of timesteps, but the best subset and step count depend on the model and dataset. It is important to use a sampler implementation that correctly handles the relationship between the selected current and previous timesteps."
+        },
+        {
+            "id": "numerical-solvers",
+            "title": "17. Numerical Solvers for Diffusion",
+            "type": "concept",
+            "content": "Continuous-time diffusion formulations allow reverse generation to be viewed as solving a stochastic or deterministic differential equation. A basic Euler method uses one derivative evaluation to advance each step. Higher-order methods estimate curvature or combine information from multiple evaluations to reduce discretization error. Predictor-corrector methods can combine a numerical prediction with a score-based correction. Solver performance depends on the smoothness of the learned vector field, the time parameterization, and the accuracy of the score estimate. A higher-order solver is not automatically faster in wall-clock time because it may require more evaluations per step. Practical comparisons should report the number of network evaluations, wall-clock latency, hardware, batch size, and quality metrics."
+        },
+        {
+            "id": "adaptive-step-size",
+            "title": "18. Adaptive Step Sizes",
+            "type": "concept",
+            "content": "Adaptive numerical solvers choose step sizes based on an estimate of local integration error. They may take larger steps where the vector field changes smoothly and smaller steps where it changes rapidly. This can reduce unnecessary computation compared with a fixed fine grid. However, estimating error may require extra function evaluations, and the tolerance setting determines the quality-cost tradeoff. Generative trajectories can be sensitive to errors in particular noise regions, so a generic tolerance may not correspond directly to perceptual quality. For reproducible comparisons, record the solver, tolerances, maximum and minimum step sizes, and any fixed evaluation budget. An adaptive solver should be evaluated against fixed-step baselines rather than assumed superior."
+        },
+        {
+            "id": "sampling-distillation",
+            "title": "19. Distillation and Few-Step Generation",
+            "type": "concept",
+            "content": "Sampling distillation trains a student model or sampling procedure to reproduce the outputs of a more expensive teacher. A teacher may require many denoising evaluations, while the student learns to approximate several teacher transitions in fewer steps. Progressive distillation can repeatedly reduce the number of steps by training a student to match the result of multiple teacher updates. Other approaches use consistency objectives or specialized few-step training. Distillation can substantially reduce inference latency, which matters for interactive applications and large-scale serving. The tradeoff is that student training introduces additional complexity and may not preserve every aspect of teacher quality or diversity. Evaluation should include both speed and quality across representative prompts and conditions."
+        },
+        {
+            "id": "sampling-guidance-cost",
+            "title": "20. Guidance and Sampling Cost",
+            "type": "concept",
+            "content": "Classifier-free guidance often combines conditional and unconditional predictions. A straightforward implementation evaluates both predictions separately, which can nearly double the denoiser work if the evaluations are not batched together. Some implementations concatenate conditional and unconditional inputs into one larger batch to improve hardware utilization. Strong guidance can require more steps to avoid artifacts, so guidance strength and sampler choice interact. Guidance may improve adherence to conditions while reducing diversity. When measuring inference cost, include guidance passes, text-encoder cost when applicable, latent decoding, safety checks, and postprocessing. Counting only the number of nominal diffusion steps can underestimate actual latency."
+        },
+        {
+            "id": "sampling-benchmark",
+            "title": "21. Benchmarking Samplers",
+            "type": "concept",
+            "content": "A fair sampler benchmark uses the same trained checkpoint, data representation, conditioning inputs, and evaluation procedure. Report the number of network evaluations rather than only the number of named steps, since some solvers require multiple evaluations per step. Measure wall-clock latency after warm-up and include the hardware, precision mode, batch size, and memory usage. Evaluate quality over several seeds and prompts, not just one visually appealing output. If a method is stochastic, distinguish variation due to sampling randomness from differences caused by the solver. Plot quality against latency or evaluation count to show the tradeoff. The best sampler depends on the deployment objective: offline image creation may tolerate longer generation than interactive editing or real-time applications."
+        },
+        {
+            "id": "schedule-debugging",
+            "title": "22. Debugging Noise Schedules",
+            "type": "concept",
+            "content": "Schedule bugs can be subtle because all tensors may have valid shapes while representing incorrect distributions. Verify that beta values are finite and lie between zero and one, alpha values are positive, and alpha-bar is monotonically decreasing. Check that the first cumulative-alpha value matches the intended indexing convention and that the final value is consistent with the chosen terminal prior. Test the direct noisy-sample equation using known scalar values. Confirm that the training and sampling code use the same prediction parameterization and timestep mapping. Inspect per-timestep losses and generated samples at several intermediate stages. These checks often identify problems more quickly than increasing model size or training duration."
+        },
+        {
+            "id": "schedule-pytorch-code",
+            "title": "23. Building and Validating a Schedule",
+            "type": "code",
+            "language": "python",
+            "content": "Construct a linear beta schedule and derive its alpha and cumulative-alpha arrays.",
+            "explanation": "The code uses zero-based array indices. alpha_bar[t] represents the cumulative signal retention after t + 1 forward transitions. A production implementation should document this convention and handle the clean endpoint explicitly.",
+            "code": "import torch\n\ndef make_linear_schedule(steps=1000, beta_start=1e-4, beta_end=0.02, device='cpu'):\n    beta = torch.linspace(beta_start, beta_end, steps, device=device)\n    alpha = 1.0 - beta\n    alpha_bar = torch.cumprod(alpha, dim=0)\n    assert torch.isfinite(beta).all()\n    assert torch.all((beta > 0) & (beta < 1))\n    assert torch.all(alpha_bar[1:] <= alpha_bar[:-1])\n    return {'beta': beta, 'alpha': alpha, 'alpha_bar': alpha_bar}\n\nschedule = make_linear_schedule()\nprint(schedule['beta'][0].item(), schedule['beta'][-1].item())\nprint(schedule['alpha_bar'][0].item(), schedule['alpha_bar'][-1].item())",
+            "expectedOutput": "The first and last beta values, followed by the first and last cumulative-alpha values. The cumulative-alpha values should decrease over the schedule."
+        },
+        {
+            "id": "cosine-schedule-code",
+            "title": "24. Building a Cosine Schedule",
+            "type": "code",
+            "language": "python",
+            "content": "Construct a cosine cumulative-alpha curve and derive beta values from adjacent ratios.",
+            "explanation": "The implementation includes the clean endpoint in the cosine curve, then derives one beta for each forward transition. Clipping avoids beta values reaching one at the terminal endpoint.",
+            "code": "import math\nimport torch\n\ndef make_cosine_schedule(steps=1000, offset=0.008, max_beta=0.999, device='cpu'):\n    t = torch.linspace(0, steps, steps + 1, device=device) / steps\n    f = torch.cos(((t + offset) / (1 + offset)) * math.pi / 2).square()\n    alpha_bar_all = f / f[0]\n    beta = 1 - alpha_bar_all[1:] / alpha_bar_all[:-1]\n    beta = beta.clamp(min=1e-8, max=max_beta)\n    alpha = 1 - beta\n    alpha_bar = torch.cumprod(alpha, dim=0)\n    return {'beta': beta, 'alpha': alpha, 'alpha_bar': alpha_bar}\n\nschedule = make_cosine_schedule()\nprint(schedule['beta'].min().item(), schedule['beta'].max().item())",
+            "expectedOutput": "A minimum beta greater than zero and a maximum beta no greater than the configured clipping value."
+        },
+        {
+            "id": "snr-calculation-code",
+            "title": "25. Computing Signal-to-Noise Ratio",
+            "type": "code",
+            "language": "python",
+            "content": "Compute SNR and log-SNR from cumulative signal retention.",
+            "explanation": "Clamping prevents logarithms of zero and division by zero. Clamping should be treated as a numerical safeguard rather than a substitute for a valid schedule.",
+            "code": "import torch\n\nalpha_bar = torch.tensor([0.9, 0.5, 0.1, 0.001])\nalpha_bar = alpha_bar.clamp(1e-8, 1 - 1e-8)\nsnr = alpha_bar / (1 - alpha_bar)\nlog_snr = torch.log(snr)\nprint(snr)\nprint(log_snr)",
+            "expectedOutput": "SNR decreases as cumulative signal retention decreases. Log-SNR expresses the same progression on a logarithmic scale."
+        },
+        {
+            "id": "sampler-selection",
+            "title": "26. Selecting a Sampler for Deployment",
+            "type": "concept",
+            "content": "Sampler selection should begin with the application requirements. If reference quality and conceptual simplicity are priorities, ancestral DDPM sampling is a useful baseline. If deterministic trajectories and fewer steps are desirable, DDIM may be appropriate. If a continuous-time formulation is available and numerical efficiency matters, compare suitable ODE or SDE solvers. If latency must be extremely low, consider distilled or consistency-based models trained for few-step generation. Test the candidate methods on the actual hardware and data distribution. A sampler that performs well on a public benchmark may not be optimal for a different resolution, latent space, or conditioning setup. Deployment constraints include memory, throughput, deterministic behavior, batching, and robustness to unusual inputs."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "noise-schedule-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main purpose of a diffusion noise schedule?",
+            "correctAnswer": "It controls how much noise is introduced at each forward timestep and therefore determines the corruption trajectory.",
+            "solution": "The schedule determines beta values, cumulative signal retention, and the noise levels the model must learn to denoise."
+        },
+        {
+            "id": "noise-schedule-ex-2",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If beta_t = 0.03, compute alpha_t.",
+            "correctAnswer": "0.97",
+            "solution": "Alpha is defined as one minus beta, so alpha_t = 1 − 0.03 = 0.97."
+        },
+        {
+            "id": "noise-schedule-ex-3",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If alpha-bar_t = 0.36, compute the signal and noise coefficients in the direct forward equation.",
+            "correctAnswer": "Signal coefficient = 0.6; noise coefficient = 0.8.",
+            "solution": "The coefficients are sqrt(0.36) = 0.6 and sqrt(1 − 0.36) = sqrt(0.64) = 0.8."
+        },
+        {
+            "id": "noise-schedule-ex-4",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If alpha-bar_t = 0.75, what is the SNR?",
+            "correctAnswer": "3",
+            "solution": "SNR = 0.75/(1 − 0.75) = 0.75/0.25 = 3."
+        },
+        {
+            "id": "noise-schedule-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why might a cosine schedule be preferred over a linear beta schedule?",
+            "correctAnswer": "It shapes cumulative signal retention more smoothly and can allocate useful corruption levels differently across the trajectory.",
+            "solution": "A linear beta schedule does not produce a linear SNR trajectory. A cosine schedule directly controls the shape of cumulative signal retention, though neither schedule is universally best."
+        },
+        {
+            "id": "noise-schedule-ex-6",
+            "type": "mathematical",
+            "difficulty": "hard",
+            "question": "The previous cumulative alpha is 0.8, the current cumulative alpha is 0.72, and beta_t is 0.1. Compute the posterior variance beta-tilde_t.",
+            "correctAnswer": "0.028571 approximately",
+            "solution": "beta-tilde = ((1 − 0.8)/(1 − 0.72)) × 0.1 = (0.2/0.28) × 0.1 ≈ 0.07143. Therefore the correct value is approximately 0.07143."
+        },
+        {
+            "id": "noise-schedule-ex-7",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why must a model's prediction parameterization match the sampler?",
+            "correctAnswer": "The sampler interprets the network output as a particular quantity, such as noise, clean data, or velocity, and incorrect interpretation leads to invalid reverse updates.",
+            "solution": "These targets are related by schedule-dependent equations, but they are not interchangeable without conversion."
+        },
+        {
+            "id": "noise-schedule-ex-8",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A faster sampler produces artifacts when reducing from 50 steps to 5. Give three possible responses.",
+            "correctAnswer": "Try a different timestep subset or solver, adjust numerical tolerances, evaluate a better prediction parameterization, or use a model trained or distilled for few-step sampling.",
+            "solution": "Aggressive step reduction increases discretization error. A suitable solver or training strategy may improve quality without restoring the full original step count."
+        },
+        {
+            "id": "noise-schedule-ex-9",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the final cumulative-alpha value important?",
+            "correctAnswer": "It determines how close the terminal forward distribution is to the noise prior used to initialize generation.",
+            "solution": "If the terminal data distribution still retains substantial signal, initializing generation from pure Gaussian noise may create a distribution mismatch."
+        },
+        {
+            "id": "noise-schedule-ex-10",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A schedule has non-finite cumulative-alpha values. What should be checked first?",
+            "correctAnswer": "Check beta bounds, floating-point operations, cumulative-product indexing, and the schedule construction formula.",
+            "solution": "Beta values outside the valid range or unstable endpoint calculations can produce invalid alpha values. The schedule should be validated before training."
+        }
+    ],
+    "summary": "Noise schedules define the corruption levels a diffusion model learns to reverse. Linear beta schedules are simple, while cosine schedules shape cumulative signal retention more directly. Signal-to-noise ratio and log-SNR provide useful coordinates for understanding noise levels and conditioning. Training timestep distributions, loss weighting, prediction parameterization, and reverse variance conventions affect optimization and sampling. DDPM, DDIM, continuous-time solvers, and distillation offer different tradeoffs between sample quality and inference cost. Correct schedule indexing and systematic benchmarking are essential for reliable results.",
+    "relatedTopics": [
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-score-matching",
+        "module-14-generative-models-denoising",
+        "module-14-generative-models-text-to-image-models"
+    ]
+}

@@ -1,1 +1,461 @@
-{}
+{
+    "id": "module-14-generative-models-variational-autoencoders",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 2,
+    "title": "Variational Autoencoders (VAEs)",
+    "slug": "variational-autoencoders",
+    "href": "/curriculum/14-generative-models/variational-autoencoders",
+    "filePath": "content/curriculum/14-generative-models/02-variational-autoencoders.json",
+    "description": "Learn probabilistic latent-variable modeling, the evidence lower bound, approximate posterior inference, the reparameterization trick, latent-space sampling, and practical VAE training.",
+    "difficulty": "advanced",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "module-14-generative-models-autoencoders",
+        "module-03-neural-networks",
+        "module-04-deep-learning"
+    ],
+    "learningObjectives": [
+        "Distinguish deterministic autoencoders from probabilistic latent-variable models.",
+        "Explain the prior, likelihood, approximate posterior, and generative process.",
+        "Derive the evidence lower bound and explain its reconstruction and KL terms.",
+        "Implement the reparameterization trick for differentiable latent sampling.",
+        "Build a basic VAE in PyTorch and train it using an ELBO-based objective.",
+        "Explain posterior collapse, beta-VAEs, KL annealing, and likelihood assumptions.",
+        "Evaluate reconstruction and generation separately and understand common metrics."
+    ],
+    "sections": [
+        {
+            "id": "vae-introduction",
+            "title": "1. From Autoencoders to Variational Autoencoders",
+            "type": "concept",
+            "content": "A conventional autoencoder maps an input to a deterministic code and reconstructs the input from that code. This is useful for representation learning, but the resulting latent codes are not necessarily distributed according to a simple prior. Consequently, sampling arbitrary vectors from a standard Gaussian and decoding them may produce unrealistic outputs. A variational autoencoder, or VAE, uses a probabilistic latent-variable model. It defines a prior distribution over latent variables and a decoder that describes a probability distribution over observations given a latent variable. An encoder approximates the posterior distribution over latent variables given an observation. Training encourages the approximate posterior to reconstruct observations well while remaining compatible with the prior. This combination makes it possible to sample latent variables from the prior and generate new observations through the decoder.",
+            "keyPoints": [
+                "A VAE is a probabilistic latent-variable model.",
+                "The encoder estimates a distribution rather than only a single code.",
+                "The decoder defines a distribution over observations.",
+                "The prior provides a distribution from which generation can begin.",
+                "The training objective balances reconstruction and latent regularization."
+            ]
+        },
+        {
+            "id": "vae-generative-model",
+            "title": "2. The Latent-Variable Generative Model",
+            "type": "math",
+            "content": "A common VAE uses a latent variable z and an observation x. First, sample z from a prior p(z), often a standard multivariate Gaussian. Then sample x from a conditional likelihood p_theta(x|z), parameterized by a neural decoder. The marginal likelihood of an observation is obtained by integrating over every possible latent value. This integral is generally difficult to compute exactly for neural decoders, which motivates approximate inference and variational learning. The decoder does not necessarily output the observation directly; it may output parameters of a distribution, such as Bernoulli probabilities or Gaussian means and variances. The likelihood determines how the model represents uncertainty about the observation.",
+            "formula": "p_theta(x) = integral p(z) p_theta(x|z) dz",
+            "example": "A VAE can sample a latent vector z from a standard normal distribution and pass it to a decoder that predicts Bernoulli probabilities for image pixels. The resulting pixels are sampled from those probabilities or represented by their probabilities, depending on the generation procedure.",
+            "keyPoints": [
+                "The prior describes latent variables before observing x.",
+                "The decoder defines p_theta(x|z).",
+                "The marginal likelihood integrates out z.",
+                "Exact marginalization is generally intractable for expressive neural models.",
+                "The observation likelihood encodes assumptions about the data."
+            ]
+        },
+        {
+            "id": "vae-prior",
+            "title": "3. The Latent Prior",
+            "type": "concept",
+            "content": "The prior p(z) defines which latent vectors are considered plausible before observing a specific example. A standard normal prior is common because it is easy to sample and has a tractable density. In d dimensions, its components are independent standard normal variables. The prior is not simply a statement that the training codes must all be exactly zero; rather, the training objective encourages the approximate posterior distributions to remain close to the prior in aggregate. The prior affects where the decoder is trained to produce meaningful outputs. A poorly matched prior or inadequate decoder can still lead to low-quality generations. More sophisticated priors may capture complex latent structure, but they also introduce additional modeling and computational considerations.",
+            "formula": "p(z) = N(z; 0, I)",
+            "keyPoints": [
+                "The prior supplies latent vectors for unconditional generation.",
+                "The standard normal prior is convenient and easy to sample.",
+                "Posterior regularization encourages compatibility with the prior.",
+                "A simple prior does not guarantee perfect generation.",
+                "Alternative priors can express more complex latent distributions."
+            ]
+        },
+        {
+            "id": "vae-encoder",
+            "title": "4. The Approximate Posterior",
+            "type": "concept",
+            "content": "Bayesian inference seeks the posterior p(z|x), which describes latent uncertainty after observing x. In a VAE, this posterior is typically intractable to compute exactly. The encoder instead defines a tractable approximate posterior q_phi(z|x). A common choice is a diagonal Gaussian whose mean and log variance are predicted by neural network outputs. The encoder produces two vectors: mu(x) and log_var(x). These parameterize a distribution over possible latent codes rather than a single fixed representation. A diagonal covariance assumption reduces complexity because the encoder predicts one variance per latent dimension rather than a full covariance matrix. This assumption may be limiting when latent dimensions have strong conditional correlations, but it makes training and sampling efficient.",
+            "formula": "q_phi(z|x) = N(z; mu_phi(x), diag(sigma_phi(x)^2))",
+            "keyPoints": [
+                "The encoder approximates the posterior over latent variables.",
+                "A diagonal Gaussian is a common approximation.",
+                "The encoder predicts means and variances or log variances.",
+                "Probabilistic codes represent uncertainty about latent values.",
+                "The approximate posterior is a modeling choice, not the exact posterior."
+            ]
+        },
+        {
+            "id": "vae-elbo",
+            "title": "5. The Evidence Lower Bound",
+            "type": "math",
+            "content": "The marginal log-likelihood log p_theta(x) is difficult to evaluate because it integrates over latent variables. Variational inference introduces q_phi(z|x), an approximate posterior, and derives a tractable lower bound on the log-likelihood. This bound is called the evidence lower bound, or ELBO. It consists of an expected reconstruction log-likelihood and a penalty measuring the divergence between the approximate posterior and the prior. Maximizing the ELBO encourages the decoder to assign high likelihood to observed data while keeping latent distributions close to the prior. Equivalently, training can minimize the negative ELBO. In practical code, the reconstruction contribution is often expressed as a positive reconstruction loss, and the KL divergence is added as a positive regularization term. The reduction and sign conventions should be checked carefully when implementing the objective.",
+            "formula": "ELBO(x) = E_{q_phi(z|x)}[log p_theta(x|z)] - KL(q_phi(z|x) || p(z))",
+            "example": "If the expected log-likelihood improves but the approximate posterior moves far from the prior, the KL term becomes larger and can reduce the ELBO. The objective balances these competing effects.",
+            "keyPoints": [
+                "The ELBO is a lower bound on the log marginal likelihood.",
+                "Its reconstruction term rewards explaining the observation.",
+                "Its KL term regularizes the approximate posterior toward the prior.",
+                "Minimizing negative ELBO reverses the signs of the log-likelihood terms.",
+                "The ELBO is not generally equal to the exact log-likelihood."
+            ]
+        },
+        {
+            "id": "vae-elbo-derivation",
+            "title": "6. Understanding the ELBO Decomposition",
+            "type": "math",
+            "content": "The ELBO decomposition follows from introducing the approximate posterior and applying the definition of Kullback-Leibler divergence. The difference between the log marginal likelihood and the ELBO equals the KL divergence from q_phi(z|x) to the true posterior p_theta(z|x). Since KL divergence is nonnegative, the ELBO cannot exceed the log marginal likelihood. When the approximate posterior matches the true posterior, the bound is tight. In neural VAEs, the exact posterior is usually unavailable, so training optimizes a tractable bound rather than directly maximizing the exact marginal likelihood. This distinction matters when comparing models or interpreting training curves: a better ELBO often indicates improvement under the chosen variational family and objective, but it is not a direct exact evaluation of p_theta(x).",
+            "formula": "log p_theta(x) = ELBO(x) + KL(q_phi(z|x) || p_theta(z|x))",
+            "keyPoints": [
+                "The gap between log likelihood and ELBO is a KL divergence.",
+                "KL divergence is nonnegative.",
+                "The bound is tight when the approximate posterior matches the true posterior.",
+                "Approximate inference introduces a gap that training may not eliminate.",
+                "ELBO comparisons require consistent data and likelihood conventions."
+            ]
+        },
+        {
+            "id": "vae-reconstruction",
+            "title": "7. The Reconstruction Likelihood",
+            "type": "concept",
+            "content": "The reconstruction term is the expected log probability assigned to the observed data by the decoder. Its implementation depends on the assumed observation distribution. A Bernoulli likelihood is often used for binary observations or normalized image pixels interpreted through a Bernoulli-style model. A Gaussian likelihood is common for continuous-valued data, with the decoder predicting a mean and possibly a variance. A fixed-variance Gaussian likelihood leads to a scaled squared-error objective. These choices are assumptions about the conditional data distribution, not merely interchangeable loss functions. If a Gaussian decoder predicts a mean only and uses fixed variance, MSE is a convenient proportional objective. If variance is learned, the objective also accounts for predictive uncertainty. The chosen likelihood should reflect the data range and intended interpretation.",
+            "keyPoints": [
+                "The reconstruction term comes from the decoder likelihood.",
+                "Bernoulli likelihoods suit binary-style observations.",
+                "Gaussian likelihoods suit many continuous observations.",
+                "Fixed-variance Gaussian likelihood leads to squared-error reconstruction.",
+                "Likelihood choices affect both training and interpretation."
+            ]
+        },
+        {
+            "id": "vae-kl",
+            "title": "8. KL Divergence for a Diagonal Gaussian",
+            "type": "math",
+            "content": "When the approximate posterior is a diagonal Gaussian and the prior is a standard normal, the KL divergence has a closed-form expression. For each latent dimension, the penalty depends on the posterior mean and variance. The mean is encouraged to remain near zero, and the variance is encouraged to remain near one. The total divergence is summed across latent dimensions for each example. In code, the encoder often predicts log variance because this parameterization makes it straightforward to convert to a positive variance through exponentiation. Log variance can still become numerically extreme, so careful initialization, stable computations, and monitoring are important.",
+            "formula": "KL(q||p) = 0.5 * sum_j [mu_j^2 + exp(log_var_j) - 1 - log_var_j]",
+            "example": "If one latent dimension has mean 0 and variance 1, its KL contribution is zero. Deviating from these values generally increases the divergence.",
+            "keyPoints": [
+                "The standard-normal KL has a closed-form solution for diagonal Gaussians.",
+                "The penalty depends on posterior means and variances.",
+                "KL is nonnegative in exact arithmetic.",
+                "The KL term is commonly summed across latent dimensions.",
+                "Reduction conventions affect the scale of the total objective."
+            ]
+        },
+        {
+            "id": "vae-reparameterization",
+            "title": "9. The Reparameterization Trick",
+            "type": "math",
+            "content": "Sampling z directly from a distribution whose parameters are outputs of a neural network creates a difficulty for ordinary backpropagation. The sampling operation is stochastic, and a naive implementation does not provide the desired pathwise gradient through the distribution parameters. The reparameterization trick expresses the sample as a differentiable transformation of the predicted parameters and an independent noise variable. For a Gaussian approximate posterior, sample epsilon from a standard normal distribution and set z equal to the mean plus the standard deviation multiplied by epsilon. The randomness is isolated in epsilon, while gradients can flow through the mean and standard deviation. This enables efficient gradient-based optimization of the encoder and decoder together.",
+            "formula": "epsilon ~ N(0, I); z = mu + sigma * epsilon; sigma = exp(0.5 * log_var)",
+            "example": "The encoder predicts mu = 0.2 and sigma = 0.5. If a sampled epsilon is -1, then z = 0.2 + 0.5(-1) = -0.3.",
+            "keyPoints": [
+                "The trick isolates random noise from learned distribution parameters.",
+                "Gaussian noise is sampled independently of encoder parameters.",
+                "Gradients flow through the mean and standard deviation.",
+                "The latent sample remains stochastic during training.",
+                "At inference, the choice between sampling and using the mean depends on the task."
+            ]
+        },
+        {
+            "id": "vae-logvar",
+            "title": "10. Log Variance and Numerical Stability",
+            "type": "concept",
+            "content": "A neural network output is unconstrained, but a variance must be positive. Predicting log variance avoids directly optimizing an unrestricted variance value. The variance is recovered by exponentiating log variance, and the standard deviation is obtained by exponentiating half the log variance. This parameterization is convenient but not immune to numerical problems: very large positive log variances can overflow, while very negative values can cause underflow or vanishing gradients. Sensible initialization, monitoring latent statistics, and appropriate learning rates can help. Gradient clipping or bounds may be useful in some settings, but these interventions alter optimization behavior and should be justified by observed instability rather than added automatically.",
+            "formula": "variance = exp(log_var); standard_deviation = exp(0.5 * log_var)",
+            "keyPoints": [
+                "Variance must remain positive.",
+                "Log variance is convenient for unconstrained network outputs.",
+                "Extreme values can create numerical instability.",
+                "Monitor latent means, log variances, reconstruction loss, and KL loss.",
+                "Stability interventions should be evaluated rather than applied blindly."
+            ]
+        },
+        {
+            "id": "vae-sampling",
+            "title": "11. Generating New Samples",
+            "type": "concept",
+            "content": "Unconditional generation begins by sampling a latent vector from the prior. For a standard-normal prior, sample each latent dimension independently from a standard normal distribution. Feed the vector to the trained decoder, which produces parameters of the observation likelihood. Depending on the application, a final sample may be drawn from that likelihood or the decoder's mean or probability values may be used as a deterministic output. These choices are not identical. Sampling from the likelihood introduces observation-level randomness, while using the mean produces a representative output under the model. Generation quality depends on how well the prior, approximate posterior, decoder, and training data work together. Sampling from the prior is principled under the model, but it does not guarantee that every generated example will be realistic.",
+            "formula": "z ~ p(z), x_new ~ p_theta(x|z)",
+            "keyPoints": [
+                "Sample z from the prior for unconditional generation.",
+                "The decoder maps latent values to observation-distribution parameters.",
+                "Sampling and using the decoder mean produce different behaviors.",
+                "Generation quality must be evaluated empirically.",
+                "A valid sampling procedure does not guarantee realistic output."
+            ]
+        },
+        {
+            "id": "vae-interpolation",
+            "title": "12. Latent Interpolation",
+            "type": "concept",
+            "content": "Latent interpolation explores how decoded observations change between two latent points. Linear interpolation forms a weighted average of the endpoints. In a Gaussian latent space, interpolating along a straight line is simple, but for high-dimensional Gaussian vectors, spherical interpolation can sometimes better preserve distance from the origin. The appropriate method depends on the prior and latent dimension. A VAE encourages approximate posterior distributions to remain compatible with the prior, which can make prior-space exploration more meaningful than in an unconstrained deterministic autoencoder. Nevertheless, interpolation quality still depends on training and model capacity. Useful experiments inspect multiple intermediate points, not just the endpoints.",
+            "formula": "z(t) = (1-t)z_a + t z_b, with t in [0, 1]",
+            "keyPoints": [
+                "Interpolation probes continuity in the decoder's latent space.",
+                "Linear interpolation is simple and widely used.",
+                "Spherical interpolation may be useful in high-dimensional spaces.",
+                "Prior regularization helps structure latent space but does not guarantee perfect semantics.",
+                "Inspect intermediate outputs for artifacts and discontinuities."
+            ]
+        },
+        {
+            "id": "vae-pytorch-model",
+            "title": "13. Implementing a VAE in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "This example defines a small dense VAE for flattened 28 by 28 images. The encoder produces a mean and log variance for a diagonal Gaussian. The reparameterization method samples a latent vector while preserving differentiability. The decoder returns logits for a Bernoulli-style reconstruction likelihood. Returning logits allows the loss to use binary_cross_entropy_with_logits, which is generally more numerically stable than applying sigmoid and then computing binary cross-entropy separately. The model accepts images normalized to [0, 1].",
+            "code": "import torch\nfrom torch import nn\nimport torch.nn.functional as F\n\nclass VAE(nn.Module):\n    def __init__(self, latent_dim=20):\n        super().__init__()\n        self.encoder = nn.Sequential(nn.Linear(784, 256), nn.ReLU())\n        self.mu = nn.Linear(256, latent_dim)\n        self.log_var = nn.Linear(256, latent_dim)\n        self.decoder = nn.Sequential(nn.Linear(latent_dim, 256), nn.ReLU(), nn.Linear(256, 784))\n\n    def encode(self, x):\n        h = self.encoder(x.flatten(start_dim=1))\n        return self.mu(h), self.log_var(h)\n\n    def reparameterize(self, mu, log_var):\n        std = torch.exp(0.5 * log_var)\n        return mu + std * torch.randn_like(std)\n\n    def decode(self, z):\n        return self.decoder(z)\n\n    def forward(self, x):\n        mu, log_var = self.encode(x)\n        z = self.reparameterize(mu, log_var)\n        return self.decode(z), mu, log_var\n\ndef vae_loss(logits, x, mu, log_var):\n    target = x.flatten(start_dim=1)\n    reconstruction = F.binary_cross_entropy_with_logits(logits, target, reduction=\"sum\")\n    kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())\n    return reconstruction + kl, reconstruction, kl",
+            "explanation": "The encoder has two output heads because the approximate posterior needs both a mean and a log variance. The reparameterization method draws Gaussian noise and transforms it using those parameters. The decoder returns logits, not probabilities. The reconstruction term and KL term are summed over each batch in this example, so their numerical scale depends on batch size. For comparing epochs, report per-example averages or otherwise keep reduction conventions consistent."
+        },
+        {
+            "id": "vae-training",
+            "title": "14. Training the VAE",
+            "type": "code",
+            "language": "python",
+            "content": "The training loop optimizes the negative ELBO. With the implementation above, reconstruction and KL terms are summed across the batch. The optimizer updates both the encoder and decoder because both participate in the loss. Monitor the two components separately: a single total loss can hide a situation in which reconstruction improves while the latent regularizer changes sharply. Use the same reduction convention across experiments. The following code assumes that images and the model are placed on the same device.",
+            "code": "model = VAE(latent_dim=20).to(device)\noptimizer = torch.optim.Adam(model.parameters(), lr=1e-3)\n\nfor epoch in range(20):\n    model.train()\n    total_loss = total_recon = total_kl = 0.0\n    for images, _ in train_loader:\n        images = images.to(device)\n        logits, mu, log_var = model(images)\n        loss, recon, kl = vae_loss(logits, images, mu, log_var)\n        optimizer.zero_grad()\n        loss.backward()\n        optimizer.step()\n        total_loss += loss.item()\n        total_recon += recon.item()\n        total_kl += kl.item()\n    n = len(train_loader.dataset)\n    print(f\"Epoch {epoch + 1}: loss={total_loss / n:.4f}, recon={total_recon / n:.4f}, kl={total_kl / n:.4f}\")",
+            "explanation": "The dataset-level reporting divides summed batch losses by the number of examples. If the final batch is smaller, the summed objective remains consistent. For validation, use model.eval() and torch.no_grad(); remember that a VAE's forward pass may still sample random latent values. Use a fixed random seed or repeated evaluations when comparing stochastic reconstructions."
+        },
+        {
+            "id": "vae-generation-code",
+            "title": "15. Sampling from a Trained VAE",
+            "type": "code",
+            "language": "python",
+            "content": "To generate new images, sample latent vectors from the prior and pass them through the decoder. Because the decoder returns logits, sigmoid converts these values to Bernoulli probabilities. The example uses those probabilities as a deterministic visualization. Sampling binary pixels would add additional randomness and may not be desirable for displaying grayscale images.",
+            "code": "model.eval()\nwith torch.no_grad():\n    z = torch.randn(16, 20, device=device)\n    logits = model.decode(z)\n    probabilities = torch.sigmoid(logits)\n    generated_images = probabilities.view(-1, 1, 28, 28)",
+            "explanation": "The latent vectors are drawn from the standard normal prior. The decoder produces logits for 784 output features, which are converted to probabilities and reshaped into images. The result can be visualized using an image grid. These probability-valued images are expected outputs under the decoder likelihood rather than samples of binary pixels."
+        },
+        {
+            "id": "vae-beta",
+            "title": "16. Beta-VAEs and Disentanglement",
+            "type": "concept",
+            "content": "A beta-VAE multiplies the KL term by a coefficient beta. Increasing beta places greater pressure on the approximate posterior to remain close to the prior. This can encourage latent representations that are easier to organize or interpret, but it also restricts the information that can pass through the latent channel. A larger beta may reduce reconstruction fidelity or cause the model to ignore some latent dimensions. A smaller beta relaxes regularization and can improve reconstruction, while making prior-based sampling less well behaved. Disentanglement refers to a representation in which different latent factors correspond to relatively distinct generative factors. Disentanglement is not guaranteed by the beta-VAE objective, and unsupervised disentanglement can be ambiguous without additional assumptions or inductive biases.",
+            "formula": "L_beta = L_reconstruction + beta * KL(q_phi(z|x) || p(z))",
+            "keyPoints": [
+                "Beta controls the relative strength of KL regularization.",
+                "Higher beta can encourage stronger prior alignment.",
+                "Strong regularization may reduce reconstruction fidelity.",
+                "Disentanglement is not guaranteed by the objective.",
+                "The appropriate beta depends on the intended use."
+            ]
+        },
+        {
+            "id": "vae-posterior-collapse",
+            "title": "17. Posterior Collapse",
+            "type": "concept",
+            "content": "Posterior collapse occurs when the approximate posterior becomes close to the prior for many or all inputs, so the latent variables carry little information about individual observations. In this situation, the decoder may generate outputs largely without using the encoded latent code. Collapse can occur when the decoder is powerful enough to model the data without relying on z, or when optimization dynamics favor a low-information solution. It is especially discussed in autoregressive sequence VAEs, where a strong decoder can explain much of the target sequence directly from previous tokens. Possible strategies include gradually increasing the KL weight, using cyclical KL schedules, applying free bits, adjusting decoder capacity, or modifying the inference architecture. Each intervention changes training dynamics and should be evaluated against reconstruction and generation quality.",
+            "keyPoints": [
+                "Posterior collapse means latent codes carry little input-specific information.",
+                "A powerful decoder can reduce its dependence on the latent variable.",
+                "KL values and latent usage should be monitored.",
+                "Annealing and free bits are possible interventions.",
+                "No single collapse remedy works for every architecture."
+            ]
+        },
+        {
+            "id": "vae-kl-annealing",
+            "title": "18. KL Annealing and Free Bits",
+            "type": "concept",
+            "content": "KL annealing gradually increases the weight of the KL term during training. Early optimization can then focus more strongly on reconstruction before latent regularization becomes fully active. Cyclical schedules repeatedly increase the KL weight from a lower value to a higher value, potentially encouraging the model to reuse latent information. Free-bits methods allow a small amount of KL per latent group or dimension before applying the full penalty, depending on the exact formulation. These methods are not mathematically identical, and their effects depend on the architecture and data. When experimenting, record the schedule, the exact reduction used for KL, and the per-dimension KL statistics so results can be reproduced.",
+            "formula": "L_t = L_reconstruction + beta_t * KL, where beta_t changes during training",
+            "keyPoints": [
+                "Annealing changes regularization strength over training.",
+                "Cyclical schedules repeatedly vary KL weight.",
+                "Free bits reduce pressure on small KL contributions under a specified formulation.",
+                "The exact schedule and reduction must be documented.",
+                "Evaluate whether latent variables are actually being used."
+            ]
+        },
+        {
+            "id": "vae-conditional",
+            "title": "19. Conditional Variational Autoencoders",
+            "type": "concept",
+            "content": "A conditional VAE generates observations given an additional variable c, such as a class label, text embedding, or other context. Both the approximate posterior and the decoder can be conditioned on c. During training, the encoder models q_phi(z|x,c), while the decoder models p_theta(x|z,c). At generation time, provide a condition c, sample z from the prior, and decode using both inputs. Conditional generation enables controlled outputs, such as generating a digit from a specified class. The condition must be available in the intended generation workflow. If the training labels are noisy or the conditioning signal is poorly represented, generated outputs may not follow the requested condition reliably.",
+            "formula": "q_phi(z|x,c); p_theta(x|z,c); z ~ p(z)",
+            "keyPoints": [
+                "Conditional VAEs incorporate context into inference and generation.",
+                "The condition can be a label, embedding, or structured input.",
+                "Generation requires the desired condition at inference time.",
+                "Conditional fidelity must be evaluated separately from image quality."
+            ]
+        },
+        {
+            "id": "vae-convolutional",
+            "title": "20. Convolutional VAEs",
+            "type": "concept",
+            "content": "Convolutional VAEs use convolutional layers to model spatial structure. The encoder extracts image features and produces the parameters of the latent distribution. The decoder transforms a sampled latent vector into feature maps and progressively reconstructs the image. Compared with a dense VAE, convolutional architectures can use parameters more efficiently and preserve local spatial patterns. They still need a compatible likelihood and carefully designed tensor dimensions. For high-resolution images, a simple VAE may produce blurry samples because the likelihood and pixel-wise objective reward averaging uncertainty. More expressive decoders, hierarchical latent variables, perceptual objectives, or alternative generative approaches may improve particular aspects of quality, but each introduces tradeoffs.",
+            "keyPoints": [
+                "Convolutions encode local image structure.",
+                "The encoder predicts latent distribution parameters.",
+                "The decoder maps latent samples back to spatial feature maps.",
+                "High-resolution generation may require hierarchical or more expressive designs.",
+                "Architecture alone does not solve likelihood or perceptual-quality limitations."
+            ]
+        },
+        {
+            "id": "vae-hierarchical",
+            "title": "21. Hierarchical Latent Variables",
+            "type": "concept",
+            "content": "A hierarchical VAE uses multiple latent groups or layers rather than a single latent vector. Different levels can represent information at different scales, such as global structure and local details. A hierarchical generative model defines dependencies between latent variables, and the approximate posterior must account for those dependencies. This added flexibility can improve modeling capacity, but it also makes inference, training, and implementation more complicated. Each additional latent group introduces design choices about prior distributions, conditional dependencies, and loss contributions. Hierarchical models should be compared against simpler baselines to establish whether their extra capacity improves held-out likelihood or downstream generation quality.",
+            "keyPoints": [
+                "Multiple latent groups can represent different levels of variation.",
+                "Latent dependencies must be defined explicitly.",
+                "Hierarchical models increase modeling flexibility and complexity.",
+                "Additional capacity does not automatically improve results."
+            ]
+        },
+        {
+            "id": "vae-evaluation",
+            "title": "22. Evaluating VAEs",
+            "type": "concept",
+            "content": "VAE evaluation should separate likelihood-related objectives, reconstruction quality, sample quality, and downstream utility. The ELBO is a tractable lower bound on log marginal likelihood, not the exact likelihood itself. Reconstruction metrics can measure fidelity but may favor blurry outputs. Visual inspection can expose artifacts, while quantitative generative metrics can compare distributions under a feature representation. FID is widely used for image generation, but it depends on a particular feature extractor and can be sensitive to sample count and preprocessing. Precision and recall metrics for generative models attempt to separate aspects of sample quality and coverage. No single metric fully captures usefulness, diversity, realism, and semantic correctness. Report sample counts, preprocessing, model selection rules, and evaluation data.",
+            "keyPoints": [
+                "The ELBO is not the exact marginal log-likelihood.",
+                "Reconstruction quality and prior-sample quality are different.",
+                "FID depends on a feature extractor and evaluation setup.",
+                "Precision and recall can help distinguish quality from coverage.",
+                "Use several complementary evaluation methods."
+            ]
+        },
+        {
+            "id": "vae-tradeoffs",
+            "title": "23. The Reconstruction-Generation Tradeoff",
+            "type": "concept",
+            "content": "VAE training balances explaining observed examples and maintaining a useful latent distribution. Strong reconstruction pressure can encourage the model to encode more details, while strong KL regularization can improve compatibility with the prior but restrict the information represented in z. This balance can affect visual sharpness, diversity, and prior-sample quality. The relationship is not a simple universal curve: decoder capacity, likelihood assumptions, data complexity, and optimization all matter. For some tasks, approximate likelihood modeling is more important than perceptual sharpness. For others, realistic and diverse images are the priority. Model selection should reflect the target application rather than optimizing one metric without considering its consequences.",
+            "keyPoints": [
+                "Reconstruction and latent regularization can compete.",
+                "Decoder capacity affects the balance.",
+                "The best operating point depends on the application.",
+                "Evaluate both encoded reconstructions and prior samples."
+            ]
+        },
+        {
+            "id": "vae-common-errors",
+            "title": "24. Common Implementation Mistakes",
+            "type": "concept",
+            "content": "Several implementation errors can silently invalidate VAE training. Applying sigmoid before BCEWithLogitsLoss changes the expected input type and can harm numerical stability. Forgetting the KL term reduces the model to a stochastic reconstruction network without the intended prior regularization. Summing one loss while averaging the other changes their relative weight. Accidentally using the noisy or transformed input as the target when clean reconstruction is intended changes the task. Sampling the latent vector incorrectly can prevent gradients from flowing through distribution parameters. Finally, evaluating only reconstructions from encoded test examples does not measure unconditional generation quality. Check tensor shapes, target scaling, reduction conventions, gradient flow, and sample generation independently.",
+            "keyPoints": [
+                "Match output parameterization to the reconstruction loss.",
+                "Include the KL term with a consistent reduction convention.",
+                "Use the correct reconstruction target.",
+                "Implement reparameterization correctly.",
+                "Evaluate prior samples as well as reconstructions."
+            ]
+        },
+        {
+            "id": "vae-experiment",
+            "title": "25. Designing a VAE Experiment",
+            "type": "concept",
+            "content": "A useful VAE experiment begins with a clearly defined dataset and likelihood assumption. Establish a baseline architecture and record the latent dimension, prior, optimizer, learning rate, and reconstruction objective. Track reconstruction and KL contributions separately, along with per-dimension latent statistics. Generate samples at fixed checkpoints and save reconstructions for a consistent validation subset. Compare latent dimensions or KL schedules while keeping other settings controlled. Use a held-out test set for final reporting rather than repeatedly selecting models against it. When random sampling affects evaluation, use fixed seeds where appropriate or average over multiple runs. Preserve model configuration and preprocessing details so another researcher can reproduce the experiment.",
+            "keyPoints": [
+                "Record the likelihood and prior assumptions.",
+                "Track reconstruction and KL terms separately.",
+                "Save fixed validation reconstructions and generated samples.",
+                "Change one major factor at a time when comparing configurations.",
+                "Keep final test evaluation separate from model selection."
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "vae-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main probabilistic difference between a conventional autoencoder and a VAE?",
+            "correctAnswer": "A conventional autoencoder usually maps an input to a deterministic code, while a VAE uses an approximate posterior distribution over latent variables and a probabilistic decoder.",
+            "solution": "The VAE represents uncertainty in the latent code and regularizes the approximate posterior toward a prior, enabling a defined procedure for generating new samples."
+        },
+        {
+            "id": "vae-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the two main terms in the negative ELBO objective?",
+            "correctAnswer": "A reconstruction negative log-likelihood term and a KL divergence term.",
+            "solution": "The reconstruction term encourages the decoder to explain observed data. The KL term encourages the approximate posterior to remain close to the latent prior."
+        },
+        {
+            "id": "vae-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For one latent dimension, mu = 0 and log_var = 0. What is its contribution to the standard-normal KL divergence?",
+            "correctAnswer": "Zero.",
+            "solution": "The contribution is 0.5 * (mu^2 + exp(log_var) - 1 - log_var). Substituting mu = 0 and log_var = 0 gives 0.5 * (0 + 1 - 1 - 0) = 0."
+        },
+        {
+            "id": "vae-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "An encoder predicts mu = 0.2 and sigma = 0.5. If epsilon = -1, calculate the reparameterized latent value.",
+            "correctAnswer": "-0.3",
+            "solution": "Use z = mu + sigma * epsilon = 0.2 + 0.5 * (-1) = -0.3."
+        },
+        {
+            "id": "vae-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the ELBO a lower bound on the log marginal likelihood?",
+            "correctAnswer": "The difference between the log marginal likelihood and the ELBO is a nonnegative KL divergence between the approximate posterior and the true posterior.",
+            "solution": "Because KL divergence cannot be negative, the ELBO cannot exceed the log marginal likelihood. The bound becomes tight when the approximate posterior matches the true posterior."
+        },
+        {
+            "id": "vae-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What problem does the reparameterization trick solve?",
+            "correctAnswer": "It allows gradients to flow through stochastic latent sampling to the encoder's distribution parameters.",
+            "solution": "The random variable is expressed as a differentiable function of learned parameters and independent noise, enabling pathwise gradient estimation."
+        },
+        {
+            "id": "vae-ex-7",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What does posterior collapse mean?",
+            "correctAnswer": "The approximate posterior becomes close to the prior for many inputs, so the latent variables carry little input-specific information.",
+            "solution": "A powerful decoder may learn to generate without relying on the latent code. Monitoring KL contributions and latent usage can help identify this behavior."
+        },
+        {
+            "id": "vae-ex-8",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A VAE has excellent reconstructions but poor prior samples. Give two possible causes.",
+            "correctAnswer": "The learned approximate posterior may not align well with the prior, or the decoder may produce poor outputs in parts of latent space reached by prior samples.",
+            "solution": "Reconstruction evaluates decoded samples associated with observed examples, while unconditional generation samples from the prior. These latent distributions and evaluation paths differ."
+        },
+        {
+            "id": "vae-ex-9",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "A training objective is reconstruction_loss + 4 * KL. What happens to the relative regularization pressure if the KL coefficient is reduced to 1 while all other quantities remain unchanged?",
+            "correctAnswer": "The KL contribution is weighted four times less than before.",
+            "solution": "The coefficient changes from 4 to 1. The model is penalized less strongly for divergence from the prior, although the actual learned behavior also depends on optimization and the resulting parameter changes."
+        },
+        {
+            "id": "vae-ex-10",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "Design a simple experiment to investigate whether KL annealing reduces posterior collapse.",
+            "correctAnswer": "Train matched VAE configurations with a fixed KL coefficient and an annealed coefficient, then compare per-dimension KL values, reconstruction, latent usage, and prior-sample quality.",
+            "solution": "Use the same data split, architecture, and optimizer settings. Record the KL schedule and run multiple seeds if feasible. A lower total KL alone does not establish collapse; inspect whether the latent variables carry useful information and whether generation improves."
+        },
+        {
+            "id": "vae-ex-11",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does BCEWithLogitsLoss expect raw logits rather than sigmoid probabilities?",
+            "correctAnswer": "It combines the sigmoid transformation and cross-entropy computation in a numerically stable way.",
+            "solution": "Applying sigmoid first changes the input to probabilities, whereas BCEWithLogitsLoss is designed to receive unrestricted logits."
+        },
+        {
+            "id": "vae-ex-12",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "How would you compare two VAEs when one reconstructs more accurately but the other generates more diverse samples?",
+            "correctAnswer": "Evaluate reconstruction fidelity, prior-sample quality, diversity or coverage, and downstream usefulness, then choose based on the intended application.",
+            "solution": "The models may occupy different points on the reconstruction-generation tradeoff. A single metric cannot establish which is better for every use case."
+        }
+    ],
+    "summary": "Variational autoencoders combine neural encoders and decoders with a probabilistic latent-variable model. The encoder approximates a posterior distribution, the decoder defines a conditional likelihood, and the prior supports generation. Training maximizes the ELBO, which balances expected reconstruction log-likelihood with KL regularization. The reparameterization trick enables gradient-based optimization through stochastic Gaussian samples. Beta-VAEs, conditional VAEs, hierarchical designs, KL schedules, and free bits modify different aspects of the model. Effective evaluation separates reconstruction from prior-sample quality and recognizes that the ELBO is a lower bound rather than the exact marginal likelihood.",
+    "relatedTopics": [
+        "module-14-generative-models-autoencoders",
+        "module-14-generative-models-gans",
+        "module-14-generative-models-diffusion",
+        "module-03-neural-networks"
+    ]
+}

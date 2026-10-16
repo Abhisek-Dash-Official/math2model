@@ -1,1 +1,194 @@
-{}
+{
+    "id": "module-07-transformers-encoder",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 2,
+    "title": "Encoder Layer Breakdown",
+    "slug": "encoder",
+    "href": "/curriculum/07-transformers/encoder",
+    "filePath": "content/curriculum/07-transformers/02-encoder.json",
+    "description": "Explore the Transformer encoder in detail, from token representations and bidirectional self-attention to feed-forward networks, residual pathways, normalization, padding masks, tensor dimensions, and practical implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-07-transformers-transformer-architecture",
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-positional-encoding"
+    ],
+    "learningObjectives": [
+        "Describe the purpose and structure of a Transformer encoder.",
+        "Explain how bidirectional self-attention contextualizes token representations.",
+        "Trace the operations inside an encoder layer.",
+        "Understand multi-head attention projections and output dimensions.",
+        "Explain the roles of residual connections and layer normalization.",
+        "Distinguish padding masks from causal masks.",
+        "Understand pre-normalization and post-normalization layouts.",
+        "Implement a simplified encoder layer using PyTorch.",
+        "Identify common encoder implementation and training errors."
+    ],
+    "sections": [
+        {
+            "id": "encoder-01-purpose",
+            "title": "1. What Does a Transformer Encoder Do?",
+            "type": "concept",
+            "content": "A Transformer encoder converts an input sequence into contextual representations. Each output position contains information derived from its own token and, through self-attention, other permitted positions in the input. In a standard bidirectional encoder, a token can attend to both earlier and later tokens. This makes the encoder useful for tasks that require understanding the input as a whole, such as text classification, named-entity recognition, semantic similarity, and document representation. The encoder does not inherently generate a sequence token by token. Instead, it produces a sequence of hidden vectors that downstream layers or task-specific heads can use."
+        },
+        {
+            "id": "encoder-02-input",
+            "title": "2. Encoder Inputs",
+            "type": "concept",
+            "content": "The encoder typically receives token IDs with shape (B, T), where B is the batch size and T is the padded sequence length. An embedding layer maps token IDs to vectors of dimension d_model. Positional information is incorporated using an architecture-specific method. The result is an input tensor X with shape (B, T, d_model). Some architectures also use token-type embeddings, modality embeddings, or other learned signals. A padding mask identifies positions that do not contain meaningful input tokens. The precise embedding and positional strategy varies across implementations, but the encoder layer generally operates on a sequence of fixed-width hidden vectors."
+        },
+        {
+            "id": "encoder-03-bidirectional-attention",
+            "title": "3. Bidirectional Self-Attention",
+            "type": "concept",
+            "content": "In bidirectional self-attention, every valid token position can gather information from valid positions on either side of it. Consider the word 'bank' in 'She deposited money at the bank.' The representation of 'bank' can incorporate information from 'deposited' and 'money' as well as surrounding words. In a sentence about a river bank, the available context differs and can lead to a different contextual representation. This contextualization occurs through learned query, key, and value projections. Bidirectional attention does not mean every token must assign equal importance to every other token. The learned attention weights depend on the content representations and model parameters."
+        },
+        {
+            "id": "encoder-04-multi-head",
+            "title": "4. Multi-Head Attention Inside the Encoder",
+            "type": "concept",
+            "content": "Multi-head attention projects the input representation into multiple query, key, and value subspaces. Each head calculates attention independently. The head outputs are concatenated and passed through an output projection. For a model dimension of 512 with eight heads, a common design uses a head dimension of 64. Multiple heads allow the model to learn different patterns of information exchange. They do not guarantee that each head corresponds to one simple linguistic relationship. Some heads may become redundant, and useful patterns can be distributed across heads. The encoder's output shape remains (B, T, d_model), allowing it to be passed to the next encoder layer."
+        },
+        {
+            "id": "encoder-05-attention-equation",
+            "title": "5. Attention Equations",
+            "type": "math",
+            "content": "For input X, the learned projections are Q = XWQ, K = XWK, and V = XWV, with appropriate bias terms if the implementation uses them. Scaled dot-product attention is Attention(Q,K,V) = softmax(QK^T / sqrt(dk))V. A mask may be added to the scores before softmax to prevent attention to padding positions. In a multi-head layer, the computation is performed separately for each head, after which the head outputs are concatenated and projected. The output projection maps the concatenated representation back to d_model. In batch-first notation, the attention score tensor for one head has shape (B, T, T)."
+        },
+        {
+            "id": "encoder-06-feed-forward",
+            "title": "6. Position-Wise Feed-Forward Network",
+            "type": "concept",
+            "content": "After attention, the encoder layer applies a feed-forward network to each token position. A common form is FFN(x) = W2 activation(W1x + b1) + b2. The first projection expands the representation from d_model to d_ff, and the second projection returns it to d_model. The same weights are reused at every sequence position in that layer. This network is called position-wise because it does not directly mix information across token positions; attention is responsible for that exchange. In modern models, the feed-forward block may use gated activations or other variations. These modifications preserve the general idea of a nonlinear transformation applied to each position."
+        },
+        {
+            "id": "encoder-07-residual",
+            "title": "7. Residual Connections",
+            "type": "math",
+            "content": "A residual connection adds a sublayer's input to its output. In simplified notation, Y = X + Sublayer(X). The addition requires the input and output to have the same shape. Residual pathways allow a layer to refine an existing representation rather than needing to reconstruct all useful information from scratch. They also provide a direct path for gradients during training. In a standard encoder block, residual connections commonly surround the attention sublayer and the feed-forward sublayer. Dropout may be applied in the residual branch in some implementations. The exact placement of dropout and normalization depends on the model design."
+        },
+        {
+            "id": "encoder-08-layer-normalization",
+            "title": "8. Layer Normalization",
+            "type": "concept",
+            "content": "Layer normalization normalizes features within an individual example and token position, using the feature dimension rather than statistics across the batch. It computes a mean and variance over the normalized dimensions, scales the normalized values with learned parameters, and shifts them with learned parameters. This can improve optimization stability. Transformer implementations commonly use LayerNorm or related normalization methods. Pre-norm encoders normalize before attention and feed-forward operations, while post-norm encoders normalize after residual additions. These layouts are not identical, and their training behavior can differ, particularly for deep networks."
+        },
+        {
+            "id": "encoder-09-pre-norm-post-norm",
+            "title": "9. Pre-Norm Versus Post-Norm",
+            "type": "comparison",
+            "content": "A simplified post-norm block may calculate X1 = LayerNorm(X + Attention(X)) followed by Y = LayerNorm(X1 + FFN(X1)). A simplified pre-norm block may calculate X1 = X + Attention(LayerNorm(X)) followed by Y = X1 + FFN(LayerNorm(X1)). The equations are illustrative; actual implementations may include dropout, separate normalization modules, and different attention details. Pre-norm layouts are often easier to optimize in deep networks because the residual pathway can provide a relatively direct gradient route. Post-norm layouts can also work well, especially with appropriate initialization and training settings. When reproducing a specific model, match its original normalization layout rather than assuming all encoders are interchangeable."
+        },
+        {
+            "id": "encoder-10-padding-mask",
+            "title": "10. Padding Masks",
+            "type": "concept",
+            "content": "Batches often contain sequences of different lengths, so shorter sequences are padded to a shared length. Padding tokens are not meaningful linguistic content and should generally not contribute as attention keys or values. A padding mask identifies these positions so the attention mechanism can exclude them. Mask semantics vary between APIs: one implementation may use True to indicate a position to ignore, while another may use True to indicate a position that is allowed. Always check the exact function contract. The mask must broadcast correctly to the attention score dimensions. Incorrect masking can allow the model to learn from padding or can block valid tokens."
+        },
+        {
+            "id": "encoder-11-no-causal-mask",
+            "title": "11. Why the Encoder Usually Does Not Use a Causal Mask",
+            "type": "concept",
+            "content": "A standard bidirectional encoder is intended to build representations from the entire input. Therefore, a token can generally attend to valid tokens that occur both before and after it. A causal mask would prevent access to later tokens and change the model's information flow. Decoder-only autoregressive models use causal masking because future target tokens must not be visible during next-token prediction. Some encoder architectures or specialized tasks impose additional masks, so the rule is not universal. For a conventional BERT-style encoder, however, bidirectional self-attention with padding masking is the standard pattern."
+        },
+        {
+            "id": "encoder-12-pytorch-example",
+            "title": "12. Implementing an Encoder Layer with PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\n\nclass EncoderLayer(nn.Module):\n    def __init__(self, d_model=128, nhead=4, d_ff=512, dropout=0.1):\n        super().__init__()\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.attention = nn.MultiheadAttention(\n            embed_dim=d_model,\n            num_heads=nhead,\n            dropout=dropout,\n            batch_first=True,\n        )\n        self.ffn = nn.Sequential(\n            nn.Linear(d_model, d_ff),\n            nn.GELU(),\n            nn.Dropout(dropout),\n            nn.Linear(d_ff, d_model),\n        )\n        self.dropout = nn.Dropout(dropout)\n\n    def forward(self, x, padding_mask=None):\n        # Pre-normalization encoder block.\n        normalized = self.norm1(x)\n        attended, weights = self.attention(\n            normalized,\n            normalized,\n            normalized,\n            key_padding_mask=padding_mask,\n            need_weights=True,\n        )\n        x = x + self.dropout(attended)\n        x = x + self.dropout(self.ffn(self.norm2(x)))\n        return x, weights\n\n\nbatch_size, seq_len, d_model = 2, 10, 128\nx = torch.randn(batch_size, seq_len, d_model)\n\n# True means this position is padding for PyTorch key_padding_mask.\npadding_mask = torch.zeros(batch_size, seq_len, dtype=torch.bool)\npadding_mask[0, 8:] = True\n\nlayer = EncoderLayer(d_model=d_model, nhead=4)\noutput, attention_weights = layer(x, padding_mask)\nprint(output.shape)\nprint(attention_weights.shape)",
+            "explanation": "This example uses batch-first tensors. The attention module receives the same normalized representation as query, key, and value, which makes it self-attention. The key-padding mask blocks padded positions from serving as keys. The pre-normalization structure normalizes the input before attention and normalizes the updated representation before the feed-forward network. For production training, also ensure that padded query positions are handled appropriately by the surrounding model and loss function."
+        },
+        {
+            "id": "encoder-13-stacking-layers",
+            "title": "13. Stacking Encoder Layers",
+            "type": "concept",
+            "content": "A Transformer encoder is usually a stack of repeated encoder layers. Each layer receives a tensor with shape (B, T, d_model) and returns a tensor with the same shape. Although the shapes remain unchanged, the representations evolve as each layer exchanges information and applies nonlinear transformations. Earlier layers may capture local patterns, while later layers can build more abstract features, but this division is not guaranteed. The layers generally have separate learned parameters. A final normalization layer may be included depending on the architecture. The output sequence can then feed a classification head, token-level prediction head, retrieval component, or decoder."
+        },
+        {
+            "id": "encoder-14-pooling-and-task-heads",
+            "title": "14. From Encoder Outputs to Predictions",
+            "type": "concept",
+            "content": "An encoder produces one vector per input position, but downstream tasks may require a single vector or token-level predictions. Sequence classification can use a designated classification token, masked mean pooling, or another pooling strategy. Token classification commonly applies a linear prediction head to each token representation. Semantic retrieval may use a pooling strategy followed by a projection and a similarity calculation. The appropriate head depends on the task and training objective. Padding must be considered during pooling so padded positions do not contaminate a sequence representation. The encoder architecture and the task-specific output head should be treated as separate but connected components."
+        },
+        {
+            "id": "encoder-15-common-mistakes",
+            "title": "15. Common Encoder Errors",
+            "type": "concept",
+            "content": "Typical mistakes include choosing a model dimension that is not divisible by the number of equally sized attention heads, passing tensors in the wrong sequence layout, and using a padding mask with reversed semantics. Other errors include applying a causal mask unintentionally, forgetting the residual addition, normalizing the wrong dimension, or failing to exclude padding from a pooled representation. When attention weights appear incorrect, verify the input shapes, mask shapes, and softmax axis. When training is unstable, check the normalization layout, learning rate, gradient behavior, initialization, and data pipeline. Small synthetic tests are often more effective than debugging a complete model at once."
+        },
+        {
+            "id": "encoder-16-applications",
+            "title": "16. Encoder Applications",
+            "type": "concept",
+            "content": "Transformer encoders are used for document classification, sentiment analysis, named-entity recognition, sentence embeddings, semantic search, token labeling, and many multimodal representation tasks. They are especially useful when each input can be processed with access to its complete context. Bidirectional context helps resolve ambiguity and build rich token representations. The encoder may be pretrained on large datasets and fine-tuned for a downstream task, or trained jointly with another component. Performance depends on model capacity, training data, objective, sequence length, and evaluation methodology rather than architecture alone."
+        },
+        {
+            "id": "encoder-17-summary",
+            "title": "17. Summary",
+            "type": "summary",
+            "content": "The Transformer encoder transforms input tokens into contextual representations through bidirectional self-attention and position-wise feed-forward networks. Residual connections and normalization support stable deep computation. Padding masks prevent invalid tokens from influencing valid representations. Standard encoder layers preserve the model dimension and sequence length, which makes stacking layers straightforward. Understanding the encoder's tensor shapes, mask semantics, normalization layout, and task-specific output heads is essential for building reliable systems."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "encoder-ex-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the primary purpose of a Transformer encoder?",
+            "correctAnswer": "To produce contextual representations of an input sequence.",
+            "solution": "Self-attention allows each valid position to gather information from other positions, and feed-forward layers transform those representations."
+        },
+        {
+            "id": "encoder-ex-02",
+            "type": "comparison",
+            "difficulty": "intermediate",
+            "question": "Why does a conventional bidirectional encoder not normally need a causal mask?",
+            "correctAnswer": "Because the encoder is intended to use context from both earlier and later valid input tokens.",
+            "solution": "A causal mask would block later positions and change the encoder from bidirectional attention to a restricted attention pattern."
+        },
+        {
+            "id": "encoder-ex-03",
+            "type": "shape-analysis",
+            "difficulty": "intermediate",
+            "question": "For an encoder input with shape (8, 64, 256), what is the output shape after a standard encoder layer?",
+            "correctAnswer": "(8, 64, 256).",
+            "solution": "A standard encoder layer preserves batch size, sequence length, and model dimension."
+        },
+        {
+            "id": "encoder-ex-04",
+            "type": "masking",
+            "difficulty": "intermediate",
+            "question": "What is the purpose of a key-padding mask?",
+            "correctAnswer": "To prevent padded positions from contributing as attention keys.",
+            "solution": "Padding is introduced for batching, but padded tokens do not contain meaningful sequence content and should not affect valid-token attention."
+        },
+        {
+            "id": "encoder-ex-05",
+            "type": "implementation",
+            "difficulty": "advanced",
+            "question": "A model has d_model = 384 and 6 equally sized attention heads. What is the dimension of each head?",
+            "correctAnswer": "64.",
+            "solution": "Divide the model dimension by the number of heads: 384 / 6 = 64."
+        },
+        {
+            "id": "encoder-ex-06",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "A batch-first attention module receives a tensor shaped (sequence_length, batch_size, features). What should you check?",
+            "correctAnswer": "Whether the module is configured for batch_first=True or whether the input must be transposed.",
+            "solution": "Tensor layout must match the API configuration. A layout mismatch may produce errors or cause the model to interpret the wrong axis as the batch dimension."
+        }
+    ],
+    "summary": "A Transformer encoder builds bidirectional contextual representations with multi-head self-attention and feed-forward networks. Residual connections and normalization support training, while padding masks control access to invalid positions. The encoder's output can support sequence classification, token prediction, retrieval, or downstream decoder components.",
+    "relatedTopics": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-decoder",
+        "module-07-transformers-residual-connections-layer-norm",
+        "module-07-transformers-feed-forward-networks",
+        "module-07-transformers-encoder-only-models"
+    ]
+}

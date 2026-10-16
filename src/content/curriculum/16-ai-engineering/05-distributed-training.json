@@ -1,1 +1,147 @@
-{}
+{
+    "id": "module-16-ai-engineering-distributed-training",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 5,
+    "title": "Distributed Training Engineering",
+    "slug": "distributed-training",
+    "href": "/curriculum/16-ai-engineering/distributed-training",
+    "filePath": "content/curriculum/16-ai-engineering/05-distributed-training.json",
+    "description": "Learn how to scale model training across multiple GPUs and machines using data parallelism, DistributedDataParallel, collective communication, and reliable distributed training practices.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "mixed-precision"
+    ],
+    "learningObjectives": [
+        "Explain the main reasons for distributing model training.",
+        "Distinguish data, tensor, pipeline, and fully sharded parallelism.",
+        "Understand ranks, world size, process groups, and collective communication.",
+        "Implement a basic PyTorch DistributedDataParallel training program.",
+        "Partition data correctly across distributed workers.",
+        "Diagnose synchronization bottlenecks and common distributed failures.",
+        "Calculate speedup, scaling efficiency, and communication overhead."
+    ],
+    "sections": [
+        {
+            "id": "why-distributed-training",
+            "title": "1. Why Distributed Training?",
+            "type": "concept",
+            "content": "A model may require more memory or computation than a single accelerator can efficiently provide. Distributed training coordinates multiple processes, GPUs, or machines to complete the workload. Data parallelism gives each worker a replica of the model and different batches of training examples. Workers compute local gradients and synchronize them so that model parameters remain consistent. Distribution can increase throughput, reduce wall-clock training time, or make larger workloads practical. It also introduces communication costs, synchronization barriers, fault handling, and more complex debugging. Adding GPUs does not automatically produce linear speedup.",
+            "example": "If a single GPU processes 500 examples per second and four GPUs achieve 1,600 examples per second, the observed speedup is 3.2× rather than the ideal 4×."
+        },
+        {
+            "id": "parallelism-strategies",
+            "title": "2. Common Parallelism Strategies",
+            "type": "concept",
+            "content": "Data parallelism replicates the model and partitions batches across workers. Tensor parallelism splits individual tensor operations, such as large matrix multiplications, across devices. Pipeline parallelism divides model layers into stages assigned to different devices; microbatches help keep stages busy. Fully sharded approaches distribute parameter, gradient, and optimizer-state storage to reduce per-device memory requirements. These strategies can be combined. Data parallelism is often the simplest starting point when the model fits on one GPU, while sharding or model parallelism becomes useful when memory capacity or communication patterns make replication inefficient.",
+            "example": "A model that fits on each GPU but needs more training throughput may use data parallelism. A model whose parameters and optimizer states do not fit on one GPU may require sharding or model parallelism."
+        },
+        {
+            "id": "distributed-terminology",
+            "title": "3. Ranks, World Size, and Process Groups",
+            "type": "concept",
+            "content": "A distributed job typically launches one process per GPU. Each process has a rank, a unique integer identifier within the job, and the world size is the total number of processes participating in the process group. Local rank commonly identifies a process's GPU on its current machine. A process group defines which processes communicate together. All participating processes must follow compatible collective-operation sequences; if one worker skips a required collective, the job may hang or time out. Environment variables such as RANK, WORLD_SIZE, LOCAL_RANK, MASTER_ADDR, and MASTER_PORT are commonly provided by a launcher.",
+            "formula": "World size W = number of participating processes; global batch size = per-process batch size × W, when every process uses the same batch size.",
+            "example": "With 8 processes and a per-process batch size of 32, the effective global batch size is 256 before accounting for gradient accumulation."
+        },
+        {
+            "id": "collective-communication",
+            "title": "4. Collective Communication",
+            "type": "concept",
+            "content": "Collective operations coordinate data movement among participating processes. All-reduce combines values from every worker and distributes the result to all workers; gradient averaging is a common example. All-gather collects tensors from workers and makes the gathered result available to participants. Reduce-scatter reduces data and distributes different pieces of the result. Broadcast sends data from one designated source to all participants. Communication libraries and network topology influence performance. Large messages, synchronization frequency, and slow workers can make communication dominate computation.",
+            "example": "During ordinary data-parallel training, each worker computes gradients from its local batch. DistributedDataParallel coordinates gradient synchronization so each replica can apply consistent updates."
+        },
+        {
+            "id": "ddp-training",
+            "title": "5. Training with DistributedDataParallel",
+            "type": "code",
+            "language": "python",
+            "content": "This compact example demonstrates the core structure of a single-node multi-GPU training job. Launch it with torchrun and an appropriate number of processes. Each process initializes a process group, selects its GPU, wraps the model in DistributedDataParallel, partitions the dataset using DistributedSampler, and synchronizes gradients during training.",
+            "code": "import os\nimport torch\nimport torch.nn as nn\nimport torch.distributed as dist\nfrom torch.nn.parallel import DistributedDataParallel as DDP\nfrom torch.utils.data import DataLoader, TensorDataset, DistributedSampler\n\ndef main():\n    dist.init_process_group(backend=\"nccl\")\n    local_rank = int(os.environ[\"LOCAL_RANK\"])\n    torch.cuda.set_device(local_rank)\n    device = torch.device(\"cuda\", local_rank)\n\n    x = torch.randn(4096, 32)\n    y = torch.randint(0, 4, (4096,))\n    dataset = TensorDataset(x, y)\n    sampler = DistributedSampler(dataset, shuffle=True)\n    loader = DataLoader(dataset, batch_size=64, sampler=sampler, pin_memory=True)\n\n    model = nn.Sequential(nn.Linear(32, 128), nn.ReLU(), nn.Linear(128, 4)).to(device)\n    model = DDP(model, device_ids=[local_rank])\n    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\n    criterion = nn.CrossEntropyLoss()\n\n    try:\n        for epoch in range(3):\n            sampler.set_epoch(epoch)\n            model.train()\n            for inputs, targets in loader:\n                inputs = inputs.to(device, non_blocking=True)\n                targets = targets.to(device, non_blocking=True)\n                optimizer.zero_grad(set_to_none=True)\n                loss = criterion(model(inputs), targets)\n                loss.backward()\n                optimizer.step()\n            if dist.get_rank() == 0:\n                print(f\"Completed epoch {epoch + 1}\")\n    finally:\n        dist.destroy_process_group()\n\nif __name__ == \"__main__\":\n    main()",
+            "explanation": "Run this example on a machine with multiple CUDA GPUs using a command such as `torchrun --standalone --nproc_per_node=2 train.py`. The example creates synthetic data independently in each process, so it is intended to teach the distributed structure rather than guarantee a globally identical dataset. In production, load a shared or deterministically partitioned dataset, seed random generators appropriately, save checkpoints from a designated rank, and handle failures and cleanup carefully. The NCCL backend requires suitable CUDA and NCCL support."
+        },
+        {
+            "id": "distributed-sampler",
+            "title": "6. Correct Data Partitioning",
+            "type": "concept",
+            "content": "DistributedSampler assigns different portions of a dataset to workers so they do not all train on the same examples in the same order. Calling sampler.set_epoch(epoch) changes the shuffle order across epochs in a coordinated way. If each worker independently shuffles the entire dataset without partitioning, the effective data diversity and batch accounting can be incorrect. When a dataset size is not divisible by world size, the sampler may pad with repeated indices or drop samples depending on its configuration. Validation and prediction require careful handling so metrics do not count padded examples more than once.",
+            "example": "If a dataset has 1,003 samples and four workers, the partitioning strategy must decide how to handle the remainder. Choose padding or dropping behavior based on whether complete coverage or equal worker lengths is more important."
+        },
+        {
+            "id": "scaling-efficiency",
+            "title": "7. Speedup and Scaling Efficiency",
+            "type": "math",
+            "content": "Speedup compares the time required by a baseline configuration with the time required by a distributed configuration. Scaling efficiency compares observed speedup with ideal linear scaling. Efficiency commonly declines because communication, synchronization, input loading, and uneven workloads consume a larger fraction of total execution time as workers are added. Comparisons should use the same training objective and account for global batch size: increasing the batch size can change optimization behavior, so a faster step is not necessarily an equivalent training run.",
+            "formula": "Speedup S(N) = T(1) / T(N); scaling efficiency E(N) = S(N) / N.",
+            "example": "If one GPU takes 120 seconds and four GPUs take 36 seconds, speedup = 120 / 36 ≈ 3.33× and efficiency = 3.33 / 4 ≈ 83.3%."
+        },
+        {
+            "id": "communication-optimization",
+            "title": "8. Improving Distributed Performance",
+            "type": "concept",
+            "content": "Start by measuring the workload before changing communication settings. Use the profiler to determine whether the bottleneck is model computation, gradient synchronization, data loading, or host-to-device transfer. Increase useful work per synchronization when memory and optimization constraints permit, overlap communication with computation where supported, and avoid unnecessary synchronization in the training loop. Ensure each GPU receives data efficiently and that the interconnect can sustain the required traffic. Smaller models can scale poorly because communication costs dominate their relatively short compute steps.",
+            "example": "If GPU utilization is low and traces show frequent waits for data, optimize the input pipeline before adding more GPUs. If backward passes are dominated by all-reduce operations, investigate model size, network bandwidth, and synchronization overlap."
+        },
+        {
+            "id": "distributed-checkpointing",
+            "title": "9. Checkpointing and Failure Recovery",
+            "type": "concept",
+            "content": "A robust distributed training job should save enough state to resume consistently. Depending on the training setup, this can include model parameters, optimizer state, scheduler state, mixed-precision scaler state, epoch or step counters, and random-number-generator state. Ordinary replicated DDP jobs can often save a checkpoint from rank zero, provided the state being saved is available there. Sharded training may require distributed checkpointing APIs because no single rank owns the complete state in the same representation. Checkpoints should be written atomically where possible and periodically tested by loading them in a fresh process.",
+            "code": "if dist.get_rank() == 0:\n    torch.save({\n        \"model\": model.module.state_dict(),\n        \"optimizer\": optimizer.state_dict(),\n        \"epoch\": epoch\n    }, \"checkpoint.pt\")",
+            "explanation": "This snippet illustrates a basic rank-zero checkpoint for replicated DDP. It omits scheduler state, random states, and atomic file replacement for brevity. Do not use this exact pattern unchanged for every sharded model; choose a checkpointing strategy compatible with the parallelism method and deployment environment."
+        },
+        {
+            "id": "distributed-debugging",
+            "title": "10. Debugging Distributed Jobs",
+            "type": "concept",
+            "content": "Common failures include mismatched collective calls, incorrect rank-to-device mapping, unavailable network interfaces, out-of-memory errors on one worker, and slow input pipelines. When one process fails, other processes may remain blocked while waiting for communication. Keep per-rank logs, enable distributed diagnostics when necessary, use finite timeouts, and reproduce the problem with fewer GPUs before scaling up. Avoid debugging only from rank-zero output because the underlying error may originate on another rank. Record software versions, GPU types, launch arguments, and environment settings.",
+            "example": "If a job hangs during backward propagation, check whether every worker reached the same training iteration and whether any rank raised an exception earlier."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "distributed-training-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between rank and world size?",
+            "correctAnswer": "Rank identifies a process within a distributed job; world size is the total number of participating processes.",
+            "solution": "For an eight-process job, ranks are commonly numbered from 0 to 7, and the world size is 8."
+        },
+        {
+            "id": "distributed-training-ex-2",
+            "type": "practical",
+            "difficulty": "intermediate",
+            "question": "Four GPUs each process 48 examples per step. What is the global batch size if there is no gradient accumulation?",
+            "correctAnswer": "192 examples.",
+            "solution": "Global batch size = per-GPU batch size × number of workers = 48 × 4 = 192."
+        },
+        {
+            "id": "distributed-training-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A single GPU takes 200 seconds and eight GPUs take 32 seconds. Calculate speedup and scaling efficiency.",
+            "correctAnswer": "Speedup = 6.25×; scaling efficiency = 78.125%.",
+            "solution": "Speedup = 200 / 32 = 6.25. Efficiency = 6.25 / 8 = 0.78125, or 78.125%."
+        },
+        {
+            "id": "distributed-training-ex-4",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A DDP job hangs during gradient synchronization. Name three areas to investigate.",
+            "correctAnswer": "Collective-call consistency, worker failures or exceptions, and process-group/network configuration.",
+            "solution": "Inspect logs from every rank, confirm workers execute compatible collective sequences, verify device and process-group configuration, and check for an earlier exception or out-of-memory event on one process."
+        }
+    ],
+    "summary": "Distributed training scales workloads across multiple processes and accelerators, but speedup depends on communication, data loading, synchronization, and batch-size choices. Data parallelism with DistributedDataParallel is a practical starting point when the model fits on each GPU. Reliable implementations require correct data partitioning, rank-aware checkpointing, observability, and systematic performance measurements.",
+    "relatedTopics": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "mixed-precision",
+        "data-pipelines",
+        "experiment-tracking",
+        "quantization-optimization"
+    ]
+}

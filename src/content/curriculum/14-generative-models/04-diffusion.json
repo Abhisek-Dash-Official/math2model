@@ -1,1 +1,276 @@
-{}
+{
+    "id": "module-14-generative-models-diffusion",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 4,
+    "title": "Diffusion Process and DDPM",
+    "slug": "diffusion",
+    "href": "/curriculum/14-generative-models/diffusion",
+    "filePath": "content/curriculum/14-generative-models/04-diffusion.json",
+    "description": "Understand diffusion probabilistic models, forward noise corruption, reverse denoising, DDPM training objectives, sampling algorithms, and the mathematical foundations behind modern generative systems.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-14-generative-models-autoencoders",
+        "module-14-generative-models-variational-autoencoders",
+        "module-03-neural-networks",
+        "module-06-attention"
+    ],
+    "learningObjectives": [
+        "Explain the forward and reverse processes used in diffusion models.",
+        "Derive the closed-form distribution for a noisy sample at an arbitrary timestep.",
+        "Understand the role of beta schedules, alpha values, and cumulative signal retention.",
+        "Derive the simplified noise-prediction training objective used by DDPMs.",
+        "Implement a basic diffusion training loop using PyTorch.",
+        "Explain how a trained denoising network generates samples from random noise.",
+        "Compare ancestral sampling with faster approximate sampling methods.",
+        "Identify common training, sampling, and evaluation failure modes."
+    ],
+    "sections": [
+        {
+            "id": "diffusion-generative-modeling",
+            "title": "1. Generative Modeling Through Diffusion",
+            "type": "concept",
+            "content": "A generative model learns a process capable of producing new samples that resemble a training distribution. A diffusion model constructs this capability by learning to reverse a gradual corruption process. During training, clean examples are progressively mixed with Gaussian noise. A neural network learns to estimate information about that noise at different corruption levels. During generation, the model starts from random noise and repeatedly applies learned denoising updates until a structured sample emerges. The approach is powerful because its training objective can be expressed using supervised targets derived directly from the data and sampled noise. Unlike a GAN, a basic diffusion model does not need an adversarial discriminator. Unlike a conventional deterministic autoencoder, it explicitly defines a stochastic path from a simple prior distribution toward the data distribution. The resulting generation procedure may require many network evaluations, which creates a tradeoff between sample quality, computational cost, and inference latency."
+        },
+        {
+            "id": "diffusion-intuition",
+            "title": "2. Intuition: Destroy Structure, Then Learn to Recover It",
+            "type": "concept",
+            "content": "Imagine taking a photograph and adding a small amount of random noise. Most objects remain recognizable. Add more noise, and fine details become harder to identify. Continue until the image is almost indistinguishable from Gaussian noise. This is the forward process. A diffusion model learns the reverse direction: from heavily corrupted observations toward progressively cleaner samples. The reverse process is not simply a deterministic image filter. It is a learned probabilistic process that must infer plausible structure from uncertain observations. At high noise levels, many clean images could explain the same noisy observation, so the model relies on learned distributional regularities. At lower noise levels, the noisy sample retains more information about the specific example being reconstructed. The same principle applies to audio, video, molecular structures, and other data representations, provided a suitable corruption process and denoising architecture are defined."
+        },
+        {
+            "id": "ddpm-forward-process",
+            "title": "3. The Forward Diffusion Process",
+            "type": "math",
+            "content": "In a denoising diffusion probabilistic model, the forward process is a Markov chain that adds Gaussian noise over T timesteps. Let x₀ represent a clean data sample. At timestep t, the next sample is drawn from a Gaussian centered on a scaled version of xₜ₋₁. A schedule of small positive beta values controls the amount of newly introduced noise. Define alphaₜ = 1 − betaₜ. The forward transition is q(xₜ | xₜ₋₁) = N(xₜ; sqrt(alphaₜ) xₜ₋₁, betaₜ I). The mean scaling gradually reduces the contribution of the original signal, while the variance introduces random perturbations. The forward process is fixed rather than learned, so generating noisy training examples does not require an additional neural network. The schedule determines how rapidly information is lost and strongly influences the distribution of noise levels encountered during training.",
+            "formula": "q(x_t | x_{t-1}) = N(x_t; sqrt(alpha_t) x_{t-1}, beta_t I), alpha_t = 1 - beta_t",
+            "example": "If beta_t = 0.02, then alpha_t = 0.98. The previous sample is multiplied by sqrt(0.98), approximately 0.99, and independent Gaussian noise with variance 0.02 is added."
+        },
+        {
+            "id": "cumulative-alpha",
+            "title": "4. Cumulative Signal Retention",
+            "type": "math",
+            "content": "Repeatedly applying the forward transition appears to require sampling every intermediate state. However, Gaussian composition gives a convenient closed-form expression. Define alpha-barₜ = product of alpha_s for s from 1 through t. Then xₜ can be sampled directly from the clean sample: q(xₜ | x₀) = N(xₜ; sqrt(alpha-barₜ) x₀, (1 − alpha-barₜ) I). Equivalently, xₜ = sqrt(alpha-barₜ) x₀ + sqrt(1 − alpha-barₜ) epsilon, where epsilon is standard Gaussian noise. This equation is central to DDPM training. It allows the training loop to choose a random timestep and construct the corresponding noisy example in a single operation. The cumulative product alpha-barₜ measures retained signal power. Early timesteps usually retain substantial information; later timesteps approach a nearly noise-dominated distribution. The exact behavior depends on the chosen schedule.",
+            "formula": "x_t = sqrt(alpha_bar_t) x_0 + sqrt(1 - alpha_bar_t) epsilon, epsilon ~ N(0, I)",
+            "example": "Suppose alpha-bar_t = 0.64. The signal coefficient is 0.8, and the noise coefficient is 0.6. Therefore x_t = 0.8x_0 + 0.6epsilon. These coefficients describe the standard deviation contributions, not the fractions of total variance."
+        },
+        {
+            "id": "diffusion-noise-levels",
+            "title": "5. Interpreting Noise Levels",
+            "type": "concept",
+            "content": "A diffusion timestep is a convenient index for a noise level. It does not necessarily correspond to physical time or an equal increment of perceptual degradation. The pair of coefficients sqrt(alpha-barₜ) and sqrt(1 − alpha-barₜ) determines the relative signal and noise scales. At early timesteps, the model may recover edges and textures from a mostly intact image. At intermediate timesteps, it must infer missing structures and semantic details. At late timesteps, the input may contain little direct information about the original example. Training across many timesteps encourages the denoiser to work at multiple corruption levels. A common mistake is to assume that every timestep is equally difficult or equally important. The distribution of sampled timesteps, the schedule, the loss weighting, and the data representation all affect the optimization problem. In latent diffusion systems, the same equations apply to latent tensors, but the interpretation of their noise levels depends on the latent encoder and scaling conventions."
+        },
+        {
+            "id": "reverse-process",
+            "title": "6. The Reverse Diffusion Process",
+            "type": "concept",
+            "content": "The reverse process starts from x_T sampled approximately from a standard normal distribution and iteratively produces x_{T−1}, x_{T−2}, and eventually x₀. In a DDPM, a neural network predicts the mean or an equivalent quantity for the reverse transition. The learned reverse distribution is often written p_theta(x_{t−1} | x_t) = N(x_{t−1}; mu_theta(x_t,t), Sigma_theta(x_t,t)). The mean depends on the current noisy sample, the timestep, and learned network parameters. The variance may be fixed according to a schedule or learned. During sampling, random noise is generally included in reverse transitions for t greater than one, while the final step commonly omits the extra stochastic term. The network does not memorize a fixed sequence of images. Instead, it learns a function that can be evaluated for different noisy inputs and noise levels. Sampling begins from a new random seed, allowing different trajectories and outputs."
+        },
+        {
+            "id": "reverse-mean-noise-prediction",
+            "title": "7. Predicting Noise to Estimate the Reverse Mean",
+            "type": "math",
+            "content": "The original DDPM formulation derives a reverse-process objective from a variational lower bound. A widely used parameterization predicts the Gaussian noise epsilon that was added to x₀. If epsilon_theta(xₜ,t) approximates epsilon, then the reverse mean can be written using the current noisy sample and the predicted noise. One common expression is mu_theta(xₜ,t) = 1/sqrt(alphaₜ) times [xₜ − betaₜ/sqrt(1 − alpha-barₜ) epsilon_theta(xₜ,t)]. This parameterization makes the target easy to construct during training because the actual sampled noise is known. It also works well with neural architectures that process spatial tensors. Predicting noise is not the only possible parameterization: models may predict the clean sample x₀, the velocity target v, or another equivalent representation. These targets have different numerical and optimization properties, particularly across noise levels.",
+            "formula": "mu_theta(x_t,t) = 1/sqrt(alpha_t) [x_t - beta_t/sqrt(1 - alpha_bar_t) epsilon_theta(x_t,t)]",
+            "example": "The network receives x_t and t and predicts a tensor with the same shape as x_t. The predicted tensor estimates the noise component, not a class label or a fully denoised image."
+        },
+        {
+            "id": "ddpm-training-objective",
+            "title": "8. The Simplified DDPM Objective",
+            "type": "math",
+            "content": "A commonly used training objective samples a clean example x₀, samples a timestep t, samples Gaussian noise epsilon, constructs xₜ using the closed-form forward equation, and minimizes the squared error between the sampled noise and the network prediction. The objective is L_simple = E_{x₀,t,epsilon}[||epsilon − epsilon_theta(xₜ,t)||²]. This objective is often described as noise-prediction loss. It is convenient because it is a direct regression problem with a known target. The expectation is approximated using minibatches and random timestep samples. The simplified objective is related to the variational training objective but is not identical to every term in the original variational bound. Some implementations use timestep-dependent weighting or alternate prediction targets. Loss weighting matters because a model can achieve low average error while still performing poorly at particular noise levels. Monitoring per-timestep error can reveal weaknesses hidden by the overall mean.",
+            "formula": "L_simple = E_{x_0,t,epsilon}[||epsilon - epsilon_theta(sqrt(alpha_bar_t)x_0 + sqrt(1-alpha_bar_t)epsilon, t)||^2]",
+            "example": "If the true noise tensor is [0.2, -0.4] and the predicted noise is [0.1, -0.1], the mean squared error is ((0.1)^2 + (-0.3)^2) / 2 = 0.05."
+        },
+        {
+            "id": "time-conditioning",
+            "title": "9. Conditioning the Network on Time",
+            "type": "concept",
+            "content": "A denoiser must know how much corruption is present. The same image tensor can require different predictions at different timesteps, so timestep information is supplied explicitly. A common technique maps the integer timestep into a sinusoidal embedding similar to positional encodings used in Transformers. A small multilayer network transforms the embedding, and its representation is injected into residual blocks. Other systems use learned embeddings, continuous noise-level embeddings, or log signal-to-noise ratio conditioning. The embedding must be broadcast or transformed to match the feature dimensions of the denoiser. If time conditioning is missing or implemented incorrectly, the network may learn an average response that works poorly across the noise schedule. A useful diagnostic is to compare predictions for the same noisy input under different timestep values and verify that the outputs change meaningfully."
+        },
+        {
+            "id": "unet-denoiser",
+            "title": "10. U-Net Architecture for Diffusion",
+            "type": "concept",
+            "content": "U-Net is a common architecture for image diffusion because it combines local feature extraction with multi-scale context. The encoder path progressively downsamples feature maps, increasing the receptive field and capturing broad structures. The decoder path upsamples features to recover spatial resolution. Skip connections transfer high-resolution information from encoder stages to corresponding decoder stages. Residual blocks make deep optimization easier, while normalization and timestep embeddings condition feature transformations. Self-attention or cross-attention may be included at selected resolutions when global relationships or text conditioning are important. The input and predicted noise tensors generally share the same spatial dimensions. Architectural choices depend on image resolution, available memory, dataset size, and latency constraints. A U-Net is not a defining requirement of diffusion models: other architectures, including Transformers, can serve as denoisers."
+        },
+        {
+            "id": "sampling-algorithms",
+            "title": "11. Ancestral Sampling",
+            "type": "concept",
+            "content": "Ancestral DDPM sampling follows the learned reverse Markov chain from the final timestep down to zero. At each step, the model predicts the noise or reverse mean, then draws the next sample from the corresponding Gaussian distribution. A standard implementation adds a variance-scaled random tensor except at the final denoising step. The procedure is conceptually direct and consistent with the model's stochastic reverse transitions. Its main disadvantage is computational cost: a model trained with hundreds or thousands of timesteps may require a similar number of forward passes to generate one sample. Sampling latency can be reduced by using fewer timesteps, improved numerical solvers, distillation, or alternative parameterizations. Fewer steps do not automatically preserve quality; the reverse trajectory must be approximated accurately enough for the desired data distribution."
+        },
+        {
+            "id": "ddim-overview",
+            "title": "12. DDIM and Deterministic Trajectories",
+            "type": "concept",
+            "content": "Denoising Diffusion Implicit Models, or DDIM, provide a family of sampling procedures compatible with models trained using DDPM-style objectives. DDIM can use a non-Markovian sampling trajectory and can be configured for deterministic sampling when its stochasticity parameter is zero. This often enables generation with substantially fewer network evaluations. With a fixed initial latent noise and deterministic settings, the trajectory can be reproducible. The resulting path differs from ancestral DDPM sampling, even though both use the same trained denoiser. Deterministic sampling is useful for controlled editing, interpolation experiments, and reproducible comparisons. It does not mean that the overall generative model is deterministic, because the initial noise remains random unless it is fixed. Fewer steps can improve speed but may introduce artifacts or reduce fidelity if the discretization is too coarse."
+        },
+        {
+            "id": "classifier-guidance",
+            "title": "13. Classifier Guidance",
+            "type": "concept",
+            "content": "Conditional generation asks the model to produce samples associated with a condition such as a class label. Classifier guidance uses the gradient of a classifier's log probability with respect to the noisy sample to steer the reverse diffusion trajectory toward a desired class. The gradient changes the reverse mean or score estimate. Stronger guidance can increase condition adherence, but it may reduce diversity or create oversaturated and unnatural outputs. The classifier must be trained to operate at the relevant noise levels, so guidance introduces additional training and inference requirements. The method is historically important for understanding guided diffusion, although many modern text-to-image systems use classifier-free guidance instead. Guidance strength should be treated as a tradeoff parameter rather than a universal quality setting."
+        },
+        {
+            "id": "classifier-free-guidance",
+            "title": "14. Classifier-Free Guidance",
+            "type": "math",
+            "content": "Classifier-free guidance combines conditional and unconditional predictions from a denoising network. During training, the condition is randomly dropped for some examples so the same network learns both behaviors. At inference, the model evaluates the noisy input with and without the condition. A common formula is epsilon_guided = epsilon_uncond + w(epsilon_cond − epsilon_uncond), where w controls guidance strength. When w is zero, the result is the unconditional prediction; when w is one, it equals the conditional prediction. Larger values move farther in the conditional direction and can improve prompt adherence, but excessive guidance may reduce diversity or damage image quality. Implementations differ in the exact convention for the guidance parameter, so the formula and default value must be checked rather than assuming all libraries use the same scale.",
+            "formula": "epsilon_guided = epsilon_uncond + w(epsilon_cond - epsilon_uncond)",
+            "example": "If epsilon_uncond = 0.2, epsilon_cond = 0.6, and w = 2, then epsilon_guided = 0.2 + 2(0.4) = 1.0."
+        },
+        {
+            "id": "latent-diffusion",
+            "title": "15. Latent Diffusion",
+            "type": "concept",
+            "content": "Pixel-space diffusion operates directly on image pixels, which can be computationally expensive at high resolutions. Latent diffusion first uses an encoder to map images into a lower-dimensional representation, performs diffusion in that latent space, and uses a decoder to reconstruct the final image. Reducing spatial dimensions can substantially lower memory and computation requirements. The autoencoder must preserve information needed for the intended task; overly aggressive compression can discard fine details or distort small objects. Latent normalization and scaling are important because the diffusion schedule assumes a particular distribution of latent magnitudes. Text-to-image systems often combine latent diffusion with text encoders and cross-attention. Latent diffusion changes the representation on which the diffusion process operates, but the core forward corruption and reverse denoising principles remain the same."
+        },
+        {
+            "id": "diffusion-evaluation",
+            "title": "16. Evaluating Diffusion Models",
+            "type": "concept",
+            "content": "No single metric fully characterizes a generative model. Fréchet Inception Distance compares feature distributions of generated and reference samples, but depends on the feature extractor and evaluation dataset. Precision and recall for generative models attempt to separate fidelity from coverage. Human evaluation can reveal artifacts or semantic failures that automatic metrics miss, although it requires careful experimental design. For conditional models, condition adherence and diversity should both be evaluated. Operational evaluation should measure latency, memory, throughput, and quality at different sampling-step counts. A model can generate visually plausible samples while memorizing training examples or underrepresenting rare subgroups. Evaluation should therefore include nearest-neighbor checks, data-split hygiene, subgroup analysis, and tests for prompt or condition robustness. Comparisons are meaningful only when preprocessing, resolution, sample counts, and metric implementations are controlled."
+        },
+        {
+            "id": "diffusion-failure-modes",
+            "title": "17. Common Failure Modes",
+            "type": "concept",
+            "content": "Diffusion models can fail because of poor data scaling, incorrect timestep indexing, numerical instability, inadequate network capacity, or a mismatch between training and inference conventions. If images are normalized to [-1, 1] during training but supplied in [0, 1] during evaluation, denoising may fail. If alpha-bar values are indexed incorrectly, the constructed noisy samples and reverse updates become inconsistent. Broadcasting errors can apply a different noise coefficient to the wrong tensor dimensions. Excessive learning rates may cause unstable loss curves, while very limited model capacity can underfit complex data. Sampling with a different prediction parameterization than the one used in training can produce severe artifacts. Debugging should start with shape checks, finite-value checks, known-timestep tests, and a tiny dataset on which the model can intentionally overfit."
+        },
+        {
+            "id": "ddpm-implementation",
+            "title": "18. Implementing the Forward Process in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "Implement the fixed forward process and directly sample noisy examples at arbitrary timesteps.",
+            "explanation": "The schedule stores beta, alpha, and cumulative alpha values. Timestep indices select the correct coefficients for each batch element. The helper reshapes the selected coefficients so they broadcast over image channels and spatial dimensions.",
+            "code": "import torch\n\nclass DiffusionSchedule:\n    def __init__(self, timesteps=1000, beta_start=1e-4, beta_end=0.02, device='cpu'):\n        self.timesteps = timesteps\n        self.beta = torch.linspace(beta_start, beta_end, timesteps, device=device)\n        self.alpha = 1.0 - self.beta\n        self.alpha_bar = torch.cumprod(self.alpha, dim=0)\n\n    def add_noise(self, x0, t, noise=None):\n        if noise is None:\n            noise = torch.randn_like(x0)\n        a = self.alpha_bar[t].view(-1, 1, 1, 1)\n        xt = a.sqrt() * x0 + (1.0 - a).sqrt() * noise\n        return xt, noise\n\nschedule = DiffusionSchedule(device='cpu')\nx0 = torch.randn(8, 3, 32, 32)\nt = torch.randint(0, schedule.timesteps, (x0.size(0),))\nxt, noise = schedule.add_noise(x0, t)\nprint(xt.shape, noise.shape)",
+            "expectedOutput": "torch.Size([8, 3, 32, 32]) torch.Size([8, 3, 32, 32])"
+        },
+        {
+            "id": "noise-prediction-training-loop",
+            "title": "19. Noise-Prediction Training Loop",
+            "type": "code",
+            "language": "python",
+            "content": "Train a denoising network to predict the exact Gaussian noise sampled for each clean batch.",
+            "explanation": "The model must accept a noisy batch and a timestep tensor, then return a tensor with the same shape as the noise target. The architecture is represented by a placeholder class because a production denoiser needs residual blocks and timestep conditioning. Dataset normalization and the schedule's device must be consistent.",
+            "code": "import torch.nn.functional as F\n\nmodel = Denoiser().to(device)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)\nschedule = DiffusionSchedule(timesteps=1000, device=device)\n\nfor images, _ in train_loader:\n    x0 = images.to(device)\n    t = torch.randint(0, schedule.timesteps, (x0.size(0),), device=device)\n    noise = torch.randn_like(x0)\n    alpha_bar = schedule.alpha_bar[t].view(-1, 1, 1, 1)\n    xt = alpha_bar.sqrt() * x0 + (1 - alpha_bar).sqrt() * noise\n    predicted_noise = model(xt, t)\n    loss = F.mse_loss(predicted_noise, noise)\n    optimizer.zero_grad(set_to_none=True)\n    loss.backward()\n    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)\n    optimizer.step()",
+            "expectedOutput": "A scalar loss that generally decreases as the denoiser learns the training distribution. The exact curve depends on the dataset, architecture, and schedule."
+        },
+        {
+            "id": "ddpm-sampling-pseudocode",
+            "title": "20. Reverse Sampling Pseudocode",
+            "type": "code",
+            "language": "python",
+            "content": "The following pseudocode demonstrates the structure of ancestral DDPM sampling.",
+            "explanation": "The reverse mean uses the model's predicted noise. For t greater than zero, a variance-scaled Gaussian term is added. The exact posterior variance convention must match the schedule and model implementation.",
+            "code": "x = torch.randn(batch_size, channels, height, width, device=device)\n\nfor step in reversed(range(schedule.timesteps)):\n    t = torch.full((batch_size,), step, device=device, dtype=torch.long)\n    predicted_noise = model(x, t)\n    beta_t = schedule.beta[step]\n    alpha_t = schedule.alpha[step]\n    alpha_bar_t = schedule.alpha_bar[step]\n    mean = (x - beta_t / torch.sqrt(1 - alpha_bar_t) * predicted_noise) / torch.sqrt(alpha_t)\n    if step > 0:\n        noise = torch.randn_like(x)\n        x = mean + torch.sqrt(beta_t) * noise\n    else:\n        x = mean\n\nsamples = x",
+            "expectedOutput": "A batch of generated tensors. A full implementation should use the intended posterior variance, trained model, proper normalization, and any required clipping or latent decoding."
+        },
+        {
+            "id": "diffusion-reproducibility",
+            "title": "21. Reproducibility and Experiment Design",
+            "type": "concept",
+            "content": "Diffusion experiments involve randomness in data shuffling, timestep sampling, Gaussian noise, initialization, and generation. Set random seeds when reproducibility is important, while recognizing that some accelerator kernels may remain nondeterministic. Record the beta schedule, prediction target, model architecture, optimizer, learning-rate schedule, training steps, data normalization, and sampling method. Store model checkpoints alongside configuration metadata. Compare methods using identical prompts or conditions, consistent seeds when appropriate, and fixed evaluation procedures. A reproducible experiment is easier to debug and provides a fair basis for measuring the effects of changing one component. Checkpoint selection should consider validation behavior and sample quality rather than training loss alone."
+        },
+        {
+            "id": "diffusion-responsible-use",
+            "title": "22. Responsible Use of Diffusion Models",
+            "type": "concept",
+            "content": "Diffusion systems can produce useful synthetic data, assist artists, support scientific modeling, and improve accessibility. They can also generate deceptive media, reproduce biased representations, or create outputs that resemble identifiable people. Dataset collection should respect licensing, consent, privacy, and relevant laws. Evaluation should test whether the system disproportionately fails for particular groups or prompts. When generated content could be mistaken for authentic evidence, clear provenance and disclosure can reduce deception. High-quality synthesis does not establish factual correctness: generated images and videos can depict impossible events or fabricated details. Responsible deployment combines technical safeguards, transparent communication, careful dataset governance, and monitoring for misuse."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "diffusion-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the purposes of the forward and reverse processes in a diffusion model?",
+            "correctAnswer": "The forward process gradually corrupts data with noise. The learned reverse process transforms noise into samples resembling the training distribution.",
+            "solution": "The forward process provides a known corruption mechanism and training inputs. The reverse model learns denoising transitions that can be applied starting from a simple noise prior."
+        },
+        {
+            "id": "diffusion-ex-2",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If alpha-bar_t = 0.81, write the direct sampling equation for x_t.",
+            "correctAnswer": "x_t = 0.9x_0 + sqrt(0.19) epsilon.",
+            "solution": "Take square roots of the signal and noise variances: sqrt(0.81) = 0.9 and sqrt(1 − 0.81) = sqrt(0.19)."
+        },
+        {
+            "id": "diffusion-ex-3",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "For beta_t = 0.01, what is alpha_t?",
+            "correctAnswer": "0.99",
+            "solution": "By definition, alpha_t = 1 − beta_t = 1 − 0.01 = 0.99."
+        },
+        {
+            "id": "diffusion-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can the training loop choose a random timestep instead of simulating every forward transition?",
+            "correctAnswer": "The closed-form marginal distribution q(x_t | x_0) permits direct sampling at any timestep.",
+            "solution": "The cumulative product of alpha values gives a direct expression for x_t from x_0 and one Gaussian noise tensor."
+        },
+        {
+            "id": "diffusion-ex-5",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "The true noise is [0.2, 0.4] and the predicted noise is [0.1, 0.2]. Compute the mean squared error.",
+            "correctAnswer": "0.025",
+            "solution": "The errors are 0.1 and 0.2. Their squared values are 0.01 and 0.04. The mean is (0.01 + 0.04) / 2 = 0.025."
+        },
+        {
+            "id": "diffusion-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does a denoising network need timestep conditioning?",
+            "correctAnswer": "Because the correct denoising behavior depends on the amount of noise present.",
+            "solution": "At different timesteps, the same-looking tensor may represent different noise regimes. Time conditioning lets the network adapt its prediction to the selected corruption level."
+        },
+        {
+            "id": "diffusion-ex-7",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "What is one important tradeoff associated with increasing classifier-free guidance strength?",
+            "correctAnswer": "Condition adherence may increase, but diversity or visual quality can decrease.",
+            "solution": "Guidance extrapolates away from the unconditional prediction. Excessive extrapolation can produce oversaturated artifacts or reduce sample variety."
+        },
+        {
+            "id": "diffusion-ex-8",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A diffusion model produces poor samples after training. List four checks to perform before redesigning the architecture.",
+            "correctAnswer": "Check data normalization, timestep indexing, alpha-bar computation, prediction-target consistency, tensor shapes, and sampling variance conventions.",
+            "solution": "Implementation inconsistencies can invalidate training even when the network is sufficiently expressive. Verify the schedule and forward equation with small numerical tests before changing model capacity."
+        },
+        {
+            "id": "diffusion-ex-9",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why might latent diffusion be cheaper than pixel-space diffusion?",
+            "correctAnswer": "It performs denoising on a lower-resolution latent representation instead of directly on all image pixels.",
+            "solution": "Lower spatial dimensions reduce the number of feature-map elements and often reduce the computational cost of repeated denoiser evaluations. Compression quality remains an important constraint."
+        },
+        {
+            "id": "diffusion-ex-10",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A model works at early timesteps but fails near the final noisy timesteps. Name two possible causes and one diagnostic.",
+            "correctAnswer": "Possible causes include inadequate high-noise training, a poorly chosen schedule, or incorrect time embeddings. Inspect validation noise-prediction error grouped by timestep.",
+            "solution": "The average loss may hide a weak region of the schedule. Per-timestep metrics help isolate the affected noise regime."
+        }
+    ],
+    "summary": "Diffusion models learn to generate data by reversing a fixed noise-corruption process. DDPMs use a forward Gaussian Markov chain, cumulative signal-retention coefficients, and a neural network trained to predict sampled noise. The direct noisy-sample equation makes training efficient, while the reverse process converts Gaussian noise into structured outputs. U-Nets and time embeddings are common components, and sampling methods such as DDIM reduce inference steps. Guidance, latent representations, careful evaluation, reproducibility, and responsible data use are important parts of practical diffusion systems.",
+    "relatedTopics": [
+        "module-14-generative-models-autoencoders",
+        "module-14-generative-models-variational-autoencoders",
+        "module-14-generative-models-score-matching",
+        "module-14-generative-models-noise-schedules",
+        "module-14-generative-models-denoising",
+        "module-06-attention"
+    ]
+}

@@ -1,1 +1,391 @@
-{}
+{
+    "id": "calculus-limits",
+    "title": "Limits",
+    "slug": "limits",
+    "description": "Learn the concept of limits, limit laws, one-sided limits, continuity, indeterminate forms, and the role of limits in derivatives and machine learning.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Functions",
+        "Algebra",
+        "Fractions and factorization",
+        "Basic coordinate geometry"
+    ],
+    "learningObjectives": [
+        "Explain the intuitive and mathematical meaning of a limit.",
+        "Evaluate limits using direct substitution and limit laws.",
+        "Evaluate limits that require factorization or rationalization.",
+        "Distinguish left-hand limits, right-hand limits, and two-sided limits.",
+        "Identify infinite limits and limits at infinity.",
+        "Explain continuity using limits.",
+        "Understand how limits provide the foundation for derivatives and numerical differentiation."
+    ],
+    "sections": [
+        {
+            "id": "limit-intuition",
+            "title": "1. Intuition Behind Limits",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A limit describes the value that a function approaches as its input approaches a particular number. The input does not necessarily have to equal that number, and the function does not necessarily have to be defined there."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ f(x) = L",
+                    "explanation": "As x approaches a, the values of f(x) approach L."
+                },
+                {
+                    "type": "example",
+                    "title": "A simple limit",
+                    "problem": "Evaluate limₓ→₂ (3x + 1).",
+                    "solution": [
+                        "The expression is a polynomial and is continuous at x = 2.",
+                        "Substitute x = 2 directly.",
+                        "3(2) + 1 = 7."
+                    ],
+                    "answer": "7"
+                },
+                {
+                    "type": "text",
+                    "value": "A limit concerns behavior near a point rather than necessarily the function's value at the point. For example, a function can have a removable hole at x = a and still have a limit as x approaches a."
+                }
+            ]
+        },
+        {
+            "id": "limit-laws",
+            "title": "2. Limit Laws",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Limit laws allow complex limits to be evaluated by combining simpler limits. The rules below apply when the required limits exist and the operations are defined."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ [f(x) + g(x)] = limₓ→ₐ f(x) + limₓ→ₐ g(x)",
+                    "explanation": "The limit of a sum is the sum of the limits when both limits exist."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ [f(x)g(x)] = [limₓ→ₐ f(x)][limₓ→ₐ g(x)]",
+                    "explanation": "The limit of a product is the product of the limits."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ [f(x)/g(x)] = [limₓ→ₐ f(x)]/[limₓ→ₐ g(x)]",
+                    "explanation": "The quotient rule applies when the denominator limit is nonzero."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ [c f(x)] = c limₓ→ₐ f(x)",
+                    "explanation": "A constant factor can be taken outside the limit."
+                },
+                {
+                    "type": "example",
+                    "title": "Applying limit laws",
+                    "problem": "Evaluate limₓ→₃ (x² + 2x - 1).",
+                    "solution": [
+                        "Apply direct substitution because the expression is a polynomial.",
+                        "3² + 2(3) - 1 = 9 + 6 - 1.",
+                        "The result is 14."
+                    ],
+                    "answer": "14"
+                }
+            ]
+        },
+        {
+            "id": "factorization-limits",
+            "title": "3. Limits Using Factorization",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Direct substitution sometimes produces 0/0. This is called an indeterminate form: it does not determine the limit. Algebraic simplification may reveal the behavior near the point."
+                },
+                {
+                    "type": "example",
+                    "title": "Factor and cancel",
+                    "problem": "Evaluate limₓ→₂ (x² - 4)/(x - 2).",
+                    "solution": [
+                        "Direct substitution gives (4 - 4)/(2 - 2) = 0/0.",
+                        "Factor the numerator: x² - 4 = (x - 2)(x + 2).",
+                        "For x ≠ 2, cancel the common factor x - 2.",
+                        "The expression simplifies to x + 2 for x near 2, excluding x = 2.",
+                        "Evaluate the limit of x + 2 as x approaches 2."
+                    ],
+                    "answer": "4"
+                },
+                {
+                    "type": "example",
+                    "title": "A limit with a cubic polynomial",
+                    "problem": "Evaluate limₓ→₁ (x³ - 1)/(x - 1).",
+                    "solution": [
+                        "Direct substitution gives 0/0.",
+                        "Use x³ - 1 = (x - 1)(x² + x + 1).",
+                        "Cancel x - 1 for x ≠ 1.",
+                        "Evaluate 1² + 1 + 1 = 3."
+                    ],
+                    "answer": "3"
+                },
+                {
+                    "type": "text",
+                    "value": "Canceling a factor is valid for nearby values where the factor is nonzero. The original function and simplified function may differ at the target point but can still have the same limit there."
+                }
+            ]
+        },
+        {
+            "id": "rationalization",
+            "title": "4. Limits Using Rationalization",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "When square roots cause an indeterminate form, multiplying by a conjugate can remove the radical from a difference. The conjugate of √A - √B is √A + √B."
+                },
+                {
+                    "type": "example",
+                    "title": "Rationalizing a limit",
+                    "problem": "Evaluate limₓ→₄ (√x - 2)/(x - 4).",
+                    "solution": [
+                        "Direct substitution produces 0/0.",
+                        "Multiply numerator and denominator by the conjugate √x + 2.",
+                        "The numerator becomes (√x - 2)(√x + 2) = x - 4.",
+                        "For x ≠ 4, cancel x - 4.",
+                        "The expression becomes 1/(√x + 2).",
+                        "Substitute x = 4 into the simplified expression: 1/(2 + 2) = 1/4."
+                    ],
+                    "answer": "1/4"
+                }
+            ]
+        },
+        {
+            "id": "one-sided-limits",
+            "title": "5. One-Sided and Two-Sided Limits",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A left-hand limit describes the behavior as x approaches a from values smaller than a. A right-hand limit describes behavior from values greater than a."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→ₐ f(x) exists only if limₓ→ₐ⁻ f(x) = limₓ→ₐ⁺ f(x)",
+                    "explanation": "The two-sided limit exists when both one-sided limits exist and agree."
+                },
+                {
+                    "type": "example",
+                    "title": "A function with unequal one-sided limits",
+                    "problem": "Let f(x) = -1 when x < 0 and f(x) = 1 when x ≥ 0. Does limₓ→₀ f(x) exist?",
+                    "solution": [
+                        "Approaching zero from the left, f(x) = -1.",
+                        "Approaching zero from the right, f(x) = 1.",
+                        "The one-sided limits are different.",
+                        "Therefore, the two-sided limit does not exist."
+                    ],
+                    "answer": "The two-sided limit does not exist."
+                },
+                {
+                    "type": "text",
+                    "value": "This distinction is important for piecewise functions and activation functions. A function may have a sharp jump at a boundary, preventing a two-sided limit from existing there."
+                }
+            ]
+        },
+        {
+            "id": "infinite-limits",
+            "title": "6. Infinite Limits and Limits at Infinity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "An infinite limit describes a function whose magnitude grows without bound as the input approaches a point. A limit at infinity describes the behavior of a function as the input itself becomes very large in the positive or negative direction."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→₀⁺ (1/x) = +∞",
+                    "explanation": "As x approaches zero through positive values, 1/x increases without bound."
+                },
+                {
+                    "type": "formula",
+                    "value": "limₓ→∞ (1/x) = 0",
+                    "explanation": "As x grows without bound, its reciprocal approaches zero."
+                },
+                {
+                    "type": "example",
+                    "title": "A rational function at infinity",
+                    "problem": "Evaluate limₓ→∞ (3x² + 1)/(x² + 5).",
+                    "solution": [
+                        "Divide the numerator and denominator by x².",
+                        "The expression becomes (3 + 1/x²)/(1 + 5/x²).",
+                        "As x approaches infinity, both 1/x² and 5/x² approach zero.",
+                        "The limit is 3/1."
+                    ],
+                    "answer": "3"
+                },
+                {
+                    "type": "text",
+                    "value": "For rational functions where numerator and denominator have the same degree, the limit at positive or negative infinity is the ratio of their leading coefficients. If the numerator degree is smaller, the limit is zero. If the numerator degree is larger, the magnitude may grow without bound, although the sign and exact behavior depend on the degrees and coefficients."
+                }
+            ]
+        },
+        {
+            "id": "continuity",
+            "title": "7. Continuity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A function is continuous at x = a if its value exists there, the limit as x approaches a exists, and the limit equals the function value. Informally, there is no break, hole, or jump at that point."
+                },
+                {
+                    "type": "formula",
+                    "value": "f is continuous at a if limₓ→ₐ f(x) = f(a)",
+                    "explanation": "This equality assumes f(a) is defined and the two-sided limit exists."
+                },
+                {
+                    "type": "text",
+                    "value": "Polynomials are continuous everywhere. Rational functions are continuous wherever their denominators are nonzero. The exponential function is continuous everywhere, while the real logarithm is continuous on its positive domain."
+                },
+                {
+                    "type": "example",
+                    "title": "Checking continuity",
+                    "problem": "Is f(x) = x² + 1 continuous at x = 2?",
+                    "solution": [
+                        "Compute f(2) = 2² + 1 = 5.",
+                        "Because f is a polynomial, its limit at 2 equals its value there.",
+                        "Therefore, limₓ→₂ f(x) = 5 = f(2)."
+                    ],
+                    "answer": "Yes, f is continuous at x = 2."
+                },
+                {
+                    "type": "text",
+                    "value": "Continuity is useful in numerical optimization because small changes in inputs then produce small changes in outputs near a point. However, continuity alone does not guarantee differentiability or that an optimization algorithm will find a global minimum."
+                }
+            ]
+        },
+        {
+            "id": "limits-and-derivatives",
+            "title": "8. Limits as the Foundation of Derivatives",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The derivative is defined using a limit of average rates of change. The limit lets the interval between two input values shrink toward zero, producing the instantaneous rate of change when that limit exists."
+                },
+                {
+                    "type": "formula",
+                    "value": "f'(a) = limₕ→₀ [f(a + h) - f(a)]/h",
+                    "explanation": "This is the derivative definition using the difference quotient."
+                },
+                {
+                    "type": "example",
+                    "title": "Using a limit to find a derivative",
+                    "problem": "Use the definition to find the derivative of f(x) = x² at x = a.",
+                    "solution": [
+                        "Start with f'(a) = limₕ→₀ [(a + h)² - a²]/h.",
+                        "Expand: (a + h)² = a² + 2ah + h².",
+                        "Subtract a² to obtain 2ah + h².",
+                        "Factor h: (2ah + h²)/h = 2a + h for h ≠ 0.",
+                        "Take the limit as h approaches zero."
+                    ],
+                    "answer": "f'(a) = 2a"
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, derivatives are used to measure how a loss changes when parameters change. Gradient-based optimization relies on these local rates of change to update model parameters."
+                }
+            ]
+        },
+        {
+            "id": "python-limits",
+            "title": "9. Exploring Limits Numerically with Python",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A numerical experiment can help build intuition by evaluating a function at values increasingly close to a target point. Numerical values provide evidence about a limit but do not replace a mathematical proof."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "def f(x):\n    return (x**2 - 4) / (x - 2)\n\nfor x in [1.9, 1.99, 1.999, 2.001, 2.01, 2.1]:\n    print(x, f(x))"
+                },
+                {
+                    "type": "text",
+                    "value": "The expression is undefined at x = 2, but its values on either side approach 4. The simplified expression x + 2 explains this behavior for x values other than 2."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nx = np.array([1.9, 1.99, 1.999, 2.001, 2.01, 2.1])\ny = (x**2 - 4) / (x - 2)\nprint(np.column_stack((x, y)))"
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "limits-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Evaluate limₓ→₂ (5x - 3).",
+            "correctAnswer": "7",
+            "solution": "The expression is continuous, so substitute x = 2: 5(2) - 3 = 7."
+        },
+        {
+            "id": "limits-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Evaluate limₓ→₃ (x² - 9)/(x - 3).",
+            "correctAnswer": "6",
+            "solution": "Factor x² - 9 = (x - 3)(x + 3). Cancel x - 3 for x ≠ 3, then evaluate x + 3 at x = 3 to obtain 6."
+        },
+        {
+            "id": "limits-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Evaluate limₓ→₉ (√x - 3)/(x - 9).",
+            "correctAnswer": "1/6",
+            "solution": "Multiply by the conjugate √x + 3. The expression simplifies to 1/(√x + 3), whose limit at x = 9 is 1/6."
+        },
+        {
+            "id": "limits-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "If the left-hand limit and right-hand limit at a point are different, does the two-sided limit exist?",
+            "correctAnswer": "No",
+            "solution": "A two-sided limit exists only when both one-sided limits exist and have the same value."
+        },
+        {
+            "id": "limits-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Evaluate limₓ→∞ (4x² + 3)/(2x² - 1).",
+            "correctAnswer": "2",
+            "solution": "Divide numerator and denominator by x². The terms 3/x² and 1/x² approach zero, leaving 4/2 = 2."
+        },
+        {
+            "id": "limits-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "State the three conditions for a function to be continuous at x = a.",
+            "correctAnswer": "f(a) is defined, limₓ→ₐ f(x) exists, and limₓ→ₐ f(x) = f(a).",
+            "solution": "Continuity requires a defined function value, an existing two-sided limit, and equality between the limit and the function value."
+        },
+        {
+            "id": "limits-ex-7",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "Using the difference quotient, find the derivative of f(x) = x² at x = 3.",
+            "correctAnswer": "6",
+            "solution": "Compute limₕ→₀ [((3 + h)² - 9)/h] = limₕ→₀ (6 + h) = 6."
+        }
+    ],
+    "summary": [
+        "A limit describes the value a function approaches near an input.",
+        "Limit laws allow limits to be combined through sums, products, and quotients when their conditions hold.",
+        "Factorization and rationalization can resolve many 0/0 indeterminate forms.",
+        "A two-sided limit exists only when both one-sided limits agree.",
+        "Infinite limits and limits at infinity describe unbounded behavior and long-term behavior.",
+        "Continuity requires a defined function value equal to the limit at the point.",
+        "The derivative is defined through a limit of difference quotients."
+    ],
+    "relatedTopics": [
+        "functions",
+        "derivatives",
+        "partial-derivatives",
+        "gradients",
+        "chain-rule",
+        "optimization"
+    ]
+}

@@ -1,1 +1,373 @@
-{}
+{
+    "id": "probability-distributions",
+    "title": "Probability Distributions",
+    "slug": "probability-distributions",
+    "description": "Study discrete and continuous probability distributions, including Bernoulli, Binomial, Uniform, Normal, and Poisson distributions, and learn how they model uncertainty in AI.",
+    "difficulty": "beginner",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Random Variables",
+        "Basic Probability",
+        "Algebra"
+    ],
+    "learningObjectives": [
+        "Explain the meaning of a probability distribution.",
+        "Distinguish discrete and continuous distributions.",
+        "Understand Bernoulli and Binomial distributions.",
+        "Understand Uniform and Normal distributions.",
+        "Recognize when the Poisson distribution is useful.",
+        "Use Python to simulate and visualize distributions.",
+        "Identify applications of probability distributions in machine learning."
+    ],
+    "sections": [
+        {
+            "id": "distribution-introduction",
+            "title": "Introduction to Probability Distributions",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "What Is a Probability Distribution?",
+                    "body": "A probability distribution describes how probabilities are assigned to the possible values of a random variable. It summarizes uncertainty and helps us reason about outcomes."
+                },
+                {
+                    "type": "text",
+                    "title": "Discrete and Continuous Distributions",
+                    "body": "Discrete distributions assign probabilities to countable outcomes. Continuous distributions describe probability density over ranges of real values."
+                },
+                {
+                    "type": "text",
+                    "title": "Why Distributions Matter",
+                    "body": "Probability distributions are used in statistical inference, Bayesian modeling, uncertainty estimation, generative models, and machine learning algorithms."
+                }
+            ]
+        },
+        {
+            "id": "bernoulli-distribution",
+            "title": "Bernoulli Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The Bernoulli distribution models a single experiment with two possible outcomes, commonly represented as 1 for success and 0 for failure."
+                },
+                {
+                    "type": "formula",
+                    "title": "Probability Mass Function",
+                    "body": "P(X = x) = p^x * (1 - p)^(1 - x), where x is 0 or 1",
+                    "explanation": "The parameter p is the probability of success."
+                },
+                {
+                    "type": "formula",
+                    "title": "Mean and Variance",
+                    "body": "E[X] = p; Var(X) = p(1 - p)"
+                },
+                {
+                    "type": "example",
+                    "title": "Spam Classification",
+                    "problem": "A classifier assigns a 0.8 probability that an email is spam. If Y represents the binary spam outcome, what are the Bernoulli probabilities?",
+                    "solution": [
+                        "The probability of Y = 1 is 0.8.",
+                        "The probability of Y = 0 is 1 - 0.8 = 0.2."
+                    ],
+                    "answer": "P(Y = 1) = 0.8 and P(Y = 0) = 0.2."
+                }
+            ]
+        },
+        {
+            "id": "binomial-distribution",
+            "title": "Binomial Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The Binomial distribution models the number of successes in a fixed number of independent Bernoulli trials, where each trial has the same probability of success."
+                },
+                {
+                    "type": "formula",
+                    "title": "Probability Mass Function",
+                    "body": "P(X = k) = C(n, k) * p^k * (1 - p)^(n - k)",
+                    "explanation": "Here n is the number of trials, k is the number of successes, and p is the success probability."
+                },
+                {
+                    "type": "formula",
+                    "title": "Mean and Variance",
+                    "body": "E[X] = np; Var(X) = np(1 - p)"
+                },
+                {
+                    "type": "example",
+                    "title": "Three Successful Outcomes",
+                    "problem": "A fair coin is tossed four times. What is the probability of obtaining exactly two heads?",
+                    "solution": [
+                        "Set n = 4, k = 2, and p = 0.5.",
+                        "Calculate C(4, 2) = 6.",
+                        "Calculate 6 * (0.5)^2 * (0.5)^2.",
+                        "Simplify the result."
+                    ],
+                    "answer": "0.375"
+                }
+            ]
+        },
+        {
+            "id": "uniform-distribution",
+            "title": "Uniform Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "A discrete uniform distribution assigns equal probability to each of a finite number of outcomes. A continuous uniform distribution assigns constant density across a bounded interval."
+                },
+                {
+                    "type": "formula",
+                    "title": "Continuous Uniform Density",
+                    "body": "f(x) = 1 / (b - a), for a <= x <= b"
+                },
+                {
+                    "type": "formula",
+                    "title": "Mean and Variance",
+                    "body": "E[X] = (a + b) / 2; Var(X) = (b - a)^2 / 12"
+                },
+                {
+                    "type": "example",
+                    "title": "Probability Over an Interval",
+                    "problem": "Let X be uniformly distributed on [2, 10]. Find P(4 <= X <= 7).",
+                    "solution": [
+                        "The total interval length is 10 - 2 = 8.",
+                        "The target interval length is 7 - 4 = 3.",
+                        "Divide the target length by the total length."
+                    ],
+                    "answer": "3/8 = 0.375"
+                }
+            ]
+        },
+        {
+            "id": "normal-distribution",
+            "title": "Normal Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The Normal distribution is a continuous, symmetric, bell-shaped distribution described by its mean mu and variance sigma squared. It is widely used to model measurement errors and many naturally varying quantities."
+                },
+                {
+                    "type": "formula",
+                    "title": "Probability Density Function",
+                    "body": "f(x) = [1 / (sigma * sqrt(2*pi))] * exp(-((x - mu)^2) / (2*sigma^2))",
+                    "explanation": "The parameter mu determines the center, while sigma determines the spread. Sigma must be positive."
+                },
+                {
+                    "type": "text",
+                    "title": "The Empirical Rule",
+                    "body": "For a Normal distribution, approximately 68% of values lie within one standard deviation of the mean, 95% within two standard deviations, and 99.7% within three standard deviations."
+                },
+                {
+                    "type": "example",
+                    "title": "Standardizing a Value",
+                    "problem": "A Normal variable has mean 100 and standard deviation 15. Calculate the z-score for x = 130.",
+                    "solution": [
+                        "Use z = (x - mu) / sigma.",
+                        "Substitute x = 130, mu = 100, and sigma = 15.",
+                        "Calculate (130 - 100) / 15."
+                    ],
+                    "answer": "z = 2"
+                },
+                {
+                    "type": "text",
+                    "title": "Standard Normal Distribution",
+                    "body": "The standard Normal distribution has mean zero and standard deviation one. A z-score expresses how many standard deviations a value lies above or below the mean."
+                }
+            ]
+        },
+        {
+            "id": "poisson-distribution",
+            "title": "Poisson Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The Poisson distribution models the number of events occurring in a fixed interval when events occur independently at a constant average rate under the Poisson-process assumptions."
+                },
+                {
+                    "type": "formula",
+                    "title": "Probability Mass Function",
+                    "body": "P(X = k) = exp(-lambda) * lambda^k / k!",
+                    "explanation": "Lambda is the expected number of events in the interval, and k is a nonnegative integer."
+                },
+                {
+                    "type": "formula",
+                    "title": "Mean and Variance",
+                    "body": "E[X] = lambda; Var(X) = lambda"
+                },
+                {
+                    "type": "example",
+                    "title": "Counting Arrivals",
+                    "problem": "A system receives an average of two requests per minute. Under a Poisson model, what is the probability of receiving zero requests in one minute?",
+                    "solution": [
+                        "Set lambda = 2 and k = 0.",
+                        "Apply P(X = 0) = exp(-2) * 2^0 / 0!.",
+                        "Simplify using 2^0 = 1 and 0! = 1."
+                    ],
+                    "answer": "exp(-2), approximately 0.1353"
+                }
+            ]
+        },
+        {
+            "id": "distribution-comparison",
+            "title": "Choosing the Right Distribution",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Bernoulli vs Binomial",
+                    "body": "Bernoulli models one binary trial. Binomial models the total number of successes across a fixed number of independent Bernoulli trials with the same success probability."
+                },
+                {
+                    "type": "text",
+                    "title": "Uniform vs Normal",
+                    "body": "Uniform models equal density across an interval. Normal models values concentrated around a mean with decreasing density toward both tails."
+                },
+                {
+                    "type": "text",
+                    "title": "Poisson Use Cases",
+                    "body": "Poisson is useful for count data such as arrivals or events within a fixed interval when its assumptions are reasonably appropriate."
+                }
+            ]
+        },
+        {
+            "id": "probability-distributions-python",
+            "title": "Working with Distributions in Python",
+            "content": [
+                {
+                    "type": "code",
+                    "title": "Simulating a Binomial Distribution",
+                    "language": "python",
+                    "body": "import numpy as np\n\nrng = np.random.default_rng(42)\n\nsamples = rng.binomial(n=10, p=0.3, size=10000)\n\nprint('Sample mean:', samples.mean())\nprint('Theoretical mean:', 10 * 0.3)\nprint('Sample variance:', samples.var())\nprint('Theoretical variance:', 10 * 0.3 * 0.7)",
+                    "explanation": "The simulated sample statistics should approach the theoretical mean and variance as the number of samples increases."
+                },
+                {
+                    "type": "code",
+                    "title": "Evaluating a Normal Distribution",
+                    "language": "python",
+                    "body": "from scipy.stats import norm\n\nmu = 100\nsigma = 15\n\nprobability = norm.cdf(130, loc=mu, scale=sigma) - norm.cdf(70, loc=mu, scale=sigma)\nprint(probability)",
+                    "explanation": "The CDF gives P(X <= x). Subtracting two CDF values calculates the probability that the variable lies between the two bounds."
+                },
+                {
+                    "type": "text",
+                    "title": "Installation",
+                    "body": "The examples use NumPy and SciPy. If they are not installed, install them in your Python environment using pip install numpy scipy."
+                }
+            ]
+        },
+        {
+            "id": "distributions-in-machine-learning",
+            "title": "Applications in AI and Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Classification",
+                    "body": "Bernoulli and categorical distributions can represent probabilistic class outcomes. Binary classifiers often estimate the probability of a positive class."
+                },
+                {
+                    "type": "text",
+                    "title": "Regression and Measurement Noise",
+                    "body": "Normal distributions are frequently used to model continuous measurement noise and errors in statistical models."
+                },
+                {
+                    "type": "text",
+                    "title": "Generative Modeling",
+                    "body": "Probability distributions are fundamental to generative models, probabilistic latent-variable models, and sampling-based algorithms."
+                },
+                {
+                    "type": "text",
+                    "title": "Count Prediction",
+                    "body": "Poisson models may be useful when predicting event counts, provided the data and assumptions are appropriate."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "distributions-ex-01",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "A Bernoulli variable has success probability 0.7. What is its variance?",
+            "correctAnswer": "0.21",
+            "solution": "Var(X) = p(1 - p) = 0.7 * 0.3 = 0.21."
+        },
+        {
+            "id": "distributions-ex-02",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "A Binomial variable has n = 5 and p = 0.2. Calculate its expected value.",
+            "correctAnswer": "1",
+            "solution": "E[X] = np = 5 * 0.2 = 1."
+        },
+        {
+            "id": "distributions-ex-03",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "A continuous uniform variable is defined on [0, 8]. Find P(2 <= X <= 6).",
+            "correctAnswer": "0.5",
+            "solution": "The target interval length is 4 and the total length is 8, so the probability is 4/8 = 0.5."
+        },
+        {
+            "id": "distributions-ex-04",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "A Normal distribution has mean 50 and standard deviation 5. Find the z-score for x = 60.",
+            "correctAnswer": "2",
+            "solution": "z = (60 - 50) / 5 = 2."
+        },
+        {
+            "id": "distributions-ex-05",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "A Poisson variable has lambda = 3. What is its expected value?",
+            "correctAnswer": "3",
+            "solution": "The mean of a Poisson distribution is lambda."
+        },
+        {
+            "id": "distributions-ex-06",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "Which distribution is commonly used for the number of successes in a fixed number of independent trials?",
+            "options": [
+                "Normal",
+                "Binomial",
+                "Continuous Uniform",
+                "Exponential"
+            ],
+            "correctAnswer": "Binomial",
+            "solution": "The Binomial distribution models the number of successes in a fixed number of independent Bernoulli trials with a common success probability."
+        },
+        {
+            "id": "distributions-ex-07",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "Which distribution has a symmetric bell-shaped density?",
+            "options": [
+                "Bernoulli",
+                "Binomial in every case",
+                "Normal",
+                "Poisson in every case"
+            ],
+            "correctAnswer": "Normal",
+            "solution": "The Normal distribution has a symmetric bell-shaped density centered at its mean."
+        }
+    ],
+    "summary": [
+        "Probability distributions describe how probabilities are assigned to possible outcomes.",
+        "Bernoulli models one binary trial.",
+        "Binomial models successes across a fixed number of independent trials.",
+        "Uniform distributions represent equal probability or constant density over a specified range.",
+        "Normal distributions model symmetric continuous variation.",
+        "Poisson distributions model event counts under suitable assumptions.",
+        "Python libraries support simulation, probability calculation, and distribution analysis."
+    ],
+    "relatedTopics": [
+        "Random Variables",
+        "Expectation and Variance",
+        "Conditional Probability",
+        "Bayes Theorem",
+        "Maximum Likelihood Estimation",
+        "Entropy"
+    ]
+}

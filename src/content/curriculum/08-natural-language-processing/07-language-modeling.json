@@ -1,1 +1,251 @@
-{}
+{
+    "id": "module-08-natural-language-processing-language-modeling",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 7,
+    "title": "Language Modeling",
+    "slug": "language-modeling",
+    "href": "/curriculum/08-natural-language-processing/language-modeling",
+    "filePath": "content/curriculum/08-natural-language-processing/07-language-modeling.json",
+    "description": "Understand how language models estimate probabilities over text sequences, learn statistical regularities, and generate text using n-gram, recurrent, and Transformer-based approaches.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Vocabulary Construction",
+        "Word Embeddings",
+        "Probability Fundamentals",
+        "Neural Network Fundamentals"
+    ],
+    "learningObjectives": [
+        "Define a language model as a probability distribution over token sequences.",
+        "Apply the chain rule to factorize sequence probabilities.",
+        "Understand unigram, bigram, and n-gram language models.",
+        "Explain maximum-likelihood estimation and smoothing.",
+        "Describe recurrent and Transformer-based language modeling.",
+        "Calculate sequence probability, cross-entropy, and perplexity.",
+        "Identify limitations of statistical and neural language models."
+    ],
+    "sections": [
+        {
+            "id": "language-model-definition",
+            "title": "What Is a Language Model?",
+            "type": "concept",
+            "content": "A language model assigns probabilities to sequences of tokens. It learns statistical patterns from text and estimates which token sequences are likely under its learned distribution. For example, after 'The sun rises in the', a model may assign a relatively high probability to 'morning'. This does not mean the model understands the world exactly as a human does. It means the model has learned patterns that support prediction, evaluation, and text generation."
+        },
+        {
+            "id": "why-language-modeling",
+            "title": "Why Language Modeling Matters",
+            "type": "concept",
+            "content": "Language modeling is a foundational objective for text generation, completion, speech recognition, machine translation, spelling correction, and many conversational systems. A language model can rank alternative continuations, estimate sequence likelihood, or generate text by repeatedly selecting the next token. Modern large language models extend neural language modeling through large-scale data, Transformer architectures, and extensive training procedures."
+        },
+        {
+            "id": "sequence-probability",
+            "title": "Probability of a Token Sequence",
+            "type": "math",
+            "content": "For a token sequence x_1, x_2, ..., x_T, a language model estimates P(x_1, x_2, ..., x_T). Using the probability chain rule, this becomes P(x_1) × P(x_2 | x_1) × P(x_3 | x_1, x_2) × ... × P(x_T | x_1, ..., x_{T-1}). Each factor represents the probability of a token conditioned on the preceding context. Autoregressive language models directly model this factorization."
+        },
+        {
+            "id": "chain-rule-example",
+            "title": "A Worked Probability Example",
+            "type": "concept",
+            "content": "Suppose a simplified model assigns P('AI') = 0.2, P('learns' | 'AI') = 0.5, and P('fast' | 'AI learns') = 0.4. Under this model, the probability of the sequence 'AI learns fast' is 0.2 × 0.5 × 0.4 = 0.04. The example illustrates sequence factorization. Real models operate over a vocabulary of token IDs and estimate conditional probabilities from learned parameters."
+        },
+        {
+            "id": "unigram-model",
+            "title": "Unigram Language Model",
+            "type": "concept",
+            "content": "A unigram language model assumes that each token is independent of the other tokens in the sequence. It estimates a token probability distribution from corpus frequencies. If 'data' occurs frequently, it receives a higher estimated probability than a rare token. The model is easy to train and serves as a baseline, but it cannot represent word order or context-dependent predictions."
+        },
+        {
+            "id": "unigram-estimation",
+            "title": "Maximum-Likelihood Estimation for Unigrams",
+            "type": "math",
+            "content": "If token w appears c(w) times in a corpus containing N token occurrences, the maximum-likelihood estimate is P(w) = c(w) / N. The estimates sum to one when all vocabulary tokens are included and counts are defined consistently. If a token never occurs in training, its estimated probability is zero, which creates a serious problem for evaluating sequences containing that token."
+        },
+        {
+            "id": "unigram-python",
+            "title": "Build a Unigram Model",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ncorpus = [\"AI learns from data\", \"AI learns patterns\"]\ntokens = [token.lower() for text in corpus for token in text.split()]\ncounts = Counter(tokens)\ntotal = len(tokens)\nprobabilities = {token: count / total for token, count in counts.items()}\nprint(probabilities)\nprint(\"Probability sum:\", sum(probabilities.values()))",
+            "explanation": "The model estimates token probabilities using normalized corpus counts. It treats each token occurrence independently and does not consider its surrounding context. This is a useful baseline but not a realistic model of sentence structure."
+        },
+        {
+            "id": "bigram-model",
+            "title": "Bigram Language Model",
+            "type": "concept",
+            "content": "A bigram model predicts each token from the immediately preceding token. It estimates P(x_t | x_{t-1}) from adjacent-token counts. For example, it may learn that 'machine' is often followed by 'learning' in a particular corpus. Bigrams capture local ordering but ignore longer context. A word that depends on information several tokens earlier may be difficult to predict correctly."
+        },
+        {
+            "id": "bigram-probability",
+            "title": "Bigram Probability Estimation",
+            "type": "math",
+            "content": "For adjacent tokens u and v, the maximum-likelihood bigram estimate is P(v | u) = count(u, v) / count(u), where count(u, v) is the number of times the pair occurs and count(u) is the number of times u occurs as a context token. If the pair never occurs, the estimate becomes zero. Smoothing techniques assign nonzero probability to unseen events."
+        },
+        {
+            "id": "bigram-code",
+            "title": "Estimate Bigram Probabilities",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter, defaultdict\n\ncorpus = [\"the model learns\", \"the model predicts\", \"the system learns\"]\npair_counts = Counter()\ncontext_counts = Counter()\n\nfor sentence in corpus:\n    tokens = [\"<BOS>\"] + sentence.split() + [\"<EOS>\"]\n    for previous, current in zip(tokens, tokens[1:]):\n        pair_counts[(previous, current)] += 1\n        context_counts[previous] += 1\n\nbigram_probs = {pair: count / context_counts[pair[0]] for pair, count in pair_counts.items()}\nprint(bigram_probs)",
+            "explanation": "The code counts adjacent token pairs and computes conditional probabilities. Beginning and end markers allow the model to represent sentence starts and stops. The implementation does not smooth unseen pairs, so those pairs receive no stored probability."
+        },
+        {
+            "id": "n-gram-model",
+            "title": "N-Gram Language Models",
+            "type": "concept",
+            "content": "An n-gram model predicts a token using the preceding n-1 tokens. A trigram uses the previous two tokens, while a four-gram uses the previous three. Larger contexts can represent more local structure but require more data because the number of possible contexts grows rapidly. Many valid n-grams are rare or absent even in large corpora, which creates data sparsity."
+        },
+        {
+            "id": "markov-assumption",
+            "title": "The Markov Assumption",
+            "type": "concept",
+            "content": "An n-gram model approximates the full history by conditioning on only a limited number of previous tokens. For example, a trigram approximation uses P(x_t | x_{t-2}, x_{t-1}) instead of the full history P(x_t | x_1, ..., x_{t-1}). This makes probability estimation manageable, but relevant information outside the limited window is discarded. Neural models can learn context-dependent representations with more flexible dependencies."
+        },
+        {
+            "id": "data-sparsity",
+            "title": "Data Sparsity",
+            "type": "concept",
+            "content": "As the context length increases, the number of possible n-grams grows rapidly. Most possible sequences occur rarely, and many do not appear in the training corpus at all. Maximum-likelihood estimation then assigns zero probability to unseen n-grams. Smoothing, backoff, and interpolation combine observed statistics with broader estimates to reduce this problem."
+        },
+        {
+            "id": "laplace-smoothing",
+            "title": "Laplace Smoothing",
+            "type": "math",
+            "content": "For a context u and vocabulary size V, add-one smoothing estimates P(v | u) = (count(u, v) + 1) / (count(u) + V). The added count gives every vocabulary item a positive probability. This prevents zero probabilities, but it can assign too much probability mass to unseen events, particularly when V is large. More advanced methods such as Good-Turing estimation and Kneser-Ney smoothing are often more effective for classical n-gram language models."
+        },
+        {
+            "id": "smoothing-code",
+            "title": "A Smoothed Bigram Probability",
+            "type": "code",
+            "language": "python",
+            "content": "def laplace_bigram_probability(pair_count, context_count, vocab_size):\n    return (pair_count + 1) / (context_count + vocab_size)\n\nprint(laplace_bigram_probability(pair_count=3, context_count=10, vocab_size=5))",
+            "explanation": "The function applies add-one smoothing. With a pair count of 3, context count of 10, and vocabulary size 5, the estimated probability is 4/15. This is a conditional probability estimate for one next token given one context."
+        },
+        {
+            "id": "neural-language-models",
+            "title": "Neural Language Models",
+            "type": "concept",
+            "content": "Neural language models represent tokens with embeddings and use trainable neural networks to predict probabilities over vocabulary items. Earlier approaches used feed-forward networks and recurrent architectures. Neural models can share statistical strength across related token contexts instead of storing an independent count for every n-gram. Their effectiveness depends on training data, model capacity, optimization, regularization, and the quality of tokenization."
+        },
+        {
+            "id": "recurrent-language-model",
+            "title": "Recurrent Language Modeling",
+            "type": "concept",
+            "content": "A recurrent language model processes a sequence one token at a time and maintains a hidden state that summarizes preceding tokens. At step t, the state is updated from the current token embedding and previous hidden state. The model predicts the next token from that state. RNNs, LSTMs, and GRUs can process variable-length sequences, but recurrent computation is sequential and long-range information can be difficult to preserve."
+        },
+        {
+            "id": "transformer-language-model",
+            "title": "Transformer Language Modeling",
+            "type": "concept",
+            "content": "Transformer language models use self-attention to combine information across token positions. An autoregressive Transformer applies a causal mask so that each position can use preceding tokens but not future tokens. This allows parallel computation of training predictions across sequence positions while preserving the next-token prediction objective. During generation, the model predicts one or more candidate next tokens and extends the context."
+        },
+        {
+            "id": "autoregressive-factorization",
+            "title": "Autoregressive Language Modeling",
+            "type": "math",
+            "content": "An autoregressive model factorizes sequence probability as P(x_1, ..., x_T) = Π_t P(x_t | x_{<t}), where x_{<t} denotes all preceding tokens. The model is trained to predict each token from its available prefix. At generation time, it samples or selects a token from the next-token distribution and appends it to the prefix. Repeating this procedure produces a sequence whose probability is defined by the model's conditional distributions."
+        },
+        {
+            "id": "masked-language-modeling",
+            "title": "Masked Language Modeling",
+            "type": "concept",
+            "content": "Masked language modeling is a different training objective in which selected input tokens are hidden or corrupted and the model predicts their original identities. BERT-style encoders are a prominent example. Unlike a purely autoregressive objective, masked language modeling can use context on both sides of a masked token. This makes it suitable for many understanding tasks, but the objective does not directly provide the same left-to-right generation procedure as a causal language model."
+        },
+        {
+            "id": "causal-vs-masked",
+            "title": "Causal Versus Masked Language Modeling",
+            "type": "concept",
+            "content": "Causal language modeling predicts the next token from preceding tokens and naturally supports left-to-right text generation. Masked language modeling predicts selected corrupted tokens using available surrounding context and is commonly used for encoder representations. The objectives encourage different kinds of information use. The choice depends on whether the main goal is generation, bidirectional representation learning, or a combination of capabilities."
+        },
+        {
+            "id": "cross-entropy",
+            "title": "Cross-Entropy for Language Modeling",
+            "type": "math",
+            "content": "For target token y and model probability distribution p, cross-entropy loss is L = -log p(y). For a sequence of T prediction targets, average negative log-likelihood is L = -(1/T) Σ_t log P(x_t | x_{<t}). Minimizing this loss encourages the model to assign higher probability to observed tokens. Implementations typically compute loss from logits using numerically stable log-softmax operations."
+        },
+        {
+            "id": "perplexity",
+            "title": "Perplexity",
+            "type": "math",
+            "content": "Perplexity is exp of the average negative log-likelihood when natural logarithms are used: PPL = exp(-(1/T) Σ_t log P(x_t | x_{<t})). Lower perplexity indicates that the model assigns greater probability to the evaluated token sequence under the evaluation setup. Perplexity depends on the tokenizer, evaluation corpus, and tokenization policy, so comparisons across different tokenizers or datasets require care."
+        },
+        {
+            "id": "perplexity-example",
+            "title": "Calculate Perplexity",
+            "type": "code",
+            "language": "python",
+            "content": "import math\n\nprobabilities = [0.5, 0.25, 0.8]\nmean_negative_log_likelihood = -sum(math.log(p) for p in probabilities) / len(probabilities)\nperplexity = math.exp(mean_negative_log_likelihood)\nprint(\"Mean NLL:\", mean_negative_log_likelihood)\nprint(\"Perplexity:\", perplexity)",
+            "explanation": "The example computes average negative log-likelihood from three conditional probabilities and exponentiates it. A real evaluation must use probabilities assigned to the correct target tokens, include the intended sequence boundaries, and handle padding and masking correctly."
+        },
+        {
+            "id": "language-model-evaluation",
+            "title": "Evaluating Language Models",
+            "type": "concept",
+            "content": "Language models can be evaluated using held-out negative log-likelihood, perplexity, task-specific metrics, and human or expert judgments of generated outputs. Automatic metrics do not fully measure factual correctness, helpfulness, reasoning, or safety. A model can achieve low perplexity without reliably answering questions or avoiding unsupported claims. Evaluation should reflect the intended use case and include relevant failure modes."
+        },
+        {
+            "id": "language-model-limitations",
+            "title": "Limitations of Language Modeling",
+            "type": "concept",
+            "content": "Language models learn patterns from their training distributions and may produce plausible but false statements. They can memorize training examples, reproduce biases, struggle with rare domains, or perform poorly when input distributions change. Probability estimates describe the model's learned distribution, not guaranteed truth. Systems that require factual reliability may need retrieval, external tools, validation, calibrated uncertainty, or human review."
+        },
+        {
+            "id": "language-model-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "A language model assigns probabilities to token sequences. N-gram models use local counts and require smoothing to handle unseen sequences. Neural models learn representations and conditional distributions from data. Autoregressive models predict the next token from previous tokens, while masked language models predict corrupted tokens using surrounding context. Cross-entropy and perplexity measure predictive performance, but they do not capture every dimension of model quality."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "language-modeling-exercise-1",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "A unigram model observes a token 20 times in a corpus of 100 tokens. What is its maximum-likelihood probability estimate?",
+            "correctAnswer": "0.2",
+            "solution": "The unigram estimate is count(token) / total tokens = 20 / 100 = 0.2."
+        },
+        {
+            "id": "language-modeling-exercise-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A model assigns conditional probabilities 0.5 and 0.4 to two consecutive tokens. Under the chain-rule factorization, what is the probability of that sequence if these are the only two factors?",
+            "correctAnswer": "0.2",
+            "solution": "Multiply the conditional factors: 0.5 × 0.4 = 0.2."
+        },
+        {
+            "id": "language-modeling-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does an n-gram model need smoothing?",
+            "correctAnswer": "Unseen n-grams otherwise receive zero probability under maximum-likelihood estimation.",
+            "solution": "Text contains many possible token combinations that are absent from a finite training corpus. Smoothing allocates probability to unseen events and avoids zero-probability estimates."
+        },
+        {
+            "id": "language-modeling-exercise-4",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "If a model's average negative log-likelihood is approximately 2 nats per token, what is its perplexity?",
+            "correctAnswer": "Approximately 7.39.",
+            "solution": "Perplexity = exp(average negative log-likelihood) = exp(2) ≈ 7.389."
+        },
+        {
+            "id": "language-modeling-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Why might perplexity be insufficient for deciding whether a language model is safe and factually reliable?",
+            "correctAnswer": "Perplexity measures predictive likelihood on a token distribution, not factual correctness, harmful behavior, or all dimensions of safety.",
+            "solution": "A model may predict fluent text while producing false or harmful claims. Evaluation should combine likelihood metrics with task-specific factuality, safety, robustness, and human or expert review."
+        }
+    ],
+    "summary": "Language modeling learns probability distributions over token sequences. Unigram and n-gram methods estimate probabilities from counts, while neural models learn conditional distributions through embeddings and neural architectures. Autoregressive models predict tokens from previous context, and masked language models predict selected corrupted tokens. Cross-entropy and perplexity measure predictive quality but should be combined with task-specific evaluations.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-word-embeddings",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-model-architecture"
+    ]
+}

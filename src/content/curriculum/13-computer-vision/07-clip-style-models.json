@@ -1,1 +1,324 @@
-{}
+{
+  "id": "module-13-computer-vision-clip-style-models",
+  "moduleId": "module-13-computer-vision",
+  "moduleIndex": 13,
+  "topicIndex": 7,
+  "title": "CLIP & Contrastive Vision-Language Learning",
+  "slug": "clip-style-models",
+  "href": "/curriculum/13-computer-vision/clip-style-models",
+  "filePath": "content/curriculum/13-computer-vision/07-clip-style-models.json",
+  "description": "Understand how vision-language models learn a shared embedding space for images and text through contrastive learning, enabling zero-shot classification, semantic retrieval, and multimodal transfer.",
+  "difficulty": "advanced",
+  "estimatedHours": 8,
+  "prerequisites": [
+    "cnns",
+    "vision-transformers",
+    "image-embeddings"
+  ],
+  "learningObjectives": [
+    "Explain the motivation behind joint image-text representations.",
+    "Describe the image encoder and text encoder used in CLIP-style architectures.",
+    "Understand contrastive learning with positive and negative image-text pairs.",
+    "Derive and interpret the symmetric InfoNCE objective.",
+    "Explain temperature scaling and normalized embedding similarity.",
+    "Perform zero-shot image classification using text prompts.",
+    "Build text-to-image and image-to-text retrieval systems.",
+    "Understand prompt engineering and prompt ensembling for zero-shot transfer.",
+    "Evaluate retrieval and classification using suitable metrics.",
+    "Recognize limitations involving data bias, domain shift, compositional reasoning, and image-text alignment."
+  ],
+  "sections": [
+    {
+      "id": "vision-language-motivation",
+      "title": "Why Connect Images and Text?",
+      "type": "concept",
+      "content": "Traditional image classifiers learn to map images to a fixed set of categories defined during training. Adding a new category may require collecting labeled images and modifying or retraining the classifier. Vision-language models instead learn relationships between visual content and natural language. A model can compare an image representation with text descriptions and select the descriptions that best match it. This supports zero-shot classification, semantic search, image caption retrieval, and multimodal applications. The central idea is to represent images and text in a shared vector space where related image-text pairs are close and unrelated pairs are farther apart. This does not mean that the model understands every sentence or visual relationship perfectly; its behavior reflects the training data and objective."
+    },
+    {
+      "id": "clip-overview",
+      "title": "The CLIP Architecture",
+      "type": "concept",
+      "content": "CLIP, short for Contrastive Language-Image Pre-training, is a vision-language learning approach that trains an image encoder and a text encoder using paired images and captions. The image encoder may use a convolutional network or a vision transformer. The text encoder commonly uses a transformer to produce a representation of the input text. Projection layers map both representations into a common embedding dimension. The embeddings are often L2-normalized before their dot product is calculated, making the score equivalent to cosine similarity. Training encourages the correct caption to score higher for an image than other captions in the batch. The resulting representation can transfer to categories and tasks not explicitly trained as a conventional closed-set classifier."
+    },
+    {
+      "id": "dual-encoder",
+      "title": "Dual-Encoder Design",
+      "type": "concept",
+      "content": "A dual encoder processes an image and a text description independently before comparing their final representations. This design allows image embeddings and text embeddings to be computed and cached separately. For image retrieval, a text query can be encoded once and compared against many stored image vectors. For text retrieval, an image can be encoded once and compared against a collection of text vectors. The expensive encoders do not need to run jointly for every candidate pair. This is particularly valuable for large-scale retrieval. A limitation is that the model compares compressed representations rather than performing unrestricted token-level interaction between every image region and every word at query time."
+    },
+    {
+      "id": "embedding-projection",
+      "title": "Projection into a Shared Space",
+      "type": "math",
+      "content": "Let the image encoder produce a feature vector f_I and the text encoder produce f_T. Learned projection matrices map these features into a shared dimension. The resulting vectors can be normalized to unit length. Their dot product then measures cosine similarity, which reflects the angle between the vectors rather than their original magnitude. This shared space allows visual and linguistic features to be compared even though the encoders operate on very different input types. The projection layers and encoders are trained together, so the shared representation is learned rather than manually specified.",
+      "formula": "z_I = normalize(W_I f_I); z_T = normalize(W_T f_T); sim(I,T) = z_Iᵀ z_T",
+      "example": "If normalized image and text embeddings point in nearly the same direction, their cosine similarity approaches one. If they are orthogonal, the similarity is zero. A negative cosine similarity indicates an angle greater than 90 degrees."
+    },
+    {
+      "id": "cosine-similarity",
+      "title": "Cosine Similarity",
+      "type": "math",
+      "content": "Cosine similarity measures the angle between two nonzero vectors. It is calculated by dividing their dot product by the product of their Euclidean norms. For unit-normalized vectors, the denominator is one, so cosine similarity reduces to the dot product. This makes similarity computation efficient for large collections of embeddings. Similarity scores are not automatically calibrated probabilities. A score of 0.8 does not mean that an image has an 80 percent probability of matching a description. Scores are most meaningful relative to candidate descriptions, the model, and the domain.",
+      "formula": "cos(u,v) = (u · v) / (||u||₂ ||v||₂)",
+      "example": "For u = [1, 0] and v = [0.8, 0.6], both vectors have unit norm, and their cosine similarity is 0.8."
+    },
+    {
+      "id": "contrastive-learning",
+      "title": "Contrastive Learning Fundamentals",
+      "type": "concept",
+      "content": "Contrastive learning trains representations by comparing related and unrelated examples. In image-text learning, a paired image and caption form a positive pair. Other captions in the batch usually serve as negative candidates for that image, and other images serve as negative candidates for that caption. The model is rewarded when the positive pair receives a higher similarity score than negative pairs. This relative objective is different from predicting a fixed class label. It teaches the encoders to organize representation space around relationships found in paired data. The quality of these relationships depends on the captions: a short caption may omit many true properties of an image, and a nominal negative may actually describe the image correctly."
+    },
+    {
+      "id": "batch-similarity-matrix",
+      "title": "The Batch Similarity Matrix",
+      "type": "math",
+      "content": "For a batch of N paired images and texts, let normalized image embeddings form the rows of matrix Z_I and normalized text embeddings form the rows of Z_T. Their matrix product creates an N-by-N similarity matrix. The diagonal contains the matched image-text pairs when batch ordering is aligned. Off-diagonal entries compare images with captions from other batch examples. The training objective encourages each diagonal entry to be large relative to the other entries in its row and column. A larger batch provides more negative candidates, although its benefit depends on data quality, optimization, and the presence of false negatives.",
+      "formula": "S = Z_I Z_Tᵀ / τ",
+      "example": "With a batch of four pairs, the similarity matrix contains 16 scores. Four diagonal entries represent the intended matches, while the remaining twelve entries compare nonmatching batch positions."
+    },
+    {
+      "id": "infonce",
+      "title": "InfoNCE and the Contrastive Objective",
+      "type": "math",
+      "content": "InfoNCE applies cross-entropy to similarity scores so that each image identifies its paired caption among the batch and each caption identifies its paired image. The image-to-text loss treats each image as a query whose correct class is the matching text index. The text-to-image loss reverses the roles. Their average produces a symmetric objective. This encourages aligned representations without requiring a manually defined class taxonomy. If a batch contains multiple valid captions for the same image or several images with similar content, treating every off-diagonal entry as negative can introduce false-negative supervision.",
+      "formula": "L_I→T = -(1/N) Σ_i log(exp(S_ii) / Σ_j exp(S_ij)); L_T→I = -(1/N) Σ_i log(exp(S_ii) / Σ_j exp(S_ji)); L = (L_I→T + L_T→I)/2",
+      "example": "For each image, the row-wise softmax assigns a probability distribution over candidate captions. Cross-entropy penalizes the model when the paired caption receives low probability."
+    },
+    {
+      "id": "temperature",
+      "title": "Temperature Scaling",
+      "type": "concept",
+      "content": "Temperature controls the sharpness of the distribution over similarity scores. A lower temperature magnifies score differences before softmax, making the model focus more strongly on the highest-scoring candidates. A higher temperature produces a softer distribution. If the temperature is too low, training may become sensitive to hard negatives or noisy pairs; if too high, the model may receive a weaker distinction between positives and negatives. Many implementations learn a logit-scale parameter rather than directly optimizing temperature. During inference, the appropriate use of a model's learned logit scale depends on the task; cosine similarity alone is often sufficient for ranking."
+    },
+    {
+      "id": "temperature-math",
+      "title": "Effect of Temperature on Logits",
+      "type": "math",
+      "content": "Given cosine similarity s, a temperature-scaled logit is s divided by τ, where τ is positive. Suppose two candidate captions have similarities 0.7 and 0.5. Their difference is 0.2 before scaling. At temperature 0.1, their logit difference becomes 2.0; at temperature 0.5, it becomes 0.4. The relative ranking does not change for a fixed set of similarities, but the softmax probabilities become more or less concentrated. The model's training behavior depends on this scale because cross-entropy gradients depend on the softmax distribution.",
+      "formula": "logit = similarity / τ",
+      "example": "Similarities 0.7 and 0.5 produce logits 7 and 5 at τ = 0.1, but logits 1.4 and 1.0 at τ = 0.5."
+    },
+    {
+      "id": "training-data",
+      "title": "Image-Text Pair Data",
+      "type": "concept",
+      "content": "Contrastive vision-language training requires paired images and text. The text may be a human-written caption, a descriptive alt text field, a product description, or another associated phrase. Data quality affects the learned representation. Extremely generic captions provide weak visual supervision, while incorrect or unrelated captions can teach misleading associations. Duplicate images, repeated captions, and near-duplicate web content can distort the effective training distribution. Large-scale datasets also raise questions about consent, copyright, privacy, and representation bias. Dataset construction therefore includes filtering, deduplication, documentation, and evaluation of the kinds of image-text relationships represented."
+    },
+    {
+      "id": "false-negatives",
+      "title": "False Negatives in Contrastive Learning",
+      "type": "concept",
+      "content": "A contrastive batch often treats all off-diagonal pairs as negatives, but some may actually be semantically compatible. Two photographs of different dogs may both match the caption 'a dog playing outside.' If one image is paired with that caption and another image appears elsewhere in the batch, the objective may push apart representations that should remain close for semantic retrieval. Multi-positive objectives, duplicate-aware batching, larger caption sets, or carefully designed sampling can reduce this issue. It is not always possible to identify every valid semantic match, especially in large and diverse datasets."
+    },
+    {
+      "id": "zero-shot-classification",
+      "title": "Zero-Shot Image Classification",
+      "type": "concept",
+      "content": "Zero-shot classification compares an image embedding with text embeddings describing candidate classes. Instead of training a new linear classifier, the system encodes descriptions such as 'a photo of a dog' and 'a photo of a bicycle' and chooses the candidate with the highest similarity. The class names are supplied at inference time, allowing the candidate label set to change without retraining the encoders. Zero-shot does not mean that the model has never encountered related concepts during pretraining; it means that no task-specific labeled training examples are required for that particular classification setup. Performance depends strongly on the model's pretraining data, candidate descriptions, and domain."
+    },
+    {
+      "id": "prompt-templates",
+      "title": "Prompt Templates and Prompt Ensembling",
+      "type": "concept",
+      "content": "A class name can be expressed in several ways, and these descriptions may yield different text embeddings. For example, a class may be described as 'a photo of a golden retriever,' 'a close-up photograph of a golden retriever,' or 'an image of a golden retriever outdoors.' Prompt templates can improve performance by placing class names in natural contexts. Prompt ensembling encodes several templates and averages their embeddings or scores according to the chosen method. This can reduce sensitivity to one arbitrary phrasing, but it also introduces design choices. Templates should be chosen using a validation set and documented to avoid unintentionally tuning to the test set."
+    },
+    {
+      "id": "zero-shot-code",
+      "title": "Zero-Shot Classification with a Pretrained Model",
+      "type": "code",
+      "language": "python",
+      "content": "import torch\nfrom PIL import Image\nfrom transformers import CLIPModel, CLIPProcessor\n\nmodel_id = \"openai/clip-vit-base-patch32\"\nmodel = CLIPModel.from_pretrained(model_id)\nprocessor = CLIPProcessor.from_pretrained(model_id)\nimage = Image.open(\"image.jpg\").convert(\"RGB\")\nlabels = [\"a photo of a dog\", \"a photo of a cat\", \"a photo of a bicycle\"]\ninputs = processor(text=labels, images=image, return_tensors=\"pt\", padding=True)\nwith torch.no_grad():\n    outputs = model(**inputs)\nprobabilities = outputs.logits_per_image.softmax(dim=1)[0]\nfor label, score in sorted(zip(labels, probabilities.tolist()), key=lambda item: item[1], reverse=True):\n    print(label, round(score, 4))",
+      "explanation": "The processor prepares the image and text for the selected checkpoint. The model returns image-text logits, and softmax converts those scores into a distribution over the supplied candidates. These probabilities are conditional on the candidate list and are not universally calibrated class probabilities. Review the checkpoint's license, intended use, and preprocessing requirements before deployment."
+    },
+    {
+      "id": "retrieval",
+      "title": "Text-to-Image and Image-to-Text Retrieval",
+      "type": "concept",
+      "content": "In text-to-image retrieval, the system encodes a query such as 'a red car parked beside a tree' and ranks stored image embeddings by similarity. In image-to-text retrieval, the system encodes an image and ranks a collection of captions or descriptions. Since the embeddings can be computed offline, retrieval can scale to large collections. A vector index accelerates nearest-neighbor search when exhaustive comparisons become expensive. The model can still miss fine-grained distinctions, such as the exact number of objects, a small text label, or a subtle spatial relation. Retrieval results should therefore be treated as ranked candidates rather than guaranteed semantic matches."
+    },
+    {
+      "id": "retrieval-code",
+      "title": "Ranking Candidate Embeddings",
+      "type": "code",
+      "language": "python",
+      "content": "import torch\nimport torch.nn.functional as F\n\nimage_vectors = F.normalize(torch.randn(100, 512), dim=-1)\nquery_vector = F.normalize(torch.randn(1, 512), dim=-1)\nscores = query_vector @ image_vectors.T\nvalues, indices = scores[0].topk(k=5)\nprint(indices.tolist())\nprint(values.tolist())",
+      "explanation": "This synthetic example demonstrates ranking normalized vectors using matrix multiplication. In a real retrieval system, replace the random tensors with embeddings generated by the selected model and preserve the model's preprocessing. For large datasets, an approximate nearest-neighbor index can reduce search time at the cost of possible recall loss."
+    },
+    {
+      "id": "retrieval-metrics",
+      "title": "Evaluating Retrieval",
+      "type": "concept",
+      "content": "Retrieval evaluation measures whether relevant items appear near the top of a ranked list. Recall at K measures the fraction of relevant items recovered within the top K results. Precision at K measures the fraction of top K results that are relevant. Mean reciprocal rank emphasizes the position of the first relevant result. Mean average precision accounts for relevant results throughout the ranking. When each query has multiple valid matches, Recall@K can be especially useful. Evaluation must define relevance carefully: captions may paraphrase one another, and an image can be semantically relevant without being the exact paired training image."
+    },
+    {
+      "id": "recall-at-k",
+      "title": "Recall at K",
+      "type": "math",
+      "content": "For a query q, let Rq be the set of all relevant database items and TopK(q) be the first K retrieved items. Recall at K is the fraction of relevant items that appear in the top K. In image-text benchmarks, the number of relevant items per query may be small or may include multiple correct captions. The benchmark's relevance annotations determine the denominator. Recall@K should be reported for several useful K values when ranking quality at different depths matters.",
+      "formula": "Recall@K(q) = |TopK(q) ∩ Rq| / |Rq|",
+      "example": "If a query has four relevant images and three appear in the top ten results, Recall@10 = 3/4 = 0.75."
+    },
+    {
+      "id": "fine-grained-alignment",
+      "title": "Global and Local Alignment",
+      "type": "concept",
+      "content": "Many dual-encoder models compare one global image vector with one global text vector. This representation is efficient but compresses a complex image into a single vector. It may not preserve every local relation, such as which object is to the left of another or whether a small object is holding a specific item. Other vision-language systems use region-level features, token-level interactions, cross-attention, or explicit grounding objectives. These methods can provide richer alignment but may require more computation at inference. Global embedding similarity is useful for broad semantic matching, while detailed grounding tasks may need specialized architectures."
+    },
+    {
+      "id": "open-vocabulary",
+      "title": "Open-Vocabulary Recognition",
+      "type": "concept",
+      "content": "Open-vocabulary recognition allows categories to be specified through text rather than being restricted to a fixed list of training labels. A vision-language embedding model can rank image-level class descriptions, while open-vocabulary detectors extend text-conditioned recognition to localized objects. Open vocabulary does not imply unlimited recognition ability. Unusual terms, rare objects, ambiguous names, and fine-grained categories may be poorly represented. The text encoder may also map synonyms or related concepts close together. Evaluate the actual vocabulary and deployment domain rather than assuming every valid phrase will be recognized reliably."
+    },
+    {
+      "id": "fine-tuning",
+      "title": "Adapting a Vision-Language Model",
+      "type": "concept",
+      "content": "A pretrained vision-language model can be adapted through full fine-tuning, partial encoder tuning, linear probing, or parameter-efficient methods. Linear probing freezes the pretrained encoder and learns a small task-specific classifier over its features. Full fine-tuning may improve domain-specific accuracy but requires more compute and can damage general-purpose transfer if the dataset is small. Parameter-efficient approaches update a smaller set of weights. The choice should be guided by dataset size, domain shift, compute limits, and whether broad transfer ability must be preserved. Keep a held-out evaluation set and compare against the unmodified pretrained model."
+    },
+    {
+      "id": "linear-probe",
+      "title": "Linear Probing",
+      "type": "math",
+      "content": "Linear probing freezes a pretrained encoder and trains a linear classifier over its embeddings. If each image embedding has dimension D and the task has C classes, the linear layer typically contains a weight matrix of shape C × D and a bias of shape C. It tests whether the pretrained representation already separates the target classes with a simple decision boundary. Strong linear-probe performance suggests that the features are useful for the task, but it does not prove that the model has no remaining capacity for improvement through fine-tuning.",
+      "formula": "logits = Wz + b, where z ∈ R^D, W ∈ R^(C×D), b ∈ R^C",
+      "example": "For D = 512 and C = 10, the classifier has 5120 weights and 10 biases, far fewer parameters than a large vision encoder."
+    },
+    {
+      "id": "domain-shift",
+      "title": "Domain Shift and Specialized Images",
+      "type": "concept",
+      "content": "A model trained largely on internet photographs may perform poorly on microscopy, radiology, satellite imagery, thermal images, industrial cameras, or other specialized domains. The visual statistics, labels, and relationships differ from those represented in the pretraining distribution. Fine-tuning on carefully curated domain data can help, but validation must reflect the intended deployment conditions. A high score on ordinary web photographs does not establish suitability for medical diagnosis or safety-critical inspection. Domain experts should define the task, relevant error costs, and acceptable uncertainty."
+    },
+    {
+      "id": "compositionality",
+      "title": "Compositional and Relational Limitations",
+      "type": "concept",
+      "content": "Vision-language models can match broad concepts while failing on relationships between them. A model may recognize a dog and a bicycle but fail to distinguish 'a dog beside a bicycle' from 'a bicycle beside a dog.' It may also struggle with exact counts, negation, fine-grained attributes, and text embedded within images. These limitations arise partly because a global similarity objective does not explicitly enforce every logical relationship expressed in language. Test compositional prompts separately from category recognition, and use specialized grounding or reasoning systems when exact relationships matter."
+    },
+    {
+      "id": "bias",
+      "title": "Bias, Privacy, and Data Governance",
+      "type": "concept",
+      "content": "Large image-text datasets can contain stereotypes, personal information, copyrighted material, and uneven coverage of people and environments. A model may associate occupations, activities, or social categories with biased visual patterns. These issues can affect retrieval rankings and zero-shot predictions even when aggregate accuracy appears acceptable. Responsible development includes data provenance review, privacy protections, appropriate filtering, subgroup evaluation where suitable, and documentation of known limitations. Do not treat similarity scores as objective truth or use an embedding model as the sole basis for high-impact decisions about people."
+    },
+    {
+      "id": "deployment",
+      "title": "Building a Retrieval Service",
+      "type": "concept",
+      "content": "A practical retrieval service encodes and stores database images, maintains a vector index, embeds each incoming query, retrieves the nearest candidates, and returns associated metadata. Image preprocessing and embedding normalization must match the selected checkpoint. The index should be rebuilt or versioned when the encoder changes because embeddings from different model versions may not share the same geometry. Monitor query latency, retrieval quality, index freshness, and access permissions. Store only necessary image data and metadata, and ensure that users can access only the records they are authorized to retrieve."
+    },
+    {
+      "id": "clip-summary",
+      "title": "Putting Vision-Language Learning Together",
+      "type": "concept",
+      "content": "CLIP-style models learn a shared representation space by aligning paired images and text while separating mismatched pairs. Image and text encoders produce projected embeddings, and a symmetric contrastive objective trains them using batch-level similarity scores. Normalized dot products support zero-shot classification and scalable semantic retrieval. Prompt templates, temperature, batch composition, and training data influence the learned representation. The resulting models transfer broadly but can fail on specialized domains, fine-grained relationships, and underrepresented concepts. Reliable applications require task-specific validation, careful metric selection, data governance, and monitoring."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "clip-ex-1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What does it mean for a vision-language model to learn a shared embedding space?",
+      "correctAnswer": "Images and text are mapped into vectors that can be compared directly, with related image-text pairs encouraged to have high similarity.",
+      "solution": "The encoders have different input types but project their outputs into a common vector space. Similarity scores support classification and retrieval."
+    },
+    {
+      "id": "clip-ex-2",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "If two vectors are unit-normalized and their dot product is 0.72, what is their cosine similarity?",
+      "correctAnswer": "0.72.",
+      "solution": "For unit vectors, both norms equal one, so cosine similarity equals the dot product."
+    },
+    {
+      "id": "clip-ex-3",
+      "type": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Why does contrastive training use negative candidates?",
+      "correctAnswer": "Negative candidates encourage the model to rank the paired caption above unrelated alternatives instead of merely increasing all similarities.",
+      "solution": "The contrastive objective compares positive pairs against other examples in the batch. This shapes the relative geometry of the embedding space."
+    },
+    {
+      "id": "clip-ex-4",
+      "type": "calculation",
+      "difficulty": "intermediate",
+      "question": "A retrieval query has eight relevant items, and five appear in the top ten results. Compute Recall@10.",
+      "correctAnswer": "0.625.",
+      "solution": "Recall@10 = 5/8 = 0.625, or 62.5 percent."
+    },
+    {
+      "id": "clip-ex-5",
+      "type": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Why is zero-shot classification not the same as classification without any prior learning?",
+      "correctAnswer": "The pretrained model has already learned visual and linguistic relationships; zero-shot means no task-specific labeled examples are required for the target setup.",
+      "solution": "Pretraining provides the learned representations. At inference, candidate classes are represented using text instead of a newly trained task-specific classifier."
+    },
+    {
+      "id": "clip-ex-6",
+      "type": "conceptual",
+      "difficulty": "intermediate",
+      "question": "How does temperature affect contrastive logits?",
+      "correctAnswer": "Lower temperature magnifies differences between similarity scores, making the softmax distribution sharper.",
+      "solution": "Logits are similarity divided by temperature. Smaller positive temperatures produce larger logit differences for the same similarity values."
+    },
+    {
+      "id": "clip-ex-7",
+      "type": "design",
+      "difficulty": "advanced",
+      "question": "You are building semantic search for a collection of one million product images. Outline an efficient retrieval pipeline.",
+      "correctAnswer": "Precompute normalized image embeddings, store them in a vector index with product metadata, encode each query once, retrieve nearest neighbors, and evaluate ranking quality and latency.",
+      "solution": "Offline embedding avoids repeatedly running the image encoder. An approximate nearest-neighbor index can accelerate large-scale search. Ensure consistent preprocessing, access controls, index versioning, and evaluation with relevant query-item pairs."
+    },
+    {
+      "id": "clip-ex-8",
+      "type": "debugging",
+      "difficulty": "intermediate",
+      "question": "A model returns a softmax score of 0.95 for one text label. Why should this not automatically be interpreted as a 95 percent probability that the label is objectively correct?",
+      "correctAnswer": "The score is normalized over the supplied candidate descriptions and may not be calibrated against real-world correctness.",
+      "solution": "Changing the candidate set can change the softmax distribution. Similarity-based zero-shot predictions need validation and may be unreliable under domain shift or ambiguous prompts."
+    },
+    {
+      "id": "clip-ex-9",
+      "type": "design",
+      "difficulty": "advanced",
+      "question": "A model recognizes objects correctly but often reverses spatial relationships such as 'left of' and 'right of.' What should you investigate?",
+      "correctAnswer": "Evaluate relational prompts explicitly and consider grounding models or architectures with stronger region-level and token-level alignment.",
+      "solution": "A global embedding may capture the objects without reliably encoding their relationship. Create a controlled benchmark of relational examples and compare specialized methods."
+    },
+    {
+      "id": "clip-ex-10",
+      "type": "conceptual",
+      "difficulty": "intermediate",
+      "question": "What is a false negative in contrastive vision-language learning?",
+      "correctAnswer": "A pair treated as unrelated by the training objective even though its image and text are semantically compatible.",
+      "solution": "Two images may both correctly match a generic caption. Treating one of those valid pairs as a negative can push useful representations apart."
+    },
+    {
+      "id": "clip-ex-11",
+      "type": "design",
+      "difficulty": "advanced",
+      "question": "How would you test whether prompt templates improve zero-shot classification without leaking test information?",
+      "correctAnswer": "Choose templates using training knowledge or a separate validation set, freeze the template design, and evaluate once on a held-out test set.",
+      "solution": "Repeatedly tuning templates on test results overfits the evaluation set. A separate validation set supports model and prompt selection while preserving a more independent final estimate."
+    },
+    {
+      "id": "clip-ex-12",
+      "type": "conceptual",
+      "difficulty": "advanced",
+      "question": "Why should a retrieval index be rebuilt or versioned when the embedding model changes?",
+      "correctAnswer": "A new encoder may produce vectors with different geometry, so old database embeddings may no longer be comparable to new query embeddings.",
+      "solution": "The model defines the representation space. Mixing embeddings from incompatible checkpoints can produce meaningless rankings even when vector dimensions match."
+    }
+  ],
+  "summary": "CLIP-style vision-language models align image and text representations using contrastive learning. A dual-encoder architecture maps each modality into a shared embedding space, and a symmetric InfoNCE objective encourages matched pairs to rank above alternatives. Normalized similarity supports zero-shot classification, text-to-image search, and image-to-text retrieval. Prompt templates and temperature affect predictions, while training data quality and batch composition influence representation learning. Despite broad transfer capabilities, these models can struggle with specialized domains, exact counts, fine-grained relationships, bias, and privacy-sensitive use. Real applications require representative evaluation and careful retrieval-system design.",
+  "relatedTopics": [
+    "cnns",
+    "vision-transformers",
+    "image-embeddings",
+    "object-detection",
+    "multimodal-models"
+  ]
+}

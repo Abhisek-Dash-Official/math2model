@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-backpropagation-through-time",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 3,
+  "title": "Backpropagation Through Time (BPTT)",
+  "slug": "backpropagation-through-time",
+  "href": "/curriculum/05-sequence-models/backpropagation-through-time",
+  "filePath": "content/curriculum/05-sequence-models/03-backpropagation-through-time.json",
+  "description": "Understand how gradients are computed through unrolled recurrent networks and why temporal depth affects training.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "RNN",
+    "Backpropagation",
+    "Chain Rule in Neural Networks"
+  ],
+  "learningObjectives": [
+    "Explain why an RNN is unrolled for gradient computation.",
+    "Describe how gradients from multiple time steps accumulate.",
+    "Distinguish full and truncated BPTT.",
+    "Identify memory and stability trade-offs."
+  ],
+  "sections": [
+    {
+      "id": "unroll",
+      "title": "Why Backpropagation Through Time?",
+      "type": "concept",
+      "content": "An RNN reuses parameters at every time step, so a loss at a later step depends indirectly on earlier hidden states and on the shared weights used repeatedly. Backpropagation through time (BPTT) applies the ordinary chain rule to the RNN after unrolling it into a computational graph across time.\n\nThe graph has one step per sequence position, but each step refers to the same underlying parameter tensors. Gradients from all time steps contribute to the shared parameters."
+    },
+    {
+      "id": "gradient",
+      "title": "Gradient Accumulation Across Time",
+      "type": "math",
+      "content": "Suppose the total loss is L = sum_t L_t. A shared parameter W receives contributions from each time step: dL/dW = sum_t dL_t/dW. Each contribution may itself pass through several recurrent transitions, so it includes products of Jacobians along temporal paths.\n\nRepeated multiplication by Jacobians whose effective magnitudes are small can shrink gradients; repeated multiplication by large magnitudes can amplify them. This is a central reason long sequences can be difficult to train."
+    },
+    {
+      "id": "full",
+      "title": "Full BPTT",
+      "type": "concept",
+      "content": "Full BPTT propagates gradients through the entire unrolled sequence. It provides gradient information across all time steps in the window, but requires storing intermediate activations for the backward pass. Long sequences therefore increase memory use and can make optimization unstable or expensive.\n\nFull BPTT is common when sequence lengths are manageable. In practice, batch size, hidden size, sequence length, and precision all affect memory consumption."
+    },
+    {
+      "id": "truncated",
+      "title": "Truncated BPTT",
+      "type": "concept",
+      "content": "Truncated BPTT divides a long stream into chunks and backpropagates only within each chunk. The hidden state can be carried from one chunk to the next, while the computational graph is detached at the boundary. This reduces memory and compute requirements but prevents gradient credit assignment across the truncation boundary.\n\nTruncation length is a modeling choice: short chunks may miss long dependencies, while long chunks cost more. It is especially useful for streaming or very long sequences."
+    },
+    {
+      "id": "code",
+      "title": "Detach Hidden State Between Chunks",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nrnn = nn.RNN(input_size=3, hidden_size=8, batch_first=True)\noptimizer = torch.optim.Adam(rnn.parameters(), lr=1e-3)\nh = None\nfor x_chunk, target in stream_chunks:  # application-specific iterator\n    optimizer.zero_grad()\n    output, h = rnn(x_chunk, h)\n    loss = loss_fn(output, target)\n    loss.backward()\n    optimizer.step()\n    h = h.detach()  # truncate the gradient graph here",
+      "language": "python",
+      "explanation": "This is a schematic training pattern; stream_chunks and loss_fn must be defined for the task. Detaching preserves the numerical hidden state but stops gradients from flowing into the preceding chunk. When updating weights between chunks, carrying state requires care because it was computed using earlier parameter values."
+    },
+    {
+      "id": "practical",
+      "title": "Practical BPTT Considerations",
+      "type": "concept",
+      "content": "Gradient clipping limits the norm of gradients before an optimizer update and is often used with recurrent networks. Mask losses for padded positions. Reset hidden states between unrelated sequences; for stateful streams, carry them only when the next chunk truly follows the previous chunk.\n\nTeacher forcing, sampling choices, and target alignment also affect recurrent training for generation tasks, but they are distinct from the mechanics of BPTT itself."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "bptt-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "Why is an RNN unrolled during BPTT?",
+      "correctAnswer": "To represent dependencies across time steps as a computational graph through which the chain rule can propagate gradients.",
+      "solution": "Each step reuses parameters but has a distinct hidden-state computation."
+    },
+    {
+      "id": "bptt-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What does truncated BPTT trade off?",
+      "correctAnswer": "Lower memory and computation against reduced gradient flow across chunk boundaries.",
+      "solution": "The hidden state may be carried forward while its history is detached."
+    },
+    {
+      "id": "bptt-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why do gradients for a shared recurrent weight sum contributions from multiple time steps?",
+      "correctAnswer": "The same parameter is used at each time step, and the total loss depends on every use.",
+      "solution": "The chain rule accumulates all paths from the total loss to that shared parameter."
+    },
+    {
+      "id": "bptt-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "What does h = h.detach() do in truncated BPTT?",
+      "correctAnswer": "It preserves hidden-state values but cuts the gradient graph connecting to earlier chunks.",
+      "solution": "The current chunk still trains, but its loss does not backpropagate through previous chunks."
+    }
+  ],
+  "summary": "BPTT applies the chain rule to an unrolled recurrent network. Full BPTT captures gradients across the sequence but can be expensive; truncation reduces cost while limiting long-range credit assignment.",
+  "relatedTopics": [
+    "rnn",
+    "vanishing-exploding-gradients",
+    "lstm",
+    "gru"
+  ]
+}

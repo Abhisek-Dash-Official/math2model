@@ -1,1 +1,274 @@
-{}
+{
+    "id": "module-14-generative-models-score-matching",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 5,
+    "title": "Score-Based Generative Models",
+    "slug": "score-matching",
+    "href": "/curriculum/14-generative-models/score-matching",
+    "filePath": "content/curriculum/14-generative-models/05-score-matching.json",
+    "description": "Learn score functions, score matching, denoising score matching, Langevin dynamics, noise-conditioned score networks, and the relationship between score-based models and diffusion probabilistic models.",
+    "difficulty": "advanced",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "module-14-generative-models-diffusion",
+        "module-03-neural-networks",
+        "module-01-mathematics-for-ai"
+    ],
+    "learningObjectives": [
+        "Define the score function as the gradient of a log probability density.",
+        "Explain why score estimation can be easier than direct density estimation.",
+        "Derive the denoising score-matching objective for Gaussian corruption.",
+        "Understand Langevin dynamics as a method for sampling from a distribution.",
+        "Explain how score networks are conditioned on noise levels.",
+        "Relate score-based generative modeling to diffusion models.",
+        "Identify numerical and statistical challenges in score-based sampling.",
+        "Evaluate score models using sample quality, coverage, and consistency checks."
+    ],
+    "sections": [
+        {
+            "id": "score-generative-overview",
+            "title": "1. What Is a Score-Based Generative Model?",
+            "type": "concept",
+            "content": "A score-based generative model learns the gradient of the log probability density of a data distribution. Rather than directly predicting a normalized probability density, it learns which direction locally increases log density. This vector field can guide noisy samples toward regions that are more typical of the target distribution. The approach is useful because the normalizing constant of a complicated density can be difficult to compute, while its score may be learnable from samples. Score-based methods are closely connected to diffusion models: denoising networks can be interpreted as score estimators at different noise levels, and reverse-time stochastic differential equations use the score to generate samples. The score is not itself a probability or a class label. It is a vector-valued function whose dimension matches the data representation."
+        },
+        {
+            "id": "score-definition",
+            "title": "2. The Score Function",
+            "type": "math",
+            "content": "For a differentiable density p(x), the score is defined as the gradient of its log density: s(x) = ∇ₓ log p(x). The gradient describes how the log density changes for a small movement in each coordinate. In one dimension, a positive score indicates that log density locally increases as x increases; a negative score indicates that it locally decreases. In multiple dimensions, the score points toward the direction of steepest local increase in log density. Its magnitude reflects local sensitivity, not a globally calibrated probability. A score field can be defined without knowing the density's normalization constant because differentiating the logarithm removes any constant that does not depend on x. This property is important for models whose densities are known only up to a normalizing factor.",
+            "formula": "s(x) = ∇_x log p(x)",
+            "example": "For a standard normal distribution, log p(x) = -x²/2 + constant. Differentiating gives s(x) = -x, which points toward zero from either side."
+        },
+        {
+            "id": "gaussian-score",
+            "title": "3. Score of a Gaussian Distribution",
+            "type": "math",
+            "content": "For a multivariate Gaussian with mean mu and covariance matrix Sigma, the score is s(x) = -Sigma⁻¹(x − mu), assuming Sigma is positive definite. The inverse covariance rescales directions according to their variance and correlations. For an isotropic Gaussian with covariance sigma²I, this simplifies to s(x) = -(x − mu)/sigma². The score points toward the mean, and its magnitude grows as the point moves farther away. This example provides a useful intuition for score estimation: if a noisy sample lies far from a high-density region, the score indicates a direction that increases density. Real data distributions can be multimodal and highly nonlinear, so their score fields cannot generally be represented by one global linear function.",
+            "formula": "s(x) = -Sigma^{-1}(x - mu); for Sigma = sigma^2 I, s(x) = -(x - mu)/sigma^2",
+            "example": "For a one-dimensional Gaussian with mean 2 and standard deviation 3, the score at x = 5 is -(5 − 2)/9 = -1/3."
+        },
+        {
+            "id": "why-score-matching",
+            "title": "4. Why Learn the Score Instead of the Density?",
+            "type": "concept",
+            "content": "A normalized density integrates to one, a constraint that can make direct density modeling difficult in high dimensions. Some energy-based models express density as p(x) proportional to exp(-E(x)), but the normalizing constant may be intractable. The score of the log density is the gradient of the energy with respect to the data, with a negative sign, and the unknown constant disappears. Score matching provides objectives that can train a neural network to approximate this gradient from data. The learned vector field can then be used in a sampling algorithm. This does not eliminate every difficulty: score estimates can be inaccurate in low-density regions, numerical integration can be expensive, and a score field alone does not always provide a straightforward normalized likelihood. The method changes the learning target rather than making high-dimensional generation cost-free."
+        },
+        {
+            "id": "score-matching-objective",
+            "title": "5. Fisher Divergence and Score Matching",
+            "type": "math",
+            "content": "Let s_theta(x) be a learned score and s_data(x) = ∇ₓ log p_data(x) be the unknown data score. A basic score-matching objective minimizes the expected squared difference between the two score fields: J(theta) = one half E_data[||s_theta(x) − s_data(x)||²]. The difficulty is that s_data is unknown because the data density is not known explicitly. Under suitable smoothness and boundary conditions, integration by parts transforms this objective into an expression involving derivatives of the learned score and its squared norm, avoiding direct evaluation of the data score. The resulting objective is called explicit score matching. In high-dimensional data, computing the full divergence can be expensive, motivating denoising score matching and related approximations.",
+            "formula": "J(theta) = 1/2 E_{p_data}[||s_theta(x) - ∇_x log p_data(x)||^2]",
+            "example": "The target is a vector field rather than a scalar density value. For image tensors, the score prediction generally has the same shape as the input tensor."
+        },
+        {
+            "id": "denoising-score-matching",
+            "title": "6. Denoising Score Matching",
+            "type": "concept",
+            "content": "Denoising score matching avoids directly computing the score of the unknown data distribution. First sample a clean example x from the dataset, then construct a noisy observation y using a known corruption distribution. For Gaussian corruption y = x + sigma epsilon, where epsilon is standard normal. The conditional score of the noisy observation given the clean sample is analytically available: ∇ᵧ log p(y | x) = -(y − x)/sigma² = -epsilon/sigma. A neural network is trained to estimate this conditional score from noisy examples. Under the denoising score-matching result, the optimal prediction for the corrupted-data distribution corresponds to its score under suitable conditions. The method therefore provides a practical supervised target without requiring the original data density. The network must be trained on a representative range of noise levels if it will be used across multiple scales."
+        },
+        {
+            "id": "denoising-score-math",
+            "title": "7. Deriving the Gaussian Denoising Target",
+            "type": "math",
+            "content": "For y given x distributed as N(x, sigma²I), the conditional log density is log p(y | x) = constant − ||y − x||²/(2sigma²). Differentiating with respect to y gives the conditional score -(y − x)/sigma². Since y − x = sigma epsilon, the target becomes -epsilon/sigma. A common denoising score-matching loss minimizes the squared error between s_theta(y,sigma) and this target. Multiplying the loss by sigma² changes the weighting across noise levels and produces an equivalent noise-prediction-style target up to the chosen parameterization. The weighting is not a cosmetic detail: large noise levels can have score magnitudes that differ greatly from those at small noise levels. A carefully chosen objective balances the learning signal across corruption scales.",
+            "formula": "y = x + sigma epsilon; s_target(y,x,sigma) = -(y - x)/sigma^2 = -epsilon/sigma",
+            "example": "If sigma = 0.5 and epsilon = 2, the noisy observation differs from x by 1. The conditional score target is -2/0.5 = -4."
+        },
+        {
+            "id": "noise-conditioned-score-networks",
+            "title": "8. Noise-Conditioned Score Networks",
+            "type": "concept",
+            "content": "A single score network can be conditioned on the noise level so it can estimate scores for multiple corrupted distributions. A common notation is s_theta(x,sigma). The input includes a noisy sample and an embedding of sigma or its logarithm. A network that ignores the noise level may produce conflicting outputs because the correct score depends on the corruption distribution. Noise conditioning allows shared parameters to model the transition from fine-scale detail at low noise to broad structure at high noise. Logarithmic noise embeddings are often useful because noise scales may span several orders of magnitude. The network architecture can be a multilayer perceptron for low-dimensional data, a convolutional model for images, or a U-Net-like architecture for high-resolution inputs."
+        },
+        {
+            "id": "multi-scale-noise",
+            "title": "9. Why Use Multiple Noise Scales?",
+            "type": "concept",
+            "content": "Estimating a score directly from clean samples can be unreliable in regions where the dataset has little support. Adding noise smooths the distribution and makes the score field easier to estimate over a wider region. At small sigma, the corrupted distribution retains fine detail but has a narrow support around the training examples. At large sigma, modes overlap more and the distribution becomes smoother, but fine details are less apparent. Multi-scale training asks the model to estimate scores across a range of these distributions. Generation can then begin at a high noise level and gradually move through lower-noise distributions. The scale sequence affects stability, coverage, and computational cost. If scales are too widely spaced, the sampler may struggle to move between them; if there are too many scales, training and sampling can become expensive."
+        },
+        {
+            "id": "langevin-dynamics",
+            "title": "10. Langevin Dynamics",
+            "type": "math",
+            "content": "Langevin dynamics combines a gradient-driven update with Gaussian randomness to sample from a target distribution. A basic discretized update is x_{k+1} = x_k + eta s(x_k) + sqrt(2eta) z_k, where eta is a small step size and z_k is standard Gaussian noise. The score term pushes samples toward higher log density, while the random term explores the distribution. Under suitable assumptions and an appropriate limiting procedure, the continuous process has the target density as its stationary distribution. In practical score-based generation, the score is approximated by a neural network, the step size is finite, and the process is truncated. Therefore, samples may not exactly follow the intended distribution. Too-large steps can cause instability or overshooting; too-small steps can require many iterations.",
+            "formula": "x_{k+1} = x_k + eta s_theta(x_k) + sqrt(2 eta) z_k, z_k ~ N(0,I)",
+            "example": "In one dimension, if the score is -x and eta = 0.01, the deterministic part becomes x_{k+1} = 0.99x_k before the random perturbation is added."
+        },
+        {
+            "id": "langevin-noise-scaling",
+            "title": "11. Step Size and Noise Scaling",
+            "type": "concept",
+            "content": "The step size determines how strongly the score affects each update and how much random noise is injected. A large step size moves quickly but can produce biased samples or unstable trajectories. A small step size provides finer updates but increases the number of iterations needed. In multi-scale score sampling, the step size is often adjusted according to the current noise scale. This is important because score magnitudes change with sigma. A schedule that is appropriate at high noise may be too aggressive at low noise. Sampling diagnostics should inspect the range and finiteness of generated tensors, their dependence on step size, and whether the chain explores multiple modes. Apparent convergence to a stable tensor is not enough: a sampler may have collapsed to a narrow region of the distribution."
+        },
+        {
+            "id": "annealed-langevin",
+            "title": "12. Annealed Langevin Dynamics",
+            "type": "concept",
+            "content": "Annealed Langevin dynamics uses a sequence of noise levels, usually moving from large noise toward small noise. At each level, it performs several score-guided stochastic updates before lowering the noise scale. Starting at a high noise level helps the chain explore a broad region. Moving to lower noise levels progressively refines the sample toward detailed modes of the data distribution. The approach relies on a score network that has been trained across the same or a compatible set of noise levels. The number of updates per level, the noise schedule, and the step-size scaling influence sample quality and speed. Too few updates may leave the sample poorly equilibrated, while too many increase latency. This method provides an intuitive bridge between classical score estimation and modern diffusion-based sampling."
+        },
+        {
+            "id": "score-and-diffusion",
+            "title": "13. Relationship Between Scores and Diffusion",
+            "type": "concept",
+            "content": "Diffusion and score-based models can be understood within a shared framework. A diffusion model predicts noise, a clean sample, or another target that can be converted into an estimate of the score of a noise-perturbed data distribution. For Gaussian corruption, the score of the conditional corruption distribution is proportional to negative noise divided by the noise variance. This relation links noise prediction to score estimation. In continuous time, a forward stochastic differential equation progressively transforms data into a simple prior. A corresponding reverse-time stochastic differential equation uses the time-dependent score to reverse the distributional evolution. The connection allows ideas from score matching, stochastic calculus, and numerical differential-equation solvers to be applied to generative modeling. The exact sign and scale conversions depend on the forward process and the model's prediction parameterization."
+        },
+        {
+            "id": "sde-formulation",
+            "title": "14. Stochastic Differential Equation View",
+            "type": "math",
+            "content": "A continuous-time diffusion process can be described by an SDE: dx = f(x,t)dt + g(t)dw, where f is a drift function, g controls noise intensity, and w is a Wiener process. The corresponding reverse-time dynamics depend on the score of the time-dependent marginal density. Under the usual reverse-time convention, the reverse drift includes a correction involving -g(t)² times the score, with time integrated backward. The exact expression depends on the direction and parameterization of time. This formulation provides a continuous counterpart to discrete diffusion chains. Numerical solvers approximate the reverse trajectory using finite steps, so solver choice influences speed and error. The score must be sufficiently accurate across the relevant noise range for the reverse dynamics to work well.",
+            "formula": "Forward SDE: dx = f(x,t) dt + g(t) dw; reverse dynamics require the time-dependent score ∇_x log p_t(x)",
+            "example": "A variance-preserving SDE gradually scales the signal while adding noise. A variance-exploding SDE instead uses a noise process whose variance grows over time. Both can be used to construct score-based generative systems."
+        },
+        {
+            "id": "probability-flow-ode",
+            "title": "15. Probability Flow ODE",
+            "type": "concept",
+            "content": "For a suitable diffusion SDE, there is a related deterministic probability-flow ordinary differential equation that shares the same time-dependent marginal distributions under ideal conditions. Instead of injecting new random noise at every reverse step, an ODE solver follows a deterministic trajectory determined by the model and initial state. This can support deterministic sampling, likelihood estimation through change-of-variables techniques, and solver-based tradeoffs between speed and accuracy. In practice, the score is approximate and numerical integration is finite, so exact agreement with the target marginals is not guaranteed. ODE solvers may use adaptive step sizes, but evaluating error estimates can require additional network calls. The probability-flow view demonstrates that stochastic and deterministic generative trajectories can describe related distributional evolution."
+        },
+        {
+            "id": "score-network-loss",
+            "title": "16. A Practical Multi-Scale Objective",
+            "type": "math",
+            "content": "For noise levels sigma_i, a multi-scale objective can be written as a weighted sum or expectation of denoising score-matching losses. For each training example, sample a noise level, draw Gaussian noise, construct y = x + sigma epsilon, and train s_theta(y,sigma) toward -epsilon/sigma. A typical objective is E[lambda(sigma) ||s_theta(x + sigma epsilon,sigma) + epsilon/sigma||²]. The weighting lambda(sigma) determines how much each scale contributes. Choosing lambda(sigma) = sigma², for example, cancels the inverse-square scale in the target's squared magnitude and yields a noise-prediction-like loss. Other weightings are possible. The important implementation rule is to keep the corruption equation, target, and loss weighting mathematically consistent.",
+            "formula": "L(theta) = E_{x,sigma,epsilon}[lambda(sigma) ||s_theta(x + sigma epsilon,sigma) + epsilon/sigma||^2]",
+            "example": "When lambda(sigma) = sigma², the loss is sigma² times the squared error against -epsilon/sigma. This weighting changes the relative importance of examples at different noise levels."
+        },
+        {
+            "id": "score-model-evaluation",
+            "title": "17. Evaluating Score-Based Models",
+            "type": "concept",
+            "content": "Evaluation should distinguish score-estimation quality from generative sample quality. A held-out denoising score-matching loss measures performance on corrupted validation examples, but it does not completely characterize the final sample distribution. Generative evaluation can include FID, precision and recall, visual inspection, diversity measures, and task-specific metrics. Results depend on the sampling algorithm and its hyperparameters, so the sampler should be reported alongside the model. For multi-scale systems, examine validation error separately for each noise range. Also inspect sensitivity to step sizes, the number of updates, and initialization. For scientific data, domain-specific validity constraints may be more important than image-based metrics. A useful evaluation protocol includes multiple random seeds and checks for mode dropping, duplicated outputs, and memorization."
+        },
+        {
+            "id": "score-failure-modes",
+            "title": "18. Common Failure Modes",
+            "type": "concept",
+            "content": "Score models may fail when the training noise range does not match sampling, when small-noise targets have excessively large magnitudes, or when the network cannot represent sharp changes in the score field. Incorrect sigma broadcasting can silently corrupt the target. A loss can appear numerically stable while one noise scale dominates the gradients. Langevin sampling can diverge when the step size is too large or remain unproductive when it is too small. Samples can also collapse toward a subset of modes if the score estimate is poor in low-density regions. Debugging should verify the analytical Gaussian score target, inspect per-scale errors, monitor gradient norms, and compare sampling behavior across several step sizes. Numerical safeguards should not conceal a fundamentally inconsistent objective."
+        },
+        {
+            "id": "score-pytorch-example",
+            "title": "19. Constructing a Denoising Score Target",
+            "type": "code",
+            "language": "python",
+            "content": "The following PyTorch example constructs Gaussian-corrupted samples and the corresponding conditional score target.",
+            "explanation": "A score network receives the noisy sample and noise scale. The target is negative noise divided by sigma. This example assumes sigma has one value per batch item and is reshaped for broadcasting.",
+            "code": "import torch\nimport torch.nn.functional as F\n\nx = torch.randn(16, 3, 32, 32)\nsigmas = torch.exp(torch.empty(x.size(0)).uniform_(-2.0, 1.0))\nsigma = sigmas.view(-1, 1, 1, 1)\nnoise = torch.randn_like(x)\ny = x + sigma * noise\ntarget_score = -noise / sigma\n\nscore_model = ScoreNetwork().to(x.device)\npredicted_score = score_model(y, sigmas)\nloss = F.mse_loss(predicted_score, target_score)\nloss.backward()",
+            "expectedOutput": "A scalar score-matching loss and gradients for the score network. ScoreNetwork is an architecture placeholder that must be defined before running this snippet."
+        },
+        {
+            "id": "annealed-sampling-code",
+            "title": "20. Annealed Langevin Sampling Pseudocode",
+            "type": "code",
+            "language": "python",
+            "content": "Use a sequence of noise levels and perform several stochastic updates at each scale.",
+            "explanation": "The sampler is intentionally schematic because step-size conventions vary between score-model implementations. The trained model must use the same noise parameterization as the sampler.",
+            "code": "x = torch.randn(1, 3, 32, 32, device=device) * sigmas[-1]\n\nfor sigma_value in reversed(sigmas):\n    sigma_batch = torch.full((x.size(0),), float(sigma_value), device=device)\n    step_size = base_step_size * (sigma_value / sigmas[0]) ** 2\n    for _ in range(steps_per_scale):\n        score = score_model(x, sigma_batch)\n        noise = torch.randn_like(x)\n        x = x + step_size * score + torch.sqrt(2 * step_size) * noise\n\nsamples = x",
+            "expectedOutput": "A generated tensor. In a complete implementation, ensure the initialization, step-size formula, noise-level ordering, and score parameterization are consistent with the chosen algorithm."
+        },
+        {
+            "id": "score-reproducibility",
+            "title": "21. Experimental Reproducibility",
+            "type": "concept",
+            "content": "Score-based generation is sensitive to random initialization, sampled noise levels, training randomness, and sampling settings. Record the noise-level distribution, score parameterization, loss weighting, network architecture, optimizer, training duration, and sampler configuration. Keep separate validation data and avoid choosing hyperparameters based on test results. Save checkpoints with the configuration used to produce them. When comparing samplers, keep the trained score network fixed so the experiment isolates inference behavior. Compare multiple seeds and report both quality and computational cost. Such practices make it easier to distinguish a better score estimator from a more favorable sampling configuration."
+        },
+        {
+            "id": "score-applications",
+            "title": "22. Applications Beyond Image Generation",
+            "type": "concept",
+            "content": "Score-based methods can be applied to audio, video, molecular configurations, scientific measurements, and other continuous representations. In molecular modeling, score fields may guide conformational sampling, subject to chemical constraints and the representation's geometry. In inverse problems, a learned generative prior can help reconstruct an underlying signal from noisy or incomplete observations. In audio generation, the model operates on waveform samples or a transformed representation such as a spectrogram. Each application requires suitable data normalization, noise models, and evaluation criteria. A model that performs well on images cannot be assumed to transfer directly to another domain because the data geometry and corruption process may differ substantially."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "score-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Define the score function of a differentiable probability density p(x).",
+            "correctAnswer": "The score is s(x) = ∇_x log p(x).",
+            "solution": "It is the gradient of the log density with respect to the data. It describes local directions in which log probability increases."
+        },
+        {
+            "id": "score-ex-2",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "What is the score of a one-dimensional standard normal distribution?",
+            "correctAnswer": "s(x) = -x",
+            "solution": "The log density is -x²/2 plus a constant. Its derivative with respect to x is -x."
+        },
+        {
+            "id": "score-ex-3",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "For y = x + sigma epsilon, what is the conditional Gaussian score with respect to y?",
+            "correctAnswer": "-(y - x)/sigma² = -epsilon/sigma",
+            "solution": "Differentiate the Gaussian log likelihood with respect to y, then substitute y − x = sigma epsilon."
+        },
+        {
+            "id": "score-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the noise level supplied to a multi-scale score network?",
+            "correctAnswer": "The score depends on the corruption scale, so the model needs to know which noisy distribution it should estimate.",
+            "solution": "Different sigma values produce different smoothed distributions and score magnitudes. Conditioning allows one network to represent these differences."
+        },
+        {
+            "id": "score-ex-5",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "For a Gaussian with mean 2 and variance 4, compute the score at x = 6.",
+            "correctAnswer": "-1",
+            "solution": "The Gaussian score is -(x − mu)/variance = -(6 − 2)/4 = -1."
+        },
+        {
+            "id": "score-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What are the two main components of a Langevin update?",
+            "correctAnswer": "A score-driven gradient term and a Gaussian random-noise term.",
+            "solution": "The score guides samples toward higher density, while the random term supports exploration of the target distribution."
+        },
+        {
+            "id": "score-ex-7",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A score model has low average loss but poor samples. What should be investigated?",
+            "correctAnswer": "Per-noise-level validation error, sampling step sizes, initialization, score scaling, and the sampler's compatibility with training.",
+            "solution": "The average loss may hide failures at particular scales. Generation also depends on numerical integration and sampling settings."
+        },
+        {
+            "id": "score-ex-8",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "How are score-based models related to diffusion models?",
+            "correctAnswer": "Diffusion denoisers can be converted into score estimates for noisy data distributions, and reverse diffusion dynamics use those scores.",
+            "solution": "For Gaussian corruption, the predicted noise is related to the score by a scale-dependent factor. Continuous diffusion formulations use the time-dependent score in reverse-time dynamics."
+        },
+        {
+            "id": "score-ex-9",
+            "type": "mathematical",
+            "difficulty": "hard",
+            "question": "If sigma = 0.25 and epsilon = -2, what is the conditional score target?",
+            "correctAnswer": "8",
+            "solution": "The target is -epsilon/sigma = -(-2)/0.25 = 8."
+        },
+        {
+            "id": "score-ex-10",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "Why can using an excessively large Langevin step size harm sample quality?",
+            "correctAnswer": "The updates can overshoot high-density regions, introduce discretization bias, or make the chain unstable.",
+            "solution": "The finite-step approximation may no longer accurately represent the intended stochastic process. Smaller steps improve local accuracy but require more iterations."
+        }
+    ],
+    "summary": "Score-based generative models learn the gradient of the log density rather than directly predicting a normalized density. Denoising score matching creates tractable training targets by corrupting clean samples with Gaussian noise. Noise-conditioned networks estimate scores across multiple scales, while Langevin dynamics and reverse-time diffusion processes use those estimates to generate samples. The framework connects score matching, diffusion models, stochastic differential equations, and deterministic probability-flow ODEs. Correct noise conditioning, loss weighting, numerical integration, and evaluation are essential for reliable generation.",
+    "relatedTopics": [
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-noise-schedules",
+        "module-14-generative-models-denoising",
+        "module-14-generative-models-text-to-image-models",
+        "module-01-mathematics-for-ai"
+    ]
+}

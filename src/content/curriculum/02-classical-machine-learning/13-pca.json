@@ -1,1 +1,140 @@
-{}
+{
+    "id": "pca",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 13,
+    "title": "Principal Component Analysis (PCA)",
+    "slug": "pca",
+    "description": "Understand dimensionality reduction, covariance matrices, eigenvectors, eigenvalues, principal components, explained variance, and practical PCA implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Vectors and Matrices",
+        "Basic Statistics",
+        "Variance and Covariance",
+        "Linear Algebra",
+        "Training, Validation, and Test Sets"
+    ],
+    "learningObjectives": [
+        "Explain why dimensionality reduction is useful in machine learning.",
+        "Understand the difference between feature selection and feature extraction.",
+        "Explain variance, covariance, and the covariance matrix.",
+        "Understand eigenvectors and eigenvalues in the context of PCA.",
+        "Derive the principal-component projection mathematically.",
+        "Calculate explained variance and cumulative explained variance.",
+        "Implement PCA using NumPy and scikit-learn.",
+        "Use PCA for visualization, compression, and preprocessing.",
+        "Understand the limitations of PCA and avoid data leakage."
+    ],
+    "sections": [
+        {
+            "id": "pca-introduction",
+            "title": "1. Introduction to Dimensionality Reduction",
+            "type": "concept",
+            "content": "# What Is Dimensionality Reduction?\n\nA dataset may contain hundreds or thousands of features. Some features may contain redundant information, while others may mostly represent noise. Working with a very large feature space can increase computational costs, make visualization difficult, and sometimes harm generalization.\n\nDimensionality reduction transforms data into a representation with fewer dimensions while attempting to preserve information relevant to a chosen objective.\n\nSuppose a dataset contains 100 numerical features describing a customer. A dimensionality-reduction method might represent each customer using 10 transformed features instead. The transformed features may summarize important patterns present across the original variables.\n\n## Two Main Approaches\n\n### Feature Selection\n\nFeature selection chooses a subset of the original features.\n\nFor example, from 100 original features, a feature-selection algorithm might retain 10. Each selected feature still has its original meaning.\n\n### Feature Extraction\n\nFeature extraction creates new features from combinations or transformations of the original features.\n\nPCA is a feature-extraction technique. Its components are weighted combinations of the original numerical variables.\n\n## What Is PCA?\n\nPrincipal Component Analysis is a linear dimensionality-reduction method that finds orthogonal directions of maximum variance in a dataset.\n\nThe first principal component captures the greatest possible variance among all one-dimensional linear projections. The second captures the greatest remaining variance subject to being orthogonal to the first. Later components continue this process.\n\nIf the original dataset has d numerical features, PCA can produce up to d principal components, assuming the data's effective rank permits it. We can retain only the first k components, where k is smaller than d.\n\n## Intuitive Example\n\nImagine a dataset containing a person's height measured in centimeters and meters. These features are almost perfectly redundant because they describe the same quantity in different units.\n\nPCA can represent the shared variation with one component rather than retaining both dimensions.\n\nA more realistic example might contain height, arm span, and leg length. These measurements are not identical, but they may share a common body-size pattern. PCA can identify a direction that summarizes much of this shared variation.\n\n## Important Limitation\n\nPCA preserves directions with high variance, not necessarily directions that best predict a target. A low-variance feature can be highly predictive of an outcome. PCA is unsupervised and does not use class labels when choosing components."
+        },
+        {
+            "id": "pca-variance-covariance",
+            "title": "2. Variance, Covariance, and the Covariance Matrix",
+            "type": "math",
+            "content": "# The Statistical Foundation of PCA\n\nPCA depends on understanding how numerical features vary individually and together.\n\n## Variance\n\nVariance measures how spread out observations are around their mean.\n\nFor a feature x with n observations, the population-style empirical variance can be written as:\n\nVar(x) = (1/n) * sum from i=1 to n of (x_i - mean(x))^2\n\nSome statistical software uses n-1 in the denominator to produce an unbiased sample-variance estimator. PCA implementations may use different normalization conventions internally, but consistent scaling does not change the component directions.\n\nA feature with larger variance changes more across the dataset. However, large variance does not automatically imply high predictive value because variance also depends on units and noise.\n\n## Covariance\n\nCovariance measures whether two features tend to vary together.\n\nCov(x, y) = (1/n) * sum from i=1 to n of (x_i - mean(x)) * (y_i - mean(y))\n\nPositive covariance means the features tend to be above their means together and below their means together. Negative covariance means one tends to be above its mean when the other is below its mean.\n\nA covariance near zero indicates little linear co-variation, but it does not prove that the variables are independent. Nonlinear relationships may still exist.\n\n## Covariance Matrix\n\nFor a centered data matrix X with n rows and d features, one common empirical covariance matrix is:\n\nC = (1/n) * X_transpose * X\n\nC is a d-by-d matrix. Its diagonal entries are feature variances, and its off-diagonal entries are covariances between pairs of features.\n\nFor three features, the covariance matrix has the form:\n\nC = [[Var(x1), Cov(x1,x2), Cov(x1,x3)], [Cov(x2,x1), Var(x2), Cov(x2,x3)], [Cov(x3,x1), Cov(x3,x2), Var(x3)]]\n\nThe covariance matrix is symmetric because Cov(x_i, x_j) equals Cov(x_j, x_i).\n\n## Why Does PCA Use This Matrix?\n\nFor a unit direction vector v, the variance of the projection of centered observations onto v is:\n\nVar(Xv) = v_transpose * C * v\n\nPCA seeks the unit vector v that maximizes this expression. The solution is an eigenvector of C associated with its largest eigenvalue.\n\nSubsequent principal components are selected using the remaining eigenvectors in descending order of eigenvalue."
+        },
+        {
+            "id": "pca-eigenvectors",
+            "title": "3. Eigenvectors and Principal Components",
+            "type": "math",
+            "content": "# The Mathematical Core of PCA\n\nAn eigenvector of a square matrix C is a nonzero vector v that satisfies:\n\nC v = lambda v\n\nHere lambda is the corresponding eigenvalue.\n\nIn PCA, eigenvectors of the covariance matrix define principal directions, while their eigenvalues describe the variance captured along those directions.\n\n## First Principal Component\n\nPCA seeks a unit vector v that maximizes:\n\nv_transpose * C * v\n\nsubject to:\n\nv_transpose * v = 1\n\nUsing a Lagrange multiplier, define:\n\nL(v, lambda) = v_transpose*C*v - lambda*(v_transpose*v - 1)\n\nDifferentiating with respect to v and setting the derivative to zero gives:\n\n2Cv - 2lambda*v = 0\n\nTherefore:\n\nCv = lambda*v\n\nThis is the eigenvector equation. The maximum-variance direction is the eigenvector associated with the largest eigenvalue.\n\n## Subsequent Components\n\nThe second component maximizes projected variance while remaining orthogonal to the first component. Later components follow the same principle under orthogonality constraints.\n\nFor a real symmetric covariance matrix, the eigenvectors can be chosen orthonormally. Their eigenvalues are nonnegative because covariance matrices are positive semidefinite.\n\n## Projecting Data\n\nLet X_centered be the centered data matrix and let W_k contain the first k principal directions as columns.\n\nThe lower-dimensional representation is:\n\nZ = X_centered * W_k\n\nIf the original data has n rows and d features, then:\n\n- X_centered has shape n by d.\n- W_k has shape d by k.\n- Z has shape n by k.\n\nEach row of Z is the original observation expressed using the retained principal components.\n\n## Component Signs\n\nAn eigenvector v and its negative -v represent the same principal direction. Therefore, PCA component signs may differ across implementations without changing the underlying result.\n\n## PCA and Singular Value Decomposition\n\nIn practice, PCA is often computed using Singular Value Decomposition (SVD) rather than explicitly forming and decomposing the covariance matrix. SVD can be numerically more stable and avoids some computational issues associated with constructing a covariance matrix for certain datasets.\n\nFor centered X:\n\nX = U * S * V_transpose\n\nThe rows of V_transpose contain principal directions, and the squared singular values are proportional to the variance captured by the corresponding components."
+        },
+        {
+            "id": "pca-explained-variance",
+            "title": "4. Explained Variance and Choosing Components",
+            "type": "math",
+            "content": "# How Many Principal Components Should We Keep?\n\nEach principal component captures a certain amount of variance. The eigenvalues quantify the variance along their corresponding directions, subject to the covariance normalization convention.\n\nSuppose the eigenvalues are:\n\nlambda_1, lambda_2, ..., lambda_d\n\nordered from largest to smallest.\n\nThe explained-variance ratio for component j is:\n\nr_j = lambda_j / sum from i=1 to d of lambda_i\n\nThe cumulative explained variance for the first k components is:\n\nR_k = sum from j=1 to k of r_j\n\n## Example\n\nSuppose a dataset has four components with eigenvalues:\n\n[6, 3, 1, 0.5]\n\nTotal variance is:\n\n6 + 3 + 1 + 0.5 = 10.5\n\nThe first component explains approximately:\n\n6 / 10.5 = 57.14%\n\nThe first two components explain:\n\n(6 + 3) / 10.5 = 85.71%\n\nThe first three explain:\n\n(6 + 3 + 1) / 10.5 = 95.24%\n\nRetaining two components preserves about 85.7% of the total variance according to this PCA representation.\n\n## Choosing k\n\nThere is no universally correct number of components. Common approaches include:\n\n1. Retain enough components to exceed a chosen cumulative explained-variance threshold, such as 90% or 95%.\n2. Examine a scree plot to identify where additional components contribute relatively little variance.\n3. Choose k based on downstream validation performance.\n4. Consider memory, latency, visualization, or compression constraints.\n\nA 95% threshold is a heuristic, not a guarantee of retaining 95% of predictive information.\n\n## The Scree Plot\n\nA scree plot displays explained variance or eigenvalues against component index. A sharp bend can suggest that later components add comparatively little variance. However, many real datasets do not have a clear elbow.\n\n## Reconstruction Error\n\nWhen k components are retained, the original centered data can be approximated by projecting onto the selected directions and projecting back:\n\nX_reconstructed = Z * W_k_transpose\n\nUnder the standard Euclidean squared-error criterion, retaining the top k principal components gives the best rank-k linear reconstruction of the centered data. This property explains PCA's usefulness for linear compression.\n\nReconstruction error and predictive error are different objectives. A low reconstruction error does not automatically mean a classifier or regression model will perform well."
+        },
+        {
+            "id": "pca-preprocessing",
+            "title": "5. Centering, Standardization, and Practical Considerations",
+            "type": "concept",
+            "content": "# Preparing Data for PCA\n\nPCA is sensitive to how features are represented numerically.\n\n## Centering\n\nPCA is normally applied after subtracting each feature's training-set mean:\n\nx_centered = x - mean(x)\n\nWithout centering, the principal directions can be influenced by the location of the data relative to the origin instead of capturing variation around the mean.\n\n## Standardization\n\nFeatures can also be standardized:\n\nz = (x - mean(x)) / standard_deviation(x)\n\nStandardization is especially useful when features use different units. For example, annual income may be measured in thousands while age is measured in years. Without scaling, high-variance numerical units may dominate the covariance-based PCA directions.\n\nHowever, standardization is not always the right choice. If differences in absolute variance are meaningful, covariance-based PCA on centered but unscaled features may be preferable.\n\nPCA on standardized features is closely related to PCA on the correlation matrix.\n\n## Outliers\n\nPCA is sensitive to extreme observations because covariance and squared reconstruction error are sensitive to large deviations. An unusual observation can rotate the principal directions substantially.\n\nInspect suspicious observations and consider robust preprocessing or robust PCA methods when justified. Do not remove genuine rare observations merely because they are inconvenient.\n\n## Categorical Features\n\nStandard PCA operates on numerical features. Arbitrarily assigning integer codes to nominal categories can create artificial distances and ordering. Encode categorical features appropriately or use a dimensionality-reduction technique designed for mixed or categorical data.\n\n## Data Leakage\n\nFit the scaler and PCA transformation using training data only. Apply the learned transformations to validation and test data without refitting them.\n\nIf cross-validation is used, fit preprocessing separately within each training fold. A scikit-learn Pipeline helps prevent leakage.\n\n## PCA and Supervised Learning\n\nPCA does not use labels when selecting directions. A component with low overall variance can still be strongly associated with the target. Therefore, compare downstream performance with and without PCA rather than assuming dimensionality reduction always improves prediction."
+        },
+        {
+            "id": "pca-python",
+            "title": "6. Implementing PCA with NumPy and scikit-learn",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\nfrom sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.decomposition import PCA\nfrom sklearn.pipeline import Pipeline\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score\n\n# Load numerical features\nX, y = load_breast_cancer(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, stratify=y, random_state=42\n)\n\n# Fit preprocessing only on training data\nscaler = StandardScaler()\nX_train_scaled = scaler.fit_transform(X_train)\nX_test_scaled = scaler.transform(X_test)\n\n# Fit PCA on the standardized training features\npca = PCA(n_components=0.95, svd_solver='full')\nX_train_pca = pca.fit_transform(X_train_scaled)\nX_test_pca = pca.transform(X_test_scaled)\n\nprint('Original feature count:', X_train.shape[1])\nprint('Retained component count:', pca.n_components_)\nprint('Explained variance ratios:', pca.explained_variance_ratio_)\nprint('Total retained variance:', pca.explained_variance_ratio_.sum())\n\n# Train a classifier on the transformed representation\nclassifier = LogisticRegression(max_iter=5000)\nclassifier.fit(X_train_pca, y_train)\npredictions = classifier.predict(X_test_pca)\nprint('PCA + Logistic Regression accuracy:', accuracy_score(y_test, predictions))\n\n# Equivalent pipeline pattern for safe cross-validation workflows\npipeline = Pipeline([\n    ('scaler', StandardScaler()),\n    ('pca', PCA(n_components=0.95)),\n    ('classifier', LogisticRegression(max_iter=5000))\n])\npipeline.fit(X_train, y_train)\nprint('Pipeline test accuracy:', pipeline.score(X_test, y_test))\n\n# Manual PCA outline with NumPy\nX_small = np.array([[2.0, 3.0], [3.0, 5.0], [4.0, 7.0], [5.0, 9.0]])\nX_centered = X_small - X_small.mean(axis=0)\ncovariance = np.cov(X_centered, rowvar=False)\neigenvalues, eigenvectors = np.linalg.eigh(covariance)\norder = np.argsort(eigenvalues)[::-1]\neigenvalues = eigenvalues[order]\neigenvectors = eigenvectors[:, order]\n\nW = eigenvectors[:, :1]\nZ = X_centered @ W\nprint('Eigenvalues:', eigenvalues)\nprint('One-dimensional representation:\\n', Z)",
+            "explanation": "The first workflow standardizes features, retains enough components to explain at least approximately 95% of training variance, and fits logistic regression on the transformed representation. The Pipeline is useful when performing cross-validation because scaling and PCA are refitted inside each training fold. The NumPy example uses a covariance matrix and its eigenvectors to construct the first principal component. For production use, scikit-learn's PCA is generally preferable because it offers robust numerical implementations and convenient transformation methods."
+        },
+        {
+            "id": "pca-applications-limitations",
+            "title": "7. Applications and Limitations of PCA",
+            "type": "concept",
+            "content": "# Applications of PCA\n\n## Visualization\n\nPCA can project high-dimensional observations into two or three dimensions for exploratory visualization. Clusters or trends may become visible, but the projection can hide important structure that lies in discarded components.\n\n## Compression\n\nPCA can reduce the storage required for numerical data by retaining a smaller set of component scores and the transformation parameters. Compression quality depends on the retained components and the reconstruction criterion.\n\n## Noise Reduction\n\nWhen noise is concentrated in low-variance directions, removing some low-variance components can reduce noise. This assumption is not universally true: a low-variance direction can also contain valuable signal.\n\n## Preprocessing\n\nPCA may help downstream models when features are highly correlated or when a compact representation improves computational efficiency. Its impact should be measured on held-out data.\n\n## Limitations\n\n- PCA is linear and may not capture nonlinear structure.\n- Components can be difficult to interpret because each combines multiple original features.\n- High variance is not synonymous with high predictive relevance.\n- Results depend on centering, scaling, outliers, and data distribution.\n- Components learned from one distribution may not represent a substantially shifted deployment distribution.\n- The method can reduce interpretability when transformed features replace meaningful original measurements.\n\n## PCA Is Not Clustering\n\nPCA creates new coordinate directions that summarize variance. Clustering groups observations according to a chosen similarity or distance criterion. PCA can be used before clustering, but it does not itself assign cluster labels.\n\n## Final Practical Rule\n\nTreat PCA as a modeling choice that must be justified by the task. Compare computational cost, reconstruction quality, interpretability, and downstream validation performance against a baseline without PCA."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "pca-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main objective of PCA?",
+            "correctAnswer": "To find orthogonal linear directions that capture as much variance as possible, in descending order, so data can be represented using fewer dimensions.",
+            "solution": "The first principal component maximizes projected variance. Each later component captures the maximum remaining variance subject to orthogonality to the previous components. Retaining only the first k components creates a lower-dimensional representation."
+        },
+        {
+            "id": "pca-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A PCA model has eigenvalues [8, 2, 1]. Calculate the explained-variance ratio of each component and the cumulative explained variance of the first two components.",
+            "correctAnswer": "The ratios are approximately 72.73%, 18.18%, and 9.09%. The first two components explain approximately 90.91%.",
+            "solution": "Total variance is 8 + 2 + 1 = 11. The ratios are 8/11, 2/11, and 1/11. The first two explain (8 + 2)/11 = 10/11, approximately 90.91%."
+        },
+        {
+            "id": "pca-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is feature standardization often useful before PCA?",
+            "correctAnswer": "It prevents features with large numerical units from dominating the variance-based directions merely because of their scales.",
+            "solution": "PCA based on covariance is sensitive to feature scale. A feature measured in thousands can have much larger variance than one measured in fractions even if the difference is mostly due to units. Standardization puts features on comparable scales when that is appropriate for the task."
+        },
+        {
+            "id": "pca-ex-4",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "PCA retains 95% of feature variance, but a classifier performs worse after transformation. Explain why.",
+            "correctAnswer": "The discarded 5% of variance may contain predictive information, and PCA selects directions without using the target labels.",
+            "solution": "PCA optimizes unsupervised reconstruction-related variance retention rather than classification accuracy. A low-variance direction can separate classes well. Compare component counts and downstream validation performance, and consider whether PCA is necessary for the chosen model."
+        },
+        {
+            "id": "pca-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the difference between PCA and feature selection?",
+            "correctAnswer": "Feature selection retains a subset of original variables, while PCA creates new variables as linear combinations of the originals.",
+            "solution": "Selecting ten out of one hundred original features preserves their original meanings. PCA's ten retained components may each combine many of the original variables. Feature selection can therefore be easier to interpret, while PCA may capture shared variation more compactly."
+        },
+        {
+            "id": "pca-ex-6",
+            "type": "coding",
+            "difficulty": "hard",
+            "question": "Write a scikit-learn pipeline that standardizes features and applies PCA with three components.",
+            "correctAnswer": "Use Pipeline([('scaler', StandardScaler()), ('pca', PCA(n_components=3))]).",
+            "solution": "Example: from sklearn.pipeline import Pipeline; from sklearn.preprocessing import StandardScaler; from sklearn.decomposition import PCA; pca_pipeline = Pipeline([('scaler', StandardScaler()), ('pca', PCA(n_components=3))]); X_train_reduced = pca_pipeline.fit_transform(X_train); X_test_reduced = pca_pipeline.transform(X_test). Fit only on training data, then transform test data with the already fitted pipeline."
+        }
+    ],
+    "summary": [
+        "PCA is a linear feature-extraction and dimensionality-reduction technique.",
+        "It finds orthogonal directions that maximize variance in descending order.",
+        "Eigenvectors define component directions, while eigenvalues measure their associated variance.",
+        "Explained-variance ratios help describe how much total variance the retained components preserve.",
+        "Centering is fundamental, and standardization is often appropriate when feature scales differ.",
+        "PCA can support visualization, compression, and preprocessing but may discard predictive information.",
+        "Fit scaling and PCA using training data only to avoid leakage."
+    ],
+    "relatedTopics": [
+        "clustering",
+        "evaluation-metrics",
+        "bias-variance",
+        "overfitting-underfitting"
+    ]
+}

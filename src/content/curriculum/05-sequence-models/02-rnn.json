@@ -1,1 +1,106 @@
-{}
+{
+  "id": "module-05-rnn",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 2,
+  "title": "Recurrent Neural Networks (RNN)",
+  "slug": "rnn",
+  "href": "/curriculum/05-sequence-models/rnn",
+  "filePath": "content/curriculum/05-sequence-models/02-rnn.json",
+  "description": "Learn recurrent hidden states, parameter sharing across time, sequence prediction, and how simple RNNs process ordered inputs.",
+  "difficulty": "beginner",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "Sequential Data Fundamentals",
+    "MLPs",
+    "Activation Functions"
+  ],
+  "learningObjectives": [
+    "Explain the hidden state of an RNN.",
+    "Write the basic recurrent update equations.",
+    "Trace a short sequence through a recurrent layer.",
+    "Recognize strengths and limitations of simple RNNs."
+  ],
+  "sections": [
+    {
+      "id": "idea",
+      "title": "The Recurrent State",
+      "type": "concept",
+      "content": "A recurrent neural network processes a sequence one time step at a time. At each step, it combines the current input with a hidden state summarizing information from earlier steps. The same recurrent parameters are reused at every time step, allowing the model to process sequences of different lengths.\n\nThe hidden state is a learned summary, not a perfect memory of the full past. A simple RNN may retain recent information but can struggle to preserve details over long intervals."
+    },
+    {
+      "id": "equations",
+      "title": "Basic RNN Equations",
+      "type": "math",
+      "content": "A common update is h_t = tanh(W_xh x_t + W_hh h_(t−1) + b_h). An output may be computed as y_t = W_hy h_t + b_y. Here x_t is the input at time t, h_(t−1) is the previous hidden state, and the weight matrices are shared across all time steps.\n\nThe initial hidden state is often set to zeros or learned. For classification of a whole sequence, a model may use the final hidden state; for token-level prediction, it may use outputs from every time step."
+    },
+    {
+      "id": "sharing",
+      "title": "Unrolling Through Time",
+      "type": "concept",
+      "content": "An RNN can be pictured as one recurrent cell repeated across time. When unrolled, each copy uses the same weights, but its hidden state depends on the preceding step. This parameter sharing is why the number of recurrent parameters does not grow with sequence length, although computation and activation storage generally do.\n\nFor input size d and hidden size h, a basic cell has roughly d×h input weights, h×h recurrent weights, and h biases, depending on framework conventions."
+    },
+    {
+      "id": "tasks",
+      "title": "Sequence-to-One and Sequence-to-Sequence",
+      "type": "concept",
+      "content": "For sequence classification, the model can map all time steps to one output using the final hidden state or a pooling operation. For sequence labeling, it produces an output at each step. For next-token or next-value prediction, outputs are aligned with future targets.\n\nThe correct alignment is important: to predict x_(t+1), the prediction at t should not accidentally receive x_(t+1) as an input. Training examples should match the information available at inference time."
+    },
+    {
+      "id": "code",
+      "title": "Simple RNN in PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nrnn = nn.RNN(input_size=5, hidden_size=16, batch_first=True)\nx = torch.randn(8, 12, 5)  # batch, time, features\noutputs, h_n = rnn(x)\nprint(outputs.shape)  # [8, 12, 16]\nprint(h_n.shape)     # [1, 8, 16]",
+      "language": "python",
+      "explanation": "With batch_first=True, input and output tensors use [batch, sequence_length, features]. outputs contains a hidden vector for every time step; h_n contains the final hidden state for each recurrent layer. The default nonlinearity for nn.RNN is tanh."
+    },
+    {
+      "id": "limits",
+      "title": "Strengths and Weaknesses",
+      "type": "concept",
+      "content": "RNNs naturally handle ordered inputs and share parameters across time. They can be useful for small or streaming sequences. However, training requires sequential computation across time steps, which limits parallelism, and gradients may vanish or explode when backpropagating through long sequences.\n\nLSTM and GRU cells introduce gates to improve information flow. Attention-based architectures provide another approach and can parallelize many sequence computations during training, although their memory and compute costs can be substantial."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "rnn-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What information does the hidden state h_t represent?",
+      "correctAnswer": "A learned summary of the current input and prior sequence context.",
+      "solution": "It is updated at each step from x_t and h_(t−1)."
+    },
+    {
+      "id": "rnn-ex2",
+      "type": "math",
+      "difficulty": "medium",
+      "question": "If input size is 4 and hidden size is 10, how many entries are in W_xh?",
+      "correctAnswer": "40.",
+      "solution": "The input-to-hidden matrix has shape (10, 4) or its transposed convention, so it contains 4×10 entries."
+    },
+    {
+      "id": "rnn-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why do RNN parameters not multiply by the sequence length?",
+      "correctAnswer": "The same recurrent cell weights are shared at every time step.",
+      "solution": "Longer sequences increase computation and activation storage, not the number of shared parameters."
+    },
+    {
+      "id": "rnn-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "With batch_first=True, what is the expected input shape for batch 6, sequence length 20, and 3 features?",
+      "correctAnswer": "[6, 20, 3].",
+      "solution": "The layout is batch, time, features."
+    }
+  ],
+  "summary": "An RNN updates a hidden state over time using shared parameters. It is a natural baseline for sequences, but long-range learning can be difficult due to gradient issues and sequential computation.",
+  "relatedTopics": [
+    "sequential-data",
+    "backpropagation-through-time",
+    "vanishing-exploding-gradients",
+    "lstm",
+    "gru"
+  ]
+}

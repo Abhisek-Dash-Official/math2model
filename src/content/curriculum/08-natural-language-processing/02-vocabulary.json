@@ -1,1 +1,213 @@
-{}
+{
+    "id": "module-08-natural-language-processing-vocabulary",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 2,
+    "title": "Vocabulary Construction",
+    "slug": "vocabulary",
+    "href": "/curriculum/08-natural-language-processing/vocabulary",
+    "filePath": "content/curriculum/08-natural-language-processing/02-vocabulary.json",
+    "description": "Learn how NLP vocabularies are built, indexed, filtered, and extended, and understand special tokens, unknown words, frequency thresholds, and vocabulary trade-offs.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Python Fundamentals",
+        "Tokenization Techniques",
+        "Basic Dictionaries and Lists"
+    ],
+    "learningObjectives": [
+        "Define vocabulary, token type, token occurrence, and token ID.",
+        "Construct a vocabulary from a tokenized corpus.",
+        "Explain special tokens and unknown-token handling.",
+        "Understand frequency thresholds and vocabulary-size trade-offs.",
+        "Convert token sequences to IDs and reconstruct tokens from IDs.",
+        "Recognize why training and inference must use the same vocabulary."
+    ],
+    "sections": [
+        {
+            "id": "vocabulary-definition",
+            "title": "What Is an NLP Vocabulary?",
+            "type": "concept",
+            "content": "An NLP vocabulary is a mapping between token strings and numerical IDs. A vocabulary may contain words, subwords, characters, or other units produced by a tokenizer. For example, {'hello': 0, 'world': 1, 'NLP': 2} maps three tokens to integers. These integers are identifiers, not numerical measurements of meaning. ID 2 is not inherently more meaningful or important than ID 0."
+        },
+        {
+            "id": "types-and-occurrences",
+            "title": "Token Types and Token Occurrences",
+            "type": "concept",
+            "content": "A token occurrence is a token appearing at a particular position in text. A token type is a distinct token string. In 'AI improves AI systems', whitespace tokenization produces four occurrences but only three types: 'AI', 'improves', and 'systems'. Vocabulary construction usually collects distinct token types, while frequency counts record how often each type occurs. Keeping these concepts separate prevents confusion when analyzing corpus statistics."
+        },
+        {
+            "id": "vocabulary-construction-pipeline",
+            "title": "Vocabulary Construction Pipeline",
+            "type": "concept",
+            "content": "A basic vocabulary pipeline collects a representative training corpus, applies the chosen normalization policy, tokenizes the text, counts token frequencies, applies any filtering rules, reserves required special tokens, and assigns stable IDs. The resulting mapping is saved alongside the model. Validation and test text should not silently redefine the vocabulary because that can create leakage and make evaluation inconsistent. In production, vocabulary creation is usually part of the tokenizer training process."
+        },
+        {
+            "id": "count-token-frequencies",
+            "title": "Counting Token Frequencies",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ncorpus = [\"AI learns from data\", \"AI learns patterns\", \"data supports AI\"]\ntokens = [token for sentence in corpus for token in sentence.lower().split()]\nfrequencies = Counter(tokens)\nprint(frequencies.most_common())",
+            "explanation": "Counter records the number of occurrences of each token. Lowercasing combines variants such as 'AI' and 'ai', though a real project should choose normalization deliberately. The resulting counts help determine which tokens are common enough to retain."
+        },
+        {
+            "id": "build-vocabulary",
+            "title": "Building a Vocabulary",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ncorpus = [\"deep learning is useful\", \"deep models learn\", \"learning uses data\"]\ntokens = [token for text in corpus for token in text.split()]\ncounts = Counter(tokens)\nvocabulary = {\"<PAD>\": 0, \"<UNK>\": 1}\nfor token, _ in counts.most_common():\n    if token not in vocabulary:\n        vocabulary[token] = len(vocabulary)\nprint(vocabulary)",
+            "explanation": "This example reserves IDs for padding and unknown tokens before adding observed tokens. Frequency ordering makes the result reproducible for a fixed corpus and counting implementation, provided tie-breaking is stable. Real tokenizers may use different ordering policies."
+        },
+        {
+            "id": "token-to-id",
+            "title": "Mapping Tokens to IDs",
+            "type": "concept",
+            "content": "Neural network embedding layers expect integer indices, so a vocabulary maps each token string to an ID. For example, the sequence ['deep', 'learning'] may map to [5, 9]. IDs must remain consistent across training, evaluation, and deployment. If the mapping changes, the same text may select different embedding rows, causing a pretrained model to receive incorrect inputs."
+        },
+        {
+            "id": "encode-sequence",
+            "title": "Encoding Text with a Vocabulary",
+            "type": "code",
+            "language": "python",
+            "content": "vocabulary = {\"<PAD>\": 0, \"<UNK>\": 1, \"deep\": 2, \"learning\": 3, \"works\": 4}\n\ndef encode(text, vocab):\n    return [vocab.get(token, vocab[\"<UNK>\"]) for token in text.lower().split()]\n\nprint(encode(\"deep learning works\", vocabulary))\nprint(encode(\"deep models work\", vocabulary))",
+            "explanation": "Known tokens map to their IDs, while unseen tokens map to the unknown-token ID. This function uses whitespace tokenization and assumes lowercase vocabulary entries. Its tokenizer and normalization must match the policy used to create the vocabulary."
+        },
+        {
+            "id": "id-to-token",
+            "title": "Decoding Token IDs",
+            "type": "code",
+            "language": "python",
+            "content": "vocabulary = {\"<PAD>\": 0, \"<UNK>\": 1, \"deep\": 2, \"learning\": 3}\nid_to_token = {index: token for token, index in vocabulary.items()}\n\nids = [2, 3, 1]\ntokens = [id_to_token[index] for index in ids]\nprint(tokens)",
+            "explanation": "The reverse mapping converts IDs back into token strings. Decoding IDs does not always recover the original text exactly because normalization may have changed it, unknown tokens may have replaced words, and subword tokens may require special joining rules."
+        },
+        {
+            "id": "special-tokens",
+            "title": "Special Tokens",
+            "type": "concept",
+            "content": "Special tokens provide structural information to a model. Common examples include <PAD> for padding, <UNK> for unknown units, <BOS> for beginning of sequence, <EOS> for end of sequence, and <MASK> for masked language modeling. Some models also use tokens that separate segments, mark roles, or indicate tool interactions. Their exact names and behavior vary across tokenizers. A special token must be handled consistently by preprocessing, training, and decoding."
+        },
+        {
+            "id": "padding-token",
+            "title": "Padding and Padding IDs",
+            "type": "concept",
+            "content": "Batches often contain sequences of different lengths. Padding extends shorter sequences to a shared length so they can be represented as a rectangular tensor. A padding token commonly receives a dedicated ID such as zero, but zero is not universally reserved for padding. Models often use attention masks or loss masks to prevent padding positions from contributing incorrectly to attention or training loss."
+        },
+        {
+            "id": "unknown-token",
+            "title": "Handling Unknown Tokens",
+            "type": "concept",
+            "content": "An unknown token represents a token that is not present in a fixed vocabulary. This prevents a lookup failure, but it loses information because different unseen words can collapse into the same symbol. A subword tokenizer can reduce the need for unknown tokens by representing unfamiliar words as known pieces. Unknown-token handling is especially important for domain-specific text, misspellings, names, and rapidly changing terminology."
+        },
+        {
+            "id": "frequency-thresholds",
+            "title": "Frequency Thresholds",
+            "type": "concept",
+            "content": "A frequency threshold excludes tokens that occur too rarely in the training corpus. This can reduce vocabulary size and avoid allocating separate embeddings to many poorly observed words. However, rare terms may be essential in medicine, law, programming, or scientific research. The threshold should reflect corpus size, task requirements, and the tokenization method. Subword vocabularies generally handle rare word forms differently from simple word-level vocabularies."
+        },
+        {
+            "id": "filtering-example",
+            "title": "Filtering Rare Tokens",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ncorpus = [\"AI learns data\", \"AI studies data\", \"AI learns models\"]\ncounts = Counter(token for line in corpus for token in line.split())\nmin_frequency = 2\nvocabulary = {token for token, count in counts.items() if count >= min_frequency}\nprint(sorted(vocabulary))",
+            "explanation": "The example retains tokens appearing at least twice. Rare tokens are excluded from the resulting set. A production vocabulary builder should additionally reserve special tokens, define deterministic ID ordering, and measure what information is lost through filtering."
+        },
+        {
+            "id": "vocabulary-size",
+            "title": "Choosing Vocabulary Size",
+            "type": "concept",
+            "content": "A larger word vocabulary reduces the number of words mapped to unknown tokens but requires more embedding parameters and a larger output layer when the model predicts tokens directly. A smaller vocabulary reduces those parameters but may increase unknown-token frequency or require more pieces to represent text. Vocabulary size also affects data sparsity: a rare token receives fewer training updates than a common one. The right size depends on corpus scale, language coverage, model architecture, and compute constraints."
+        },
+        {
+            "id": "embedding-parameter-cost",
+            "title": "Vocabulary Size and Embedding Parameters",
+            "type": "math",
+            "content": "For a token embedding matrix with vocabulary size V and embedding dimension d, the number of embedding parameters is V × d. If V = 20,000 and d = 256, the embedding matrix contains 5,120,000 parameters. Increasing the vocabulary to 40,000 while keeping d fixed doubles this parameter count to 10,240,000. If a model has a separate vocabulary-sized output projection, that layer can add another large parameter matrix."
+        },
+        {
+            "id": "vocabulary-leakage",
+            "title": "Vocabulary Leakage and Data Splits",
+            "type": "concept",
+            "content": "In a conventional supervised learning workflow, preprocessing rules and vocabulary construction should be learned from training data only. Using evaluation data to decide which tokens to retain can leak information about the evaluation distribution. Although this is often less direct than leaking labels, it can still make comparisons inconsistent. Fit the vocabulary on training data, then apply the frozen mapping to validation and test data."
+        },
+        {
+            "id": "deterministic-vocabulary",
+            "title": "Reproducibility and Stable IDs",
+            "type": "concept",
+            "content": "Vocabulary IDs should be deterministic. If token ordering depends on an unordered data structure or unstable tie-breaking, rebuilding the vocabulary may assign different IDs. This breaks compatibility with saved model weights. Store the vocabulary, tokenizer configuration, normalization policy, special-token definitions, and relevant software versions with model artifacts. When updating a vocabulary, treat it as a model compatibility change rather than a harmless preprocessing update."
+        },
+        {
+            "id": "word-vocabulary-limitations",
+            "title": "Limitations of Word-Level Vocabularies",
+            "type": "concept",
+            "content": "Word-level vocabularies struggle with spelling variation, productive morphology, compound words, multilingual coverage, and unseen names. A word such as 'reindustrialization' may be rare even when its component parts are familiar. A subword tokenizer can reuse smaller units across related words. The trade-off is that subword sequences may be less interpretable and can increase the number of tokens required for some inputs."
+        },
+        {
+            "id": "vocabulary-for-multilingual-data",
+            "title": "Vocabulary Design for Multilingual Data",
+            "type": "concept",
+            "content": "A multilingual vocabulary must allocate finite capacity across languages with different scripts, frequency distributions, and morphological patterns. A vocabulary dominated by high-resource languages may tokenize lower-resource languages inefficiently. Evaluate token counts, coverage, and downstream quality for each language rather than reporting only aggregate statistics. Unicode normalization and tokenizer training data also influence the representation of accents, scripts, and unusual symbols."
+        },
+        {
+            "id": "vocabulary-inspection",
+            "title": "Inspecting Vocabulary Statistics",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ncorpus = [\"AI learns from data\", \"AI learns quickly\", \"data improves models\"]\ncounts = Counter(token for line in corpus for token in line.split())\nprint(\"Unique tokens:\", len(counts))\nprint(\"Total occurrences:\", sum(counts.values()))\nprint(\"Most common:\", counts.most_common(3))\nprint(\"Rare tokens:\", [token for token, count in counts.items() if count == 1])",
+            "explanation": "These statistics reveal corpus size, vocabulary diversity, common tokens, and singleton tokens. In larger projects, similar analyses can identify noisy text, spelling variants, domain terms, and possible preprocessing problems."
+        },
+        {
+            "id": "production-vocabulary-practices",
+            "title": "Production Best Practices",
+            "type": "concept",
+            "content": "Keep the tokenizer and vocabulary versioned with the model. Reserve required special tokens before assigning ordinary token IDs. Make normalization and unknown-token policies explicit. Evaluate vocabulary coverage on representative validation data. Avoid changing token IDs after training without a carefully designed embedding migration. For pretrained language models, use the provided tokenizer rather than reconstructing a vocabulary from observed words."
+        },
+        {
+            "id": "vocabulary-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "A vocabulary maps token strings to stable integer IDs. Vocabulary construction involves corpus selection, tokenization, frequency analysis, filtering, special-token reservation, and deterministic indexing. Vocabulary size affects parameter count and rare-word handling. Unknown tokens, padding, and sequence boundaries require explicit policies. Reproducible NLP systems save the vocabulary and apply the same tokenizer configuration during training and inference."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "vocabulary-exercise-1",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Construct a frequency counter for the tokens in ['AI learns', 'AI works'] and identify the most frequent token.",
+            "correctAnswer": "AI occurs twice, while learns and works occur once each.",
+            "solution": "Use Counter(token for sentence in corpus for token in sentence.split()). The resulting counts are {'AI': 2, 'learns': 1, 'works': 1}."
+        },
+        {
+            "id": "vocabulary-exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why should a trained model's vocabulary IDs not be changed arbitrarily?",
+            "correctAnswer": "Each ID selects a particular embedding or output-class position, so changing the mapping changes the meaning of model inputs and outputs.",
+            "solution": "If token 'data' originally maps to ID 5 but later maps to ID 12, the model will select a different embedding row. The saved weights are no longer aligned with the new mapping."
+        },
+        {
+            "id": "vocabulary-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "How many parameters are in an embedding matrix with vocabulary size 12,000 and dimension 128?",
+            "correctAnswer": "1,536,000 parameters.",
+            "solution": "Multiply vocabulary size by embedding dimension: 12,000 × 128 = 1,536,000."
+        },
+        {
+            "id": "vocabulary-exercise-4",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "A medical NLP system frequently encounters rare disease names. What is one risk of applying a high minimum-frequency threshold?",
+            "correctAnswer": "Important disease names may be excluded or mapped to unknown tokens, losing useful information.",
+            "solution": "Domain-specific rare terms can carry substantial predictive value. Consider domain-aware vocabulary evaluation or subword tokenization rather than relying only on raw frequency."
+        }
+    ],
+    "summary": "Vocabulary construction maps tokens to stable integer IDs for numerical modeling. It requires token-frequency analysis, special-token design, rare-token handling, and reproducible ordering. Vocabulary size affects embedding parameters and unknown-word behavior. Train the vocabulary on appropriate training data, save it with the model, and keep its mapping consistent across the complete pipeline.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-one-hot-encoding",
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-subword-tokenization-bpe"
+    ]
+}

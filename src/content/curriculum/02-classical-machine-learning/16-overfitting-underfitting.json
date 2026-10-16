@@ -1,1 +1,149 @@
-{}
+{
+    "id": "overfitting-underfitting",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 16,
+    "title": "Overfitting and Underfitting",
+    "slug": "overfitting-underfitting",
+    "description": "Learn to diagnose overfitting and underfitting, understand generalization gaps, use cross-validation and regularization, and build reliable machine learning evaluation workflows.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Training, Validation, and Test Sets",
+        "Loss Functions",
+        "Gradient Descent",
+        "Regularization",
+        "Evaluation Metrics",
+        "Bias-Variance Trade-off"
+    ],
+    "learningObjectives": [
+        "Define overfitting, underfitting, and generalization.",
+        "Interpret training and validation performance patterns.",
+        "Explain how model complexity, data volume, noise, and regularization affect overfitting.",
+        "Use learning curves and validation curves to diagnose model behavior.",
+        "Understand the role of cross-validation and held-out test data.",
+        "Recognize data leakage and distribution shift as separate problems.",
+        "Apply regularization, early stopping, data augmentation, and model simplification where appropriate.",
+        "Design experiments that distinguish underfitting from overfitting.",
+        "Implement a validation-based model-selection workflow using scikit-learn."
+    ],
+    "sections": [
+        {
+            "id": "generalization-basics",
+            "title": "1. Generalization and the Two Main Failure Modes",
+            "type": "concept",
+            "content": "# What Is Generalization?\n\nA machine learning model is trained on a sample of observations but is usually expected to make predictions on future or previously unseen observations. Generalization describes how well the learned model performs beyond the examples used to fit it.\n\nA model that performs well on its training data does not necessarily generalize well. It may have learned noise, accidental correlations, or sample-specific details rather than stable patterns.\n\nTwo important failure modes are underfitting and overfitting.\n\n## Underfitting\n\nUnderfitting occurs when a model cannot capture important patterns in the data. It may be too simple, too strongly regularized, poorly optimized, or supplied with an inadequate feature representation.\n\nTypical signs include:\n\n- High training error.\n- High validation error.\n- Training and validation errors that are both poor and often relatively close.\n- Systematic residual patterns or missed nonlinear relationships.\n\n## Overfitting\n\nOverfitting occurs when a model adapts too closely to the training sample, including noise or accidental details that do not generalize.\n\nTypical signs include:\n\n- Very low training error.\n- Substantially worse validation error.\n- A large gap between training and validation performance.\n- Performance that changes significantly across training samples or random splits.\n\n## Good Fit\n\nA useful model captures repeatable structure without relying excessively on sample-specific details. Its validation performance is strong relative to an appropriate baseline, and the result is reasonably stable under a suitable evaluation design.\n\n## A Critical Caveat\n\nThese patterns are clues, not definitive diagnoses. High validation error can also result from distribution shift, poor labels, an unsuitable metric, or a broken preprocessing pipeline. Always investigate the data and evaluation setup before changing model complexity."
+        },
+        {
+            "id": "underfitting-causes",
+            "title": "2. Underfitting: Causes and Solutions",
+            "type": "concept",
+            "content": "# Why Underfitting Happens\n\nA model underfits when its learned relationship is too restrictive or has not been learned successfully.\n\n## Cause 1: Insufficient Model Capacity\n\nA straight line may not capture a strongly nonlinear relationship. A shallow tree may not represent a useful sequence of interactions. A model with too few effective degrees of freedom may systematically miss structure.\n\nPotential solution: consider a more flexible model or a suitable feature transformation.\n\n## Cause 2: Excessive Regularization\n\nA strong penalty can shrink coefficients or constrain the model so heavily that it cannot capture important patterns.\n\nPotential solution: tune regularization strength using validation data rather than removing regularization indiscriminately.\n\n## Cause 3: Inadequate Features\n\nA model may lack important predictors or transformations. For example, predicting energy consumption using only household size may miss major effects from temperature, insulation, and occupancy patterns.\n\nPotential solution: add meaningful features using domain knowledge, investigate interactions, and validate whether the added information improves performance.\n\n## Cause 4: Optimization Failure\n\nA model may have enough capacity but fail to reach a useful parameter setting because the learning rate, initialization, numerical implementation, or training duration is inappropriate.\n\nPotential solution: inspect optimization curves, verify gradients where relevant, and tune training settings.\n\n## Cause 5: Poor Data Quality\n\nMeasurement errors, incorrect labels, inconsistent units, or faulty preprocessing can make a meaningful pattern difficult to learn.\n\nPotential solution: audit the dataset and feature pipeline before increasing model complexity.\n\n## How to Diagnose Underfitting\n\nCompare training and validation performance with a simple baseline. If the model performs poorly on both, inspect residual patterns, feature representation, optimization, and regularization.\n\nA more complex model is only a candidate intervention. Confirm improvement using validation data and preserve a separate final test set."
+        },
+        {
+            "id": "overfitting-causes",
+            "title": "3. Overfitting: Causes and Solutions",
+            "type": "concept",
+            "content": "# Why Overfitting Happens\n\nOverfitting is especially likely when a model has enough flexibility to memorize peculiarities in the training data relative to the amount and quality of available information.\n\n## Cause 1: Excessive Complexity\n\nA very deep decision tree can create leaves that contain only a few observations. A high-degree polynomial can oscillate to match individual training points. A model with many flexible parameters may fit random fluctuations.\n\nPotential solutions include depth constraints, pruning, simpler feature representations, or stronger regularization.\n\n## Cause 2: Limited Training Data\n\nWith a small sample, a model may mistake chance correlations for repeatable patterns.\n\nCollecting more representative and independently informative observations can help. Duplicating the same records does not provide the same benefit as adding new information.\n\n## Cause 3: Noisy Labels or Measurements\n\nA highly flexible model may adapt to incorrect labels or extreme measurement errors.\n\nInvestigate data quality, but do not automatically discard difficult or rare observations. Some rare cases are important to the intended application.\n\n## Cause 4: Excessive Training\n\nFor some iterative models, continued optimization reduces training loss while validation performance stops improving or deteriorates.\n\nEarly stopping can select a checkpoint based on validation performance.\n\n## Cause 5: Repeated Model Selection on the Test Set\n\nIf model choices are repeatedly based on test results, the test set influences the final modeling decisions. The reported score can become optimistic even if the model was never directly fitted to the test features and labels in a conventional training step.\n\nUse validation data or cross-validation for selection and reserve the final test set for the chosen pipeline.\n\n## Possible Solutions\n\n- Increase regularization.\n- Reduce model complexity.\n- Use early stopping where appropriate.\n- Improve data quality and collect representative data.\n- Use suitable augmentation for domains where label-preserving transformations are known.\n- Remove leakage-prone features and preprocessing errors.\n- Consider variance-reducing ensembles.\n- Improve validation design.\n\nThe goal is not to eliminate all training fit but to reduce dependence on accidental details that do not repeat in deployment."
+        },
+        {
+            "id": "learning-curves",
+            "title": "4. Learning Curves and Validation Curves",
+            "type": "concept",
+            "content": "# Learning Curves\n\nA learning curve plots model performance against the number of training examples. Training and validation performance are often plotted together.\n\n## High-Bias Pattern\n\nTraining and validation errors are both high and may approach similar levels as the dataset grows. The model may be too restrictive or lack meaningful features.\n\nAdding more examples may help only modestly if the model cannot represent the underlying relationship.\n\n## High-Variance Pattern\n\nTraining error is low, while validation error is much higher. Increasing the training-set size may improve validation performance and reduce the gap, especially when the model's instability comes from limited sample size.\n\nHowever, learning curves can plateau or behave irregularly. They should be interpreted alongside data quality and deployment assumptions.\n\n## Validation Curves\n\nA validation curve shows how training and validation performance change with a hyperparameter such as tree depth, regularization strength, or the number of neighbors in KNN.\n\nFor example, increasing decision-tree depth often reduces training error. Validation error may initially decrease and later increase, revealing a useful range of complexity.\n\n## Example: Regularization Strength\n\nFor a linear model with L2 regularization:\n\n- Very strong regularization may cause underfitting.\n- Moderate regularization may improve generalization.\n- Very weak regularization may allow unstable coefficients when the problem is difficult or noisy.\n\nThe best region depends on the dataset and should be selected through validation.\n\n## Practical Plotting Strategy\n\nPlot the metric that matters for the task, not just training loss. For classification, use suitable metrics such as log loss, F1, recall, or ROC-AUC depending on the objective. For regression, use MAE, RMSE, or another metric aligned with the use case.\n\nEnsure the curves compare consistent splits and preprocessing procedures. If the dataset has time or group structure, use a split strategy that respects it."
+        },
+        {
+            "id": "cross-validation-and-leakage",
+            "title": "5. Cross-Validation, Test Sets, and Data Leakage",
+            "type": "concept",
+            "content": "# Why Evaluation Design Matters\n\nOverfitting is not limited to the model's parameters. A practitioner can also overfit the model-selection process by repeatedly trying alternatives and selecting the one that looks best on a repeatedly consulted evaluation set.\n\n## Training Set\n\nThe training set is used to fit model parameters and preprocessing transformations.\n\n## Validation Set\n\nThe validation set is used to compare candidate models, tune hyperparameters, choose thresholds, and make other modeling decisions.\n\n## Test Set\n\nThe test set is reserved for a final evaluation of the selected pipeline. It should not repeatedly guide model development.\n\n## Cross-Validation\n\nIn k-fold cross-validation, the training data is divided into k folds. Each fold is used as validation once while the remaining folds are used for fitting.\n\nThe resulting scores provide a more complete view of model performance across different subsets of the available training data. Cross-validation is useful for hyperparameter selection, but the folds must respect the data's structure.\n\n## Time-Series Data\n\nFor temporal prediction, randomly mixing future and past observations can create unrealistic evaluation conditions. A time-aware split should train on earlier observations and evaluate on later observations.\n\n## Grouped Data\n\nIf multiple observations come from the same patient, customer, household, or device, a random row-level split may put closely related records in both training and validation. A group-aware split may be necessary to evaluate generalization to unseen groups.\n\n## Data Leakage\n\nLeakage occurs when information unavailable at prediction time improperly influences training or evaluation.\n\nExamples include:\n\n- Standardizing features using the entire dataset before splitting.\n- Selecting features using labels from the test set.\n- Including a feature recorded only after the event being predicted.\n- Duplicated or related records crossing data partitions inappropriately.\n- Fitting PCA on the full dataset before cross-validation.\n\nA scikit-learn Pipeline helps fit preprocessing separately within each training fold.\n\n## Leakage Is Not the Same as Overfitting\n\nOverfitting concerns excessive adaptation to training-sample details. Leakage concerns inappropriate information flow. Leakage can produce extremely optimistic evaluation scores and may hide a model that performs poorly in deployment."
+        },
+        {
+            "id": "regularization-and-early-stopping",
+            "title": "6. Practical Methods for Improving Generalization",
+            "type": "concept",
+            "content": "# A Toolkit for Better Generalization\n\nDifferent failure modes require different interventions. The following methods should be treated as candidates to test rather than universal fixes.\n\n## L1 and L2 Regularization\n\nL1 regularization can drive some coefficients to zero, producing sparse linear models. L2 regularization shrinks coefficients and can stabilize estimates. Both introduce a trade-off between fitting the data and constraining the model.\n\n## Tree Pruning and Complexity Constraints\n\nFor decision trees, limit depth, increase minimum leaf size, or prune branches that do not justify their complexity. Select these settings using validation or cross-validation.\n\n## Early Stopping\n\nMonitor validation performance during iterative training and retain the checkpoint that meets the selected stopping rule. Early stopping should not be chosen using the final test set.\n\n## Data Augmentation\n\nWhen the domain supports known label-preserving transformations, augmentation can increase the variety of training inputs. For images, some geometric or photometric transformations may be appropriate. For other domains, augmentation requires domain-specific justification.\n\n## Ensembling\n\nBagging and random forests can reduce variance by averaging predictions from multiple models. Boosting combines sequentially fitted models and can improve predictive accuracy, but poorly controlled boosting can still overfit.\n\n## Feature Engineering\n\nAdd meaningful features when the model is underfitting, but avoid features that reveal the target through future or post-outcome information. Use validation to determine whether the features improve generalization.\n\n## Collecting More Data\n\nMore representative examples can improve the reliability of learned patterns. Data collection is less useful when the new examples are duplicates, contain systematic errors, or come from an irrelevant distribution.\n\n## Reduce Complexity Carefully\n\nA simpler model can improve generalization, but excessive simplification may increase bias. Always compare alternatives on data that was not used to fit their parameters."
+        },
+        {
+            "id": "overfitting-python",
+            "title": "7. Demonstration: Comparing Tree Complexity",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split, cross_val_score\nfrom sklearn.tree import DecisionTreeClassifier\nfrom sklearn.metrics import accuracy_score\n\nX, y = load_breast_cancer(return_X_y=True)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y,\n    test_size=0.2,\n    stratify=y,\n    random_state=42\n)\n\nfor depth in [1, 2, 3, 5, 10, None]:\n    model = DecisionTreeClassifier(\n        max_depth=depth,\n        min_samples_leaf=2,\n        random_state=42\n    )\n\n    model.fit(X_train, y_train)\n    train_accuracy = accuracy_score(y_train, model.predict(X_train))\n    test_accuracy = accuracy_score(y_test, model.predict(X_test))\n    cv_scores = cross_val_score(\n        model, X_train, y_train, cv=5, scoring='accuracy'\n    )\n\n    print(\n        f'Depth={str(depth):>4} | '\n        f'Train={train_accuracy:.3f} | '\n        f'CV mean={cv_scores.mean():.3f} | '\n        f'Test={test_accuracy:.3f}'\n    )",
+            "explanation": "The training score reveals how closely the tree fits its training data. Cross-validation estimates performance across folds of the training set and is useful for selecting depth. The held-out test score is shown for demonstration, but in a real model-selection workflow you should avoid repeatedly consulting test results to choose the depth. Select the hyperparameter using cross-validation or validation data, then evaluate the chosen model on the test set once."
+        },
+        {
+            "id": "generalization-checklist",
+            "title": "8. End-to-End Generalization Checklist",
+            "type": "concept",
+            "content": "# A Reliable Modeling Process\n\n## Step 1: Define the Task\n\nSpecify what is predicted, when the prediction is made, and what constitutes a costly mistake. Choose evaluation metrics that reflect the intended use.\n\n## Step 2: Inspect the Data\n\nExamine sample size, missing values, label quality, feature distributions, duplicate records, and temporal or group structure.\n\n## Step 3: Establish a Baseline\n\nUse a simple model or a naive predictor to determine whether more complex methods provide meaningful improvement.\n\n## Step 4: Design the Split\n\nChoose random, stratified, group-aware, or time-aware splitting according to the data-generating process and deployment scenario.\n\n## Step 5: Build a Leakage-Safe Pipeline\n\nFit imputers, scalers, feature selectors, PCA transformations, and other preprocessing steps using training data only. Use pipelines inside cross-validation.\n\n## Step 6: Diagnose the Error Pattern\n\nCompare training and validation metrics, inspect learning curves, and examine residuals or class-specific errors.\n\n## Step 7: Test Appropriate Interventions\n\nFor underfitting, consider better features, more capacity, or less restrictive regularization. For overfitting, consider stronger regularization, complexity constraints, representative data, or ensembling.\n\n## Step 8: Tune Without Reusing the Test Set\n\nSelect hyperparameters using validation data or cross-validation. If many alternatives are tested, be aware that model-selection noise can influence the selected result.\n\n## Step 9: Final Evaluation\n\nEvaluate the selected pipeline on an untouched test set. Report more than one metric when a single metric hides important failure modes.\n\n## Step 10: Monitor Deployment\n\nReal-world data can change over time. Monitor input distributions, prediction behavior, label availability, and relevant performance metrics. Reassess the model when the deployment environment changes.\n\n## Final Principle\n\nThe objective is not to achieve perfect training performance. It is to build a model that performs reliably on the future data and decisions that matter."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ou-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Define overfitting and underfitting.",
+            "correctAnswer": "Overfitting occurs when a model adapts too closely to training-specific details and generalizes poorly. Underfitting occurs when a model fails to capture important patterns in the data.",
+            "solution": "Overfitting often produces low training error and higher validation error. Underfitting often produces high error on both training and validation data. These patterns are clues and should be checked against data quality and evaluation design."
+        },
+        {
+            "id": "ou-ex-2",
+            "type": "diagnosis",
+            "difficulty": "medium",
+            "question": "A model has training RMSE of 25 and validation RMSE of 27. Both values are high relative to a useful baseline. What would you investigate?",
+            "correctAnswer": "Investigate possible underfitting, missing features, model assumptions, optimization, data quality, and the suitability of the baseline and metric.",
+            "solution": "The small gap and high errors are consistent with underfitting, but they do not prove it. Inspect residual patterns, feature representation, and optimization behavior. Consider a more flexible model or meaningful features, and verify that the data and evaluation procedure are correct."
+        },
+        {
+            "id": "ou-ex-3",
+            "type": "diagnosis",
+            "difficulty": "medium",
+            "question": "A model has training accuracy of 99% and validation accuracy of 81%. What does this suggest, and what would you try?",
+            "correctAnswer": "The large generalization gap suggests possible overfitting. Try regularization, reduced complexity, more representative data, or an appropriate ensemble, and verify that there is no leakage or distribution mismatch.",
+            "solution": "The model fits the training sample much better than validation examples. Compare simpler models and stronger regularization using cross-validation. Also inspect the split, feature availability at prediction time, label quality, and whether the validation data reflects the intended deployment population."
+        },
+        {
+            "id": "ou-ex-4",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Explain why data leakage can create misleadingly excellent validation or test scores.",
+            "correctAnswer": "Leakage allows information unavailable at genuine prediction time or information from evaluation data to influence model development, producing an unrealistically easy evaluation problem.",
+            "solution": "If a scaler, feature selector, PCA transformation, or model-selection procedure uses information from held-out data, the evaluation is no longer independent of the development process. A feature recorded after the target event can directly reveal information that would not exist at prediction time. Use leakage-safe pipelines and realistic splits."
+        },
+        {
+            "id": "ou-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "Validation loss increases after several training epochs while training loss continues to decrease. What might be happening, and what can you do?",
+            "correctAnswer": "The model may be overfitting. Use early stopping, stronger regularization, data augmentation where appropriate, or a simpler model, and confirm the pattern using reliable validation data.",
+            "solution": "The model continues adapting to training examples but is no longer improving on held-out validation examples. Early stopping can retain a checkpoint with better validation performance. Check that the validation set is representative and that the metric is suitable before concluding that overfitting is the only cause."
+        },
+        {
+            "id": "ou-ex-6",
+            "type": "workflow",
+            "difficulty": "hard",
+            "question": "Describe a leakage-safe workflow for selecting the maximum depth of a decision tree and reporting its final performance.",
+            "correctAnswer": "Separate a final test set, use cross-validation on training data to select depth, fit the chosen model on the available training data, and evaluate it on the untouched test set.",
+            "solution": "First create a representative train-test split. Run cross-validation over candidate depths using only the training partition. Select the depth based on the chosen cross-validation metric. Refit the selected model using the permitted training data, then evaluate once on the held-out test set. Ensure preprocessing and any feature selection are fitted inside each cross-validation fold."
+        }
+    ],
+    "summary": [
+        "Generalization is the ability to perform well on previously unseen data.",
+        "Underfitting reflects an inability to capture important patterns, while overfitting reflects excessive adaptation to training-specific details.",
+        "Training and validation curves provide useful but imperfect diagnostic evidence.",
+        "Regularization, model complexity controls, early stopping, representative data, and ensembles can improve generalization.",
+        "Cross-validation helps select hyperparameters, while an untouched test set provides a final performance estimate.",
+        "Data leakage and distribution shift can produce misleading evaluation results and require separate investigation.",
+        "A reliable workflow prioritizes realistic evaluation and deployment performance over perfect training scores."
+    ],
+    "relatedTopics": [
+        "bias-variance",
+        "regularization",
+        "gradient-descent",
+        "evaluation-metrics",
+        "decision-trees",
+        "random-forests"
+    ]
+}

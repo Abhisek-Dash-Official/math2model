@@ -1,1 +1,175 @@
-{}
+{
+    "id": "classical-ml-decision-trees",
+    "title": "Decision Trees",
+    "slug": "decision-trees",
+    "description": "Learn how decision trees recursively partition feature space using interpretable rules, impurity measures, information gain, regression criteria, pruning, and practical implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "What is Learning?",
+        "Training, Validation, and Test Sets",
+        "Loss Functions",
+        "Basic probability and statistics"
+    ],
+    "learningObjectives": [
+        "Explain the structure of a decision tree.",
+        "Distinguish decision trees for classification and regression.",
+        "Calculate Gini impurity and entropy.",
+        "Explain information gain and split selection.",
+        "Understand tree depth, leaf size, pruning, and overfitting.",
+        "Train and evaluate decision trees using scikit-learn.",
+        "Interpret decision paths and understand tree limitations."
+    ],
+    "sections": [
+        {
+            "id": "tree-introduction",
+            "title": "1. What Is a Decision Tree?",
+            "type": "text",
+            "content": "A decision tree predicts an outcome by applying a sequence of feature-based rules. Internal nodes test conditions, branches represent outcomes of those tests, and leaves provide predictions. For example, a loan model might first test income, then debt level, and then repayment history. The final prediction follows the path from the root to a leaf. Trees are attractive because individual predictions can often be explained as a sequence of understandable rules."
+        },
+        {
+            "id": "tree-structure",
+            "title": "2. Nodes, Splits, Branches, and Leaves",
+            "type": "text",
+            "content": "The root node contains the training examples before any split. A split divides the examples into child nodes according to a condition on one feature. Internal nodes continue partitioning the data, while leaf nodes return the final prediction. A classification leaf commonly predicts a class or class-probability distribution. A regression leaf commonly predicts an aggregate target value, such as the mean of the training targets in that leaf. Exact prediction behavior depends on the algorithm and configuration."
+        },
+        {
+            "id": "tree-greedy",
+            "title": "3. How a Tree Learns",
+            "type": "text",
+            "content": "Common tree algorithms grow a tree by repeatedly choosing a split that improves node purity or reduces prediction error. Many algorithms use a greedy strategy: at each step they select the best split among the candidates currently considered. This does not guarantee a globally optimal tree. Growing a large tree can fit complicated patterns, including noise, so training is usually controlled by stopping conditions and sometimes pruning."
+        },
+        {
+            "id": "tree-gini",
+            "title": "4. Gini Impurity",
+            "type": "formula",
+            "content": "For a node containing K classes with proportions p_1, p_2, ..., p_K, Gini impurity is Gini = 1 - sum_{k=1}^{K} p_k^2. It is zero when all examples belong to one class and generally increases as classes become more mixed. For a binary node containing 50% of each class, Gini = 1 - 0.5^2 - 0.5^2 = 0.5. Gini is a measure of class mixing, not a direct measure of predictive accuracy."
+        },
+        {
+            "id": "tree-entropy",
+            "title": "5. Entropy and Information Gain",
+            "type": "formula",
+            "content": "Entropy of a node is H = -sum_{k=1}^{K} p_k log2(p_k), with the convention that 0*log2(0) contributes zero. Entropy is zero for a pure node and is maximized by a uniform class distribution. For a candidate split, information gain equals parent entropy minus the weighted average entropy of the child nodes. A split with greater information gain reduces uncertainty more under this criterion. Some tree algorithms use entropy-based criteria, while others use Gini impurity."
+        },
+        {
+            "id": "tree-split-example",
+            "title": "6. Worked Example: Weighted Impurity",
+            "type": "example",
+            "content": "Suppose a parent node has 10 examples: 5 positive and 5 negative. Its Gini impurity is 0.5. A candidate split produces a left child containing 4 positive and 1 negative example, and a right child containing 1 positive and 4 negative examples. Each child has Gini impurity 1 - (4/5)^2 - (1/5)^2 = 0.32. The weighted child impurity is (5/10)*0.32 + (5/10)*0.32 = 0.32. The Gini reduction is 0.5 - 0.32 = 0.18. The split improves class purity."
+        },
+        {
+            "id": "tree-regression",
+            "title": "7. Regression Trees",
+            "type": "text",
+            "content": "Regression trees predict continuous targets. A common splitting criterion minimizes the weighted squared error or variance within child nodes. Within a leaf, the prediction is commonly the mean of the training targets in that leaf. Because the output is piecewise constant, regression trees can represent nonlinear relationships but may produce abrupt prediction changes at split boundaries. The split criterion and leaf prediction rule can vary by implementation."
+        },
+        {
+            "id": "tree-thresholds",
+            "title": "8. Numerical and Categorical Features",
+            "type": "text",
+            "content": "For a numerical feature, a split often compares a value with a threshold, such as age <= 30. For categorical features, possible strategies depend on the tree implementation: categories may be encoded, grouped, or handled natively by a compatible algorithm. In scikit-learn's conventional decision-tree estimators, input features generally need to be numeric, so categorical variables commonly require appropriate encoding. Encoding should be fitted within a training pipeline where necessary."
+        },
+        {
+            "id": "tree-overfitting",
+            "title": "9. Why Decision Trees Overfit",
+            "type": "text",
+            "content": "A deep tree can create small leaves that capture peculiarities of the training data. It may achieve very low training error while performing poorly on unseen examples. Trees are especially sensitive to small data changes because a different early split can change the structure of many later branches. A more constrained tree often generalizes better even if its training performance is worse."
+        },
+        {
+            "id": "tree-hyperparameters",
+            "title": "10. Controlling Tree Complexity",
+            "type": "text",
+            "content": "Important hyperparameters include max_depth, min_samples_split, min_samples_leaf, max_leaf_nodes, and the split criterion. Limiting maximum depth restricts the number of successive decisions. Increasing minimum leaf size prevents predictions from relying on very small groups of training examples. Cost-complexity pruning can remove branches that add insufficient predictive value. Hyperparameters should be selected using validation data or cross-validation rather than the test set."
+        },
+        {
+            "id": "tree-class-probabilities",
+            "title": "11. Class Predictions and Probabilities",
+            "type": "text",
+            "content": "A classification tree can predict the majority class in a leaf. It can also estimate class probabilities using the class proportions among training examples in that leaf. These probabilities may be coarse or poorly calibrated, especially when leaves are small or trees are overfit. If reliable probabilities matter, evaluate calibration on held-out data and consider calibration methods. A class label, a class probability, and a decision threshold are different parts of the prediction process."
+        },
+        {
+            "id": "tree-feature-importance",
+            "title": "12. Feature Importance and Interpretability",
+            "type": "text",
+            "content": "A tree can be inspected through its split rules and decision paths. Many implementations report impurity-based feature importance, which aggregates impurity reductions associated with splits using each feature. This measure can favor features with many possible split points and can be misleading with correlated features. Feature importance is not proof of causation. Consider permutation importance on held-out data and domain knowledge for a more complete interpretation."
+        },
+        {
+            "id": "tree-missing-data",
+            "title": "13. Missing Values and Robustness",
+            "type": "text",
+            "content": "Missing-value support depends on the tree implementation. Some tree algorithms learn how missing values should be routed; others require preprocessing or imputation. A robust pipeline should define how missing and invalid values are handled during both training and inference. Trees do not automatically solve data quality problems, distribution shifts, or biased sampling. Preprocessing behavior at deployment must match the behavior used during training."
+        },
+        {
+            "id": "tree-python",
+            "title": "14. Training a Decision Tree in Python",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.tree import DecisionTreeClassifier, export_text\nfrom sklearn.metrics import accuracy_score, classification_report\n\nX, y = load_breast_cancer(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = DecisionTreeClassifier(\n    max_depth=4,\n    min_samples_leaf=5,\n    random_state=42\n)\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\n\nprint('Accuracy:', round(accuracy_score(y_test, predictions), 3))\nprint(classification_report(y_test, predictions))\nprint(export_text(model, feature_names=list(load_breast_cancer().feature_names)))",
+            "explanation": "The example trains a depth-limited classification tree on a standard dataset. Stratification preserves approximate class proportions in the split. The test set is used only for evaluation in this example; hyperparameter tuning should be performed using a validation set or cross-validation. The printed rules provide a human-readable view of the fitted tree."
+        },
+        {
+            "id": "tree-strengths-limitations",
+            "title": "15. Strengths and Limitations",
+            "type": "text",
+            "content": "Decision trees can model nonlinear relationships and feature interactions without requiring a linear decision boundary. They can be interpretable, require relatively little feature scaling, and handle numerical threshold rules naturally. However, individual trees can be unstable, may overfit, and often have lower predictive accuracy than well-tuned ensembles. Their piecewise-constant predictions can also be unsuitable for some smooth regression tasks. The right model depends on predictive requirements, interpretability, data characteristics, and operational constraints."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "tree-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A node contains 8 positive and 2 negative examples. Calculate its Gini impurity.",
+            "correctAnswer": "0.32",
+            "solution": "The class proportions are 0.8 and 0.2. Gini = 1 - 0.8^2 - 0.2^2 = 1 - 0.64 - 0.04 = 0.32."
+        },
+        {
+            "id": "tree-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does a leaf node represent in a decision tree?",
+            "correctAnswer": "A terminal region that produces the model's prediction.",
+            "solution": "A leaf is reached after the input follows the applicable split rules. It returns a class, class probabilities, or a numerical prediction depending on the task."
+        },
+        {
+            "id": "tree-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A binary node contains equal numbers of two classes. Calculate its entropy in bits.",
+            "correctAnswer": "1 bit",
+            "solution": "H = -(0.5*log2(0.5) + 0.5*log2(0.5)) = -(-0.5 - 0.5) = 1."
+        },
+        {
+            "id": "tree-ex-4",
+            "type": "debugging",
+            "difficulty": "medium",
+            "question": "A decision tree has perfect training accuracy but much lower validation accuracy. Name two approaches to try.",
+            "correctAnswer": "Limit tree depth and increase minimum leaf size; pruning is another option.",
+            "solution": "These controls restrict model complexity and discourage tiny leaves that memorize training examples. Compare the resulting validation performance."
+        },
+        {
+            "id": "tree-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "Why might impurity-based feature importance be misleading when one feature has many possible split points?",
+            "correctAnswer": "Features with many candidate split points can have more opportunities to achieve large impurity reductions and may receive inflated importance.",
+            "solution": "Impurity-based importance aggregates the improvements obtained by splits using a feature. The number and structure of available splits can bias this measure. Permutation importance on held-out data is a useful complementary analysis, though it also requires careful interpretation."
+        }
+    ],
+    "summary": [
+        "Decision trees use feature-based rules to partition the input space.",
+        "Classification trees can use Gini impurity or entropy-based criteria.",
+        "Information gain measures reduction in entropy after a split.",
+        "Regression trees commonly minimize within-node squared error.",
+        "Deep trees can overfit and be unstable.",
+        "Depth limits, minimum leaf sizes, and pruning help control complexity.",
+        "Tree rules are interpretable, but feature importance is not causal evidence."
+    ],
+    "relatedTopics": [
+        "random-forests",
+        "loss-functions",
+        "evaluation-metrics",
+        "bias-variance",
+        "overfitting-underfitting"
+    ]
+}

@@ -1,1 +1,190 @@
-{}
+{
+    "id": "module-07-transformers-positional-information",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 6,
+    "title": "Positional Information & Rotary Embeddings",
+    "slug": "positional-information",
+    "href": "/curriculum/07-transformers/positional-information",
+    "filePath": "content/curriculum/07-transformers/06-positional-information.json",
+    "description": "Study how Transformers represent token order using absolute and relative positions, sinusoidal encodings, learned embeddings, and Rotary Position Embeddings (RoPE).",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-06-attention/positional-encoding",
+        "module-06-attention/self-attention",
+        "module-06-attention/multi-head-attention",
+        "module-07-transformers/transformer-architecture"
+    ],
+    "learningObjectives": [
+        "Explain why standard attention needs positional information.",
+        "Distinguish absolute and relative positional representations.",
+        "Understand sinusoidal and learned positional embeddings.",
+        "Derive the intuition behind Rotary Position Embeddings.",
+        "Explain how RoPE rotates query and key feature pairs.",
+        "Understand why relative position differences influence attention scores under RoPE.",
+        "Implement sinusoidal encodings and a basic RoPE transformation.",
+        "Discuss context-length extrapolation and its limitations.",
+        "Identify common positional-encoding implementation errors."
+    ],
+    "sections": [
+        {
+            "id": "position-motivation",
+            "title": "1. Why Transformers Need Positional Information",
+            "type": "concept",
+            "content": "Self-attention compares token representations and combines information according to learned compatibility scores. Without positional information or an equivalent order-aware mechanism, standard self-attention does not inherently know whether one token appeared before another. For example, 'dog bites person' and 'person bites dog' contain similar token sets but express different relationships. Position information gives the network evidence about token order and relative placement. Different architectures encode positions differently: some add absolute positional vectors to token embeddings, some learn position embeddings, and others modify attention computations to incorporate relative offsets. A positional method should be understood as part of the architecture rather than as a cosmetic input feature."
+        },
+        {
+            "id": "absolute-relative",
+            "title": "2. Absolute and Relative Position Representations",
+            "type": "concept",
+            "content": "Absolute positional representations associate a position index with a vector or transformation. A token at position 5 receives information identifying position 5, while a token at position 12 receives information identifying position 12. Relative approaches represent or encode relationships between positions, such as the distance or direction between a query and a key. Absolute methods can be simple and effective, but a model may need careful handling when it encounters positions outside its training range. Relative methods can make local relationships easier to represent, although they do not automatically guarantee generalization to arbitrary sequence lengths. Rotary Position Embeddings are commonly described as a method that injects position-dependent rotations into queries and keys."
+        },
+        {
+            "id": "sinusoidal-encoding",
+            "title": "3. Sinusoidal Positional Encoding",
+            "type": "math",
+            "content": "A classic sinusoidal encoding uses sine and cosine functions at different frequencies. For position pos and feature-pair index i, PE(pos, 2i) = sin(pos / 10000^(2i/dmodel)) and PE(pos, 2i+1) = cos(pos / 10000^(2i/dmodel)). Low-index pairs vary more rapidly with position, while higher-index pairs vary more slowly. These frequencies create a deterministic position vector without a learned positional embedding table. In the original Transformer-style formulation, the positional vector is added to the token embedding. This method provides multiple scales of positional variation, but modern models may use different approaches depending on their context-length and architectural requirements."
+        },
+        {
+            "id": "learned-position-embeddings",
+            "title": "4. Learned Absolute Position Embeddings",
+            "type": "concept",
+            "content": "A learned absolute-position method maintains an embedding table with one vector for each supported position. If the maximum supported position is L and the model dimension is d, the table contains L × d learned parameters. The vector for a token position is added to or otherwise combined with the token representation. Learned position embeddings can adapt to the training distribution and are straightforward to implement. However, a fixed table directly supports only its configured range unless an extension or interpolation strategy is introduced. Changing the maximum context length may therefore require architectural decisions and validation rather than simply assuming unseen positions will work correctly."
+        },
+        {
+            "id": "positional-addition",
+            "title": "5. Combining Token and Position Embeddings",
+            "type": "math",
+            "content": "For a token at position t, a common absolute-position input is x_t = e_t + p_t, where e_t is its token embedding and p_t is its positional vector. The dimensions must match for element-wise addition. For a batch with B sequences, T positions, and model dimension d, the token embedding tensor and positional tensor are often arranged so they can broadcast to shape (B, T, d). The relative magnitudes of token and position embeddings can affect early representations, so initialization and normalization choices matter. Architectures using rotary embeddings do not simply follow this exact additive input formulation; instead, they transform queries and keys inside attention."
+        },
+        {
+            "id": "rope-intuition",
+            "title": "6. Rotary Position Embeddings: Intuition",
+            "type": "concept",
+            "content": "Rotary Position Embeddings, commonly abbreviated RoPE, encode position by rotating pairs of query and key features by position-dependent angles. Rather than adding a separate position vector to the token embedding, RoPE modifies the query and key representations used by attention. A token at one position receives one rotation, while a token at another position receives a different rotation. Because rotations compose through angle differences, the dot product between rotated queries and keys can reflect relative position relationships. RoPE is widely used in decoder-only language models, but implementations differ in details such as frequency scaling, rotary dimensions, and long-context modifications."
+        },
+        {
+            "id": "rope-rotation-math",
+            "title": "7. The Mathematics of a Two-Dimensional Rotation",
+            "type": "math",
+            "content": "A two-dimensional rotation by angle θ is represented by R(θ) = [[cos θ, -sin θ], [sin θ, cos θ]]. Applying it to vector [x1, x2] produces [x1 cos θ - x2 sin θ, x1 sin θ + x2 cos θ]. RoPE applies rotations to multiple feature pairs, using frequencies that vary across pairs. At position m, a pair is rotated by an angle proportional to m times its frequency. The exact frequency schedule depends on the implementation and configuration. In practice, vectorized implementations apply sine and cosine tensors to many pairs simultaneously rather than constructing a separate full rotation matrix for every token."
+        },
+        {
+            "id": "rope-relative-dot-product",
+            "title": "8. Why RoPE Encodes Relative Position",
+            "type": "math",
+            "content": "Let q and k be two-dimensional query and key vectors, and let R(mθ) and R(nθ) represent their rotations at positions m and n. Their dot product is (R(mθ)q)^T(R(nθ)k). Since rotation matrices are orthogonal, this expression can be rewritten as q^T R((n-m)θ) k, using the corresponding rotation-composition identity. The relative offset n-m therefore appears in the interaction between the rotated query and key. With multiple feature pairs and frequencies, the attention score can encode several scales of relative positional relationships. This is an important mathematical property, but it does not mean every attention score becomes a simple explicit distance measure."
+        },
+        {
+            "id": "rope-query-key-only",
+            "title": "9. Why RoPE Is Applied to Queries and Keys",
+            "type": "concept",
+            "content": "In standard RoPE attention, position-dependent rotations are applied to query and key vectors before their dot products are calculated. The attention score is based on the relationship between those transformed vectors. Value vectors are typically not rotated by the same RoPE operation in the basic formulation; they carry content that is aggregated according to the attention weights. The resulting attention output still depends on the positional information embedded in the query-key scores. Applying rotations to the wrong tensor, or applying them at an inconsistent point in the attention pipeline, changes the intended operation and can cause pretrained weights to behave incorrectly."
+        },
+        {
+            "id": "rope-frequency",
+            "title": "10. Frequencies and Position Scales",
+            "type": "concept",
+            "content": "RoPE uses a set of frequencies so different feature pairs encode positional variation at different scales. High-frequency pairs change their phase relatively quickly as positions increase, while low-frequency pairs change more slowly. This mixture can support sensitivity to both shorter and longer positional offsets. The frequency schedule is a design choice, not a universal constant shared by every model. Some long-context variants adjust frequencies or otherwise modify RoPE to improve behavior beyond the original context range. Such extensions must be validated because the attention patterns and effective positional geometry can change as the context grows."
+        },
+        {
+            "id": "rope-context-limitations",
+            "title": "11. Context Length and Extrapolation",
+            "type": "concept",
+            "content": "A model trained at one context length does not automatically perform well at arbitrarily longer lengths, even if its positional method can mathematically represent larger positions. Longer contexts change the distribution of relative distances, increase attention computation, and may expose training limitations. RoPE variants can modify frequencies or rescale positions to improve long-context behavior, but these techniques have trade-offs. Evaluation should test retrieval, reasoning, position sensitivity, and attention behavior at the intended context lengths. Simply increasing a configuration value is not sufficient evidence that a model can use longer contexts reliably."
+        },
+        {
+            "id": "sinusoidal-code",
+            "title": "12. Implement Sinusoidal Encoding",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport math\n\n\ndef sinusoidal_encoding(max_length, d_model):\n    positions = torch.arange(max_length, dtype=torch.float32).unsqueeze(1)\n    dimensions = torch.arange(0, d_model, 2, dtype=torch.float32)\n    frequencies = torch.exp(\n        -math.log(10000.0) * dimensions / d_model\n    )\n\n    encoding = torch.zeros(max_length, d_model)\n    encoding[:, 0::2] = torch.sin(positions * frequencies)\n    encoding[:, 1::2] = torch.cos(\n        positions * frequencies[:encoding[:, 1::2].shape[1]]\n    )\n    return encoding\n\n\nposition_table = sinusoidal_encoding(100, 64)\nprint(position_table.shape)  # (100, 64)\n\n# Add positions to a batch of token embeddings.\ntoken_embeddings = torch.randn(2, 20, 64)\nposition_features = position_table[:20].unsqueeze(0)\ncombined = token_embeddings + position_features\nprint(combined.shape)  # (2, 20, 64)",
+            "explanation": "The function constructs a deterministic positional table and adds the relevant prefix to token embeddings. The broadcasting dimension allows one position table to be reused across the batch. For odd model dimensions, the cosine frequency slice is handled so the assignment remains shape-compatible."
+        },
+        {
+            "id": "rope-code",
+            "title": "13. Implement a Basic RoPE Rotation",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\n\ndef apply_rope(x, positions, base=10000.0):\n    \"\"\"Apply basic RoPE to x shaped (B, H, T, D), where D is even.\"\"\"\n    batch, heads, length, dim = x.shape\n    if dim % 2 != 0:\n        raise ValueError(\"RoPE dimension must be even\")\n\n    pair_indices = torch.arange(0, dim, 2, device=x.device, dtype=torch.float32)\n    inv_freq = 1.0 / (base ** (pair_indices / dim))\n    angles = positions.to(torch.float32).unsqueeze(-1) * inv_freq\n    cos = angles.cos().to(dtype=x.dtype)[:, None, :, :]\n    sin = angles.sin().to(dtype=x.dtype)[:, None, :, :]\n\n    first = x[..., 0::2]\n    second = x[..., 1::2]\n    rotated_first = first * cos - second * sin\n    rotated_second = first * sin + second * cos\n\n    result = torch.stack(\n        [rotated_first, rotated_second], dim=-1\n    ).flatten(-2)\n    return result\n\n\nx = torch.randn(2, 4, 10, 32)\npositions = torch.arange(10).unsqueeze(0).expand(2, -1)\nrotated = apply_rope(x, positions)\nprint(rotated.shape)  # (2, 4, 10, 32)",
+            "explanation": "This educational implementation rotates adjacent feature pairs and expects even head dimensions. It demonstrates the central operation, but production RoPE implementations may use different pair layouts, frequency scaling, cached cosine and sine tensors, partial rotary dimensions, or architecture-specific conventions. Apply the same position convention consistently to queries and keys."
+        },
+        {
+            "id": "position-debugging",
+            "title": "14. Common Positional Encoding Mistakes",
+            "type": "concept",
+            "content": "One common mistake is adding a positional vector with a dimension that does not match the token embedding. Another is generating position indices with an incorrect offset during cached generation, causing new tokens to receive the wrong rotations. RoPE implementations must use a consistent feature-pair layout and correct broadcasting dimensions. Applying RoPE to values instead of queries and keys changes the standard operation. Frequency schedules must also match the intended model configuration when loading pretrained weights. Finally, positional information does not automatically solve long-context generalization; test the actual context lengths and relative-position patterns required by the application."
+        },
+        {
+            "id": "position-method-selection",
+            "title": "15. Choosing a Positional Method",
+            "type": "concept",
+            "content": "Sinusoidal encodings are simple, deterministic, and do not require a learned position table. Learned absolute embeddings can adapt to the training distribution but have a fixed table size unless extended. RoPE injects position-dependent rotations into queries and keys and provides a useful relative-position property in their dot products. Other relative-position methods modify attention scores or values using learned or structured offsets. The right choice depends on the model family, expected context length, implementation ecosystem, pretrained checkpoint, and evaluation results. When extending an existing model, preserving the positional convention is often more important than choosing a method that appears theoretically attractive in isolation."
+        },
+        {
+            "id": "position-exercise-1",
+            "title": "Exercise 1: Why Positions Matter",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "Why can a standard self-attention layer benefit from explicit positional information?",
+            "correctAnswer": "Attention needs positional information or another order-aware mechanism to distinguish token order and relationships.",
+            "solution": "Without positional information, standard self-attention does not inherently identify whether one token appeared before another. Positional methods allow the model to use sequence order."
+        },
+        {
+            "id": "position-exercise-2",
+            "title": "Exercise 2: Absolute Position Table",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "How many parameters are in a learned position embedding table with 2048 positions and embedding dimension 128?",
+            "correctAnswer": "262144",
+            "solution": "The parameter count is 2048 × 128 = 262144."
+        },
+        {
+            "id": "position-exercise-3",
+            "title": "Exercise 3: RoPE Rotation",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "For a two-dimensional vector [1, 0], what is the result of a rotation by angle θ?",
+            "correctAnswer": "[cos(θ), sin(θ)]",
+            "solution": "Multiplying the rotation matrix by [1, 0] selects its first column, which is [cos(θ), sin(θ)]."
+        },
+        {
+            "id": "position-exercise-4",
+            "title": "Exercise 4: RoPE Placement",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "In standard RoPE attention, which projected tensors are rotated before calculating attention scores?",
+            "correctAnswer": "Queries and keys.",
+            "solution": "RoPE applies position-dependent rotations to queries and keys. Their dot products then encode position-dependent relationships. Values are typically left unrotated in the basic formulation."
+        },
+        {
+            "id": "position-exercise-5",
+            "title": "Exercise 5: Context Extrapolation",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Does a positional method that mathematically supports large position indices guarantee reliable performance at an arbitrarily long context?",
+            "correctAnswer": "No.",
+            "solution": "The model's training distribution, attention cost, relative-distance patterns, and positional configuration all affect long-context performance. Longer contexts must be evaluated rather than assumed to work."
+        },
+        {
+            "id": "position-exercise-6",
+            "title": "Exercise 6: Relative Position Property",
+            "type": "exercise",
+            "difficulty": "advanced",
+            "question": "Why does the dot product between RoPE-rotated query and key vectors depend on their relative positional offset?",
+            "correctAnswer": "The product of the two rotations reduces to a rotation determined by the difference between their position angles.",
+            "solution": "Rotation matrices are orthogonal and compose by adding angles. In the query-key dot product, the combined transformation can be expressed using the difference between query and key positions, producing relative-position dependence."
+        }
+    ],
+    "summary": "Transformers need positional information or another order-aware mechanism to distinguish token positions. Absolute methods add or learn position-specific representations, while RoPE rotates query and key feature pairs according to position. The relative offset between positions influences the resulting attention scores. Positional methods must be implemented consistently with the architecture, and long-context performance must be validated rather than assumed.",
+    "relatedTopics": [
+        "module-06-attention/positional-encoding",
+        "module-06-attention/self-attention",
+        "module-06-attention/multi-head-attention",
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/decoder",
+        "module-07-transformers/decoder-only-models",
+        "module-07-transformers/build-tiny-transformer-from-scratch"
+    ]
+}

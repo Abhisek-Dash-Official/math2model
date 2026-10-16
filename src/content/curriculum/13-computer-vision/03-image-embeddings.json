@@ -1,1 +1,362 @@
-{}
+{
+    "id": "module-13-computer-vision-image-embeddings",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 3,
+    "title": "Image Embeddings",
+    "slug": "image-embeddings",
+    "href": "/curriculum/13-computer-vision/image-embeddings",
+    "filePath": "content/curriculum/13-computer-vision/03-image-embeddings.json",
+    "description": "Learn how images are mapped into vector representations for similarity search, visual retrieval, clustering, classification, duplicate detection, and multimodal applications.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "Linear algebra and vector operations",
+        "CNNs in Modern Vision",
+        "Vision Transformers",
+        "Vector Embeddings",
+        "Basic probability and machine learning"
+    ],
+    "learningObjectives": [
+        "Explain what an image embedding represents.",
+        "Understand the difference between pixel similarity and semantic similarity.",
+        "Describe how CNNs and Vision Transformers generate image embeddings.",
+        "Compare cosine similarity, dot product, and Euclidean distance.",
+        "Understand contrastive learning and metric learning for visual representations.",
+        "Build a nearest-neighbor image retrieval pipeline.",
+        "Use pretrained encoders for transfer learning and visual search.",
+        "Evaluate embeddings with retrieval, clustering, and classification metrics.",
+        "Identify limitations involving domain shift, fine-grained similarity, and bias.",
+        "Design an image embedding service with metadata, access controls, and versioning."
+    ],
+    "sections": [
+        {
+            "id": "image-embedding-introduction",
+            "title": "What Is an Image Embedding?",
+            "type": "concept",
+            "content": "An image embedding is a numerical vector produced from an image by an encoder. The vector is intended to represent information useful for a particular task, such as object recognition, semantic retrieval, visual similarity, or cross-modal matching. Instead of comparing every pixel directly, a system can compare compact representations. Images of similar objects may have nearby embeddings even when their colors, backgrounds, or viewpoints differ. However, similarity depends on the training objective and the data used to train the encoder. An embedding optimized for object identity may behave differently from one optimized for aesthetic similarity, texture retrieval, or image-caption alignment."
+        },
+        {
+            "id": "image-embedding-motivation",
+            "title": "Why Convert Images into Vectors?",
+            "type": "concept",
+            "content": "Vector representations enable efficient operations over large image collections. A visual search engine can encode each image once, store its vector, and compare a query image or text query against the stored vectors. Embeddings can support duplicate detection, recommendation, clustering, image organization, anomaly detection, and downstream classification. They reduce the need to repeatedly process every image with a large model. The main challenge is choosing an embedding space whose notion of similarity matches the application."
+        },
+        {
+            "id": "image-embedding-pixels",
+            "title": "Pixel Similarity Versus Semantic Similarity",
+            "type": "concept",
+            "content": "Pixel similarity compares images at the level of raw intensity values. It can be useful when images are aligned and differ only slightly, but it is sensitive to translation, lighting, compression, and viewpoint. Semantic similarity compares learned representations that capture higher-level patterns. Two photographs of the same object may have different pixel values but similar embeddings. Conversely, two images with similar colors or textures may receive similar embeddings even if they depict different objects. There is no universally correct visual similarity measure; the appropriate metric depends on the task."
+        },
+        {
+            "id": "image-embedding-encoder",
+            "title": "How Image Encoders Produce Embeddings",
+            "type": "concept",
+            "content": "An image encoder transforms pixels into a sequence or spatial map of learned features. A CNN may aggregate feature maps using global average pooling, while a Vision Transformer may use a classification token or pool patch representations. A projection head can map the resulting feature into an embedding space optimized for retrieval or contrastive learning. The final vector may be normalized before storage. Inference must use the correct image preprocessing, architecture, checkpoint, and projection head because changing any of these can change the meaning of the resulting coordinates."
+        },
+        {
+            "id": "image-embedding-vector-math",
+            "title": "Vector Representation",
+            "type": "math",
+            "content": "An encoder maps an image x to a vector z in a d-dimensional real-valued space. The dimension d is determined by the model's representation interface. A vector may contain hundreds or thousands of components, but those coordinates are generally not directly interpretable as individual human concepts.",
+            "formula": "f_theta(x) = z, where z belongs to R^d",
+            "example": "A 512-dimensional encoder produces one vector with 512 numeric values per image. The vector can be compared with other vectors generated by the same compatible embedding model."
+        },
+        {
+            "id": "image-embedding-normalization",
+            "title": "L2 Normalization",
+            "type": "concept",
+            "content": "Some embedding systems normalize vectors to unit length. L2 normalization divides a nonzero vector by its Euclidean norm. This removes magnitude differences and makes dot product equal cosine similarity for normalized vectors. Normalization can simplify nearest-neighbor ranking, but it should match the embedding model's intended usage. If the model encodes meaningful magnitude information, normalizing without justification may discard a useful signal."
+        },
+        {
+            "id": "image-embedding-normalization-math",
+            "title": "L2 Normalization Mathematics",
+            "type": "math",
+            "content": "The L2 norm is the square root of the sum of squared vector components. Dividing each component by this norm produces a unit vector, provided the original vector is nonzero.",
+            "formula": "||z||_2 = sqrt(sum_i z_i^2); z_hat = z / ||z||_2",
+            "example": "For z = [3, 4], the norm is 5 and the normalized vector is [0.6, 0.8]. Its squared components sum to 0.36 + 0.64 = 1."
+        },
+        {
+            "id": "image-embedding-cosine",
+            "title": "Cosine Similarity",
+            "type": "concept",
+            "content": "Cosine similarity measures the angle between two vectors. It is commonly used for semantic embeddings because it emphasizes orientation rather than vector magnitude. Values closer to 1 indicate similar directions, values near 0 indicate approximate orthogonality, and values near -1 indicate opposite directions. These interpretations are geometric rather than universal semantic guarantees. The score should be interpreted relative to the model and dataset, and zero vectors require special handling because their cosine similarity is undefined."
+        },
+        {
+            "id": "image-embedding-cosine-math",
+            "title": "Cosine Similarity Formula",
+            "type": "math",
+            "content": "Cosine similarity is the dot product divided by the product of the vectors' L2 norms. For unit-normalized embeddings, the denominator equals one, so cosine similarity is the dot product.",
+            "formula": "cos(u,v) = (u dot v) / (||u||_2 ||v||_2)",
+            "example": "For u = [1, 0] and v = [0.8, 0.6], the cosine similarity is 0.8 because both vectors have norm one and their dot product is 0.8."
+        },
+        {
+            "id": "image-embedding-euclidean",
+            "title": "Euclidean Distance",
+            "type": "concept",
+            "content": "Euclidean distance measures the straight-line distance between vectors. Smaller distances indicate greater geometric proximity. For unit-normalized vectors, Euclidean distance and cosine similarity induce equivalent rankings, although their numerical values differ. For unnormalized vectors, magnitude affects Euclidean distance. Distance thresholds should be calibrated on representative data rather than selected arbitrarily."
+        },
+        {
+            "id": "image-embedding-euclidean-math",
+            "title": "Euclidean Distance and Cosine Similarity",
+            "type": "math",
+            "content": "For two unit vectors u and v, the squared Euclidean distance can be expanded using their dot product. Since both squared norms equal one, the result depends directly on cosine similarity.",
+            "formula": "||u-v||_2^2 = ||u||_2^2 + ||v||_2^2 - 2(u dot v) = 2 - 2 cos(u,v)",
+            "example": "If the cosine similarity between unit vectors is 0.8, the squared distance is 2 - 1.6 = 0.4, and the Euclidean distance is approximately 0.632."
+        },
+        {
+            "id": "image-embedding-dot-product",
+            "title": "Dot Product Similarity",
+            "type": "concept",
+            "content": "The dot product measures alignment and magnitude. It is computationally efficient and commonly used in vector search. If embeddings are unit normalized, dot product equals cosine similarity. Without normalization, a vector's magnitude can influence ranking. Follow the model's recommended similarity function and keep indexing and query-time metrics consistent. A vector index configured for the wrong distance function may return different neighbors even when the stored embeddings are correct."
+        },
+        {
+            "id": "image-embedding-contrastive",
+            "title": "Learning Similarity with Contrastive Objectives",
+            "type": "concept",
+            "content": "Contrastive learning trains an encoder to distinguish related pairs from unrelated pairs. In image-image learning, positive pairs might be two augmented views of the same source image. In image-text learning, positive pairs might be an image and its caption. The objective encourages positive examples to be close relative to negatives. The quality of the learned space depends on positive-pair definitions, negative sampling, augmentations, model capacity, and dataset diversity. A poor definition of similarity can teach the encoder to group examples in ways that conflict with the intended application."
+        },
+        {
+            "id": "image-embedding-contrastive-loss",
+            "title": "A Contrastive Loss",
+            "type": "math",
+            "content": "A simplified contrastive objective increases similarity for positive pairs and decreases similarity for negative pairs. One common formulation uses a temperature-scaled softmax over candidate examples. Different methods use different denominators, margins, or negative-sampling strategies.",
+            "formula": "L_i = -log(exp(sim(z_i, z_i+)/tau) / sum_j exp(sim(z_i, z_j)/tau))",
+            "example": "Here z_i is an anchor embedding, z_i+ is its positive counterpart, z_j are candidate embeddings, and tau is a positive temperature. The loss encourages the positive pair to receive a larger relative similarity score."
+        },
+        {
+            "id": "image-embedding-positive-negative",
+            "title": "Positive and Negative Pairs",
+            "type": "concept",
+            "content": "A positive pair represents examples that should be considered related under the learning objective. A negative pair represents examples that should be separated. The definitions depend on the task. Two photos of the same product from different angles may be positive for product identity, while two images of different products with similar colors may be negative. In semantic search, two distinct images may both be relevant to the same query. Treating all unpaired examples as negatives can create false negatives and harm representation quality."
+        },
+        {
+            "id": "image-embedding-hard-negatives",
+            "title": "Hard Negative Mining",
+            "type": "concept",
+            "content": "Hard negatives are examples that the current model considers similar but that should be ranked lower than the positive example. They can provide informative training signals because they expose fine-grained distinctions. However, a hard negative may actually be a valid positive under a broader notion of similarity. Mining and labeling must therefore be reliable. Aggressive hard-negative mining can make training unstable or encourage overly narrow representations if false negatives are common."
+        },
+        {
+            "id": "image-embedding-pretraining",
+            "title": "Pretrained Image Embeddings",
+            "type": "concept",
+            "content": "Pretrained encoders learn representations from large datasets and can often be reused for tasks with limited labeled data. Supervised classification pretraining can provide strong semantic features. Self-supervised pretraining can learn useful structure without manual labels for every image. Vision-language pretraining aligns images with textual descriptions, enabling cross-modal retrieval. A pretrained embedding is not automatically suitable for every task. Fine-grained product matching, industrial defect retrieval, medical imaging, and aesthetic similarity may require domain-specific fine-tuning or evaluation."
+        },
+        {
+            "id": "image-embedding-clip",
+            "title": "Image Embeddings from Vision-Language Models",
+            "type": "concept",
+            "content": "Vision-language encoders such as CLIP-style models learn compatible image and text representations. The image encoder maps images to vectors, and the text encoder maps text descriptions into the same embedding space. This supports text-to-image search and image-to-text matching without training a separate classifier for every category. The model's behavior reflects its pretraining data and objective. Similarity scores can be sensitive to prompt wording, class descriptions, and the distribution of candidate images."
+        },
+        {
+            "id": "image-embedding-transfer",
+            "title": "Transfer Learning and Domain Adaptation",
+            "type": "concept",
+            "content": "A general-purpose image embedding may work well for everyday photographs but poorly for specialized domains. Domain adaptation attempts to reduce this mismatch through fine-tuning, metric learning, normalization changes, or carefully designed training pairs. Evaluate whether the target task values semantic category, exact identity, visual defect, style, or another notion of similarity. A representation that clusters images by category may be unsuitable when users need to distinguish individual products within the same category."
+        },
+        {
+            "id": "image-embedding-retrieval",
+            "title": "Building an Image Retrieval System",
+            "type": "process",
+            "content": "A typical image retrieval pipeline validates and preprocesses images, computes embeddings, stores vectors with identifiers and metadata, embeds a query image or text, searches for nearest neighbors, applies access-control filters, and returns ranked results. For small collections, brute-force search can be sufficient. Larger collections may require approximate nearest-neighbor indexes. The system should preserve the embedding model version, preprocessing configuration, image source, and permissions so that results can be reproduced and filtered correctly."
+        },
+        {
+            "id": "image-embedding-brute-force",
+            "title": "Brute-Force Similarity Search",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef normalize_rows(matrix: np.ndarray) -> np.ndarray:\n    matrix = np.asarray(matrix, dtype=np.float32)\n    norms = np.linalg.norm(matrix, axis=1, keepdims=True)\n    if np.any(norms == 0):\n        raise ValueError(\"Embeddings must be nonzero\")\n    return matrix / norms\n\ndef search_embeddings(query: np.ndarray, vectors: np.ndarray, top_k: int = 5):\n    vectors = normalize_rows(vectors)\n    query = np.asarray(query, dtype=np.float32).reshape(1, -1)\n    query = normalize_rows(query)\n    if query.shape[1] != vectors.shape[1]:\n        raise ValueError(\"Query and indexed embeddings must have equal dimensions\")\n    scores = (vectors @ query.T).ravel()\n    indices = np.argsort(scores)[::-1][:top_k]\n    return [(int(i), float(scores[i])) for i in indices]",
+            "explanation": "This example performs exact cosine-similarity ranking for a small in-memory collection. Production code should validate top_k, handle access filters, associate vectors with stable IDs, and use a scalable index when brute-force search becomes too expensive."
+        },
+        {
+            "id": "image-embedding-encoder-code",
+            "title": "Generating Embeddings with a Pretrained Encoder",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torchvision.models import resnet50, ResNet50_Weights\n\nweights = ResNet50_Weights.DEFAULT\nmodel = resnet50(weights=weights)\nmodel.fc = torch.nn.Identity()\nmodel.eval()\npreprocess = weights.transforms()\n\ndef encode_image(image):\n    tensor = preprocess(image.convert(\"RGB\")).unsqueeze(0)\n    with torch.inference_mode():\n        vector = model(tensor)\n        vector = torch.nn.functional.normalize(vector, p=2, dim=1)\n    return vector.squeeze(0).cpu().numpy()",
+            "explanation": "Replacing the classification layer exposes the penultimate feature vector of the pretrained ResNet. This is a practical baseline, but the representation was trained for classification rather than every possible similarity task. Evaluate it on the target retrieval problem before deployment."
+        },
+        {
+            "id": "image-embedding-index-design",
+            "title": "Designing an Embedding Index",
+            "type": "concept",
+            "content": "An embedding index stores vectors alongside metadata such as image ID, source, category, timestamp, owner, and model version. The vector supports similarity ranking, while metadata supports filtering, access control, display, and auditability. Store a stable identifier rather than relying on vector position as the permanent identity of an image. If embeddings are regenerated, update the vector and metadata atomically where possible. Do not expose private metadata simply because a vector is returned by a nearest-neighbor search."
+        },
+        {
+            "id": "image-embedding-ann",
+            "title": "Approximate Nearest-Neighbor Search",
+            "type": "concept",
+            "content": "Exact search compares a query with every vector, which can be expensive for very large collections. Approximate nearest-neighbor methods trade a small amount of recall for lower latency and reduced computation. Common approaches include graph-based indexes, inverted-file indexes, and quantization-based methods. Index parameters influence search speed, memory use, and recall. Evaluate the index using representative queries and compare its results with exact search on a manageable sample."
+        },
+        {
+            "id": "image-embedding-recall-at-k",
+            "title": "Recall at K for Image Retrieval",
+            "type": "math",
+            "content": "Recall at K measures whether relevant items appear within the first K results. For a query with a set of relevant items, a simple form divides the number of relevant items in the top K by the total number of relevant items. Dataset-level results can be averaged across queries. Some benchmarks instead report whether at least one relevant item appears in the top K, so the precise definition must be documented.",
+            "formula": "Recall@K = relevant items retrieved in top K / total relevant items",
+            "example": "If a query has 10 relevant images and 7 appear in the top 20 results, Recall@20 is 7/10 = 0.7."
+        },
+        {
+            "id": "image-embedding-mrr",
+            "title": "Mean Reciprocal Rank",
+            "type": "math",
+            "content": "Mean Reciprocal Rank rewards systems that place the first relevant result near the top of the ranking. For each query, reciprocal rank is the inverse of the rank of the first relevant result. The mean is computed across queries.",
+            "formula": "RR(q) = 1 / rank_of_first_relevant_result; MRR = (1 / Q) * sum_q RR(q)",
+            "example": "If the first relevant result is at rank 2, the reciprocal rank is 0.5. If it is at rank 5, the reciprocal rank is 0.2."
+        },
+        {
+            "id": "image-embedding-clustering",
+            "title": "Clustering Image Embeddings",
+            "type": "concept",
+            "content": "Clustering groups embeddings without requiring a class label for every item. Algorithms such as k-means can organize vectors into groups, while density-based methods can identify clusters of varying shapes and mark outliers. The resulting groups reflect the representation space, not necessarily an objectively correct taxonomy. Normalize vectors if appropriate, choose distance measures carefully, and inspect representative images from each cluster. Clustering quality can be assessed using labeled subsets, cluster purity, silhouette scores, or human inspection."
+        },
+        {
+            "id": "image-embedding-classification",
+            "title": "Linear Probing and Fine-Tuning",
+            "type": "concept",
+            "content": "A linear probe freezes an encoder and trains a linear classifier on its embeddings. This evaluates how linearly accessible the target labels are in the representation. Fine-tuning updates some or all encoder parameters to adapt the representation to the target task. Linear probing is inexpensive and useful for quick evaluation, while fine-tuning can improve performance when sufficient data and compute are available. Compare both approaches using held-out data rather than assuming a stronger training fit means better generalization."
+        },
+        {
+            "id": "image-embedding-duplicates",
+            "title": "Duplicate and Near-Duplicate Detection",
+            "type": "concept",
+            "content": "Image embeddings can help identify visually similar files, but semantic embeddings may consider different photographs of the same object similar without detecting exact duplication. Perceptual hashes and pixel-based methods can be more appropriate for exact or near-exact image copies. A robust deduplication system distinguishes file identity, visual similarity, and semantic similarity. Thresholds should be tuned against labeled pairs because false merges can be costly when different products or documents look alike."
+        },
+        {
+            "id": "image-embedding-thresholds",
+            "title": "Choosing Similarity Thresholds",
+            "type": "concept",
+            "content": "A similarity score is useful only in relation to the task and score distribution. A threshold that works for one dataset may fail when images, cameras, or user behavior change. Evaluate positive and negative pairs and measure false acceptance and false rejection rates. If the system must identify the same product, use identity-labeled pairs. If it must retrieve semantically related scenes, use relevance judgments. Threshold selection should account for the consequences of both types of error."
+        },
+        {
+            "id": "image-embedding-calibration",
+            "title": "Similarity Is Not Probability",
+            "type": "concept",
+            "content": "A cosine similarity of 0.9 does not automatically mean that two images have a 90 percent chance of being related. Similarity is a geometric score, while probability requires a defined event and a calibrated statistical model. Score distributions vary across encoders and datasets. If a system needs a probability-like confidence, fit and evaluate a calibration method on representative labeled pairs. Monitor calibration when the deployment distribution changes."
+        },
+        {
+            "id": "image-embedding-bias",
+            "title": "Bias and Representation Quality",
+            "type": "concept",
+            "content": "Image embeddings can reflect imbalances and stereotypes in training data. Retrieval may underrepresent certain groups, rank images unevenly, or perform poorly on unfamiliar cultural contexts and image styles. Evaluate retrieval and classification performance across relevant subgroups and collection conditions. Examine whether the embedding captures the intended concept or relies on background, lighting, watermark, or other spurious cues. Domain-specific fine-tuning can help, but it also requires representative and responsibly collected data."
+        },
+        {
+            "id": "image-embedding-privacy",
+            "title": "Privacy and Access Control",
+            "type": "concept",
+            "content": "An image embedding is derived from the source image and should not automatically be treated as anonymous. Embeddings can reveal or support inference about visual content, and the original image may remain retrievable through its identifier. Apply access controls to vectors, metadata, and source files. Filter by permissions before returning search results, protect stored representations, and follow data-retention requirements. Avoid using visual embeddings for sensitive identification tasks without appropriate authorization and careful risk assessment."
+        },
+        {
+            "id": "image-embedding-versioning",
+            "title": "Versioning Embedding Models",
+            "type": "concept",
+            "content": "Vectors generated by different model versions may inhabit incompatible representation spaces. Changing the encoder, preprocessing, projection head, or normalization procedure can invalidate an existing index. Store model identifiers and preprocessing versions with indexed data. When upgrading, generate a new embedding collection or use a controlled migration strategy. Avoid mixing vectors from incompatible encoders in the same similarity search unless the system has been specifically trained and validated for that combination."
+        },
+        {
+            "id": "image-embedding-monitoring",
+            "title": "Monitoring an Image Search System",
+            "type": "concept",
+            "content": "Production monitoring should track query latency, retrieval volume, empty-result rate, index freshness, embedding-generation failures, and user feedback. Periodically evaluate Recall@K and ranking quality using a labeled query set. Monitor changes in image characteristics, category distribution, and similarity-score distributions. A system may continue returning results while its relevance quietly deteriorates. Versioned evaluations and a process for reviewing bad matches help detect such degradation."
+        },
+        {
+            "id": "image-embedding-project",
+            "title": "Project: Build a Visual Search Engine",
+            "type": "project",
+            "content": "Create a collection of images with stable identifiers and metadata. Generate embeddings using a pretrained encoder and store them in a local matrix or vector index. Implement image-to-image search and, if using a compatible vision-language encoder, text-to-image search. Add category and permission filters. Build a small relevance-labeled query set and evaluate Recall@K and MRR. Compare cosine similarity with another supported metric, inspect false matches, and test how preprocessing or encoder changes affect ranking. Document privacy controls, index updates, and model-version requirements."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "image-embeddings-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is an image embedding?",
+            "correctAnswer": "A numerical vector produced by an image encoder to represent information useful for a task.",
+            "solution": "Embeddings allow images to be compared, retrieved, clustered, or used in downstream models without repeatedly comparing raw pixels."
+        },
+        {
+            "id": "image-embeddings-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "What is the L2 norm of the vector [6, 8]?",
+            "correctAnswer": "10.",
+            "solution": "The norm is sqrt(6 squared + 8 squared) = sqrt(36 + 64) = sqrt(100) = 10."
+        },
+        {
+            "id": "image-embeddings-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "For two unit vectors with cosine similarity 0.5, what is their squared Euclidean distance?",
+            "correctAnswer": "1.",
+            "solution": "Squared distance = 2 - 2*cosine_similarity = 2 - 1 = 1."
+        },
+        {
+            "id": "image-embeddings-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "When does dot product equal cosine similarity?",
+            "correctAnswer": "When both vectors are normalized to unit L2 norm.",
+            "solution": "Cosine similarity divides the dot product by both vector norms. For unit vectors, both norms equal one."
+        },
+        {
+            "id": "image-embeddings-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can two images with similar pixels have different semantic meanings?",
+            "correctAnswer": "Pixel similarity does not directly represent object identity or meaning, and small visual changes can alter interpretation.",
+            "solution": "Raw pixels are sensitive to alignment, lighting, and viewpoint. Learned embeddings can capture higher-level features, though their behavior depends on training."
+        },
+        {
+            "id": "image-embeddings-ex-6",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A query has 20 relevant images, and 12 appear in the top 30 results. What is Recall@30?",
+            "correctAnswer": "0.6, or 60 percent.",
+            "solution": "Recall@30 = 12/20 = 0.6."
+        },
+        {
+            "id": "image-embeddings-ex-7",
+            "type": "applied",
+            "difficulty": "advanced",
+            "question": "Why might a general image encoder perform poorly for industrial defect retrieval?",
+            "correctAnswer": "Its training objective and data may not emphasize the fine-grained defect patterns required by the industrial domain.",
+            "solution": "Evaluate domain-specific examples and consider supervised metric learning, fine-tuning, or specialized preprocessing."
+        },
+        {
+            "id": "image-embeddings-ex-8",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why is a cosine similarity of 0.9 not equivalent to a 90 percent probability of a match?",
+            "correctAnswer": "Cosine similarity is a geometric score and is not inherently a calibrated probability.",
+            "solution": "A probability requires a defined outcome and empirical calibration on representative data."
+        },
+        {
+            "id": "image-embeddings-ex-9",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "What metadata should an image embedding index preserve?",
+            "correctAnswer": "Stable image identifiers, access-control metadata, source information, model version, preprocessing configuration, and relevant searchable attributes.",
+            "solution": "Metadata enables reproducibility, permission filtering, index maintenance, and correct interpretation of search results."
+        },
+        {
+            "id": "image-embeddings-ex-10",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How would you evaluate whether an image retrieval system is useful?",
+            "correctAnswer": "Create relevance-labeled queries and measure ranking metrics such as Recall@K and MRR, while also monitoring latency, privacy, and robustness.",
+            "solution": "Evaluation must reflect the intended notion of similarity and include difficult examples, false matches, and real deployment constraints."
+        }
+    ],
+    "summary": "Image embeddings map images into learned vector spaces that support retrieval, clustering, classification, duplicate analysis, and multimodal search. Their usefulness depends on the encoder's training objective, preprocessing, similarity metric, and domain fit. Reliable image-search systems combine validated embeddings with stable metadata, permission filtering, ranking evaluation, versioned indexes, and ongoing monitoring. Similarity scores should not be mistaken for probabilities, and embeddings must be evaluated against the actual notion of visual relevance required by the application.",
+    "relatedTopics": [
+        "cnns",
+        "vision-transformers",
+        "object-detection",
+        "segmentation",
+        "clip-style-models",
+        "multimodal-models",
+        "vector-embeddings",
+        "vector-databases",
+        "retrieval"
+    ]
+}

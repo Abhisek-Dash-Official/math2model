@@ -1,1 +1,790 @@
-{}
+{
+    "id": "basis-and-dimensionality",
+    "title": "Basis and Dimensionality",
+    "slug": "basis-and-dimensionality",
+    "module": "mathematics-for-ai",
+    "description": "Understand vector spaces, linear independence, spanning sets, basis vectors, and dimensionality. Learn how coordinate systems represent data and why these concepts are essential for feature engineering, embeddings, dimensionality reduction, and modern AI models.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations"
+    ],
+    "learningObjectives": [
+        "Understand vector spaces and subspaces.",
+        "Explain linear combinations and spanning sets.",
+        "Determine whether vectors are linearly independent or dependent.",
+        "Define a basis and understand why basis vectors must be independent and span the space.",
+        "Calculate the dimension of a vector space.",
+        "Represent vectors using coordinates relative to different bases.",
+        "Connect matrix rank, basis vectors, and dimensionality.",
+        "Understand how basis selection relates to feature representation and dimensionality reduction in AI.",
+        "Implement basic linear algebra operations using NumPy."
+    ],
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. Why Basis and Dimensionality Matter",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Machine learning systems represent information as vectors. An image may be represented using pixel values, a customer using purchasing features, and a word using an embedding vector. Understanding the dimensions of these vectors helps explain how data is represented and processed."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider a two-dimensional vector. We normally describe it using horizontal and vertical coordinates. But those are not the only possible directions we could use to represent the same vector. A different pair of independent directions can serve as a different coordinate system."
+                },
+                {
+                    "type": "math",
+                    "value": "v=\\begin{bmatrix}3\\\\2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The vector above has coordinates (3, 2) in the standard coordinate system. If we choose another basis, the same geometric vector can have different coordinates even though the underlying vector has not changed."
+                },
+                {
+                    "type": "text",
+                    "value": "A basis provides a set of building blocks that can represent every vector in a space uniquely. Dimensionality tells us how many independent directions are needed to describe that space."
+                },
+                {
+                    "type": "text",
+                    "value": "These ideas appear throughout AI. Feature vectors have dimensions, neural network layers transform between representations, embedding spaces use learned coordinates, and dimensionality reduction attempts to represent data with fewer coordinates."
+                }
+            ]
+        },
+        {
+            "id": "vector-spaces",
+            "title": "2. Understanding Vector Spaces",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A vector space is a collection of objects called vectors that can be added together and multiplied by scalars while satisfying specific mathematical rules. In this module, we primarily work with real-valued vector spaces such as R² and R³."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbb{R}^2=\\left\\{\\begin{bmatrix}x\\\\y\\end{bmatrix}:x,y\\in\\mathbb{R}\\right\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "The space R² contains every vector with two real coordinates. Geometrically, it can be visualized as a plane. Similarly, R³ contains every vector with three real coordinates and can be visualized as three-dimensional space."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbb{R}^3=\\left\\{\\begin{bmatrix}x\\\\y\\\\z\\end{bmatrix}:x,y,z\\in\\mathbb{R}\\right\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "A vector space must contain the zero vector and be closed under vector addition and scalar multiplication. Closure means that performing either operation on valid vectors produces another vector in the same space."
+                },
+                {
+                    "type": "text",
+                    "value": "For example, adding two vectors in R² always produces another vector in R². Multiplying a vector in R² by any real scalar also produces a vector in R²."
+                },
+                {
+                    "type": "math",
+                    "value": "u,v\\in\\mathbb{R}^n\\Rightarrow u+v\\in\\mathbb{R}^n"
+                },
+                {
+                    "type": "math",
+                    "value": "u\\in\\mathbb{R}^n,\\ c\\in\\mathbb{R}\\Rightarrow cu\\in\\mathbb{R}^n"
+                },
+                {
+                    "type": "text",
+                    "value": "Not every collection of vectors is a vector space. For instance, the set of two-dimensional vectors whose coordinates are both strictly positive does not contain the zero vector and is not closed under multiplication by negative scalars."
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, feature vectors often belong to Rⁿ. The number n describes the number of numerical coordinates available to represent each example, although the number of coordinates alone does not tell us how much useful information those features contain."
+                }
+            ]
+        },
+        {
+            "id": "subspaces",
+            "title": "3. Vector Subspaces",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A subspace is a subset of a vector space that is itself a vector space under the same addition and scalar multiplication operations. In practical terms, it is a smaller linear space contained inside a larger one."
+                },
+                {
+                    "type": "text",
+                    "value": "A line passing through the origin in R² is a subspace of R². It contains the zero vector, and adding or scaling vectors on that line keeps them on the same line."
+                },
+                {
+                    "type": "math",
+                    "value": "S=\\left\\{\\begin{bmatrix}t\\\\2t\\end{bmatrix}:t\\in\\mathbb{R}\\right\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "This subspace contains vectors such as (1, 2), (2, 4), and (−1, −2). Every vector in it is a scalar multiple of (1, 2)."
+                },
+                {
+                    "type": "text",
+                    "value": "A line that does not pass through the origin is not a vector subspace. For example, the line y = 2x + 1 does not contain the zero vector because the point (0, 0) does not satisfy its equation."
+                },
+                {
+                    "type": "text",
+                    "value": "The column space of a matrix is a subspace formed by all linear combinations of its columns. The null space is another important subspace: it contains every vector mapped to zero by the matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{Col}(A)=\\{Ax:x\\in\\mathbb{R}^n\\}"
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{Null}(A)=\\{x:Ax=0\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "These subspaces are useful for understanding which outputs a linear transformation can produce and which input directions it loses."
+                }
+            ]
+        },
+        {
+            "id": "linear-combinations",
+            "title": "4. Linear Combinations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear combination is created by multiplying vectors by scalars and adding the results. Linear combinations are the basic mechanism through which basis vectors represent other vectors."
+                },
+                {
+                    "type": "math",
+                    "value": "v=c_1v_1+c_2v_2+\\cdots+c_kv_k"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, v₁ through vₖ are vectors and c₁ through cₖ are scalar coefficients. By changing the coefficients, we can generate different vectors from the same collection of building blocks."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider the standard basis vectors in R²."
+                },
+                {
+                    "type": "math",
+                    "value": "e_1=\\begin{bmatrix}1\\\\0\\end{bmatrix},\\quad e_2=\\begin{bmatrix}0\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Every two-dimensional vector can be written as a linear combination of these two vectors."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}3\\\\2\\end{bmatrix}=3\\begin{bmatrix}1\\\\0\\end{bmatrix}+2\\begin{bmatrix}0\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The coefficients 3 and 2 specify how much of each basis direction is needed. In the standard basis, these coefficients are exactly the vector's coordinates."
+                },
+                {
+                    "type": "text",
+                    "value": "A set of vectors spans a space if every vector in that space can be expressed as a linear combination of the set. The standard basis vectors span R² because they can represent every vector in the plane."
+                },
+                {
+                    "type": "text",
+                    "value": "A set can span a space even if it contains redundant vectors. For example, (1, 0), (0, 1), and (1, 1) span R², but the third vector is unnecessary because it is the sum of the first two."
+                }
+            ]
+        },
+        {
+            "id": "linear-independence",
+            "title": "5. Linear Independence and Dependence",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A collection of vectors is linearly independent if no vector in the collection can be expressed as a linear combination of the others. Every vector contributes a direction that cannot be reproduced using the remaining vectors."
+                },
+                {
+                    "type": "math",
+                    "value": "c_1v_1+c_2v_2+\\cdots+c_kv_k=0"
+                },
+                {
+                    "type": "text",
+                    "value": "The vectors are linearly independent if the equation above has only the trivial solution, meaning every coefficient is zero."
+                },
+                {
+                    "type": "math",
+                    "value": "c_1=c_2=\\cdots=c_k=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Consider the vectors (1, 0) and (0, 1). Neither can be produced by scaling the other, so they are linearly independent."
+                },
+                {
+                    "type": "text",
+                    "value": "Now consider (1, 2) and (2, 4). The second vector is twice the first. Therefore, they are linearly dependent."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}2\\\\4\\end{bmatrix}=2\\begin{bmatrix}1\\\\2\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Dependence means there is redundancy in the collection. At least one vector can be generated from the others, so it does not contribute a new independent direction."
+                },
+                {
+                    "type": "text",
+                    "value": "In R², any two nonzero vectors that are not scalar multiples of one another are linearly independent. Any collection of more than two vectors in R² must be linearly dependent."
+                },
+                {
+                    "type": "text",
+                    "value": "More generally, a collection containing more than n vectors in Rⁿ must be linearly dependent. This is a consequence of the fact that an n-dimensional space cannot contain more than n linearly independent vectors."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nindependent = np.array([\n    [1, 0],\n    [0, 1]\n], dtype=float)\n\ndependent = np.array([\n    [1, 2],\n    [2, 4]\n], dtype=float)\n\nprint(\"Rank of independent vectors:\", np.linalg.matrix_rank(independent))\nprint(\"Rank of dependent vectors:\", np.linalg.matrix_rank(dependent))\n\n# The vectors are stored as rows here.\n# Two rows are independent when the matrix rank is 2.\nprint(\"First set is independent:\", np.linalg.matrix_rank(np.array([[1, 0], [0, 1]])) == 2)\nprint(\"Second set is independent:\", np.linalg.matrix_rank(dependent) == 2)"
+                },
+                {
+                    "type": "text",
+                    "value": "Numerical rank calculations use floating-point tolerances. For exact mathematical work, independence can sometimes be established directly using algebra."
+                }
+            ]
+        },
+        {
+            "id": "spanning-sets",
+            "title": "6. Spanning Sets",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A set of vectors spans a vector space when every vector in that space can be expressed as a linear combination of the set."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{span}(v_1,\\ldots,v_k)=\\left\\{\\sum_{i=1}^{k}c_iv_i:c_i\\in\\mathbb{R}\\right\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "Consider one nonzero vector in R². Its scalar multiples form a line through the origin, so one vector cannot span the entire plane."
+                },
+                {
+                    "type": "text",
+                    "value": "Two linearly independent vectors in R² span the entire plane. For example, (1, 1) and (1, −1) point in different directions and can be combined to produce every two-dimensional vector."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}x\\\\y\\end{bmatrix}=\\frac{x+y}{2}\\begin{bmatrix}1\\\\1\\end{bmatrix}+\\frac{x-y}{2}\\begin{bmatrix}1\\\\-1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "A spanning set does not need to be independent. If a set contains redundant vectors, removing some of them may leave the span unchanged."
+                },
+                {
+                    "type": "text",
+                    "value": "This distinction is important: spanning describes coverage, while linear independence describes redundancy. A basis combines both properties."
+                }
+            ]
+        },
+        {
+            "id": "definition-of-basis",
+            "title": "7. What Is a Basis?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A basis is a set of vectors that is both linearly independent and spans the entire vector space. These two conditions ensure that every vector can be represented using the basis and that this representation is unique."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathcal{B}=\\{v_1,v_2,\\ldots,v_n\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "For R², the standard basis is:"
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathcal{B}=\\left\\{\\begin{bmatrix}1\\\\0\\end{bmatrix},\\begin{bmatrix}0\\\\1\\end{bmatrix}\\right\\}"
+                },
+                {
+                    "type": "text",
+                    "value": "For R³, the standard basis contains three coordinate directions."
+                },
+                {
+                    "type": "math",
+                    "value": "e_1=\\begin{bmatrix}1\\\\0\\\\0\\end{bmatrix},\\quad e_2=\\begin{bmatrix}0\\\\1\\\\0\\end{bmatrix},\\quad e_3=\\begin{bmatrix}0\\\\0\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Each standard basis vector points along one coordinate axis. Every vector in R³ can be expressed uniquely as a combination of these three vectors."
+                },
+                {
+                    "type": "text",
+                    "value": "A basis does not have to use the standard coordinate directions. The vectors (1, 1) and (1, −1) also form a basis for R² because they are independent and span the plane."
+                },
+                {
+                    "type": "text",
+                    "value": "Why must a basis be independent? If the vectors were dependent, at least one could be generated from the others, creating redundancy. Why must it span the space? Otherwise, some vectors could not be represented at all."
+                },
+                {
+                    "type": "text",
+                    "value": "A basis is therefore a minimal complete set of independent directions for a vector space."
+                }
+            ]
+        },
+        {
+            "id": "dimension",
+            "title": "8. Understanding Dimensionality",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The dimension of a finite-dimensional vector space is the number of vectors in any basis for that space. Every basis of the same finite-dimensional vector space contains the same number of vectors."
+                },
+                {
+                    "type": "math",
+                    "value": "\\dim(\\mathbb{R}^n)=n"
+                },
+                {
+                    "type": "text",
+                    "value": "The real plane R² has dimension 2, and the space R³ has dimension 3. The space R¹⁰⁰ has dimension 100 because each vector requires 100 independent coordinates in the standard representation."
+                },
+                {
+                    "type": "text",
+                    "value": "Dimension counts independent directions, not necessarily the number of vectors in a dataset. A dataset may contain millions of examples, each represented by 100 features. Its examples still live in a 100-dimensional feature space, even though the dataset contains many more than 100 rows."
+                },
+                {
+                    "type": "text",
+                    "value": "A dataset's observed points may lie close to a lower-dimensional subspace. For example, 100-dimensional data may approximately lie near a plane or a 5-dimensional subspace. This is one reason dimensionality reduction can sometimes produce compact representations."
+                },
+                {
+                    "type": "text",
+                    "value": "The number of features, the dimension of the space spanned by the data, and the intrinsic dimensionality of the underlying phenomenon are related but distinct ideas. A dataset with many recorded features may have substantial redundancy, but that redundancy must be established from the data rather than assumed."
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, a feature vector's dimensionality affects memory requirements, computation, statistical estimation, and the design of model layers. Higher dimensionality is not automatically better: useful representations must preserve or expose information relevant to the task."
+                }
+            ]
+        },
+        {
+            "id": "coordinates-in-a-basis",
+            "title": "9. Coordinates Relative to a Basis",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The coordinates of a vector depend on the basis used to describe it. The vector itself does not change merely because we choose a different basis."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose we use the basis vectors b₁ = (1, 1) and b₂ = (1, −1). To represent v = (3, 1), we want coefficients a and b such that:"
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}3\\\\1\\end{bmatrix}=a\\begin{bmatrix}1\\\\1\\end{bmatrix}+b\\begin{bmatrix}1\\\\-1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "Expanding the equation gives a + b = 3 and a − b = 1. Adding the equations yields 2a = 4, so a = 2. Substituting into a + b = 3 gives b = 1."
+                },
+                {
+                    "type": "math",
+                    "value": "[v]_{\\mathcal{B}}=\\begin{bmatrix}2\\\\1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The vector has standard coordinates (3, 1), but its coordinates relative to the chosen basis are (2, 1). Both coordinate descriptions represent the same vector."
+                },
+                {
+                    "type": "text",
+                    "value": "To convert basis coordinates into standard coordinates, place the basis vectors in the columns of a matrix and multiply by the coordinate vector."
+                },
+                {
+                    "type": "math",
+                    "value": "P_{\\mathcal{B}}=\\begin{bmatrix}1&1\\\\1&-1\\end{bmatrix},\\quad v=P_{\\mathcal{B}}[v]_{\\mathcal{B}}"
+                },
+                {
+                    "type": "text",
+                    "value": "A change of basis is useful when a different coordinate system makes a problem easier to understand or compute. In data analysis, principal components provide new coordinate directions that summarize variance in the data."
+                }
+            ]
+        },
+        {
+            "id": "matrix-columns-and-basis",
+            "title": "10. Matrices, Column Spaces, and Bases",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The columns of a matrix can be viewed as vectors. Their linear combinations form the matrix's column space. The number of independent columns is the rank of the matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}|&|&&|\\\\a_1&a_2&\\cdots&a_n\\\\|&|&&|\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The column space consists of every vector that can be written as Ax for some input vector x. It is spanned by the columns of A."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{Col}(A)=\\operatorname{span}(a_1,a_2,\\ldots,a_n)"
+                },
+                {
+                    "type": "text",
+                    "value": "If the columns are linearly independent, they form a basis for their column space. If the columns are dependent, some columns are redundant, and the rank is smaller than the number of columns."
+                },
+                {
+                    "type": "text",
+                    "value": "For example, consider the matrix with columns (1, 2) and (2, 4). Both columns point in the same direction because the second is twice the first. Their column space is a line rather than the entire plane, and the matrix has rank 1."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}1&2\\\\2&4\\end{bmatrix},\\quad \\operatorname{rank}(A)=1"
+                },
+                {
+                    "type": "text",
+                    "value": "Now consider the identity matrix. Its columns are the standard basis vectors, so they are linearly independent and span the entire space."
+                },
+                {
+                    "type": "math",
+                    "value": "I_2=\\begin{bmatrix}1&0\\\\0&1\\end{bmatrix},\\quad \\operatorname{rank}(I_2)=2"
+                },
+                {
+                    "type": "text",
+                    "value": "This relationship connects basis, dimension, and matrix rank. The rank gives the dimension of the space spanned by the columns, which is also the dimension of the space spanned by the rows."
+                }
+            ]
+        },
+        {
+            "id": "rank-nullity",
+            "title": "11. The Rank-Nullity Theorem",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The rank-nullity theorem describes how a linear transformation distributes the input dimensions between directions that survive in the output and directions that are mapped to zero."
+                },
+                {
+                    "type": "math",
+                    "value": "\\dim(\\operatorname{Domain}(T))=\\operatorname{rank}(T)+\\operatorname{nullity}(T)"
+                },
+                {
+                    "type": "text",
+                    "value": "The rank is the dimension of the image, while the nullity is the dimension of the kernel. For an m by n matrix A, the theorem states that the rank plus the nullity equals n, the number of columns."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{rank}(A)+\\operatorname{nullity}(A)=n"
+                },
+                {
+                    "type": "text",
+                    "value": "Consider a transformation from R³ to R². Suppose its rank is 2. Then its nullity is 3 − 2 = 1. At least one independent input direction is lost when the transformation maps the three-dimensional input into a two-dimensional output space."
+                },
+                {
+                    "type": "text",
+                    "value": "For a matrix with full column rank, the nullity is zero, so its kernel contains only the zero vector. This means no nonzero input vector is mapped to zero. Full column rank is possible only when the number of columns does not exceed the number of rows."
+                },
+                {
+                    "type": "text",
+                    "value": "The theorem helps explain why mapping from a higher-dimensional space to a lower-dimensional space cannot preserve every possible input uniquely. If the input dimension exceeds the output dimension, some directions must be lost."
+                }
+            ]
+        },
+        {
+            "id": "basis-and-machine-learning",
+            "title": "12. Why Basis and Dimensionality Matter in AI",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Machine learning representations are built from numerical coordinates. A model receives a vector, transforms it through learned operations, and uses the resulting representation to make predictions or generate outputs."
+                },
+                {
+                    "type": "text",
+                    "value": "Feature engineering: a dataset may contain correlated or redundant features. Understanding independent directions helps identify when several features provide overlapping information."
+                },
+                {
+                    "type": "text",
+                    "value": "Principal component analysis: PCA constructs orthogonal directions that summarize variance in centered data. Keeping only selected components produces a lower-dimensional linear representation."
+                },
+                {
+                    "type": "text",
+                    "value": "Embeddings: words, images, users, and other objects can be represented as vectors in learned spaces. The coordinate axes of a learned embedding space are generally not guaranteed to correspond to simple human-interpretable concepts."
+                },
+                {
+                    "type": "text",
+                    "value": "Neural network layers: a weight matrix maps an input representation into another coordinate space. The number of output units determines the dimensionality of that layer's output."
+                },
+                {
+                    "type": "text",
+                    "value": "Compression: if data can be represented accurately in a lower-dimensional subspace, a compact representation may reduce storage and computation. Compression can also discard information, so its effect should be evaluated against the task."
+                },
+                {
+                    "type": "text",
+                    "value": "Interpretability: changing the basis can change the numerical coordinates used to describe data without changing the underlying vectors. This is one reason individual embedding coordinates are not always easy to interpret in isolation."
+                },
+                {
+                    "type": "text",
+                    "value": "Important distinction: reducing the number of coordinates does not automatically preserve task-relevant information. A representation that captures most of the data's variance may not be the representation that best supports classification or prediction."
+                }
+            ]
+        },
+        {
+            "id": "pca-intuition",
+            "title": "13. Basis Vectors and Principal Component Analysis",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Principal component analysis, or PCA, is a method for finding orthogonal directions that explain variance in a centered dataset. These directions form a new coordinate system ordered by the amount of variance they capture."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose a dataset contains two highly correlated features. Most observations may lie close to a line in the two-dimensional feature space. One direction along that line may capture most of the variation, while the perpendicular direction captures relatively little."
+                },
+                {
+                    "type": "text",
+                    "value": "PCA identifies these directions from the data. If the first principal component captures most of the variance, projecting onto only that component can provide a useful one-dimensional approximation."
+                },
+                {
+                    "type": "math",
+                    "value": "Z=XW_k"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, X is the centered data matrix and Wₖ contains the selected principal-component directions as columns. If X has n features and k components are retained, Z has k features per observation."
+                },
+                {
+                    "type": "text",
+                    "value": "PCA does not simply select k original features. It creates new features as linear combinations of the original ones. The new coordinate directions are orthogonal in standard PCA."
+                },
+                {
+                    "type": "text",
+                    "value": "PCA is a linear dimensionality-reduction technique. It can be effective when the important structure is approximately linear, but it may not capture complex nonlinear manifolds or task-specific patterns."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\nfrom sklearn.decomposition import PCA\n\nrng = np.random.default_rng(42)\n\n# Create data with two correlated features.\nt = rng.normal(size=500)\nX = np.column_stack([\n    3 * t + rng.normal(scale=0.2, size=500),\n    2 * t + rng.normal(scale=0.2, size=500)\n])\n\npca = PCA(n_components=1)\nZ = pca.fit_transform(X)\n\nprint(\"Original shape:\", X.shape)\nprint(\"Reduced shape:\", Z.shape)\nprint(\"Explained variance ratio:\", pca.explained_variance_ratio_)\nprint(\"Total variance retained:\", pca.explained_variance_ratio_.sum())"
+                },
+                {
+                    "type": "text",
+                    "value": "This example creates two correlated features and reduces them to one principal component. The explained variance ratio indicates how much of the total variance is captured by the retained component."
+                }
+            ]
+        },
+        {
+            "id": "computing-rank-and-basis",
+            "title": "14. Finding Independent Directions with NumPy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "NumPy provides tools for estimating matrix rank and computing decompositions that help identify independent directions. The matrix rank gives the number of independent rows or columns."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.array([\n    [1.0, 2.0, 3.0],\n    [2.0, 4.0, 6.0],\n    [0.0, 1.0, 1.0]\n])\n\nrank = np.linalg.matrix_rank(A)\nprint(\"Matrix shape:\", A.shape)\nprint(\"Matrix rank:\", rank)\n\n# Singular value decomposition can help reveal independent directions.\nU, singular_values, Vt = np.linalg.svd(A, full_matrices=False)\nprint(\"Singular values:\", singular_values)\n\n# A numerical rank estimate counts singular values above a tolerance.\ntolerance = 1e-10\nestimated_rank = np.sum(singular_values > tolerance)\nprint(\"Estimated rank:\", estimated_rank)"
+                },
+                {
+                    "type": "text",
+                    "value": "The second row of A is twice the first row, so the rows are dependent. The third row introduces another independent direction. The rank is therefore 2."
+                },
+                {
+                    "type": "text",
+                    "value": "Singular value decomposition expresses a matrix using orthogonal directions and singular values. Very small singular values can indicate directions that contribute little to the matrix's action, although numerical rank depends on the chosen tolerance and the precision of the data."
+                },
+                {
+                    "type": "text",
+                    "value": "A numerical decomposition is useful for exploration, but it is important to distinguish exact mathematical rank from approximate numerical rank when working with noisy or floating-point data."
+                }
+            ]
+        },
+        {
+            "id": "common-misconceptions",
+            "title": "15. Common Misconceptions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Misconception 1: The number of vectors determines dimension. A set can contain many vectors but span a space with a small dimension if those vectors are dependent."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 2: Every spanning set is a basis. A spanning set may contain redundant vectors. To be a basis, it must also be linearly independent."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 3: Every independent set is a basis. An independent set may fail to span the entire space. For example, one nonzero vector is independent but does not span R²."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 4: A vector changes when its basis changes. The vector remains the same; only its coordinate representation changes."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 5: More features always mean more information. Additional features may be redundant, noisy, or irrelevant to the task."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 6: PCA always improves a model. PCA can reduce computation and noise in some settings, but it can also discard information useful for a prediction task. Its value should be tested empirically."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 7: A high-dimensional dataset must occupy its entire feature space. Observations may lie on or near a lower-dimensional subspace, but this must be established through analysis."
+                }
+            ]
+        },
+        {
+            "id": "summary",
+            "title": "16. Key Takeaways",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A vector space is a collection of vectors closed under vector addition and scalar multiplication and satisfying the vector space axioms."
+                },
+                {
+                    "type": "text",
+                    "value": "A linear combination is formed by scaling vectors and adding the results. A set spans a space when its linear combinations can represent every vector in that space."
+                },
+                {
+                    "type": "text",
+                    "value": "Linear independence means that no vector in the collection is redundant. A set is independent when the only combination producing zero has all coefficients equal to zero."
+                },
+                {
+                    "type": "text",
+                    "value": "A basis is a linearly independent spanning set. Every vector in a finite-dimensional space has a unique coordinate representation relative to a chosen basis."
+                },
+                {
+                    "type": "text",
+                    "value": "The dimension of a vector space is the number of vectors in any basis for that space."
+                },
+                {
+                    "type": "text",
+                    "value": "Matrix rank measures the dimension of the column space and equals the dimension of the row space. The rank-nullity theorem connects rank and kernel dimension to the input dimension."
+                },
+                {
+                    "type": "text",
+                    "value": "Basis and dimensionality are foundational for understanding feature vectors, embeddings, matrix transformations, PCA, compression, and the internal representations used by neural networks."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the dimension of R⁴, and how many vectors are present in its standard basis?",
+            "hints": [
+                "The dimension of Rⁿ is n.",
+                "The standard basis contains one vector for each coordinate direction."
+            ],
+            "solution": "The dimension of R⁴ is 4. Its standard basis contains four vectors: (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), and (0, 0, 0, 1)."
+        },
+        {
+            "id": "exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Do the vectors (1, 2) and (3, 6) form a basis for R²? Explain.",
+            "hints": [
+                "Check whether one vector is a scalar multiple of the other.",
+                "A basis must be linearly independent."
+            ],
+            "solution": "No. The vector (3, 6) is three times (1, 2), so the vectors are linearly dependent. They span only a line through the origin rather than the entire plane."
+        },
+        {
+            "id": "exercise-3",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Express the vector (5, 3) as a linear combination of the standard basis vectors in R².",
+            "hints": [
+                "Use e₁ = (1, 0) and e₂ = (0, 1).",
+                "The coefficients correspond to the standard coordinates."
+            ],
+            "solution": "(5, 3) = 5(1, 0) + 3(0, 1). Therefore, its coordinates relative to the standard basis are (5, 3)."
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Express v = (4, 2) using the basis b₁ = (1, 1) and b₂ = (1, −1). Find coefficients a and b such that v = ab₁ + bb₂.",
+            "hints": [
+                "Write a + b = 4.",
+                "Write a − b = 2.",
+                "Solve the two equations."
+            ],
+            "solution": "The equations are a + b = 4 and a − b = 2. Adding them gives 2a = 6, so a = 3. Then b = 1. The basis coordinates are therefore (3, 1)."
+        },
+        {
+            "id": "exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Can three vectors in R² be linearly independent? Explain why or why not.",
+            "hints": [
+                "R² has dimension 2.",
+                "An independent set cannot contain more vectors than the dimension of its space."
+            ],
+            "solution": "No. R² has dimension 2, so at most two vectors can be linearly independent. Any collection of three vectors in R² must be linearly dependent."
+        },
+        {
+            "id": "exercise-6",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A matrix A has 6 columns and rank 4. What is the nullity of A?",
+            "hints": [
+                "Use the rank-nullity theorem.",
+                "Rank plus nullity equals the number of columns."
+            ],
+            "solution": "The rank-nullity theorem gives rank(A) + nullity(A) = 6. Therefore, nullity(A) = 6 − 4 = 2."
+        },
+        {
+            "id": "exercise-7",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Use NumPy to determine the rank of the matrix [[1, 2], [2, 4]]. Explain what the rank tells you about its columns.",
+            "hints": [
+                "Create the matrix with np.array.",
+                "Use np.linalg.matrix_rank.",
+                "Check whether one column is a scalar multiple of the other."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nA = np.array([[1, 2], [2, 4]], dtype=float)\nrank = np.linalg.matrix_rank(A)\nprint(rank)\n\nThe rank is 1. The second column is twice the first, so the columns are linearly dependent and span a one-dimensional subspace."
+        },
+        {
+            "id": "exercise-8",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A dataset has 50 numerical features, but the centered data matrix has rank 8. What does this imply about its feature directions? Does it automatically mean that eight features are sufficient for every prediction task?",
+            "hints": [
+                "Rank measures the number of independent directions represented by the matrix.",
+                "Centering can reveal linear dependencies among observed features.",
+                "Distinguish linear structure in the dataset from information required by a task."
+            ],
+            "solution": "A rank of 8 means that the centered observations span an eight-dimensional linear subspace in the represented feature space, assuming exact rank. The observed features therefore contain linear dependencies. However, it does not automatically prove that eight features are sufficient for every prediction task. The usefulness of a reduced representation depends on the target, noise, generalization, and whether the estimated rank is exact or numerical."
+        },
+        {
+            "id": "exercise-9",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A linear transformation maps R¹⁰ to R⁴. What is the largest possible rank, and what is the smallest possible nullity?",
+            "hints": [
+                "The rank cannot exceed either the input dimension or the output dimension.",
+                "Use the rank-nullity theorem with input dimension 10."
+            ],
+            "solution": "The largest possible rank is min(10, 4) = 4. By the rank-nullity theorem, nullity = 10 − rank. The smallest possible nullity is therefore 10 − 4 = 6."
+        },
+        {
+            "id": "exercise-10",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "Create a matrix with three columns where the third column is the sum of the first two. Use NumPy to verify that the matrix has dependent columns and explain the result.",
+            "hints": [
+                "Choose any two columns with two coordinates.",
+                "Construct the third column by adding the first two.",
+                "Use np.linalg.matrix_rank to calculate the rank."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nA = np.array([\n    [1, 0, 1],\n    [0, 1, 1]\n], dtype=float)\n\nprint(\"Rank:\", np.linalg.matrix_rank(A))\nprint(\"Number of columns:\", A.shape[1])\n\nThe rank is 2, while the matrix has 3 columns. The third column equals the sum of the first two, so the columns are dependent. They span R² but cannot form a basis containing all three columns."
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations",
+        "eigenvalues-eigenvectors",
+        "svd",
+        "functions",
+        "gradients",
+        "principal-component-analysis",
+        "neural-networks",
+        "embeddings"
+    ]
+}

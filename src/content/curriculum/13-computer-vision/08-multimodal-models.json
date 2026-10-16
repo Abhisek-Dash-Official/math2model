@@ -1,1 +1,309 @@
-{}
+{
+    "id": "module-13-computer-vision-multimodal-models",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 8,
+    "title": "Multimodal Vision Models",
+    "slug": "multimodal-models",
+    "href": "/curriculum/13-computer-vision/multimodal-models",
+    "filePath": "content/curriculum/13-computer-vision/08-multimodal-models.json",
+    "description": "Explore architectures that combine visual inputs with language and other modalities, including visual question answering, image captioning, multimodal transformers, grounding, and vision-language assistants.",
+    "difficulty": "advanced",
+    "estimatedHours": 9,
+    "prerequisites": [
+        "vision-transformers",
+        "image-embeddings",
+        "clip-style-models"
+    ],
+    "learningObjectives": [
+        "Define multimodal learning and explain why different modalities complement one another.",
+        "Distinguish dual-encoder, cross-attention, and unified multimodal architectures.",
+        "Explain how image patches, region features, and visual tokens enter language models.",
+        "Understand visual question answering, image captioning, and referring-expression grounding.",
+        "Describe alignment and instruction tuning for vision-language assistants.",
+        "Explain the roles of resampling, projection layers, and cross-attention adapters.",
+        "Design evaluation for image understanding and multimodal reasoning.",
+        "Recognize hallucination, OCR, spatial reasoning, and counting limitations.",
+        "Understand data quality, privacy, accessibility, and safety concerns.",
+        "Build a basic image-question answering pipeline with a pretrained model."
+    ],
+    "sections": [
+        {
+            "id": "multimodal-introduction",
+            "title": "What Is Multimodal Learning?",
+            "type": "concept",
+            "content": "Multimodal learning combines information from different data types, such as images, text, audio, video, depth, or structured sensor measurements. Different modalities provide complementary evidence. An image contains visual appearance and spatial layout, while a question provides a linguistic request about that content. Audio can add speech or environmental sound, and depth can provide geometric information that an ordinary RGB image lacks. A multimodal model learns representations or reasoning procedures that use these signals together. Combining modalities is not automatically beneficial: information may be noisy, contradictory, missing, or misaligned. The model must learn when each source is informative and how uncertainty should affect its output."
+        },
+        {
+            "id": "multimodal-tasks",
+            "title": "Common Vision-Language Tasks",
+            "type": "concept",
+            "content": "Image captioning generates a textual description of an image. Visual question answering (VQA) answers a question grounded in an image. Referring-expression grounding locates the region described by a phrase such as 'the cup on the left.' Image-text retrieval ranks images or descriptions by semantic compatibility. Visual entailment evaluates whether an image supports a textual claim. Document understanding combines visual layout, text recognition, and language reasoning. Video-language models extend these tasks across frames and temporal events. Each task requires different output formats and evaluation methods, so a model that performs well on retrieval should not automatically be assumed to excel at detailed question answering."
+        },
+        {
+            "id": "architecture-families",
+            "title": "Major Multimodal Architecture Families",
+            "type": "concept",
+            "content": "Multimodal systems can be grouped into dual encoders, cross-attention models, and unified multimodal models. Dual encoders independently encode images and text, then compare their representations. They are efficient for large-scale retrieval. Cross-attention architectures allow text tokens to attend directly to visual features or vice versa, enabling detailed interactions between modalities. Unified models place visual and text tokens into a shared sequence or use a common transformer backbone with modality-specific input adapters. These categories overlap in modern systems. Architecture choice depends on latency, dataset size, the required interaction between modalities, and whether the output must be a similarity score, structured prediction, or generated text."
+        },
+        {
+            "id": "early-late-fusion",
+            "title": "Early, Intermediate, and Late Fusion",
+            "type": "concept",
+            "content": "Fusion describes where information from different modalities is combined. Early fusion combines input representations or tokens near the beginning of the model, allowing extensive cross-modal interaction but potentially increasing computation. Intermediate fusion uses dedicated encoders followed by one or more interaction layers. Late fusion combines independently computed predictions or embeddings near the output, making it efficient and modular but sometimes limiting detailed reasoning across modalities. These labels describe broad design patterns rather than rigid architectural classes. A system may use several fusion strategies at different stages."
+        },
+        {
+            "id": "visual-tokenization",
+            "title": "Converting Images into Visual Tokens",
+            "type": "concept",
+            "content": "Transformer-based vision systems often divide an image into patches and map each patch to a vector. Other systems extract feature maps or object-region features from a vision encoder. These vectors become visual tokens that can be passed to a language model or multimodal transformer. A projection layer converts the visual features to the language model's hidden dimension. Some systems use a resampler or learned query tokens to compress a large set of visual features into a smaller sequence. Token count matters because attention computation and memory often grow with sequence length. Compression reduces cost but can discard fine details, especially text, small objects, or precise boundaries."
+        },
+        {
+            "id": "visual-token-shape",
+            "title": "Visual Token Dimensions",
+            "type": "math",
+            "content": "Suppose an image encoder produces N visual tokens of dimension Dv. A linear projection can map them to dimension Dh, the hidden size expected by the language model. The projection is shared across tokens and typically includes a weight matrix and optionally a bias. The resulting sequence has N tokens of dimension Dh. This operation aligns dimensions but does not by itself guarantee semantic alignment; the projection must be trained or adapted so that visual tokens are useful to the language model.",
+            "formula": "V ∈ R^(N×Dv); H = VW + b, where W ∈ R^(Dv×Dh)",
+            "example": "If the vision encoder produces 256 tokens of dimension 1024 and the language model uses hidden size 4096, the projection maps a 256×1024 matrix to a 256×4096 matrix."
+        },
+        {
+            "id": "cross-attention",
+            "title": "Cross-Attention Between Modalities",
+            "type": "math",
+            "content": "Cross-attention lets queries from one modality attend to keys and values from another. In a vision-language model, language-token representations may generate queries while visual tokens provide keys and values. The resulting weighted combination allows each language position to retrieve relevant visual information. For example, a question token referring to a color may attend to visual regions that help answer the question. The operation is similar to self-attention, but queries and key-value pairs come from different sources. Cross-attention layers can provide rich interactions, though they increase computational and architectural complexity.",
+            "formula": "CrossAttention(Q_text, K_visual, V_visual) = softmax(Q_text K_visualᵀ / √d_k) V_visual",
+            "example": "If there are 20 text tokens and 256 visual tokens, the attention-score matrix for one head has shape 20×256."
+        },
+        {
+            "id": "query-resampling",
+            "title": "Learned Query Resampling",
+            "type": "concept",
+            "content": "High-resolution images may produce thousands of visual features, making direct interaction with a language model expensive. Query-based resampling uses a fixed number of learned queries to extract a compact representation from those features through cross-attention. The output sequence length is controlled by the number of queries rather than the original number of visual features. This can reduce the context length while retaining useful information. However, a small query budget may lose details that are important for dense text, tiny objects, or fine-grained spatial reasoning. Compression should therefore be evaluated against the intended task rather than optimized only for speed."
+        },
+        {
+            "id": "image-captioning",
+            "title": "Image Captioning",
+            "type": "concept",
+            "content": "Image captioning generates a sentence or longer description conditioned on an image. A typical architecture extracts visual features and supplies them to a language decoder, which predicts tokens autoregressively. At each step, the decoder uses the image representation and previously generated tokens to predict the next token. Training often uses paired images and human-written captions. Captions may emphasize salient objects and actions while omitting less important details. The model can also invent details that are plausible but not visually supported. Evaluation must consider factual correctness and relevant detail, not only linguistic fluency."
+        },
+        {
+            "id": "autoregressive-generation",
+            "title": "Autoregressive Caption Generation",
+            "type": "math",
+            "content": "A caption y consists of tokens y1 through yT. An autoregressive decoder models the probability of the caption as the product of the conditional probabilities of each token given the image and preceding tokens. During training, the model typically receives the correct previous tokens through teacher forcing. During inference, it uses its own generated tokens. Errors can compound because an incorrect token changes the context for later predictions. Greedy decoding selects the highest-probability token at each step, while beam search tracks several candidate sequences. Sampling methods introduce randomness and can increase diversity.",
+            "formula": "P(y | I) = Π_t P(y_t | y_<t, I)",
+            "example": "A caption such as 'A child throws a ball' is generated token by token, with each next-token distribution conditioned on the image and the previously generated words."
+        },
+        {
+            "id": "vqa",
+            "title": "Visual Question Answering",
+            "type": "concept",
+            "content": "VQA conditions an answer on both an image and a question. Questions may ask about objects, attributes, counts, actions, spatial relationships, chart values, or text within an image. The system must identify relevant visual evidence and connect it to the language in the question. Older systems often predicted from a fixed answer vocabulary, while modern generative systems produce free-form text. Free-form answers are flexible but may be verbose, ambiguous, or unsupported. A reliable VQA pipeline should distinguish directly observable information from inferred context and should be able to abstain when evidence is insufficient."
+        },
+        {
+            "id": "vqa-pipeline",
+            "title": "A Basic Visual Question-Answering Pipeline",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom PIL import Image\nfrom transformers import AutoProcessor, AutoModelForVision2Seq\n\nmodel_id = \"HuggingFaceTB/SmolVLM-256M-Instruct\"\nprocessor = AutoProcessor.from_pretrained(model_id)\nmodel = AutoModelForVision2Seq.from_pretrained(model_id)\nimage = Image.open(\"scene.jpg\").convert(\"RGB\")\nprompt = \"Question: What objects are visible in this image? Answer briefly.\"\ninputs = processor(text=prompt, images=image, return_tensors=\"pt\")\nwith torch.no_grad():\n    output_ids = model.generate(**inputs, max_new_tokens=80)\nanswer = processor.batch_decode(output_ids, skip_special_tokens=True)[0]\nprint(answer)",
+            "explanation": "This example illustrates the general pattern for a pretrained vision-language instruction model. Model APIs and expected chat templates vary, and some checkpoints require a structured conversation prompt rather than a plain string. Verify the model card and installed Transformers documentation, including whether the selected checkpoint supports the chosen Auto class. Do not treat the generated answer as verified evidence."
+        },
+        {
+            "id": "grounding",
+            "title": "Referring-Expression Grounding",
+            "type": "concept",
+            "content": "Grounding connects a linguistic expression to a visual region or object. A phrase such as 'the small blue suitcase beside the chair' includes attributes and a spatial relation that must be resolved in the image. A grounding model may predict a bounding box, segmentation mask, or ranked set of candidate regions. Unlike global image-text retrieval, grounding must preserve spatial correspondence. The model must distinguish similar objects and identify which one satisfies the entire expression. Grounding performance can be evaluated using box IoU, mask IoU, or pointing accuracy depending on the task. Ambiguous expressions require careful annotation or multiple accepted regions."
+        },
+        {
+            "id": "ocr",
+            "title": "Text Recognition and Document Understanding",
+            "type": "concept",
+            "content": "Images frequently contain text that is essential to answering a question: signs, labels, receipts, charts, forms, and screenshots. Optical Character Recognition (OCR) detects and transcribes text, while document understanding combines text with visual layout and structure. General-purpose vision-language models may read prominent text but fail on small fonts, unusual orientations, low contrast, or dense tables. A system can combine dedicated OCR with a language model that interprets extracted text and coordinates. For financial, medical, or legal documents, verify extracted values and preserve source locations so users can audit the answer."
+        },
+        {
+            "id": "counting",
+            "title": "Counting and Spatial Reasoning",
+            "type": "concept",
+            "content": "Questions about exact counts and spatial relationships are challenging because a global semantic representation may not preserve every object instance or coordinate. A model may correctly recognize that an image contains fruit while returning an incorrect number of apples. For precise counting, object detection or instance segmentation can provide explicit candidates, followed by task-specific validation. Spatial questions may benefit from grounding, scene graphs, depth estimation, or geometric reasoning. Evaluate counting and relational reasoning separately from broad image description. Fluent natural-language answers should not be used as evidence that a model has performed reliable geometric computation."
+        },
+        {
+            "id": "instruction-tuning",
+            "title": "Vision-Language Instruction Tuning",
+            "type": "concept",
+            "content": "Instruction tuning adapts a pretrained multimodal model to follow user requests, answer questions, describe images, and perform related tasks. Training examples may contain an image, an instruction, and a desired response. The model learns response formats and task behaviors in addition to basic image-text alignment. Instruction tuning can improve usability but may also encourage confident responses even when visual evidence is weak. Data quality and task diversity are important. The model should learn to distinguish observable evidence from speculation, handle ambiguous questions, and express uncertainty when appropriate."
+        },
+        {
+            "id": "alignment-stages",
+            "title": "Alignment, Connector Training, and Fine-Tuning",
+            "type": "concept",
+            "content": "Many multimodal assistants are developed in stages. A vision encoder is first pretrained or selected, a connector maps visual features into the language model's representation space, and the connector or selected model components are trained on image-text pairs. Later stages may use supervised instruction data and preference-based alignment methods. Freezing the language model during early connector training can reduce compute and help preserve linguistic capabilities. Full multimodal fine-tuning can improve interactions but is more expensive and may alter existing behavior. The exact recipe varies across model families, so treat this as a common pattern rather than a universal sequence."
+        },
+        {
+            "id": "video",
+            "title": "Extending Vision-Language Models to Video",
+            "type": "concept",
+            "content": "Video adds a temporal dimension to visual understanding. A model may process sampled frames, frame patches, motion features, or learned temporal tokens. Sampling fewer frames reduces computation but may miss brief events. Processing more frames increases context length and memory cost. Video question answering must distinguish what appears in a single frame from what changes over time, such as an object being picked up or a person entering a room. Temporal reasoning also depends on frame timestamps and ordering. A robust pipeline should document its sampling strategy and test actions that occur between sampled frames."
+        },
+        {
+            "id": "audio-visual",
+            "title": "Combining Vision with Audio",
+            "type": "concept",
+            "content": "Audio-visual models combine image or video features with sound. Audio may provide speech, environmental events, speaker activity, or timing information that is not visible in the frames. Cross-modal alignment can connect a sound event to a visual source or align spoken words with the scene. Synchronization is important: mismatched audio and video can create incorrect associations. Training data may contain background noise, off-screen speakers, or ambiguous sources. Systems should not assume that every visible person produced the audio or that every sound has a visible cause."
+        },
+        {
+            "id": "evaluation",
+            "title": "Evaluating Multimodal Systems",
+            "type": "concept",
+            "content": "Multimodal evaluation must reflect the actual task. Captioning can be assessed with lexical overlap metrics, embedding-based metrics, and human judgments, but none fully measures factual grounding. VQA may use exact match, normalized answer accuracy, or expert scoring. Grounding uses spatial metrics such as IoU. Retrieval uses Recall@K and related ranking measures. OCR tasks require transcription and field-level accuracy. For reasoning tasks, construct examples that isolate counts, attributes, relationships, and evidence requirements. Aggregate scores should be complemented by error analysis, because a system can perform well on common easy examples while failing on rare or safety-critical cases."
+        },
+        {
+            "id": "hallucination",
+            "title": "Visual Hallucination",
+            "type": "concept",
+            "content": "A visual hallucination occurs when a model describes an object, attribute, action, or relationship that is not supported by the image. Language models can generate plausible completions from prior patterns even when visual evidence is weak. Hallucinations may be encouraged by ambiguous images, leading questions, missing details, or training examples that reward fluent answers. Mitigations include asking for evidence, using region-level grounding, checking claims with specialized models, training on hard negative examples, and allowing abstention. None of these techniques guarantees factual correctness, so high-impact applications need independent verification."
+        },
+        {
+            "id": "uncertainty",
+            "title": "Uncertainty and Abstention",
+            "type": "concept",
+            "content": "A reliable multimodal system should distinguish strong visual evidence from uncertain interpretation. Confidence estimates from generative language models are not automatically calibrated probabilities of correctness. Systems can use calibrated classifiers, consistency checks, multiple model views, retrieval evidence, or explicit abstention rules to reduce unsupported answers. For example, if a sign is too small to read, the model should say that the text is unreadable rather than inventing a likely phrase. Evaluate abstention as part of the task: measure both the correctness of answered questions and the fraction of questions the system declines to answer."
+        },
+        {
+            "id": "safety-privacy",
+            "title": "Privacy and Sensitive Visual Information",
+            "type": "concept",
+            "content": "Images may contain faces, license plates, medical details, private documents, location clues, or other sensitive information. A multimodal assistant can reveal information that was present in an image but not intended for broad disclosure. Systems should apply data minimization, access controls, retention limits, and appropriate consent or legal authorization. Avoid inferring sensitive personal characteristics from appearance without a legitimate and carefully governed purpose. User-uploaded images should not be exposed to unrelated users or included in training without an appropriate basis. Privacy review should cover logs, cached embeddings, derived metadata, and model outputs, not only original image files."
+        },
+        {
+            "id": "fairness",
+            "title": "Fairness and Representation",
+            "type": "concept",
+            "content": "Multimodal models inherit imbalances from their training data and annotation process. They may describe people differently across demographic groups, miss objects more often in underrepresented settings, or associate identities with stereotyped activities. Evaluation should include diverse environments and task-relevant groups where appropriate, using legally and ethically suitable methods. A small aggregate benchmark may conceal important failure modes. Document limitations, involve domain experts, and avoid deploying the model as the sole decision-maker in high-impact contexts. Fairness evaluation should examine both visual recognition and the language used to describe or interpret visual content."
+        },
+        {
+            "id": "latency",
+            "title": "Efficiency and Context Length",
+            "type": "concept",
+            "content": "Multimodal inference can be expensive because high-resolution images produce many visual tokens, and video introduces repeated frame representations. Cross-attention and self-attention require memory and computation that depend on the number of query, key, and value tokens. Efficient systems may resize images, crop relevant regions, use learned resampling, limit frame counts, or apply high-resolution processing selectively. These optimizations can reduce latency but may remove small text or objects. Benchmark the complete pipeline at realistic resolutions and batch sizes, and evaluate accuracy after each optimization rather than assuming that a shorter token sequence is harmless."
+        },
+        {
+            "id": "system-design",
+            "title": "Designing a Multimodal Application",
+            "type": "concept",
+            "content": "Begin by defining the user task and the evidence the system must use. Select an architecture suited to the required output: a dual encoder for retrieval, a grounding model for regions, an OCR pipeline for documents, or a generative vision-language model for open-ended questions. Specify preprocessing, image resolution, prompt format, output constraints, and failure behavior. Evaluate representative inputs and difficult edge cases before deployment. Add privacy controls, latency limits, logging policies, and human review for high-impact outputs. Keep model versions and evaluation results tied to each release so regressions can be detected."
+        },
+        {
+            "id": "multimodal-summary",
+            "title": "A Practical Multimodal Workflow",
+            "type": "concept",
+            "content": "Multimodal vision systems combine image representations with language or other signals to support captioning, question answering, retrieval, grounding, document understanding, and video analysis. Architectures range from efficient dual encoders to cross-attention systems and unified multimodal transformers. Visual token projection, resampling, and instruction tuning help connect visual evidence with language generation. Despite their flexibility, these systems can hallucinate, misread text, count incorrectly, or fail on rare conditions. Good applications define the task precisely, use task-specific metrics, verify important claims, protect sensitive data, and measure the quality-cost trade-off of preprocessing and token compression."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mm-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is multimodal learning?",
+            "correctAnswer": "Learning from or combining two or more data modalities, such as images, text, audio, or video.",
+            "solution": "Different modalities provide complementary information. The model learns to represent or combine them for a task such as question answering or retrieval."
+        },
+        {
+            "id": "mm-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why are dual encoders often useful for large-scale retrieval?",
+            "correctAnswer": "Image and text embeddings can be computed independently and cached, allowing efficient vector comparison at query time.",
+            "solution": "A query needs only one new embedding, which can be compared with precomputed database embeddings. This avoids running a cross-modal network separately for every candidate pair."
+        },
+        {
+            "id": "mm-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A visual encoder outputs 128 tokens of dimension 768. A projection maps them to a language model dimension of 2048. What is the output tensor shape?",
+            "correctAnswer": "128 × 2048.",
+            "solution": "The number of tokens remains 128, while the projection changes each token's feature dimension from 768 to 2048."
+        },
+        {
+            "id": "mm-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the main purpose of cross-attention in a vision-language model?",
+            "correctAnswer": "It allows representations from one modality to select and combine information from another modality.",
+            "solution": "For example, text queries can attend to visual keys and values, allowing different question tokens to access relevant image features."
+        },
+        {
+            "id": "mm-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might a global image-text embedding fail on a detailed spatial question?",
+            "correctAnswer": "A single global vector compresses image information and may not preserve precise object locations or relationships.",
+            "solution": "Detailed grounding may require region-level features, cross-attention, or explicit geometric reasoning instead of only global similarity."
+        },
+        {
+            "id": "mm-ex-6",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a system that answers questions about numbers and totals in photographed receipts.",
+            "correctAnswer": "Use image preprocessing and OCR to extract text and coordinates, apply structured parsing or a vision-language model, and validate totals using arithmetic and field-level checks.",
+            "solution": "Receipt understanding requires reliable text extraction and numeric validation. Preserve source locations for auditing, and route unreadable or inconsistent cases for review."
+        },
+        {
+            "id": "mm-ex-7",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is visual hallucination?",
+            "correctAnswer": "Generating a claim about an image that is not supported by its visual evidence.",
+            "solution": "A model may use language patterns to produce a plausible answer even when an object, attribute, or relation is absent. Grounding and verification can reduce but not eliminate this risk."
+        },
+        {
+            "id": "mm-ex-8",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How would you evaluate whether a VQA system can count objects reliably?",
+            "correctAnswer": "Create a benchmark with controlled object counts and varied scenes, compare predicted counts with ground truth, and report exact-count accuracy and error by count range.",
+            "solution": "A general VQA score may hide counting failures. A targeted benchmark isolates the capability and reveals whether performance degrades with clutter, occlusion, or larger counts."
+        },
+        {
+            "id": "mm-ex-9",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does increasing image resolution sometimes improve accuracy but increase cost?",
+            "correctAnswer": "Higher resolution preserves more visual detail but usually produces more visual tokens and more computation.",
+            "solution": "Small text and objects may become easier to represent. However, longer sequences and larger feature maps increase memory, latency, and processing requirements."
+        },
+        {
+            "id": "mm-ex-10",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A vision-language assistant confidently invents text on distant signs. Propose safeguards.",
+            "correctAnswer": "Use a dedicated OCR path, test readability, preserve source crops, require evidence-grounded responses, and allow the system to report that text is unreadable.",
+            "solution": "Language generation can fill in missing information with plausible guesses. OCR confidence, crop-based verification, and abstention can reduce unsupported transcriptions."
+        },
+        {
+            "id": "mm-ex-11",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is a video model's frame-sampling strategy important?",
+            "correctAnswer": "Sparse sampling can miss brief events, while dense sampling increases token count, memory use, and latency.",
+            "solution": "Temporal coverage and computation trade off against one another. The sampling method should be documented and evaluated on tasks involving short-lived events."
+        },
+        {
+            "id": "mm-ex-12",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How should a multimodal assistant handle a question that cannot be answered reliably from the image?",
+            "correctAnswer": "It should communicate uncertainty or abstain rather than inventing unsupported details.",
+            "solution": "Define an abstention policy, test it on ambiguous and low-quality images, and measure both answer accuracy and the rate of unanswered questions."
+        }
+    ],
+    "summary": "Multimodal vision models combine visual information with language and other modalities for tasks such as captioning, visual question answering, grounding, retrieval, document understanding, and video analysis. Dual encoders support scalable retrieval, while cross-attention and unified architectures enable richer interactions between visual and textual tokens. Projection layers, resampling, and instruction tuning connect visual features with language generation. These systems can still hallucinate, miscount objects, misread text, and fail under domain shift. Effective deployment requires task-specific evaluation, evidence verification, privacy protection, uncertainty handling, and careful optimization of image resolution and context length.",
+    "relatedTopics": [
+        "cnns",
+        "vision-transformers",
+        "image-embeddings",
+        "object-detection",
+        "segmentation",
+        "clip-style-models"
+    ]
+}

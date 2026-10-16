@@ -1,1 +1,180 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-reward-models",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 5,
+    "title": "Reward Model Training",
+    "slug": "reward-models",
+    "href": "/curriculum/10-llm-training-alignment/reward-models",
+    "filePath": "content/curriculum/10-llm-training-alignment/05-reward-models.json",
+    "description": "Learn how reward models estimate response quality from preference data, including pairwise ranking objectives, reward calibration, evaluation, and reward hacking prevention.",
+    "difficulty": "advanced",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-rlhf"
+    ],
+    "learningObjectives": [
+        "Explain the purpose and architecture of a reward model.",
+        "Understand pairwise preference learning.",
+        "Derive the Bradley-Terry preference model and its loss.",
+        "Describe reward-model data preparation and training.",
+        "Evaluate reward models using ranking and generalization metrics.",
+        "Identify reward hacking, distribution shift, and calibration issues."
+    ],
+    "sections": [
+        {
+            "id": "reward-model-introduction",
+            "title": "What Is a Reward Model?",
+            "type": "concept",
+            "content": "A reward model estimates how desirable a response is for a given prompt. In language-model alignment, it is commonly trained on human preference comparisons. Rather than generating text itself, the reward model assigns a scalar score to a prompt-response pair. A policy can then use this score as a learning signal. The score represents learned preferences, not an objective measurement of truth, safety, or usefulness. Reward models can inherit biases and mistakes from their training labels."
+        },
+        {
+            "id": "why-reward-models",
+            "title": "Why Train a Reward Model?",
+            "type": "concept",
+            "content": "Writing an ideal answer for every possible prompt is expensive and restrictive. Human reviewers can often compare two candidate answers more easily than author a perfect reference response. A reward model learns patterns from these comparisons and generalizes them to new responses. This creates a scalable proxy for human judgment, although the proxy may fail when the policy generates responses unlike those seen during reward-model training."
+        },
+        {
+            "id": "reward-model-architecture",
+            "title": "Reward Model Architecture",
+            "type": "concept",
+            "content": "A common reward model starts from a pretrained or supervised fine-tuned transformer. It processes the prompt and response together and produces a scalar score, often using a learned projection of a final representation. Some implementations use separate architectures or scoring heads. The model must receive the complete context needed to judge the response, including conversation history when relevant. Truncation, role formatting, and inconsistent input templates can change its judgments."
+        },
+        {
+            "id": "pairwise-preference-model",
+            "title": "Pairwise Preference Modeling",
+            "type": "concept",
+            "content": "Suppose a prompt has a preferred response y_w and a less-preferred response y_l. A pairwise reward model is trained to assign a higher score to y_w than y_l. The Bradley-Terry formulation converts the difference between the two scores into a preference probability using a sigmoid function. Training examples therefore teach relative ordering rather than requiring scores to match a universal human-quality scale."
+        },
+        {
+            "id": "bradley-terry-math",
+            "title": "Bradley-Terry Preference Probability",
+            "type": "math",
+            "content": "Let rθ(x, y) be the reward model score for response y given prompt x. The probability that the chosen response is preferred is modeled as the sigmoid of the reward difference. A larger positive difference means the model assigns a higher probability to the observed preference.",
+            "formula": "P(y_w ≻ y_l | x) = σ(rθ(x, y_w) - rθ(x, y_l))",
+            "example": "If the chosen response receives a score of 1.8 and the rejected response receives 0.3, the difference is 1.5. The predicted preference probability is σ(1.5) ≈ 0.818."
+        },
+        {
+            "id": "reward-model-loss",
+            "title": "Pairwise Ranking Loss",
+            "type": "math",
+            "content": "The reward model can be trained using binary cross-entropy on the observed preference. The objective penalizes the model when it gives the preferred response a lower score or an insufficient score advantage. Optimization updates the model parameters to improve the ranking of chosen and rejected responses across the dataset.",
+            "formula": "L_RM(θ) = -E[log σ(rθ(x, y_w) - rθ(x, y_l))]",
+            "example": "If the score difference is zero, the model predicts a preference probability of 0.5. If the difference is strongly positive, the predicted probability approaches 1, reducing the loss for a correctly labeled pair."
+        },
+        {
+            "id": "preference-data-preparation",
+            "title": "Preparing Reward-Model Data",
+            "type": "concept",
+            "content": "Each record typically contains a prompt, a preferred response, and a rejected response. Preparation includes validating conversation structure, checking missing values, removing exact and near duplicates, auditing labels, and ensuring consistent formatting. Train, validation, and test splits should avoid leakage from duplicated prompts or responses. Records should preserve provenance and annotation metadata so errors can be traced to their source."
+        },
+        {
+            "id": "training-procedure",
+            "title": "Reward-Model Training Procedure",
+            "type": "concept",
+            "content": "A practical training process begins with a pretrained scoring model and a curated preference dataset. Each batch contains prompts and two candidate responses. The model computes scores for both candidates, calculates the pairwise loss, backpropagates gradients, and updates trainable parameters. Validation evaluates ranking quality on unseen comparisons. Training should stop or be revised when validation performance plateaus, generalization deteriorates, or the model develops suspicious scoring patterns."
+        },
+        {
+            "id": "reward-model-code",
+            "title": "Computing Pairwise Reward Loss",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nchosen_scores = torch.tensor([1.8, 0.4, 2.1])\nrejected_scores = torch.tensor([0.3, 0.9, 1.2])\nloss = -F.logsigmoid(chosen_scores - rejected_scores).mean()\nloss.backward() if loss.requires_grad else None\nprint(\"Pairwise loss:\", loss.item())",
+            "explanation": "This demonstrates the pairwise objective using already-computed scores. In a real training loop, the scores must be outputs of a trainable reward model, and the tensors must participate in the computation graph for gradients to update its parameters."
+        },
+        {
+            "id": "ranking-metrics",
+            "title": "Evaluating Reward Models",
+            "type": "concept",
+            "content": "Useful metrics include pairwise accuracy, ranking accuracy, preference log loss, and calibration measures when probability calibration is relevant. Pairwise accuracy measures how often the chosen response receives a higher score than the rejected response. Evaluation should cover multiple task categories, prompt difficulty levels, languages, and response styles. Strong aggregate performance can hide systematic weaknesses in specialized domains."
+        },
+        {
+            "id": "reward-calibration",
+            "title": "Reward Scores and Calibration",
+            "type": "concept",
+            "content": "Reward scores are often relative and should not automatically be interpreted as probabilities or absolute quality values. A score of 2 does not necessarily mean an answer is twice as good as one with score 1. Even when a preference model outputs probabilities, calibration must be tested against held-out judgments. Reward scale and offset can vary across training runs, models, and datasets."
+        },
+        {
+            "id": "reward-hacking",
+            "title": "Reward Hacking",
+            "type": "concept",
+            "content": "Reward hacking happens when a policy discovers responses that exploit the reward model rather than satisfy the intended behavior. If the reward model favors verbosity, a policy may generate unnecessary detail. If it rewards confidence, the policy may produce unsupported claims. Reward hacking becomes more likely when optimization is strong relative to reward-model quality. Mitigations include independent evaluation, adversarial testing, better preference data, and monitoring for suspicious response patterns."
+        },
+        {
+            "id": "distribution-shift",
+            "title": "Distribution Shift and Generalization",
+            "type": "concept",
+            "content": "A reward model is trained on a particular distribution of prompts and candidate responses. During policy optimization, the policy may generate unfamiliar responses outside that distribution. The model may then produce unreliable scores. Fresh preference data, targeted sampling of uncertain examples, human audits, and conservative policy updates can help. Reward-model validation should include policy-generated candidates rather than only static examples from the original dataset."
+        },
+        {
+            "id": "reward-diversity",
+            "title": "Preference Diversity and Bias",
+            "type": "concept",
+            "content": "The learned reward function reflects the preferences represented in its training data. If the data overrepresents a single writing style, language, demographic perspective, or task type, the model may favor those patterns disproportionately. Dataset audits should examine response length, language, domain, task difficulty, and demographic or cultural considerations where appropriate. Diversity does not remove every bias, but it helps reveal blind spots."
+        },
+        {
+            "id": "reward-model-robustness",
+            "title": "Robustness Testing",
+            "type": "concept",
+            "content": "Robustness tests examine whether reward scores change for irrelevant reasons. Examples include paraphrasing the prompt, reversing response order, changing superficial formatting, and comparing responses with equivalent meaning but different length. A robust reward model should primarily reflect the intended quality criteria rather than incidental presentation. These tests are especially important before using the model as an optimization target."
+        },
+        {
+            "id": "multi-objective-reward",
+            "title": "Multiple Quality Dimensions",
+            "type": "concept",
+            "content": "Response quality can involve helpfulness, correctness, clarity, harmlessness, and instruction adherence. A single scalar reward compresses these dimensions into one number and may obscure trade-offs. Some systems use separate reward models or auxiliary classifiers for different criteria. Combining scores requires explicit decisions about priorities and constraints. A weighted sum is simple but can allow a high score on one dimension to compensate for an unacceptable failure on another."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "reward-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the primary role of a reward model in RLHF?",
+            "correctAnswer": "To estimate a scalar preference-based score for a prompt-response pair.",
+            "solution": "The reward model learns from preference comparisons and provides a training signal for policy optimization."
+        },
+        {
+            "id": "reward-ex-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A chosen response receives reward 2.0 and a rejected response receives reward 1.0. What is the Bradley-Terry preference probability for the chosen response?",
+            "correctAnswer": "Approximately 0.731.",
+            "solution": "The score difference is 1. The sigmoid is σ(1) = 1 / (1 + e^-1) ≈ 0.731."
+        },
+        {
+            "id": "reward-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can a high reward score fail to indicate a genuinely good answer?",
+            "correctAnswer": "The reward model may be biased, miscalibrated, or exploited by a policy.",
+            "solution": "A reward model is an imperfect proxy learned from preference labels. It can reward superficial patterns rather than real task success."
+        },
+        {
+            "id": "reward-ex-4",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "How can you detect whether a reward model has a verbosity bias?",
+            "correctAnswer": "Compare equivalent answers of different lengths, test controlled paraphrases, and evaluate whether longer responses receive higher scores without better correctness or usefulness.",
+            "solution": "Controlled comparisons isolate response length from substantive quality. Independent human judgments help determine whether score differences reflect the intended rubric."
+        },
+        {
+            "id": "reward-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a validation strategy before using a reward model to optimize a language model.",
+            "correctAnswer": "Use held-out preference pairs, ranking metrics, subgroup and task-level evaluation, robustness tests, policy-generated samples, and independent human assessment.",
+            "solution": "Static test pairs measure basic generalization, while policy-generated samples reveal distribution shift. Human evaluation and adversarial tests help detect reward hacking."
+        }
+    ],
+    "summary": "Reward models learn to score responses from preference comparisons. Pairwise ranking objectives train them to assign higher scores to preferred responses, but the resulting scores remain imperfect proxies for human judgment. Reliable use requires high-quality data, held-out ranking evaluation, robustness testing, calibration awareness, and safeguards against reward hacking and distribution shift.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-rlhf",
+        "module-10-llm-training-alignment-dpo",
+        "module-10-llm-training-alignment-evaluation",
+        "module-10-llm-training-alignment-safety-alignment"
+    ]
+}

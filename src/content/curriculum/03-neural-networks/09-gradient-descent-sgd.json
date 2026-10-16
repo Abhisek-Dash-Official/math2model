@@ -1,1 +1,157 @@
-{}
+{
+    "id": "gradient-descent-sgd",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 9,
+    "title": "Gradient Descent & SGD",
+    "slug": "gradient-descent-sgd",
+    "description": "Learn how neural networks minimize prediction errors using gradient descent and stochastic gradient descent, including gradients, learning rates, convergence, optimization challenges, and practical implementations.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Basic calculus and derivatives",
+        "Vectors and matrices",
+        "Loss functions",
+        "Perceptrons and neural networks",
+        "Basic Python and NumPy"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of optimization in machine learning.",
+        "Understand loss functions, gradients, and parameter updates.",
+        "Derive the gradient descent update rule.",
+        "Differentiate batch gradient descent, stochastic gradient descent, and mini-batch gradient descent.",
+        "Understand how the learning rate affects convergence.",
+        "Implement gradient descent from scratch using NumPy.",
+        "Identify problems such as oscillation, slow convergence, and divergence.",
+        "Evaluate optimization using loss curves and validation metrics."
+    ],
+    "sections": [
+        {
+            "id": "optimization-introduction",
+            "title": "1. What Is Optimization?",
+            "type": "concept",
+            "content": "A neural network makes predictions using trainable parameters called weights and biases. Initially, these parameters are usually not optimal, so the network may make inaccurate predictions.\n\nOptimization is the process of adjusting these parameters to reduce a loss function. The loss function measures how different the model's predictions are from the correct targets.\n\nFor example, a model predicting house prices might initially predict ₹30 lakh for a house whose actual price is ₹50 lakh. Training changes the parameters so that predictions become more accurate across the training dataset.\n\nLet θ represent all trainable parameters and let J(θ) represent the objective or loss function. The optimization objective is to find parameters that minimize this function:\n\nθ* = argminθ J(θ)\n\nThe symbol θ* represents an optimal parameter configuration. In practice, optimization algorithms usually find a useful local or approximate solution rather than guaranteeing the global minimum for every neural network.\n\nGradient descent is one of the fundamental algorithms used to perform this optimization."
+        },
+        {
+            "id": "gradient-intuition",
+            "title": "2. Understanding Gradients",
+            "type": "concept",
+            "content": "A derivative measures how a function changes when its input changes. For a function with multiple parameters, the gradient collects the partial derivatives with respect to every parameter.\n\nFor a loss function J(w, b), the gradient is:\n\n∇J = [∂J/∂w, ∂J/∂b]\n\nThe gradient points in the direction of steepest local increase in the function. Therefore, moving in the opposite direction generally reduces the loss for a sufficiently small step.\n\nImagine standing on a hillside. The gradient describes the direction of the steepest uphill movement. If your goal is to move downhill, you move in the opposite direction.\n\nThe gradient's magnitude also provides information about how rapidly the function changes locally. A large gradient does not automatically mean that a parameter update should be large; the learning rate determines the step size.\n\nFor neural networks, gradients are calculated for millions or even billions of parameters. Backpropagation efficiently computes these derivatives using the chain rule."
+        },
+        {
+            "id": "gradient-descent-rule",
+            "title": "3. The Gradient Descent Update Rule",
+            "type": "math",
+            "content": "The standard gradient descent update is:\n\nθ(t+1) = θ(t) - η∇J(θ(t))\n\nHere:\n\n- θ(t) represents the current parameters.\n- θ(t+1) represents the updated parameters.\n- η is the learning rate.\n- ∇J(θ(t)) is the gradient evaluated at the current parameters.\n\nFor a single parameter w, the update becomes:\n\nw(new) = w(old) - η × dJ/dw\n\nWorked example:\n\nSuppose J(w) = (w - 4)², the current parameter is w = 1, and the learning rate is η = 0.1.\n\nStep 1: Differentiate the objective.\n\ndJ/dw = 2(w - 4)\n\nStep 2: Calculate the gradient at w = 1.\n\ndJ/dw = 2(1 - 4) = -6\n\nStep 3: Update the parameter.\n\nw(new) = 1 - 0.1(-6) = 1.6\n\nThe parameter moves from 1 toward 4, where the loss reaches zero. Repeating the update gradually moves the parameter closer to the minimum.\n\nThe learning rate controls how far the parameter moves at each step. A smaller learning rate would produce a smaller update, while an excessively large learning rate could overshoot the minimum."
+        },
+        {
+            "id": "learning-rate",
+            "title": "4. Choosing the Learning Rate",
+            "type": "concept",
+            "content": "The learning rate is one of the most important optimization hyperparameters.\n\nIf the learning rate is too small, parameter updates are tiny. Training may require many iterations and can appear to stall.\n\nIf the learning rate is appropriate, the optimizer can make useful progress while maintaining stable training.\n\nIf the learning rate is too large, updates may repeatedly overshoot a minimum. The loss may oscillate, increase, or become numerically unstable.\n\nFor example, consider J(w) = (w - 4)². Starting at w = 1, a learning rate of 0.1 produces a stable movement toward 4. For this particular quadratic function, a learning rate of 1.1 produces an update that can move across the minimum and diverge under repeated updates.\n\nLearning rates are problem-dependent. Common starting values for neural network training include 0.001 or 0.0001 for some Adam configurations, and values such as 0.01 or 0.1 for some SGD configurations. These are examples, not universal recommendations.\n\nLearning-rate schedules change the learning rate during training. A schedule might begin with a relatively large learning rate and gradually reduce it to support finer adjustments later."
+        },
+        {
+            "id": "batch-sgd-mini-batch",
+            "title": "5. Batch Gradient Descent vs SGD vs Mini-Batch",
+            "type": "concept",
+            "content": "Optimization methods differ in how much training data they use to estimate a gradient for each update.\n\nBatch gradient descent computes the gradient using the entire training dataset. Its gradient estimate is based on all training examples, but each update may be computationally expensive for large datasets.\n\nStochastic gradient descent, or SGD in its strict sense, computes a gradient using one randomly selected training example per update. It can make frequent updates, but the resulting gradient estimates are noisy.\n\nMini-batch gradient descent uses a small group of training examples for each update. Mini-batches offer a practical compromise between computational efficiency and gradient stability. They also work well with vectorized operations on GPUs.\n\nSuppose a dataset contains 10,000 examples. Batch gradient descent uses all 10,000 examples to compute one gradient. SGD uses one example per gradient update. A mini-batch size of 100 uses 100 examples per update, producing approximately 100 updates per epoch if every example is processed once.\n\nIn common deep-learning libraries, an optimizer named SGD often performs mini-batch updates because the training loop supplies batches. The name of the optimizer alone does not determine the amount of data used for each update."
+        },
+        {
+            "id": "sgd-mathematics",
+            "title": "6. Mathematical Formulation of SGD",
+            "type": "math",
+            "content": "For a dataset containing N examples, let each example have loss ℓi(θ). The empirical average loss is:\n\nJ(θ) = (1/N) Σ(i=1 to N) ℓi(θ)\n\nBatch gradient descent computes:\n\n∇J(θ) = (1/N) Σ(i=1 to N) ∇ℓi(θ)\n\nStochastic gradient descent estimates the gradient using a sampled example i:\n\nθ(new) = θ(old) - η∇ℓi(θ(old))\n\nFor a mini-batch B containing m examples, the update is:\n\nθ(new) = θ(old) - η(1/m) Σ(i in B) ∇ℓi(θ(old))\n\nWhen examples are sampled appropriately, the mini-batch gradient can provide an unbiased estimate of the full-data gradient. Its variance depends on the sampling procedure and the data distribution.\n\nA noisy gradient is not necessarily a defect. It can make updates less expensive and may help an optimizer explore a complicated objective. However, noisy updates can also make convergence less smooth."
+        },
+        {
+            "id": "gradient-descent-code",
+            "title": "7. Implementing Gradient Descent from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\n# Generate synthetic data: y = 3x + 2 + noise\nrng = np.random.default_rng(42)\nX = np.linspace(-2, 2, 200).reshape(-1, 1)\ny = 3 * X + 2 + rng.normal(0, 0.3, size=(200, 1))\n\n# Initialize trainable parameters\nw = np.array([[0.0]])\nb = 0.0\nlearning_rate = 0.05\nepochs = 500\n\nfor epoch in range(epochs):\n    # Forward pass\n    predictions = X @ w + b\n    errors = predictions - y\n\n    # Mean squared error gradients\n    dw = (2 / len(X)) * (X.T @ errors)\n    db = 2 * np.mean(errors)\n\n    # Parameter update\n    w -= learning_rate * dw\n    b -= learning_rate * db\n\n    if epoch % 100 == 0:\n        loss = np.mean((X @ w + b - y) ** 2)\n        print(f\"Epoch {epoch}: loss={loss:.4f}, w={w.item():.3f}, b={b:.3f}\")\n\nprint(\"Learned weight:\", w.item())\nprint(\"Learned bias:\", b)\n\n# Predictions are now approximately 3*x + 2",
+            "explanation": "This example learns a linear relationship from synthetic data. The model predicts y = Xw + b. Mean squared error measures the difference between predictions and targets. The gradients dw and db describe how the loss changes with the weight and bias. Subtracting the scaled gradients gradually adjusts the parameters. Because the data includes random noise, the learned parameters should be close to, rather than necessarily exactly equal to, 3 and 2."
+        },
+        {
+            "id": "gradient-descent-convergence",
+            "title": "8. Convergence and Optimization Challenges",
+            "type": "concept",
+            "content": "Convergence refers to the behavior of an optimization process as it approaches a stable solution or region. In machine learning, convergence is often assessed by tracking training loss and validation performance.\n\nA smooth decline in training loss usually indicates progress, but it does not guarantee that a model generalizes well to unseen examples.\n\nCommon challenges include:\n\n1. Oscillation: Updates repeatedly move across a narrow valley in the objective.\n2. Slow convergence: The learning rate is too small or gradients become very small.\n3. Divergence: Updates move away from useful parameter values, often because the learning rate is too large.\n4. Saddle points and flat regions: The gradient may be small even when a global minimum has not been reached.\n5. Poor parameter scaling: Features with very different numerical scales can make optimization more difficult.\n6. Overfitting: Training loss improves while validation performance worsens.\n\nUseful strategies include feature scaling, learning-rate tuning, momentum-based optimizers, gradient clipping where appropriate, learning-rate schedules, and early stopping based on validation metrics.\n\nTraining loss should be interpreted together with validation loss and task-specific evaluation metrics."
+        },
+        {
+            "id": "optimization-real-world",
+            "title": "9. Practical Applications",
+            "type": "concept",
+            "content": "Gradient-based optimization is used in image classification, natural language processing, speech recognition, recommendation systems, time-series forecasting, and many other machine-learning applications.\n\nIn image classification, the network's weights are adjusted to reduce the difference between predicted class probabilities and correct labels.\n\nIn language modeling, gradient-based training adjusts parameters to improve the probability assigned to the next token in a sequence.\n\nIn recommendation systems, an optimizer can update embeddings and other parameters to reduce a prediction loss associated with user-item interactions.\n\nThe exact objective depends on the task. Classification may use cross-entropy loss, regression may use mean squared error or other robust losses, and ranking tasks may use specialized ranking objectives.\n\nRegardless of the objective, the basic process remains similar: calculate predictions, evaluate the loss, calculate gradients, update parameters, and repeat."
+        },
+        {
+            "id": "gradient-descent-pitfalls",
+            "title": "10. Common Mistakes",
+            "type": "concept",
+            "content": "Mistake 1: Assuming that a larger learning rate always means faster training. Large steps can overshoot or destabilize optimization.\n\nMistake 2: Confusing an epoch with an optimization step. An epoch is one complete pass through the training dataset, while a mini-batch training loop usually performs several optimizer steps per epoch.\n\nMistake 3: Treating training loss as proof of good generalization. Validation performance is also needed.\n\nMistake 4: Forgetting to average gradients when the chosen loss formulation expects an average over examples. This can change the effective scale of updates.\n\nMistake 5: Updating parameters before computing all gradients from the same parameter state. Standard gradient computation should be based on a consistent forward pass.\n\nMistake 6: Assuming SGD always means one example per update. In deep-learning practice, SGD often receives mini-batches.\n\nMistake 7: Comparing learning rates across different optimizers without considering their update rules. A learning rate of 0.01 can behave very differently under SGD and Adam."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "gd-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "For J(w) = (w - 5)^2, the current weight is w = 2 and the learning rate is 0.1. Calculate the gradient and the updated weight.",
+            "correctAnswer": "The gradient is -6 and the updated weight is 2.6.",
+            "solution": "Differentiate J(w) to obtain dJ/dw = 2(w - 5). At w = 2, the gradient is 2(2 - 5) = -6. Apply the update w(new) = w(old) - learning_rate × gradient = 2 - 0.1(-6) = 2.6."
+        },
+        {
+            "id": "gd-exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the primary role of the learning rate in gradient descent?",
+            "options": [
+                "It determines the number of training examples.",
+                "It controls the size of parameter updates.",
+                "It defines the number of model layers.",
+                "It replaces the loss function."
+            ],
+            "correctAnswer": "It controls the size of parameter updates.",
+            "solution": "The learning rate multiplies the gradient. A very small learning rate may make training slow, while a very large one can cause overshooting or divergence."
+        },
+        {
+            "id": "gd-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "A dataset contains 12,000 examples and mini-batch size is 200. How many mini-batch updates are performed in one epoch if all examples are used exactly once and the dataset size is divisible by the batch size?",
+            "correctAnswer": "60 updates.",
+            "solution": "Number of batches = 12,000 / 200 = 60. If one optimizer step is performed per batch, there are 60 updates per epoch."
+        },
+        {
+            "id": "gd-exercise-4",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "A model's loss increases dramatically after every gradient descent update. Name one likely cause and one possible remedy.",
+            "correctAnswer": "The learning rate may be too large; reduce it and inspect the loss curve.",
+            "solution": "An excessively large learning rate can produce updates that overshoot the minimum. Reducing the learning rate is a reasonable first step. Also check gradient calculations, input scaling, and numerical stability."
+        },
+        {
+            "id": "gd-exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Explain the main difference between batch gradient descent and stochastic gradient descent.",
+            "correctAnswer": "Batch gradient descent calculates each gradient using the full dataset, while stochastic gradient descent calculates each gradient using one training example.",
+            "solution": "Batch updates are based on the complete dataset and are often more computationally expensive per update. Strict SGD uses one example and produces noisier but cheaper updates. Mini-batch gradient descent uses a subset of examples and is widely used in deep learning."
+        },
+        {
+            "id": "gd-exercise-6",
+            "type": "programming",
+            "difficulty": "advanced",
+            "question": "Modify the provided NumPy implementation to use a learning rate of 0.005 and compare its loss after 50 epochs with the original learning rate of 0.05.",
+            "correctAnswer": "The smaller learning rate generally produces smaller parameter updates and may have a higher loss after only 50 epochs, although the exact result depends on the data and initialization.",
+            "solution": "Run the same experiment twice, resetting the initial weight and bias each time. Record the loss after 50 epochs. Compare both loss values and verify that the datasets and initial parameters are identical. This experiment demonstrates how the learning rate affects convergence speed."
+        }
+    ],
+    "summary": "Gradient descent minimizes a loss function by repeatedly moving parameters in the direction opposite to the gradient. The learning rate controls update size. Batch gradient descent uses the entire dataset for each update, strict SGD uses one example, and mini-batch gradient descent uses a subset. Successful optimization requires appropriate learning rates, correct gradient calculations, and monitoring of both training and validation performance.",
+    "relatedTopics": [
+        "loss-functions",
+        "backpropagation",
+        "chain-rule-in-neural-networks",
+        "mini-batch-training",
+        "optimizers-momentum-rmsprop-adam",
+        "weight-initialization"
+    ]
+}

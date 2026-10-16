@@ -1,1 +1,364 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-agent-environment",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 1,
+    "title": "Agent & Environment Interactions",
+    "slug": "agent-environment",
+    "href": "/curriculum/15-reinforcement-learning/agent-environment",
+    "filePath": "content/curriculum/15-reinforcement-learning/01-agent-environment.json",
+    "description": "Understand the reinforcement learning loop, how agents interact with environments, how experience is collected, and how feedback shapes sequential decision-making.",
+    "difficulty": "beginner",
+    "estimatedHours": 5,
+    "prerequisites": [],
+    "learningObjectives": [
+        "Define reinforcement learning and explain how it differs from supervised and unsupervised learning.",
+        "Identify the agent, environment, observation, action, reward, and next observation in an interaction.",
+        "Describe the reinforcement learning interaction loop.",
+        "Distinguish episodic and continuing tasks.",
+        "Explain the difference between training, evaluation, and deployment.",
+        "Understand exploration, exploitation, and feedback-driven behavior.",
+        "Represent an interaction as a sequence of transitions.",
+        "Implement a simple agent-environment loop in Python.",
+        "Explain how delayed rewards affect learning.",
+        "Identify common mistakes when designing reinforcement learning environments."
+    ],
+    "sections": [
+        {
+            "id": "what-is-reinforcement-learning",
+            "title": "What Is Reinforcement Learning?",
+            "type": "concept",
+            "content": "Reinforcement learning (RL) is a machine learning paradigm in which an agent learns to make decisions by interacting with an environment. The agent chooses actions, the environment responds, and the agent receives feedback in the form of rewards. The objective is to learn behavior that maximizes cumulative reward over time. Unlike ordinary supervised learning, the agent is not necessarily given the correct action for every situation. It must discover useful behavior through experience. For example, a robot may learn to move toward a target, a game-playing agent may learn strategies that lead to winning, and a resource scheduler may learn how to allocate limited computing capacity. These problems involve sequential decisions because an action can influence not only the immediate outcome but also the situations encountered later."
+        },
+        {
+            "id": "learning-paradigms",
+            "title": "Reinforcement Learning Compared with Other Paradigms",
+            "type": "concept",
+            "content": "In supervised learning, a model learns from labeled examples containing inputs and target outputs. In unsupervised learning, a model discovers structure in data without requiring explicit target labels. In reinforcement learning, the learner makes decisions and receives evaluative feedback from the environment. A reward usually indicates how desirable an outcome is, but it does not directly specify the correct action. RL also differs because data collection can depend on the learner's current behavior. A poor action may lead to an unhelpful state, while a good action may reveal opportunities for future reward. This interaction between learning and data collection is a defining characteristic of RL."
+        },
+        {
+            "id": "learning-paradigms-example",
+            "title": "Example: Three Ways to Train a Game Agent",
+            "type": "example",
+            "content": "Imagine training an agent to play a simple maze game. In supervised learning, you could provide many maze configurations paired with expert-selected moves. In unsupervised learning, you could ask a model to discover patterns in recorded game states without giving it a goal-directed reward. In reinforcement learning, the agent attempts moves, receives rewards for progress or reaching the goal, and learns which decisions tend to produce better outcomes. These methods can also be combined. For instance, expert demonstrations can initialize an RL policy before the agent continues learning through interaction."
+        },
+        {
+            "id": "agent-definition",
+            "title": "The Agent",
+            "type": "concept",
+            "content": "The agent is the decision-making component of an RL system. At each decision point, it receives information about the current situation and selects an action. The agent may be represented by a table, a collection of rules, a probabilistic policy, a neural network, or another computational model. Its behavior is determined by its policy. During learning, the agent updates its policy or other internal estimates based on collected experience. The agent is not the same as the entire RL system: the environment supplies the dynamics and feedback, while the agent selects behavior within those dynamics."
+        },
+        {
+            "id": "environment-definition",
+            "title": "The Environment",
+            "type": "concept",
+            "content": "The environment is everything outside the agent that determines how actions affect the task. It receives the agent's action, changes its internal state, and returns an observation and reward. In a board game, the environment includes the board rules and the opponent. In robotics, it includes the robot's surroundings and physical dynamics. In a simulated queueing system, it includes arriving jobs, processing resources, and queue behavior. An environment may be simulated or real. Simulators are useful because they can provide repeatable experiments, but an inaccurate simulator may teach behavior that fails in the real world."
+        },
+        {
+            "id": "interaction-loop",
+            "title": "The Agent-Environment Interaction Loop",
+            "type": "concept",
+            "content": "A standard RL interaction follows a repeating loop. First, the agent receives an observation. Second, it selects an action according to its current policy. Third, the environment processes the action and advances to a new state. Fourth, the environment returns a reward, a new observation, and information indicating whether the episode has terminated or whether a time limit has truncated it. The agent records the transition and may update its learning algorithm. The loop continues until the task ends or the interaction is intentionally stopped. The important idea is that decisions and feedback are sequential: the next decision depends on what happened after previous actions."
+        },
+        {
+            "id": "interaction-loop-formula",
+            "title": "Mathematical Representation of an Interaction",
+            "type": "math",
+            "content": "A common representation of a single transition is (s_t, a_t, r_{t+1}, s_{t+1}), where s_t is the state at time t, a_t is the action selected at time t, r_{t+1} is the reward received after the action, and s_{t+1} is the next state. In partially observable environments, the agent may receive observations o_t instead of the complete state. A trajectory is a sequence of such interactions. The exact timing convention for rewards can vary across textbooks and implementations, so the convention should be stated consistently.",
+            "formula": "s_t, a_t \\rightarrow r_{t+1}, s_{t+1}",
+            "example": "A maze agent is at cell (2, 3), chooses action RIGHT, receives reward -0.1 for taking a step, and observes that it is now at cell (2, 4). This creates one transition containing the previous state, chosen action, reward, and next state."
+        },
+        {
+            "id": "policy-definition",
+            "title": "Policies: How Agents Choose Actions",
+            "type": "concept",
+            "content": "A policy describes how an agent chooses actions. A deterministic policy maps a state or observation to one action. A stochastic policy assigns probabilities to possible actions. For example, a stochastic policy might select LEFT with probability 0.2, RIGHT with probability 0.6, and UP with probability 0.2. Stochastic policies are useful when exploration is required or when several actions have similar expected value. Policies can be represented as lookup tables, rules, or neural networks. In many RL algorithms, learning means improving the policy directly or improving value estimates that help determine the policy."
+        },
+        {
+            "id": "deterministic-stochastic",
+            "title": "Deterministic and Stochastic Policies",
+            "type": "math",
+            "content": "For a deterministic policy, the selected action is written as a = pi(s). For a stochastic policy, pi(a|s) denotes the probability of selecting action a in state s. A valid stochastic policy assigns nonnegative probabilities that sum to one across all available actions. A stochastic policy does not necessarily behave randomly at every moment in an uncontrolled way; its probabilities are structured by the learned model and the current situation.",
+            "formula": "\\pi(a\\mid s) \\geq 0, \\qquad \\sum_{a \\in A(s)} \\pi(a\\mid s)=1",
+            "example": "Suppose the agent has three actions with probabilities 0.1, 0.7, and 0.2. These probabilities form a valid policy because each is nonnegative and their sum is one. The action with probability 0.7 is most likely, but the other actions remain possible."
+        },
+        {
+            "id": "state-and-observation",
+            "title": "State Versus Observation",
+            "type": "concept",
+            "content": "A state is a representation of the environment's situation that contains the information needed to predict relevant future outcomes under the task's assumptions. An observation is the information actually provided to the agent. In a fully observable problem, the observation may reveal the complete state. In a partially observable problem, the observation can omit important information. For example, a robot camera may show nearby objects but not their hidden velocities. A game agent may see the current screen without knowing an opponent's private information. When observations do not reveal the full state, the agent may need to use observation history or maintain a belief about possible states."
+        },
+        {
+            "id": "reward-definition",
+            "title": "Rewards as Feedback",
+            "type": "concept",
+            "content": "A reward is a numerical signal describing the immediate desirability of an outcome according to the task objective. Positive rewards can encourage useful outcomes, while negative rewards can represent costs or undesirable events. A reward is not the same as a label that identifies the correct action. It evaluates an outcome rather than directly teaching the action to take. Reward design is important because an agent tends to optimize the reward it is given, not necessarily the designer's unstated intention. Poorly designed rewards can encourage unintended shortcuts or behaviors that technically maximize the numerical objective while violating the real purpose of the task."
+        },
+        {
+            "id": "reward-example",
+            "title": "Example: Designing a Maze Reward",
+            "type": "example",
+            "content": "A maze task might assign +10 for reaching the goal, -1 for entering a dangerous cell, and -0.1 for each movement step. The goal reward encourages success, the danger penalty discourages unsafe routes, and the small step penalty encourages shorter solutions. However, if the step penalty is too large, the agent may learn to stop moving or take unexpected shortcuts. If the goal reward is too small compared with other penalties, the agent may avoid reaching the goal. Reward values must therefore be tested against the intended behavior rather than selected arbitrarily."
+        },
+        {
+            "id": "actions",
+            "title": "Actions and Action Spaces",
+            "type": "concept",
+            "content": "The action space describes the decisions available to the agent. Discrete action spaces contain a finite or countable set of choices, such as LEFT, RIGHT, or JUMP. Continuous action spaces contain values from a continuous range, such as a steering angle or motor torque. Some tasks have hybrid action spaces containing both discrete and continuous decisions. The structure of the action space influences algorithm selection. Tabular Q-learning is straightforward for small discrete spaces, while continuous control often requires function approximation and policies that produce continuous distributions or action values."
+        },
+        {
+            "id": "action-space-example",
+            "title": "Discrete and Continuous Actions",
+            "type": "example",
+            "content": "In a grid world, the agent may choose one of four directions, so its action space is discrete. In a robotic arm, the agent might choose joint torques represented by real-valued numbers, creating a continuous action space. In a driving task, the agent might choose a discrete gear and continuous steering and acceleration values. The action representation should match the actual control interface and should not introduce impossible actions."
+        },
+        {
+            "id": "episodic-tasks",
+            "title": "Episodic Tasks",
+            "type": "concept",
+            "content": "An episodic task naturally ends after a sequence of decisions. The sequence from the initial state to termination is called an episode. Examples include completing a maze, finishing a board game, or landing a simulated spacecraft. When an episode ends, the environment may reset to a new initial condition. Episodic tasks are convenient for measuring complete outcomes, such as whether the agent reached the goal or how much reward it collected during a run. The terminal state should be represented clearly so that algorithms do not mistakenly treat the next episode's initial state as an ordinary continuation."
+        },
+        {
+            "id": "continuing-tasks",
+            "title": "Continuing Tasks",
+            "type": "concept",
+            "content": "A continuing task has no natural terminal point. Examples include ongoing traffic signal control, industrial temperature regulation, and continuous server resource management. Training systems may divide continuing experience into fixed-length segments for convenience, but a segment boundary is not automatically a true terminal state. Confusing an artificial cutoff with termination can produce incorrect value targets because the agent may discard future value that should still be considered. Implementations often distinguish termination caused by the task from truncation caused by a time limit or data-collection rule."
+        },
+        {
+            "id": "termination-and-truncation",
+            "title": "Termination Versus Truncation",
+            "type": "concept",
+            "content": "Termination means the task has reached a terminal condition defined by the environment, such as winning a game or reaching the goal. Truncation means the interaction was stopped for a reason external to the task's natural terminal condition, such as a maximum episode length or a collection budget. This distinction matters when calculating learning targets. For a true terminal state, there is usually no future value to bootstrap from. For a truncated transition in a continuing task, future value may still be relevant. Software environments often return separate flags for these cases; training code should preserve that distinction."
+        },
+        {
+            "id": "exploration-exploitation",
+            "title": "Exploration and Exploitation",
+            "type": "concept",
+            "content": "Exploration means trying actions to gather information about their consequences. Exploitation means choosing actions believed to produce the best current outcome. An agent that always exploits may miss a better strategy because its estimates are based on limited experience. An agent that explores too much may waste opportunities by repeatedly choosing poor actions. RL algorithms manage this trade-off in different ways, including random action selection, entropy bonuses, optimistic value estimates, and stochastic policies. The appropriate balance depends on the task, the cost of mistakes, and whether the environment changes over time."
+        },
+        {
+            "id": "feedback-and-credit",
+            "title": "Immediate and Delayed Feedback",
+            "type": "concept",
+            "content": "Some actions receive immediate rewards, while others influence rewards that arrive much later. In a chess game, an early move may have no immediate reward but may create a decisive advantage later. In a robot navigation task, a small detour may prevent a collision several seconds afterward. Learning from delayed feedback requires assigning credit to earlier decisions that contributed to later outcomes. Return calculations and value functions help represent these delayed consequences. A reward signal that is too sparse can make learning difficult because the agent receives little information about which decisions were useful."
+        },
+        {
+            "id": "trajectory-and-experience",
+            "title": "Trajectories and Experience",
+            "type": "concept",
+            "content": "A trajectory is an ordered sequence of states or observations, actions, and rewards generated during interaction. A trajectory may be written as tau = (s_0, a_0, r_1, s_1, a_1, r_2, ...). RL algorithms use experience in different ways. Some update estimates after every transition, some learn from complete episodes, and others sample stored transitions repeatedly. Experience replay, used in some deep RL algorithms, stores transitions so that the agent can learn from past interactions. Reusing experience can improve data efficiency, but the algorithm must account for differences between the behavior policy that generated data and the policy currently being learned when required."
+        },
+        {
+            "id": "on-policy-off-policy-introduction",
+            "title": "On-Policy and Off-Policy Learning",
+            "type": "concept",
+            "content": "An on-policy algorithm learns about the policy used to generate its training experience, or about a closely connected policy updated from that experience. An off-policy algorithm can learn a target policy using data generated by a different behavior policy. This distinction affects how data can be reused. For example, an off-policy value-learning method may use stored transitions collected by an exploratory behavior policy while estimating the value of a greedy target policy. On-policy methods often require more recent policy data, while off-policy methods may reuse data more extensively. Each approach has assumptions and stability considerations."
+        },
+        {
+            "id": "environment-dynamics",
+            "title": "Environment Dynamics",
+            "type": "concept",
+            "content": "Environment dynamics describe how the environment changes after an action. In a stochastic environment, the same state-action pair may lead to different next states or rewards on different occasions. In a deterministic environment, the next state may be fixed for a given state and action. Real environments can be noisy because of sensor errors, random events, unmodeled physical effects, or other agents. An agent that performs well in one exact sequence may fail when dynamics change. Robust evaluation should therefore test multiple conditions and random seeds rather than relying on one successful trajectory."
+        },
+        {
+            "id": "model-based-model-free",
+            "title": "Model-Based and Model-Free Reinforcement Learning",
+            "type": "concept",
+            "content": "Model-based RL uses a model of environment dynamics and rewards to predict outcomes or plan actions. The model may be supplied by the environment, learned from experience, or approximated using domain knowledge. Model-free RL learns policies or value estimates directly from interactions without explicitly planning through a learned transition model. Model-based methods can use data efficiently when their model is accurate, but model errors can lead to poor plans. Model-free methods avoid some planning-model errors but may require many interactions. Hybrid methods combine learned models with direct policy or value learning."
+        },
+        {
+            "id": "simple-environment",
+            "title": "Building a Tiny Environment in Python",
+            "type": "code",
+            "language": "python",
+            "content": "A small grid environment makes the interaction loop concrete. The agent starts at position zero and tries to reach the final position. Moving right advances the agent; moving left moves it backward. Reaching the goal ends the episode. The environment returns the next state, reward, and a termination flag.",
+            "explanation": "This example uses a one-dimensional world so that the interaction mechanics are easy to inspect. It is not a learning algorithm yet: it defines the environment in which a learning agent could operate.",
+            "code": "class LineWorld:\n    def __init__(self, length=5):\n        if length < 2:\n            raise ValueError('length must be at least 2')\n        self.length = length\n        self.reset()\n\n    def reset(self):\n        self.position = 0\n        return self.position\n\n    def step(self, action):\n        if action not in (0, 1):\n            raise ValueError('action must be 0 (left) or 1 (right)')\n        if self.position == self.length - 1:\n            raise RuntimeError('Episode has terminated; call reset()')\n        self.position = max(0, min(self.length - 1, self.position + (1 if action == 1 else -1)))\n        terminated = self.position == self.length - 1\n        reward = 1.0 if terminated else -0.01\n        return self.position, reward, terminated\n\nenv = LineWorld(length=5)\nstate = env.reset()\nprint('Initial state:', state)\n\nfor action in [1, 1, 1, 1]:\n    next_state, reward, terminated = env.step(action)\n    print(state, action, reward, next_state, terminated)\n    state = next_state\n    if terminated:\n        break"
+        },
+        {
+            "id": "running-an-agent-loop",
+            "title": "Running an Agent-Environment Loop",
+            "type": "code",
+            "language": "python",
+            "content": "An agent-environment loop repeatedly chooses an action, calls the environment, records the transition, and stops when the task terminates. A random policy is useful for checking that the environment works before training a more sophisticated agent.",
+            "explanation": "Random behavior is a baseline, not an optimal strategy. Testing with a simple policy can expose errors in action handling, reward timing, termination logic, and state transitions.",
+            "code": "import random\n\ndef random_episode(env, max_steps=100):\n    state = env.reset()\n    total_reward = 0.0\n    transitions = []\n\n    for step in range(max_steps):\n        action = random.choice([0, 1])\n        next_state, reward, terminated = env.step(action)\n        transitions.append((state, action, reward, next_state, terminated))\n        total_reward += reward\n        state = next_state\n        if terminated:\n            break\n\n    return transitions, total_reward\n\nenv = LineWorld(length=5)\ntransitions, total_reward = random_episode(env)\nprint('Steps:', len(transitions))\nprint('Total reward:', total_reward)\nprint('Transitions:', transitions)"
+        },
+        {
+            "id": "experience-buffer",
+            "title": "Recording Experience",
+            "type": "concept",
+            "content": "An experience record stores the information required by an algorithm to learn from an interaction. A common record contains the current observation, action, reward, next observation, and termination status. Some algorithms also store log probabilities, value predictions, episode identifiers, or truncation flags. Experience should be recorded consistently because missing terminal information or misaligned rewards can silently corrupt learning targets. In larger systems, experience may be stored in a replay buffer, streamed to a learner, or accumulated into rollout batches."
+        },
+        {
+            "id": "experience-buffer-code",
+            "title": "Creating a Transition Record",
+            "type": "code",
+            "language": "python",
+            "content": "The following function creates a consistent transition dictionary. Explicit field names make the record easier to inspect and reduce ambiguity about which state a reward belongs to.",
+            "explanation": "Real training pipelines may use arrays or tensors instead of dictionaries for efficiency, but the conceptual fields remain similar.",
+            "code": "def make_transition(state, action, reward, next_state, terminated, truncated=False):\n    return {\n        'state': state,\n        'action': action,\n        'reward': float(reward),\n        'next_state': next_state,\n        'terminated': bool(terminated),\n        'truncated': bool(truncated)\n    }\n\ntransition = make_transition(2, 1, -0.01, 3, False)\nprint(transition)"
+        },
+        {
+            "id": "reward-return-introduction",
+            "title": "From Immediate Rewards to Returns",
+            "type": "concept",
+            "content": "An agent should generally care about more than the reward from its most recent action. The return summarizes reward accumulated over a future sequence. Because distant rewards may be less certain or less important for the chosen objective, many RL algorithms use a discount factor gamma between zero and one. A high discount factor places more weight on long-term outcomes, while a lower value emphasizes immediate rewards. Discounting is a modeling choice and should reflect the task's intended horizon rather than being selected solely for convenience."
+        },
+        {
+            "id": "discounted-return",
+            "title": "Discounted Return",
+            "type": "math",
+            "content": "The discounted return from time t is the sum of future rewards, each weighted by a power of the discount factor gamma. The factor gamma controls how strongly distant rewards contribute. If gamma is zero, only the next reward contributes. As gamma approaches one, distant rewards retain more weight, although convergence and stability depend on the task and algorithm.",
+            "formula": "G_t = r_{t+1} + \\gamma r_{t+2} + \\gamma^2 r_{t+3} + \\cdots",
+            "example": "If the next two rewards are 1 and 2, and gamma is 0.9, the two-step discounted return is 1 + 0.9(2) = 2.8."
+        },
+        {
+            "id": "episode-collection",
+            "title": "Collecting an Episode",
+            "type": "code",
+            "language": "python",
+            "content": "The function below collects one episode using a supplied policy. Separating the policy from the environment makes it possible to compare random behavior, rule-based behavior, and learned behavior without rewriting the environment.",
+            "explanation": "The policy function receives a state and returns an action. The environment owns the transition rules and reward calculation.",
+            "code": "def collect_episode(env, policy, max_steps=100):\n    state = env.reset()\n    episode = []\n    total_reward = 0.0\n\n    for _ in range(max_steps):\n        action = policy(state)\n        next_state, reward, terminated = env.step(action)\n        episode.append((state, action, reward, next_state, terminated))\n        total_reward += reward\n        state = next_state\n        if terminated:\n            break\n\n    return episode, total_reward\n\ndef move_right_policy(state):\n    return 1\n\nenv = LineWorld(length=5)\nepisode, score = collect_episode(env, move_right_policy)\nprint('Episode length:', len(episode))\nprint('Episode return:', score)"
+        },
+        {
+            "id": "evaluation",
+            "title": "Training Versus Evaluation",
+            "type": "concept",
+            "content": "Training is the process of improving an agent using experience and an update rule. Evaluation measures how well the current agent performs under a specified set of conditions. These phases should be separated because exploration, parameter updates, and evaluation objectives can differ. An evaluation policy may act greedily or use another fixed behavior appropriate to the task. Performance should be measured over multiple episodes or random seeds, with averages and variability reported when possible. A single successful run is weak evidence because stochastic environments can produce unusually easy or difficult episodes."
+        },
+        {
+            "id": "environment-design",
+            "title": "Designing a Useful RL Environment",
+            "type": "concept",
+            "content": "A well-designed environment has a clear objective, valid action definitions, consistent state transitions, meaningful rewards, and explicit terminal conditions. Observations should contain the information the agent is intended to receive, without accidentally leaking hidden answers. Reset logic should create valid initial conditions. If the environment includes randomness, its random sources should be controlled when reproducibility is needed. Environment tests should cover boundary states, invalid actions, terminal transitions, reward signs, and maximum episode lengths. A bug in the environment can cause an algorithm to learn behavior that appears effective but does not solve the intended task."
+        },
+        {
+            "id": "reward-hacking",
+            "title": "Reward Hacking and Specification Errors",
+            "type": "concept",
+            "content": "Reward hacking occurs when an agent finds a way to obtain high reward without achieving the intended real-world objective. A navigation agent might repeatedly trigger a reward event instead of finishing a route. A simulated robot might exploit an unrealistic physical shortcut. A scheduling agent might maximize a throughput metric while ignoring service quality. These failures arise when the reward is an imperfect specification of the goal. Prevention requires adversarial testing, inspection of learned behavior, careful metric design, and sometimes multiple constraints or human oversight. More training does not automatically fix a flawed reward."
+        },
+        {
+            "id": "sim-to-real",
+            "title": "Simulation and Real-World Transfer",
+            "type": "concept",
+            "content": "RL is often trained in simulation because real interactions may be costly, slow, or dangerous. However, a policy trained in a simulator may encounter different dynamics, sensor noise, object properties, or operating conditions after deployment. This mismatch is commonly called the sim-to-real gap. Techniques such as domain randomization, system identification, robust objectives, and cautious real-world fine-tuning can reduce the gap. Deployment should include safety limits and monitoring, especially when actions can cause physical damage or affect people."
+        },
+        {
+            "id": "reproducibility",
+            "title": "Reproducibility in RL Experiments",
+            "type": "concept",
+            "content": "RL results can vary because of random initialization, exploration, stochastic transitions, and sampling choices. Reproducible experiments record environment versions, hyperparameters, seeds, code versions, and evaluation procedures. Using a fixed seed helps debugging but does not establish general performance. Strong evaluations use several seeds and report the distribution of outcomes. Comparisons between algorithms should use consistent evaluation conditions and should avoid tuning one method on information unavailable to the others."
+        },
+        {
+            "id": "applications",
+            "title": "Applications of Agent-Environment Learning",
+            "type": "concept",
+            "content": "Agent-environment interaction is the common structure behind many RL applications. In robotics, the agent controls movement and receives sensor feedback. In games, it selects moves and observes game outcomes. In operations research, it may allocate resources and receive costs or service rewards. In recommendation and ranking research, sequential decisions may affect later engagement and user experience, although ethical and causal considerations are important. In language-model alignment, an optimization system may learn from preference-derived feedback, but the environment and reward structure are much more complex than a simple game. Each application requires domain-specific constraints and evaluation."
+        },
+        {
+            "id": "limitations",
+            "title": "Limitations of the Basic Interaction View",
+            "type": "concept",
+            "content": "The agent-environment loop is a useful abstraction, but it hides important practical details. The agent may not observe the true state, rewards may be delayed or noisy, actions may have safety constraints, and the environment may change. Real interactions may be expensive, and collecting enough experience can be difficult. An agent may also exploit weaknesses in the environment or reward. Understanding the loop is the first step; successful RL additionally requires an appropriate learning algorithm, reliable evaluation, and a clear specification of the task."
+        },
+        {
+            "id": "key-takeaways",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Reinforcement learning learns decision-making through interaction. The agent selects actions, the environment changes, and rewards provide feedback. A transition records the situation, action, reward, and next situation. Policies determine behavior, while trajectories collect sequential experience. Episodic tasks terminate naturally, whereas continuing tasks may be divided into artificial segments. Exploration is needed to discover useful behavior, and delayed rewards make long-term consequences important. Correct environment design, careful reward specification, reproducible experiments, and evaluation across varied conditions are essential for trustworthy results."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "agent-env-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "In a robot navigation task, identify the agent, environment, action, observation, and reward.",
+            "correctAnswer": "The robot controller is the agent, the physical or simulated world is the environment, movement commands are actions, sensor readings are observations, and numerical feedback about progress or task outcomes is the reward.",
+            "solution": "The agent makes decisions. The environment includes the robot's surroundings and dynamics. Actions control movement, observations describe what the controller can perceive, and rewards evaluate outcomes according to the task objective."
+        },
+        {
+            "id": "agent-env-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why is a reward not the same as a supervised learning label?",
+            "correctAnswer": "A reward evaluates an outcome but usually does not specify the uniquely correct action for the current state.",
+            "solution": "The agent must discover which actions lead to better future rewards. A reward can be delayed and may depend on a sequence of decisions, whereas a supervised label directly supplies a target for a particular example."
+        },
+        {
+            "id": "agent-env-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "An agent receives rewards 2, 3, and 4 over three successive steps. If gamma is 0.5, calculate the discounted return from the first step.",
+            "correctAnswer": "4.5",
+            "solution": "Using the three rewards, G = 2 + 0.5(3) + 0.5^2(4) = 2 + 1.5 + 1 = 4.5."
+        },
+        {
+            "id": "agent-env-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Explain the difference between a terminal state and a time-limit truncation.",
+            "correctAnswer": "A terminal state ends the task according to its rules, while a truncation stops data collection for an external reason such as a maximum episode length.",
+            "solution": "The distinction affects whether an algorithm should bootstrap from future value. A true terminal state has no future task return beyond termination, while a truncated continuing task may still have relevant future value."
+        },
+        {
+            "id": "agent-env-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can a purely greedy agent perform poorly early in learning?",
+            "correctAnswer": "It may repeatedly choose actions that currently appear best and fail to discover actions with better long-term outcomes.",
+            "solution": "Early estimates are based on limited experience. Exploration helps the agent gather information about alternatives and can reveal strategies whose value was initially underestimated."
+        },
+        {
+            "id": "agent-env-ex-6",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A delivery robot receives +1 for every package scanned but receives no penalty for failing to deliver packages. What unintended behavior might emerge?",
+            "correctAnswer": "It may repeatedly scan packages without completing deliveries because scanning maximizes the specified reward.",
+            "solution": "The reward does not adequately represent the intended objective. The task may need rewards for successful delivery, penalties or constraints for unfinished work, and evaluations that measure actual service quality."
+        },
+        {
+            "id": "agent-env-ex-7",
+            "type": "coding",
+            "difficulty": "medium",
+            "question": "Write a Python function that runs a policy in an environment until termination or a maximum number of steps and returns the total reward.",
+            "correctAnswer": "A loop should reset the environment, select an action from the policy, call step, accumulate reward, update the state, and break on termination.",
+            "solution": "Example: def run_episode(env, policy, max_steps=100):\n    state = env.reset()\n    total = 0.0\n    for _ in range(max_steps):\n        action = policy(state)\n        next_state, reward, terminated = env.step(action)\n        total += reward\n        state = next_state\n        if terminated:\n            break\n    return total"
+        },
+        {
+            "id": "agent-env-ex-8",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the difference between model-based and model-free RL?",
+            "correctAnswer": "Model-based RL uses or learns environment dynamics for prediction and planning, while model-free RL learns policy or value estimates without explicitly planning through such a model.",
+            "solution": "A model can help an agent plan with fewer real interactions when it is accurate. Incorrect model predictions can mislead planning. Model-free methods avoid an explicit dynamics model but may require more interaction data."
+        },
+        {
+            "id": "agent-env-ex-9",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "An agent performs well in one simulator but fails on a real robot. Give two plausible reasons and two mitigation strategies.",
+            "correctAnswer": "Possible causes include mismatched physical dynamics and different sensor noise. Mitigations include domain randomization and careful system identification or safe real-world fine-tuning.",
+            "solution": "Simulation may omit friction, delays, calibration errors, or other real-world effects. Training across varied simulated conditions can improve robustness, while system identification helps align the simulator with reality. Deployment should include safety limits."
+        },
+        {
+            "id": "agent-env-ex-10",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why should an RL algorithm be evaluated over multiple random seeds?",
+            "correctAnswer": "Performance can vary substantially with initialization, exploration, stochastic transitions, and sampling; multiple seeds provide a more reliable estimate of typical performance.",
+            "solution": "A single run can be unusually lucky or unlucky. Repeated runs help reveal variability and reduce the risk of reporting a result that depends on one favorable random trajectory."
+        }
+    ],
+    "summary": "Reinforcement learning trains an agent to make sequential decisions by interacting with an environment. The agent receives observations, chooses actions according to a policy, and receives rewards and new observations. Transitions and trajectories represent collected experience. Policies may be deterministic or stochastic, and tasks may be episodic or continuing. Exploration allows the agent to discover alternatives, while discounted returns represent delayed consequences. Practical RL requires careful environment design, reliable reward specifications, correct handling of termination and truncation, reproducible experiments, and evaluation across diverse conditions.",
+    "relatedTopics": [
+        "states-actions-rewards",
+        "markov-decision-processes",
+        "value-functions",
+        "q-learning",
+        "policy-gradients"
+    ]
+}

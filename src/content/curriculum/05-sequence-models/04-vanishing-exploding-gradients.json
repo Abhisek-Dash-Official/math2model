@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-vanishing-exploding-gradients",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 4,
+  "title": "Vanishing & Exploding Gradients",
+  "slug": "vanishing-exploding-gradients",
+  "href": "/curriculum/05-sequence-models/vanishing-exploding-gradients",
+  "filePath": "content/curriculum/05-sequence-models/04-vanishing-exploding-gradients.json",
+  "description": "Study why gradients shrink or grow through deep and recurrent computations, how to diagnose the problem, and which mitigation strategies help.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "Backpropagation",
+    "Chain Rule in Neural Networks",
+    "RNN"
+  ],
+  "learningObjectives": [
+    "Explain gradient products and their stability.",
+    "Recognize symptoms of vanishing and exploding gradients.",
+    "Describe clipping, initialization, gating, and normalization strategies.",
+    "Understand that mitigation methods have trade-offs."
+  ],
+  "sections": [
+    {
+      "id": "mechanism",
+      "title": "Repeated Jacobian Products",
+      "type": "concept",
+      "content": "During backpropagation, gradients are propagated through a chain of derivatives. If the typical gain at each step is consistently below one, repeated multiplication can drive the gradient toward zero. If it is consistently above one, the gradient can grow rapidly. This can happen across layers or across time steps in recurrent networks.\n\nA vanishing gradient makes early layers or distant time steps learn slowly. An exploding gradient can produce huge parameter updates, unstable loss, or numerical overflow. Real networks have matrices and nonlinearities rather than one scalar multiplier, but the repeated-product intuition remains useful."
+    },
+    {
+      "id": "math",
+      "title": "A Simple Numerical Illustration",
+      "type": "math",
+      "content": "If a scalar gradient is multiplied by 0.5 at each of 10 steps, its magnitude becomes 0.5^10 ≈ 0.00098 of its original size. If it is multiplied by 1.5 at each step, the result is 1.5^10 ≈ 57.7 times the original size.\n\nThis simplified example illustrates why even moderate per-step effects can become severe over long paths. Actual behavior depends on matrix singular values, activation derivatives, data, and the learned parameters."
+    },
+    {
+      "id": "symptoms",
+      "title": "Symptoms and Diagnosis",
+      "type": "concept",
+      "content": "Possible signs of vanishing gradients include early recurrent inputs having little effect, slow learning in early layers, or a loss that plateaus despite reasonable optimization settings. Exploding gradients may show up as sudden loss spikes, very large gradient norms, NaNs, or infinities.\n\nLog gradient norms by layer or recurrent block, inspect activations, verify input scaling, and test a small batch to see whether the model can overfit it. A single symptom does not prove a gradient problem; data and implementation bugs can look similar."
+    },
+    {
+      "id": "mitigation",
+      "title": "Mitigation Strategies",
+      "type": "concept",
+      "content": "Gradient clipping is a direct response to exploding gradients. Good initialization helps maintain signal scale; ReLU-family activations and appropriate initialization can improve deep feed-forward training. LSTM and GRU gates provide paths that can preserve information more effectively across time. Residual connections and normalization can help optimization in deep architectures.\n\nNo method solves every case. Clipping does not restore a vanished gradient, normalization does not guarantee long-term memory, and gated RNNs can still fail on sufficiently difficult tasks."
+    },
+    {
+      "id": "code",
+      "title": "Gradient Clipping in PyTorch",
+      "type": "code",
+      "content": "optimizer.zero_grad()\nloss = model(inputs, targets)\nloss.backward()\n\ngrad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\noptimizer.step()\nprint('pre-clip total norm:', float(grad_norm))",
+      "language": "python",
+      "explanation": "clip_grad_norm_ rescales gradients when their global norm exceeds the chosen threshold. The returned norm is the total norm before clipping. Select the threshold empirically and monitor training behavior rather than assuming 1.0 is always ideal."
+    },
+    {
+      "id": "workflow",
+      "title": "A Debugging Checklist",
+      "type": "concept",
+      "content": "Start with a reproducible small experiment. Check for NaNs in inputs, activations, loss, and gradients; confirm target shapes and loss functions; normalize inputs where appropriate; lower an excessive learning rate; and monitor gradient norms. If long temporal dependencies matter, compare a gated recurrent architecture or a different sequence model.\n\nTrack validation performance as well as training loss. A stable gradient is necessary for optimization, but it does not guarantee good data, a suitable objective, or generalization."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "grad-ex1",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "A gradient is multiplied by 0.1 at each of 4 steps. What fraction remains?",
+      "correctAnswer": "0.0001 of the original gradient.",
+      "solution": "0.1^4 = 0.0001."
+    },
+    {
+      "id": "grad-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Which issue is gradient clipping mainly designed to mitigate?",
+      "correctAnswer": "Exploding gradients.",
+      "solution": "It limits the norm of the gradient before the optimizer update."
+    },
+    {
+      "id": "grad-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why does gradient clipping not solve vanishing gradients?",
+      "correctAnswer": "It caps large gradients but does not amplify gradients that are already tiny.",
+      "solution": "Vanishing gradients require different architectural or optimization strategies."
+    },
+    {
+      "id": "grad-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "Training loss suddenly becomes NaN in an RNN. Name two checks or interventions.",
+      "correctAnswer": "Inspect input/loss/gradient values and learning rate; monitor or clip gradient norms.",
+      "solution": "NaNs may result from exploding gradients, invalid inputs, or numerical errors, so diagnosis should precede changes."
+    }
+  ],
+  "summary": "Vanishing gradients weaken learning across long computational paths, while exploding gradients destabilize updates. Diagnose with gradient and activation monitoring, and combine clipping, suitable initialization, and architectures that support information flow.",
+  "relatedTopics": [
+    "rnn",
+    "backpropagation-through-time",
+    "lstm",
+    "gru"
+  ]
+}

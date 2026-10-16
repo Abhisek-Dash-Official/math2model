@@ -1,1 +1,103 @@
-{}
+{
+  "id": "module-04-pooling",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 4,
+  "title": "Pooling Layers",
+  "slug": "pooling",
+  "href": "/curriculum/04-deep-learning/pooling",
+  "filePath": "content/curriculum/04-deep-learning/04-pooling.json",
+  "description": "Understand max pooling, average pooling, spatial downsampling, and modern alternatives such as strided convolutions and adaptive pooling.",
+  "difficulty": "beginner",
+  "estimatedHours": 2,
+  "prerequisites": [
+    "CNNs",
+    "Convolution Mathematically"
+  ],
+  "learningObjectives": [
+    "Explain why CNNs downsample feature maps.",
+    "Compute max- and average-pooling outputs by hand.",
+    "Compare pooling with strided convolution.",
+    "Recognize information loss and shape trade-offs."
+  ],
+  "sections": [
+    {
+      "id": "purpose",
+      "title": "Why Downsample?",
+      "type": "concept",
+      "content": "Pooling reduces spatial dimensions of feature maps. This lowers computation in later layers and can make representations less sensitive to small shifts or local variations. It does not normally learn a separate set of weights; it applies a fixed aggregation rule to local regions.\n\nPooling is not always beneficial. Aggressive downsampling can erase small objects, thin boundaries, or fine-grained details. The appropriate choice depends on task requirements and architecture."
+    },
+    {
+      "id": "max",
+      "title": "Max Pooling",
+      "type": "concept",
+      "content": "Max pooling returns the largest value in each local window. A 2×2 max-pooling layer with stride 2 reduces each spatial dimension by roughly half when dimensions are divisible by two. It preserves strong activations, which can be useful when a feature's presence matters more than its exact position.\n\nExample: [[1, 3], [2, 0]] becomes 3 under 2×2 max pooling. Max pooling is nonlinear and does not average away a strong local response."
+    },
+    {
+      "id": "average",
+      "title": "Average Pooling and Global Average Pooling",
+      "type": "concept",
+      "content": "Average pooling computes the mean of values in each window. It can provide smoother summaries than max pooling. Global average pooling averages each entire feature map into one scalar, yielding one value per channel. It often replaces large fully connected classifier heads, reducing parameters and helping limit overfitting.\n\nAdaptive pooling lets the model produce a chosen output size regardless of the input spatial dimensions."
+    },
+    {
+      "id": "math",
+      "title": "Shape Calculations",
+      "type": "math",
+      "content": "For pooling kernel K, stride S, padding P, and input size N, the standard output size is floor((N+2P−K)/S)+1. A 32×32 feature map with kernel 2 and stride 2 becomes 16×16. If a 7×7 feature map is pooled with kernel 2 and stride 2 without padding, output size is floor((7−2)/2)+1 = 3, so some border positions are not covered."
+    },
+    {
+      "id": "code",
+      "title": "Pooling in PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nx = torch.tensor([[[[1., 3.], [2., 0.]]]])\nprint(nn.MaxPool2d(2)(x))      # tensor([[[[3.]]]])\nprint(nn.AvgPool2d(2)(x))      # tensor([[[[1.5]]]])\n\nglobal_pool = nn.AdaptiveAvgPool2d((1, 1))\nfeatures = torch.randn(4, 64, 8, 8)\nprint(global_pool(features).shape)  # [4, 64, 1, 1]",
+      "language": "python",
+      "explanation": "The first two operations use the same window but different aggregation rules. Adaptive average pooling maps every channel to a single value while preserving the batch and channel dimensions."
+    },
+    {
+      "id": "alternatives",
+      "title": "Pooling or Strided Convolution?",
+      "type": "concept",
+      "content": "A strided convolution learns how to combine and downsample local information; pooling uses a fixed reduction rule. Some architectures use pooling for simplicity, while others use strided convolutions or patch-merging operations. Neither choice is universally superior. Compare validation quality, compute cost, and the amount of spatial detail required."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "pool-ex1",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "What is the max-pooling result for [[2, 5], [1, 4]] using one 2×2 window?",
+      "correctAnswer": "5.",
+      "solution": "Max pooling selects the largest of the four values."
+    },
+    {
+      "id": "pool-ex2",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "What is the average-pooling result for [[2, 5], [1, 4]] using one 2×2 window?",
+      "correctAnswer": "3.",
+      "solution": "(2+5+1+4)/4 = 3."
+    },
+    {
+      "id": "pool-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What is one risk of repeated aggressive pooling?",
+      "correctAnswer": "It can discard fine spatial details or small-object information.",
+      "solution": "Downsampling reduces resolution, and lost details may not be recoverable by later layers."
+    },
+    {
+      "id": "pool-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "How does global average pooling differ from 2×2 average pooling?",
+      "correctAnswer": "Global average pooling averages across the entire spatial extent of each feature map.",
+      "solution": "It produces one scalar per channel rather than a grid of local averages."
+    }
+  ],
+  "summary": "Pooling aggregates local activations to reduce spatial size. Max, average, and global average pooling have different effects; downsampling should preserve the detail required by the task.",
+  "relatedTopics": [
+    "cnns",
+    "convolution-mathematically",
+    "image-classification"
+  ]
+}

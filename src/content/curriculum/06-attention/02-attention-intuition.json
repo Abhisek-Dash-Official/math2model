@@ -1,0 +1,138 @@
+{
+    "id": "module-06-attention-attention-intuition",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 2,
+    "title": "Attention Intuition",
+    "slug": "attention-intuition",
+    "href": "/curriculum/06-attention/attention-intuition",
+    "filePath": "content/curriculum/06-attention/02-attention-intuition.json",
+    "description": "Build an intuitive and mathematical understanding of attention as a mechanism for selectively combining information from different positions in a sequence.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Vectors and matrices",
+        "Basic neural networks",
+        "Why RNNs Struggle with Long Sequences"
+    ],
+    "learningObjectives": [
+        "Explain attention using an information-retrieval analogy.",
+        "Understand attention scores, weights, and weighted sums.",
+        "Distinguish between alignment scores and normalized attention weights.",
+        "Calculate attention weights using softmax.",
+        "Understand how attention creates context-dependent representations.",
+        "Recognize the limitations of interpreting attention weights."
+    ],
+    "sections": [
+        {
+            "id": "attention-analogy",
+            "title": "1. Attention as Selective Information Retrieval",
+            "type": "concept",
+            "content": "Imagine answering a question by consulting a collection of notes. You first determine what information you need, compare the question with each note, assign higher relevance to useful notes, and combine the information you retrieve. Attention follows a similar process. A query expresses what the current position is looking for, keys represent what candidate positions offer for matching, and values contain the information to combine. This analogy is useful because it separates relevance estimation from information retrieval."
+        },
+        {
+            "id": "attention-pipeline",
+            "title": "2. The Four Main Steps",
+            "type": "concept",
+            "content": "A standard attention operation follows four conceptual steps. First, compare a query with candidate keys to produce scores. Second, normalize the scores, commonly with softmax, to produce nonnegative weights that sum to one. Third, multiply each value vector by its corresponding weight. Fourth, sum the weighted values to obtain a context vector. The result depends on both the query and the available keys and values."
+        },
+        {
+            "id": "attention-math",
+            "title": "3. Mathematical Formulation",
+            "type": "math",
+            "content": "For query q, keys k_1 through k_n, and corresponding values v_1 through v_n, define scores s_i = q^T k_i. Normalize them with alpha_i = exp(s_i) / sum_j exp(s_j). The attention output is z = sum_i alpha_i v_i. In scaled dot-product attention, the score is divided by sqrt(d_k), where d_k is the key dimension: s_i = q^T k_i / sqrt(d_k). The scaling helps control score magnitudes as the key dimension grows."
+        },
+        {
+            "id": "attention-weights",
+            "title": "4. What Attention Weights Mean",
+            "type": "concept",
+            "content": "The attention weights determine how strongly each value contributes to the output. A weight of 0.7 means that the corresponding value receives a coefficient of 0.7 in the weighted sum. If weights are produced by softmax, they are nonnegative and sum to one. They can be understood as normalized relevance coefficients, but they are not necessarily calibrated probabilities about semantic truth or causal importance. The weighted sum can also blend information from several positions."
+        },
+        {
+            "id": "softmax-example",
+            "title": "5. Worked Example: From Scores to Weights",
+            "type": "example",
+            "content": "Suppose a query produces three scores [2, 1, 0]. Their exponentials are approximately [7.389, 2.718, 1.000]. The sum is approximately 11.107, so the softmax weights are approximately [0.665, 0.245, 0.090]. The first position receives the largest weight because it has the highest score. The weights sum to approximately one, subject to rounding."
+        },
+        {
+            "id": "weighted-sum-example",
+            "title": "6. Combining Values",
+            "type": "math",
+            "content": "Suppose the values are v_1 = [1, 0], v_2 = [0, 2], and v_3 = [3, 1], with weights [0.665, 0.245, 0.090]. The output is z = 0.665[1, 0] + 0.245[0, 2] + 0.090[3, 1]. Coordinate-wise, z is approximately [0.935, 0.580]. This vector contains a weighted mixture of all three values, with the first value contributing the most."
+        },
+        {
+            "id": "context-dependent",
+            "title": "7. Context-Dependent Representations",
+            "type": "concept",
+            "content": "The same token can produce different contextual representations depending on the other tokens in the sequence. For example, 'bank' appears in 'deposit money at the bank' and 'sit beside the river bank'. An attention mechanism can assign different weights to surrounding words in the two sentences. Through learned projections and multiple layers, the resulting representation can capture different contextual meanings."
+        },
+        {
+            "id": "self-cross",
+            "title": "8. Self-Attention and Cross-Attention",
+            "type": "concept",
+            "content": "In self-attention, queries, keys, and values are derived from the same sequence representation. Each position can gather information from other positions in that sequence, subject to any masks. In cross-attention, queries come from one sequence or processing stream, while keys and values come from another. For example, a decoder query can retrieve information from an encoded source sentence. These variants share the same weighted-retrieval principle."
+        },
+        {
+            "id": "attention-limitations",
+            "title": "9. Important Limitations",
+            "type": "concept",
+            "content": "Attention requires a scoring rule and a set of values, but the learned relationships are not guaranteed to match human notions of relevance. Attention maps can change across heads and layers. A high attention weight does not by itself prove that a token caused a prediction, and a low weight does not necessarily mean that the token was irrelevant to the model's computation. Attention should be analyzed alongside other evidence when interpreting model behavior."
+        },
+        {
+            "id": "attention-summary",
+            "title": "10. Key Takeaway",
+            "type": "concept",
+            "content": "Attention converts query-key compatibility scores into weights and uses those weights to combine value vectors. This allows each representation to retrieve context dynamically rather than relying exclusively on a single fixed summary. Query, key, and value projections make this operation learnable and flexible."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "attention-intuition-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the three main components used in attention?",
+            "correctAnswer": "Queries, keys, and values.",
+            "solution": "Queries express what is being sought, keys are used to calculate compatibility scores, and values contain the information combined into the output."
+        },
+        {
+            "id": "attention-intuition-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If softmax attention weights are [0.2, 0.3, 0.5], what is their sum?",
+            "correctAnswer": "1.0.",
+            "solution": "Add the weights: 0.2 + 0.3 + 0.5 = 1.0."
+        },
+        {
+            "id": "attention-intuition-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Given weights [0.25, 0.75], values v1 = [4, 0] and v2 = [0, 2], calculate the attention output.",
+            "correctAnswer": "[1, 1.5].",
+            "solution": "Compute 0.25[4, 0] + 0.75[0, 2] = [1, 0] + [0, 1.5] = [1, 1.5]."
+        },
+        {
+            "id": "attention-intuition-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why are softmax weights not automatically explanations of a model's prediction?",
+            "correctAnswer": "They show coefficients in a particular weighted combination, but they do not capture every computation or establish causal importance.",
+            "solution": "A model's output depends on learned projections, other heads and layers, residual connections, and nonlinear transformations. Attention weights alone are incomplete."
+        },
+        {
+            "id": "attention-intuition-ex-5",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "How might attention help represent the two meanings of the word 'bat' in different sentences?",
+            "correctAnswer": "It can assign different weights to contextual words such as 'baseball' or 'cave'.",
+            "solution": "The weighted context differs according to the surrounding representations, helping later layers distinguish the intended meaning."
+        }
+    ],
+    "summary": "Attention scores the compatibility between a query and keys, normalizes the scores into weights, and combines the corresponding values. This creates a context-dependent representation. The same mechanism supports self-attention within one sequence and cross-attention between sequences.",
+    "relatedTopics": [
+        "module-06-attention-why-rnns-struggle",
+        "module-06-attention-query-key-value",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-cross-attention"
+    ]
+}

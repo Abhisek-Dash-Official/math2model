@@ -1,1 +1,182 @@
-{}
+{
+    "id": "module-09-large-language-models-distributed-training",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 9,
+    "title": "Distributed Training (DP, TP, PP)",
+    "slug": "distributed-training",
+    "href": "/curriculum/09-large-language-models/distributed-training",
+    "filePath": "content/curriculum/09-large-language-models/09-distributed-training.json",
+    "description": "Learn how distributed training enables large language models to train across multiple GPUs and machines using data parallelism, tensor parallelism, pipeline parallelism, communication collectives, and hybrid parallel strategies.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-07-deep-learning",
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-learning-rate-schedules"
+    ],
+    "learningObjectives": [
+        "Explain why LLM training requires distributed computing.",
+        "Distinguish data parallelism, tensor parallelism, and pipeline parallelism.",
+        "Understand the roles of all-reduce, all-gather, reduce-scatter, and broadcast.",
+        "Explain how Distributed Data Parallel synchronizes gradients.",
+        "Understand how Fully Sharded Data Parallel distributes model states.",
+        "Describe tensor parallelism for attention and feed-forward layers.",
+        "Explain pipeline stages, micro-batches, and pipeline bubbles.",
+        "Understand hybrid parallelism and topology-aware placement.",
+        "Identify communication, memory, and load-balancing bottlenecks.",
+        "Implement a basic distributed training pattern with PyTorch."
+    ],
+    "sections": [
+        {
+            "id": "distributed-training-motivation",
+            "title": "1. Why Distributed Training Is Necessary",
+            "type": "concept",
+            "content": "Large language models can contain billions of parameters, and training them requires substantial memory and computation. A single GPU may not have enough memory to store the model parameters, gradients, optimizer states, activations, and temporary workspaces. Even when the model fits, training on one device may take too long.\n\nDistributed training uses multiple GPUs, often across multiple servers, to divide computation and memory requirements. The devices communicate to exchange activations, gradients, parameters, or other information required by the training algorithm.\n\nAdding GPUs does not automatically make training proportionally faster. Communication overhead, synchronization, data loading, memory constraints, and unequal workloads can limit scaling. Effective distributed training therefore requires choosing a parallelization strategy that matches the model, hardware topology, and available interconnect bandwidth."
+        },
+        {
+            "id": "distributed-training-memory",
+            "title": "2. Understanding Training Memory",
+            "type": "concept",
+            "content": "Training memory includes more than model parameters. A typical training process stores parameters, gradients, optimizer states, intermediate activations needed for backpropagation, and temporary tensors used by kernels. The relative contribution of each category depends on the architecture, optimizer, precision, batch size, and sequence length.\n\nFor an illustrative full-precision Adam training setup, parameters may occupy four bytes per parameter, gradients another four bytes, and two float32 optimizer moments another eight bytes. This simplified estimate is approximately sixteen bytes per parameter before activation memory and additional overhead. Actual implementations may use different precision formats, master weights, sharding, or optimizer-state representations.\n\nFor a model with one billion parameters, sixteen bytes per parameter corresponds to approximately sixteen gigabytes in decimal units, before accounting for activations and other memory. This illustrates why parameter count alone is not a complete estimate of training memory."
+        },
+        {
+            "id": "data-parallelism",
+            "title": "3. Data Parallelism",
+            "type": "concept",
+            "content": "In data parallelism, each participating device maintains a copy of the model and processes a different portion of the training batch. Each device performs a forward pass and computes local gradients. The gradients are then combined so that replicas can apply consistent parameter updates.\n\nDistributed Data Parallel, or DDP, is a widely used PyTorch implementation. It synchronizes gradients across workers during backward propagation. Each worker generally has the same model architecture and trainable parameters, but its local batch contains different examples or tokens.\n\nData parallelism increases aggregate data-processing capacity but does not by itself solve the problem of a model that cannot fit on one GPU. Every replica still needs the model and its local training state unless a sharding technique is added. Data parallelism is therefore often combined with tensor or pipeline parallelism for large models."
+        },
+        {
+            "id": "data-parallel-formula",
+            "title": "4. Global Batch Size and Gradient Averaging",
+            "type": "math",
+            "content": "If each data-parallel worker processes B examples per micro-batch, gradient accumulation uses A micro-batches per optimizer update, and D workers participate, the nominal global batch size is B multiplied by A multiplied by D. This assumes equal batch sizes and counts examples rather than valid language-model tokens.\n\nFor equal-sized local batches, averaging the local gradients gives the gradient of the combined batch under the usual mean-loss convention. If workers process different numbers of valid tokens, simple averaging of their local mean gradients may not equal the globally token-weighted gradient. The loss normalization must match the intended objective.\n\nFor example, eight GPUs processing sixteen sequences each with four accumulation steps produce a nominal global batch size of 512 sequences. If sequence lengths differ substantially, the number of valid target tokens may vary and should be tracked separately.",
+            "formula": "Global batch size = local batch size * accumulation steps * data-parallel workers",
+            "example": "B = 16, A = 4, D = 8. The nominal global batch size is 16 * 4 * 8 = 512 sequences."
+        },
+        {
+            "id": "communication-collectives",
+            "title": "5. Communication Collectives",
+            "type": "concept",
+            "content": "Distributed training relies on collective communication operations that coordinate multiple processes. All-reduce combines values from every participating process and makes the reduced result available to all participants. It is commonly used to synchronize gradients.\n\nAll-gather collects distinct tensors from participants and assembles them so each participant can access the gathered result. Reduce-scatter first reduces corresponding tensor regions and then distributes different portions of the reduced tensor among participants. Broadcast sends a value from one designated process to the others.\n\nThe choice of collective influences memory usage and communication cost. For example, reduce-scatter and all-gather are useful building blocks for sharded training, where each device owns only part of a tensor. Communication can become a bottleneck when tensors are large or the network interconnect is slow."
+        },
+        {
+            "id": "all-reduce",
+            "title": "6. All-Reduce and Gradient Synchronization",
+            "type": "math",
+            "content": "Suppose three workers compute gradients g_1, g_2, and g_3 for equivalent model parameters. An all-reduce sum produces g_1 + g_2 + g_3 on every worker. If the training objective requires the average gradient, the result is divided by three, either explicitly or through the framework's reduction convention.\n\nThe workers can then apply the same optimizer update and keep their replicas synchronized, provided that their starting parameters and optimizer states are consistent and the update semantics match. DDP usually manages the required gradient communication automatically.\n\nThe exact scaling depends on how local losses are reduced. If each worker computes a mean over an equal number of examples, averaging local gradients is generally appropriate. For unequal valid-token counts, globally consistent token weighting may require more careful normalization.",
+            "formula": "g_global = (g_1 + g_2 + ... + g_D) / D",
+            "example": "If two workers compute gradients 2.0 and 4.0 for a scalar parameter, their average gradient is 3.0. Both workers can apply the same update using that average."
+        },
+        {
+            "id": "ddp-pytorch",
+            "title": "7. Basic Distributed Data Parallel in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import os\nimport torch\nimport torch.distributed as dist\nimport torch.nn as nn\nfrom torch.nn.parallel import DistributedDataParallel as DDP\n\ndef main():\n    dist.init_process_group(backend=\"nccl\")\n    local_rank = int(os.environ[\"LOCAL_RANK\"])\n    torch.cuda.set_device(local_rank)\n    device = torch.device(\"cuda\", local_rank)\n\n    model = nn.Linear(128, 10).to(device)\n    model = DDP(model, device_ids=[local_rank])\n    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\n\n    for _ in range(10):\n        x = torch.randn(32, 128, device=device)\n        y = torch.randint(0, 10, (32,), device=device)\n        optimizer.zero_grad(set_to_none=True)\n        loss = nn.functional.cross_entropy(model(x), y)\n        loss.backward()\n        optimizer.step()\n\n    dist.destroy_process_group()\n\nif __name__ == \"__main__\":\n    main()",
+            "explanation": "This example illustrates the essential DDP lifecycle: initialize the process group, select the local GPU, wrap the model, and train with synchronized gradients. Run it through a distributed launcher that sets LOCAL_RANK and WORLD_SIZE. A production script also needs distributed data sampling, error handling, checkpoint coordination, and correct rank-specific logging."
+        },
+        {
+            "id": "tensor-parallelism",
+            "title": "8. Tensor Parallelism",
+            "type": "concept",
+            "content": "Tensor parallelism divides the computation of individual model layers across multiple devices. Instead of replicating every weight matrix on each GPU, the layer's matrices or operations are partitioned so each device computes only a portion of the result.\n\nFor a large linear projection, one common strategy partitions the output features across devices. Each device stores a subset of the weight matrix and produces a subset of the output features. Another strategy partitions input features, causing partial outputs that may need to be combined across devices.\n\nTensor parallelism is useful when individual layers are too large or expensive for one GPU. However, it introduces communication inside the model's forward and backward passes. Efficient implementations depend on matrix shapes, collective operations, attention layout, and the bandwidth of the GPU interconnect."
+        },
+        {
+            "id": "tensor-parallel-linear",
+            "title": "9. Column and Row Parallel Linear Layers",
+            "type": "math",
+            "content": "A linear layer computes Y = XW. In column parallelism, the output dimension of W is partitioned among devices. Each device computes a subset of output features, and the outputs can be concatenated when a complete tensor is needed.\n\nIn row parallelism, the input dimension of W is partitioned. Each device computes a partial contribution to the output, and those partial results are summed. These approaches can be combined to reduce communication at particular points in a Transformer block.\n\nTransformer attention and feed-forward layers contain large projections that are suitable for structured partitioning. A real implementation must also consider biases, tensor shapes, sequence layout, head partitioning, and whether the following operation needs a gathered tensor or can consume a distributed representation directly.",
+            "formula": "Y = XW; column partition: Y = concat(Y_1, ..., Y_D); row partition: Y = sum_d(X_d W_d)",
+            "example": "A projection from 4096 hidden features to 16384 intermediate features can partition the 16384 output features across eight devices, giving each device a local output width of 2048 when the partition is even."
+        },
+        {
+            "id": "pipeline-parallelism",
+            "title": "10. Pipeline Parallelism",
+            "type": "concept",
+            "content": "Pipeline parallelism partitions a model by layers. For example, the first group of Transformer blocks can run on GPU group one, the next group on GPU group two, and the final group on GPU group three. Activations are passed between stages during the forward pass, while gradients travel backward during backpropagation.\n\nA pipeline can process multiple micro-batches in overlapping stages. While one stage processes a later micro-batch, another stage can process an earlier one. This improves utilization compared with running a single micro-batch through all stages sequentially.\n\nPipeline parallelism can suffer from bubbles: periods when some stages are idle because work has not reached them or because dependencies prevent execution. The fraction of idle time depends on the number of stages, micro-batches, schedule, and stage balance. Unequal stage workloads can also limit throughput."
+        },
+        {
+            "id": "pipeline-bubbles",
+            "title": "11. Micro-Batches and Pipeline Efficiency",
+            "type": "math",
+            "content": "A simple pipeline with P stages has startup and drain periods during which not all stages are busy. With too few micro-batches relative to the number of stages, these idle periods can represent a large fraction of execution time.\n\nA rough idealized intuition is that pipeline utilization improves as the number of micro-batches increases relative to the number of stages. Real schedules differ: GPipe, 1F1B, and interleaved schedules have different memory and scheduling characteristics. The exact utilization formula depends on the pipeline schedule and assumptions.\n\nIncreasing the number of micro-batches may reduce bubble overhead but can affect activation memory, communication frequency, and implementation complexity. The optimal choice depends on available memory, model depth, stage latency, and the desired effective batch size.",
+            "example": "A four-stage pipeline with only one micro-batch cannot keep all four stages busy simultaneously throughout the full forward and backward lifecycle. Several micro-batches allow more overlap, although startup and drain overhead do not disappear completely."
+        },
+        {
+            "id": "fully-sharded-data-parallel",
+            "title": "12. Fully Sharded Data Parallel",
+            "type": "concept",
+            "content": "Fully Sharded Data Parallel, or FSDP, distributes model states across data-parallel workers. Depending on the configuration, parameters, gradients, and optimizer states are sharded rather than fully replicated on every GPU. The implementation gathers parameter shards when needed for computation and may release temporary gathered parameters afterward.\n\nSharding can significantly reduce persistent per-device memory, allowing larger models or batches to fit. The trade-off is communication overhead and additional scheduling complexity. Parameters may need to be all-gathered before a layer executes, while gradients can be reduce-scattered during backpropagation.\n\nFSDP is not identical to ordinary DDP. DDP primarily synchronizes gradients while maintaining replicated model parameters. FSDP manages sharded states and parameter materialization. The best configuration depends on model size, wrapping policy, mixed precision, activation checkpointing, and interconnect bandwidth."
+        },
+        {
+            "id": "hybrid-parallelism",
+            "title": "13. Hybrid Parallelism",
+            "type": "concept",
+            "content": "Large-scale training often combines multiple parallelism strategies. Data parallelism divides training examples across replica groups. Tensor parallelism splits large layer computations. Pipeline parallelism distributes different model layers across stages. Sharding techniques reduce replicated training-state memory.\n\nA hybrid arrangement might use tensor parallelism among GPUs connected by a high-bandwidth local interconnect, pipeline parallelism across groups of GPUs, and data parallelism across model replicas. This arrangement aims to balance memory capacity, compute throughput, and communication cost.\n\nThe best topology is hardware-dependent. Splitting a frequently communicating tensor-parallel group across slow network links may reduce efficiency. Pipeline stages should also have similar compute and memory requirements. Hybrid parallelism requires careful rank mapping, process-group construction, checkpointing, and global batch accounting."
+        },
+        {
+            "id": "distributed-performance",
+            "title": "14. Communication and Performance Bottlenecks",
+            "type": "concept",
+            "content": "Distributed performance depends on computation, communication, synchronization, memory traffic, and input-pipeline efficiency. If GPUs frequently wait for communication or for slower workers, adding devices may yield little improvement. Network bandwidth and latency can become particularly important for tensor and pipeline parallelism.\n\nMeasure tokens processed per second, step time, GPU utilization, memory use, communication time, and scaling efficiency. Compare single-node and multi-node performance where possible. A useful baseline is the speedup relative to a smaller configuration while holding the global workload and training semantics as consistent as practical.\n\nCommon improvements include increasing useful computation per communication event, selecting an appropriate parallel group, overlapping communication with computation, balancing pipeline stages, and reducing input stalls. More GPUs are valuable only when the system can use them efficiently."
+        },
+        {
+            "id": "distributed-reliability",
+            "title": "15. Reliability and Correctness",
+            "type": "concept",
+            "content": "Distributed training introduces failure modes that are less visible in a single-device run. Workers can fail independently, collective operations can hang when a process exits unexpectedly, and inconsistent checkpoint states can make recovery difficult. Data samplers and random seeds must be configured intentionally across workers.\n\nCorrectness requires each worker to use the intended data, perform compatible optimizer updates, and participate in the correct collective operations. The global loss should reflect the intended weighting of examples or tokens. Rank-specific code should avoid accidentally saving conflicting checkpoints or duplicating logging and evaluation work.\n\nStart with a small model and a few devices. Compare distributed gradients and parameter updates against a single-device reference on a tiny controlled batch. Once correctness is established, scale the model and workload gradually."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "distributed-training-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the main difference between data parallelism and tensor parallelism?",
+            "correctAnswer": "Data parallelism replicates the model across workers and splits the data; tensor parallelism splits parts of individual layer computations across workers.",
+            "solution": "In data parallelism, workers process different batches and synchronize gradients. In tensor parallelism, multiple devices cooperate to compute the same model layer by partitioning its tensors or operations."
+        },
+        {
+            "id": "distributed-training-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Six workers each process 12 sequences per micro-batch with three accumulation steps. What is the nominal global batch size?",
+            "correctAnswer": "216 sequences",
+            "solution": "12 * 3 * 6 = 216 sequences, assuming equal micro-batch sizes and one synchronized update after each accumulation group."
+        },
+        {
+            "id": "distributed-training-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Which communication collective combines corresponding tensors across workers and makes the reduced result available to all workers?",
+            "correctAnswer": "All-reduce",
+            "solution": "All-reduce combines corresponding tensor elements using an operation such as sum and distributes the reduced result to all participants."
+        },
+        {
+            "id": "distributed-training-exercise-4",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "A distributed run uses twice as many GPUs but throughput improves by only 10%. Name four possible causes.",
+            "correctAnswer": "Communication overhead, input bottlenecks, synchronization delays, and poor load balance.",
+            "solution": "Inspect collective time, data loading, per-rank step time, GPU utilization, network bandwidth, and pipeline stage balance. Scaling can also be limited by serial work or an inefficient parallelism configuration."
+        },
+        {
+            "id": "distributed-training-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A Transformer is too large to fit on one GPU, but the training cluster has many GPUs. Which parallelism strategies could help and why?",
+            "correctAnswer": "Tensor parallelism, pipeline parallelism, and sharded data parallelism can be combined to divide layer computation, distribute layers, and reduce replicated model-state memory.",
+            "solution": "Tensor parallelism partitions large layer operations. Pipeline parallelism places different layers on different stages. FSDP or related sharding techniques distribute training states. A practical design chooses group sizes and rank placement based on memory, communication bandwidth, and workload balance."
+        }
+    ],
+    "summary": "Distributed training allows large models to use multiple GPUs and machines. Data parallelism splits the batch and synchronizes gradients, tensor parallelism partitions layer computations, and pipeline parallelism distributes layers across stages. FSDP shards training states to reduce memory use. Hybrid strategies combine these techniques, but communication overhead, pipeline bubbles, load balance, and correct loss normalization determine whether scaling is effective.",
+    "relatedTopics": [
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-learning-rate-schedules",
+        "module-09-large-language-models-checkpointing",
+        "module-09-large-language-models-scaling-laws"
+    ]
+}

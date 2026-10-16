@@ -1,1 +1,177 @@
-{}
+{
+    "id": "module-11-inference-batching",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 8,
+    "title": "Continuous & Dynamic Batching",
+    "slug": "batching",
+    "href": "/curriculum/11-inference/batching",
+    "filePath": "content/curriculum/11-inference/08-batching.json",
+    "description": "Understand how batching combines inference requests to improve accelerator utilization, and learn how continuous batching manages variable-length generation requests.",
+    "difficulty": "advanced",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-kv-cache",
+        "module-11-inference-quantization"
+    ],
+    "learningObjectives": [
+        "Explain why batching improves inference throughput.",
+        "Distinguish static, dynamic, and continuous batching.",
+        "Understand padding and variable-length sequences.",
+        "Explain the interaction between batching and KV-cache memory.",
+        "Implement a simplified dynamic batching scheduler.",
+        "Evaluate throughput, latency, queueing delay, and utilization trade-offs."
+    ],
+    "sections": [
+        {
+            "id": "batching-introduction",
+            "title": "1. What Is Batching?",
+            "type": "concept",
+            "content": "Batching processes multiple requests together in a single model execution or coordinated execution step. GPUs and other accelerators often achieve better utilization when they perform larger matrix operations rather than many tiny operations. Instead of processing each request completely independently, an inference server can combine compatible requests into batches. Batching can increase total throughput, but it may also introduce waiting time while requests are collected."
+        },
+        {
+            "id": "batching-throughput",
+            "title": "2. Throughput Versus Latency",
+            "type": "concept",
+            "content": "Throughput measures how much work a system completes per unit time, such as generated tokens per second across all users. Latency measures how long a particular request takes. Larger batches can improve aggregate throughput while increasing the delay experienced by individual requests. A production inference server must balance these goals according to the application: interactive chat may prioritize low latency, while offline document processing may prioritize maximum throughput."
+        },
+        {
+            "id": "batching-throughput-formula",
+            "title": "3. Basic Throughput Calculation",
+            "type": "math",
+            "content": "A simple throughput estimate divides completed work by elapsed time. This is an aggregate measure and does not reveal latency distribution or fairness between requests.",
+            "formula": "Throughput = completed work / elapsed time",
+            "example": "If a service generates 12,000 tokens in 30 seconds across all requests, its aggregate generation throughput is 12,000 / 30 = 400 tokens per second. Individual users may receive tokens at different rates."
+        },
+        {
+            "id": "batching-static",
+            "title": "4. Static Batching",
+            "type": "concept",
+            "content": "Static batching groups a fixed set of inputs into a batch before running inference. It is simple and can be efficient when request sizes and arrival times are predictable. However, in an online service, requests arrive at different times and have different lengths. A static batch may have to wait for every sequence to finish, or it may waste computation on padded positions. This can reduce utilization for variable-length generation."
+        },
+        {
+            "id": "batching-dynamic",
+            "title": "5. Dynamic Batching",
+            "type": "concept",
+            "content": "Dynamic batching collects requests that arrive within a configurable time window or until a batch-size threshold is reached. It adapts batch composition to live traffic rather than requiring a fixed batch in advance. The scheduler must balance the benefits of larger batches against the waiting time introduced while gathering requests. Timeouts, maximum batch sizes, and queue policies help control this trade-off."
+        },
+        {
+            "id": "batching-continuous",
+            "title": "6. Continuous Batching",
+            "type": "concept",
+            "content": "Continuous batching, also called iteration-level batching in some systems, allows requests to enter or leave the active batch between generation iterations. When one sequence finishes, the scheduler can admit another request rather than waiting for every sequence in the original batch to finish. This is particularly useful for autoregressive generation because output lengths vary. Continuous batching requires careful management of sequence state, KV caches, scheduling, and memory."
+        },
+        {
+            "id": "batching-padding",
+            "title": "7. Padding and Variable-Length Inputs",
+            "type": "concept",
+            "content": "Batching sequences of different lengths often requires padding shorter inputs or using kernels that support variable-length sequences. Padding can waste computation because padded positions do not contain meaningful tokens. Attention masks prevent padded positions from being treated as ordinary content, but they do not necessarily eliminate all associated computational overhead. Length-aware batching can group similar-sized prompts to reduce wasted work during prefill."
+        },
+        {
+            "id": "batching-prefill-decode",
+            "title": "8. Prefill and Decode Batching",
+            "type": "concept",
+            "content": "Prefill processes the prompt and can often benefit from larger parallel matrix operations. Decode generates new tokens incrementally and must account for the active sequence's cached context. Requests may be at different stages: some are processing prompts while others are generating output tokens. Advanced schedulers coordinate these workloads while managing memory and latency. The best scheduling policy depends on model architecture, hardware, and traffic patterns."
+        },
+        {
+            "id": "batching-kv-cache",
+            "title": "9. Batching and KV Cache Memory",
+            "type": "concept",
+            "content": "Each active sequence usually requires its own attention cache, so increasing the number of concurrent requests increases cache memory demand. Long sequences consume more cache capacity than short ones. A scheduler must consider both compute availability and memory capacity when admitting requests. If it admits too many sequences, the system may run out of memory or suffer severe performance degradation. Cache-aware scheduling helps balance concurrency against memory pressure."
+        },
+        {
+            "id": "batching-scheduler",
+            "title": "10. Simplified Dynamic Batch Scheduler",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import deque\nfrom time import monotonic\n\nclass DynamicBatcher:\n    def __init__(self, max_batch_size=8, max_wait_seconds=0.01):\n        self.queue = deque()\n        self.max_batch_size = max_batch_size\n        self.max_wait_seconds = max_wait_seconds\n\n    def submit(self, request):\n        self.queue.append((monotonic(), request))\n\n    def get_batch(self):\n        if not self.queue:\n            return []\n        oldest_time = self.queue[0][0]\n        if len(self.queue) < self.max_batch_size and monotonic() - oldest_time < self.max_wait_seconds:\n            return []\n        return [self.queue.popleft()[1] for _ in range(min(len(self.queue), self.max_batch_size))]\n\nbatcher = DynamicBatcher(max_batch_size=4, max_wait_seconds=0.01)\nbatcher.submit({\"id\": \"request-1\", \"prompt\": \"Explain attention\"})",
+            "explanation": "This simplified example queues requests and releases a batch when the maximum size is reached or the oldest request has waited long enough. A production scheduler needs thread-safe queue operations, notification mechanisms, cancellation, deadlines, admission control, error handling, and coordination with the model's execution and KV-cache manager."
+        },
+        {
+            "id": "batching-queueing",
+            "title": "11. Queueing Delay and Timeouts",
+            "type": "concept",
+            "content": "Requests waiting for a batch experience queueing delay before model execution begins. Increasing the batch-collection window may improve throughput but can worsen time to first token. Under heavy traffic, queues may grow faster than the system can serve them. Servers need maximum queue lengths, deadlines, cancellation policies, and overload behavior so that requests do not wait indefinitely."
+        },
+        {
+            "id": "batching-fairness",
+            "title": "12. Scheduling and Fairness",
+            "type": "concept",
+            "content": "A scheduler must decide which requests receive compute resources next. First-in-first-out scheduling is simple, but a long-running request may affect many short requests. Alternative policies may consider deadlines, priority, request age, token budgets, or service-level objectives. A scheduler should avoid starvation and account for the different resource demands of short and long contexts. Fairness and performance need to be evaluated together."
+        },
+        {
+            "id": "batching-chunked-prefill",
+            "title": "13. Chunked Prefill",
+            "type": "concept",
+            "content": "Chunked prefill divides a long prompt into smaller processing segments rather than allowing one large prefill operation to monopolize the accelerator. This can help interleave prompt processing with ongoing decoding work. It may improve scheduling flexibility and reduce latency spikes for active generation requests. The benefit depends on the inference engine, attention implementation, and chosen chunk size."
+        },
+        {
+            "id": "batching-metrics",
+            "title": "14. Metrics for Batching Systems",
+            "type": "concept",
+            "content": "Measure aggregate token throughput, requests per second, time to first token, inter-token latency, end-to-end latency, queueing delay, accelerator utilization, and peak memory. Latency percentiles such as p50, p95, and p99 reveal whether a small fraction of users experience very slow responses. Track metrics by prompt length, output length, and request priority to identify workloads that need different scheduling treatment."
+        },
+        {
+            "id": "batching-load-testing",
+            "title": "15. Load Testing and Capacity Planning",
+            "type": "concept",
+            "content": "Load tests should simulate realistic request arrival patterns, prompt lengths, output lengths, and concurrency. Measure performance under both steady traffic and bursts. A scheduler that performs well under a small benchmark may behave differently when cache memory becomes constrained or request lengths vary widely. Use the results to set admission limits, batch sizes, queue deadlines, and capacity targets."
+        },
+        {
+            "id": "batching-limitations",
+            "title": "16. Common Pitfalls",
+            "type": "concept",
+            "content": "A large maximum batch size does not guarantee high performance. It may increase waiting time, memory pressure, or tail latency. Excessive padding wastes work, while poorly designed queue policies can cause starvation. Continuous batching improves flexibility but adds complexity in sequence-state and cache management. Always evaluate a scheduler on representative workloads and actual deployment hardware."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "batching-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why can batching improve GPU inference throughput?",
+            "correctAnswer": "It combines work into larger operations that can use accelerator resources more efficiently.",
+            "solution": "Many accelerators are more efficient when processing larger matrix operations than when processing many small requests independently."
+        },
+        {
+            "id": "batching-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A server generates 9,000 tokens in 15 seconds. What is its aggregate throughput?",
+            "correctAnswer": "600 tokens per second.",
+            "solution": "Throughput = 9,000 / 15 = 600 tokens per second."
+        },
+        {
+            "id": "batching-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the main advantage of continuous batching over a fixed batch for variable-length generation?",
+            "correctAnswer": "New requests can enter as completed requests leave, instead of waiting for every sequence in the original batch to finish.",
+            "solution": "Continuous batching adjusts the active batch across generation iterations, which can improve utilization when outputs have different lengths."
+        },
+        {
+            "id": "batching-ex-4",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "Why might increasing the batch-collection timeout improve throughput but worsen user experience?",
+            "correctAnswer": "It may allow more requests to be combined, but each request waits longer before inference begins.",
+            "solution": "Larger batches can improve accelerator efficiency. However, the additional queueing delay increases time to first token, which is important for interactive applications."
+        },
+        {
+            "id": "batching-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A server has high GPU utilization but its p99 latency is poor. Name three metrics or controls to investigate.",
+            "correctAnswer": "Inspect queueing delay, KV-cache memory pressure, and request-length distribution; consider tighter deadlines or admission control.",
+            "solution": "High utilization does not guarantee acceptable latency. Long requests, large queues, and memory pressure can create tail-latency spikes. Measure latency percentiles and workload characteristics before adjusting scheduling policies."
+        }
+    ],
+    "summary": "Batching combines inference requests to improve accelerator utilization and aggregate throughput. Dynamic batching forms batches from arriving requests, while continuous batching can add and remove sequences between generation iterations. Effective scheduling must balance throughput, queueing delay, latency, fairness, and KV-cache memory. Real deployments should be load-tested using representative request lengths and concurrency patterns.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-kv-cache",
+        "module-11-inference-quantization",
+        "module-11-inference-speculative-decoding"
+    ]
+}

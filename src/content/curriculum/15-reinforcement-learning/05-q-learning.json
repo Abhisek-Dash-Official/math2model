@@ -1,1 +1,372 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-q-learning",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 5,
+    "title": "Q-Learning & Deep Q-Networks (DQN)",
+    "slug": "q-learning",
+    "href": "/curriculum/15-reinforcement-learning/q-learning",
+    "filePath": "content/curriculum/15-reinforcement-learning/05-q-learning.json",
+    "description": "Master tabular Q-learning, temporal-difference targets, epsilon-greedy exploration, off-policy learning, experience replay, target networks, and the Deep Q-Network algorithm.",
+    "difficulty": "intermediate",
+    "estimatedHours": 9,
+    "prerequisites": [
+        "markov-decision-processes",
+        "value-functions"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of Q-learning.",
+        "Understand the Q-table and action-value estimates.",
+        "Derive the Q-learning update rule.",
+        "Calculate Q-learning targets and updates manually.",
+        "Explain why Q-learning is off-policy.",
+        "Implement epsilon-greedy exploration.",
+        "Train a tabular Q-learning agent in a small environment.",
+        "Understand the difference between SARSA and Q-learning.",
+        "Explain the motivation for Deep Q-Networks.",
+        "Understand experience replay and target networks.",
+        "Describe common DQN improvements and failure modes.",
+        "Evaluate RL agents using multiple episodes and random seeds."
+    ],
+    "sections": [
+        {
+            "id": "q-learning-introduction",
+            "title": "What Is Q-Learning?",
+            "type": "concept",
+            "content": "Q-learning is a model-free, off-policy reinforcement learning algorithm that learns the optimal action-value function through sampled interactions. It does not require the agent to know the environment's transition probabilities in advance. Instead, the agent observes a state, selects an action, receives a reward, and observes the next state. It then updates its estimate of the action's long-term value. By repeatedly improving these estimates and exploring the environment, the agent can learn which actions produce high expected cumulative reward. Q-learning is one of the foundational algorithms in reinforcement learning and provides the conceptual basis for Deep Q-Networks."
+        },
+        {
+            "id": "q-function",
+            "title": "The Q-Function",
+            "type": "concept",
+            "content": "The action-value function Q(s,a) estimates the expected return associated with taking action a in state s and then following a specified policy. Q-learning aims to estimate the optimal action-value function Q*. Once reliable estimates are available, a greedy policy selects the action with the largest Q value in each state. A Q-table stores one estimate for every state-action pair, making it useful for small discrete problems. When the state space is large or continuous, a neural network can approximate Q values instead of storing every entry explicitly."
+        },
+        {
+            "id": "q-learning-update",
+            "title": "The Q-Learning Update Rule",
+            "type": "math",
+            "content": "Q-learning updates the current state-action estimate toward a target consisting of the immediate reward plus the discounted maximum estimated Q value of the next state. The learning rate alpha controls how much of the difference between the target and current estimate is incorporated. If the transition is terminal, the future-value term is zero. This update uses the maximum next-state action value rather than the value of the next action actually selected by an exploratory behavior policy, which is central to Q-learning's off-policy nature.",
+            "formula": "Q(s,a)\\leftarrow Q(s,a)+\\alpha[r+\\gamma\\max_{a'}Q(s',a')-Q(s,a)]",
+            "example": "Suppose the current Q value is 2, the reward is 1, gamma is 0.9, the maximum next-state Q value is 4, and alpha is 0.5. The target is 1 + 0.9(4) = 4.6. The updated Q value is 2 + 0.5(4.6 - 2) = 3.3."
+        },
+        {
+            "id": "td-error-q",
+            "title": "The Q-Learning Temporal-Difference Error",
+            "type": "math",
+            "content": "The Q-learning TD error is the difference between the one-step target and the current Q estimate. It measures how surprising the observed transition is relative to the agent's prediction. A positive error increases the estimate, while a negative error decreases it. The learning rate determines the magnitude of the update. The error is computed using the maximum next-state Q value, except that terminal transitions have no bootstrap term.",
+            "formula": "\\delta=r+\\gamma\\max_{a'}Q(s',a')-Q(s,a)",
+            "example": "If reward = 2, gamma = 0.8, the maximum next-state Q value is 5, and the current Q value is 4, then delta = 2 + 0.8(5) - 4 = 2."
+        },
+        {
+            "id": "q-table",
+            "title": "Representing Q Values with a Table",
+            "type": "concept",
+            "content": "A Q-table contains one row for each state and one column for each discrete action. Each cell estimates the long-term value of selecting that action in that state. Initial values are often set to zero, although other initialization strategies are possible. After each transition, the relevant cell is updated. Q-tables are easy to inspect and are excellent for learning the basic algorithm, but their storage requirement grows with the number of states and actions. They are unsuitable for most high-dimensional visual observations without additional state abstraction."
+        },
+        {
+            "id": "q-table-code",
+            "title": "Creating a Q-Table in Python",
+            "type": "code",
+            "language": "python",
+            "content": "A Q-table can be represented by a two-dimensional NumPy array when states and actions are indexed by integers. Rows correspond to states, and columns correspond to actions.",
+            "explanation": "This representation assumes a finite set of discrete states and actions. For large state spaces, use a function approximator or a more structured representation.",
+            "code": "import numpy as np\n\nnum_states = 5\nnum_actions = 2\nq_table = np.zeros((num_states, num_actions), dtype=np.float32)\n\nprint('Q-table shape:', q_table.shape)\nprint(q_table)"
+        },
+        {
+            "id": "epsilon-greedy",
+            "title": "Epsilon-Greedy Exploration",
+            "type": "concept",
+            "content": "Epsilon-greedy exploration chooses a random action with probability epsilon and otherwise chooses an action with the highest estimated Q value. This simple strategy balances exploration and exploitation. A high epsilon encourages broad exploration, while a low epsilon makes behavior more greedy. Many training schedules reduce epsilon over time so that the agent explores heavily early and increasingly exploits learned information later. Random exploration is not always ideal, especially in large or dangerous environments, but epsilon-greedy behavior is a useful baseline for discrete action spaces."
+        },
+        {
+            "id": "epsilon-greedy-math",
+            "title": "Epsilon-Greedy Policy",
+            "type": "math",
+            "content": "Under epsilon-greedy exploration, the agent chooses a random action with probability epsilon and chooses a maximizing action otherwise. Implementations vary in how they distribute the exploration probability and handle ties between maximizing actions. If exploration is uniform over all actions, the probability of selecting an action includes both the random-exploration contribution and any greedy contribution.",
+            "formula": "\\pi(a\\mid s)=\\begin{cases}\\text{exploratory action distribution},&\\text{with probability }\\epsilon\\\\\\text{greedy action},&\\text{with probability }1-\\epsilon\\end{cases}",
+            "example": "If epsilon is 0.2, the agent explores on approximately 20% of action selections and exploits its current estimates on approximately 80%, subject to the implementation's tie-breaking and random-action rules."
+        },
+        {
+            "id": "epsilon-code",
+            "title": "Implementing Epsilon-Greedy Selection",
+            "type": "code",
+            "language": "python",
+            "content": "The following function chooses a random action during exploration and otherwise selects an action with the largest Q value. Random tie-breaking prevents the agent from always favoring the first action when several values are equal.",
+            "explanation": "The Q values are assumed to be a one-dimensional array containing one estimate per available action.",
+            "code": "import numpy as np\n\ndef epsilon_greedy(q_values, epsilon, rng=None):\n    if not 0.0 <= epsilon <= 1.0:\n        raise ValueError('epsilon must be between 0 and 1')\n    rng = rng or np.random.default_rng()\n    if rng.random() < epsilon:\n        return int(rng.integers(len(q_values)))\n    best_actions = np.flatnonzero(q_values == np.max(q_values))\n    return int(rng.choice(best_actions))\n\nvalues = np.array([1.0, 2.5, 2.5, 0.0])\nprint(epsilon_greedy(values, epsilon=0.1))"
+        },
+        {
+            "id": "learning-rate",
+            "title": "Learning Rate and Discount Factor",
+            "type": "concept",
+            "content": "The learning rate alpha controls how quickly a Q estimate changes toward each new target. A very small learning rate can make learning slow, while a large rate can produce noisy or unstable estimates. The discount factor gamma controls how much future rewards contribute to the target. Alpha and gamma have different roles: alpha determines update size, while gamma determines the relative importance of future return. They should not be confused with epsilon, which controls the exploration behavior in an epsilon-greedy policy."
+        },
+        {
+            "id": "terminal-updates",
+            "title": "Handling Terminal Transitions",
+            "type": "concept",
+            "content": "When a transition ends the task, the Q-learning target should not include a value estimate for a nonexistent future episode. The terminal target is the observed reward. If the implementation mistakenly bootstraps from the initial state of the next episode, it may propagate unrelated value into the terminal update. Time-limit truncations require additional care: whether future value should be included depends on whether the cutoff represents true termination or only an artificial stopping rule. Preserve termination information in the transition record."
+        },
+        {
+            "id": "q-learning-code-update",
+            "title": "Implementing a Q-Learning Update",
+            "type": "code",
+            "language": "python",
+            "content": "The update function applies the tabular Q-learning rule to a single transition. It handles terminal transitions by using zero future value.",
+            "explanation": "The function assumes integer state and action indices and a two-dimensional Q-table. It updates only the entry associated with the observed state-action pair.",
+            "code": "def q_learning_update(q_table, state, action, reward, next_state, alpha, gamma, terminated):\n    current = q_table[state, action]\n    future = 0.0 if terminated else np.max(q_table[next_state])\n    target = reward + gamma * future\n    q_table[state, action] = current + alpha * (target - current)\n    return target, q_table[state, action]\n\nq = np.zeros((3, 2), dtype=np.float32)\nq[1] = [2.0, 4.0]\ntarget, updated = q_learning_update(q, 0, 1, 1.0, 1, 0.5, 0.9, False)\nprint('Target:', target, 'Updated value:', updated)"
+        },
+        {
+            "id": "q-learning-lineworld",
+            "title": "Training a Tabular Agent in LineWorld",
+            "type": "code",
+            "language": "python",
+            "content": "This example trains a tabular Q-learning agent in a one-dimensional environment. The agent starts at the first position and tries to reach the last position. Moving right advances toward the goal, while moving left moves backward. Reaching the goal produces a positive reward, and ordinary movement incurs a small cost.",
+            "explanation": "This is a small teaching environment rather than a benchmark. The reward structure and transition dynamics are deliberately simple so that the learning loop can be inspected directly.",
+            "code": "import numpy as np\n\nclass LineWorld:\n    def __init__(self, length=6):\n        if length < 2:\n            raise ValueError('length must be at least 2')\n        self.length = length\n        self.state = 0\n\n    def reset(self):\n        self.state = 0\n        return self.state\n\n    def step(self, action):\n        if action not in (0, 1):\n            raise ValueError('action must be 0 or 1')\n        self.state = max(0, min(self.length - 1, self.state + (1 if action == 1 else -1)))\n        terminated = self.state == self.length - 1\n        reward = 1.0 if terminated else -0.01\n        return self.state, reward, terminated\n\ndef train_q_learning(episodes=1000, alpha=0.1, gamma=0.95, epsilon=0.2, seed=7):\n    rng = np.random.default_rng(seed)\n    env = LineWorld()\n    q = np.zeros((env.length, 2), dtype=np.float32)\n    returns = []\n\n    for _ in range(episodes):\n        state = env.reset()\n        total_reward = 0.0\n        for _ in range(100):\n            action = epsilon_greedy(q[state], epsilon, rng)\n            next_state, reward, terminated = env.step(action)\n            q_learning_update(q, state, action, reward, next_state, alpha, gamma, terminated)\n            state = next_state\n            total_reward += reward\n            if terminated:\n                break\n        returns.append(total_reward)\n\n    return q, returns\n\nq_table, episode_returns = train_q_learning()\nprint('Learned Q-table:')\nprint(q_table)\nprint('Recent mean return:', np.mean(episode_returns[-100:]))"
+        },
+        {
+            "id": "off-policy",
+            "title": "Why Q-Learning Is Off-Policy",
+            "type": "concept",
+            "content": "Q-learning is off-policy because it can learn the value of a greedy target policy while using experience generated by a more exploratory behavior policy. The behavior policy may select random actions through epsilon-greedy exploration, but the update uses the maximum estimated Q value at the next state. It therefore does not directly evaluate the action that the exploratory policy actually selects next. This separation enables exploration while learning toward a greedy target, although stability and convergence depend on the problem and learning setup."
+        },
+        {
+            "id": "sarsa-comparison",
+            "title": "Q-Learning Versus SARSA",
+            "type": "concept",
+            "content": "SARSA is an on-policy temporal-difference control algorithm. Its update uses the next action actually selected by the behavior policy, whereas Q-learning uses the maximum estimated Q value at the next state. This difference can produce different behavior during exploration. In a risky environment, SARSA may learn values that reflect the exploratory policy's behavior, while Q-learning estimates the greedy target policy. Both algorithms can be useful, and their performance depends on the task, exploration strategy, and assumptions."
+        },
+        {
+            "id": "sarsa-q-math",
+            "title": "Comparing the Update Targets",
+            "type": "math",
+            "content": "Q-learning uses the maximum next-state action value in its target. SARSA uses the Q value of the next action actually chosen by the behavior policy. The two targets coincide only under particular circumstances, such as when the selected next action is greedy and other relevant conditions align.",
+            "formula": "\\text{Q-learning target}=r+\\gamma\\max_{a'}Q(s',a')\\qquad\\text{SARSA target}=r+\\gamma Q(s',a')",
+            "example": "Suppose the next-state Q values are [2, 5], but the exploratory policy selects the action with value 2. Q-learning uses 5 in its target, while SARSA uses 2 for that sampled transition."
+        },
+        {
+            "id": "q-learning-convergence",
+            "title": "Convergence of Tabular Q-Learning",
+            "type": "concept",
+            "content": "Under standard conditions for a finite discounted MDP, tabular Q-learning converges to the optimal action-value function with probability one when all state-action pairs are visited sufficiently often, rewards are appropriately bounded, and learning rates satisfy suitable stochastic-approximation conditions. These assumptions are important. A fixed learning rate, insufficient exploration, a changing environment, or an incorrect transition implementation can prevent convergence to the desired solution. The theorem for tabular Q-learning does not automatically extend to arbitrary nonlinear function approximation."
+        },
+        {
+            "id": "exploration-schedule",
+            "title": "Exploration Schedules",
+            "type": "concept",
+            "content": "Exploration schedules determine how epsilon changes during training. A constant epsilon maintains ongoing exploration. A linear schedule gradually decreases epsilon toward a minimum value, while an exponential schedule reduces it multiplicatively. Decaying exploration too quickly may prevent the agent from discovering important actions. Keeping exploration too high can reduce evaluation performance and slow exploitation. Some tasks benefit from continued exploration because the environment changes, while stationary benchmark tasks often use lower exploration during evaluation."
+        },
+        {
+            "id": "exploration-schedule-code",
+            "title": "Implementing an Epsilon Schedule",
+            "type": "code",
+            "language": "python",
+            "content": "A linear schedule decreases epsilon from a starting value to a minimum over a specified number of training steps.",
+            "explanation": "The schedule should be tuned to the task. The example uses a minimum exploration rate rather than forcing epsilon to zero.",
+            "code": "def linear_epsilon(step, start=1.0, end=0.05, decay_steps=10000):\n    if decay_steps <= 0:\n        return end\n    fraction = min(max(step / decay_steps, 0.0), 1.0)\n    return start + fraction * (end - start)\n\nfor step in [0, 2500, 5000, 10000, 15000]:\n    print(step, linear_epsilon(step))"
+        },
+        {
+            "id": "dqn-introduction",
+            "title": "Why Deep Q-Networks?",
+            "type": "concept",
+            "content": "Tabular Q-learning becomes impractical when states are high-dimensional or continuous. A Deep Q-Network (DQN) uses a neural network to approximate the action-value function. The network receives a state representation and outputs a Q estimate for each discrete action. This makes value-based learning possible for inputs such as images, large feature vectors, and other structured observations. However, combining neural networks with bootstrapped RL targets can create instability because predictions influence the targets used to train the same model. DQN introduces mechanisms that help reduce this instability."
+        },
+        {
+            "id": "dqn-architecture",
+            "title": "DQN Architecture",
+            "type": "concept",
+            "content": "A basic DQN consists of a state encoder and a neural network that outputs one Q value per discrete action. For vector observations, the encoder may be a multilayer perceptron. For images, convolutional layers can extract spatial features before a final layer produces action values. The network is not usually required to output a probability distribution over actions. Instead, it estimates expected action values, and an epsilon-greedy policy uses these estimates to choose actions. DQN is most directly suited to discrete action spaces; continuous control generally requires other approaches or specialized variants."
+        },
+        {
+            "id": "dqn-loss",
+            "title": "The DQN Training Target",
+            "type": "math",
+            "content": "DQN trains the predicted Q value for the action actually taken toward a target computed from the reward and the maximum target-network value at the next state. For nonterminal transitions, the future value is discounted. For terminal transitions, the future-value term is removed. The network parameters are optimized to reduce the difference between the predicted Q value and this target, commonly using a squared-error or smooth robust loss.",
+            "formula": "y=r+\\gamma(1-d)\\max_{a'}Q_{\\text{target}}(s',a')",
+            "example": "If reward = 1, gamma = 0.9, the maximum target-network Q value is 6, and d = 0 for a nonterminal transition, then y = 1 + 0.9(6) = 6.4."
+        },
+        {
+            "id": "experience-replay",
+            "title": "Experience Replay",
+            "type": "concept",
+            "content": "Experience replay stores transitions collected during interaction and samples mini-batches for training. Consecutive transitions are often correlated because they come from a continuous trajectory. Random sampling from a replay buffer can reduce short-range correlation and improve data reuse. It also allows the learner to update from older experiences rather than using each transition only once. Replay buffers introduce design choices such as capacity, warm-up size, sampling strategy, and treatment of changing data distributions. Off-policy algorithms such as DQN are particularly compatible with replay."
+        },
+        {
+            "id": "replay-buffer-code",
+            "title": "A Simple Replay Buffer",
+            "type": "code",
+            "language": "python",
+            "content": "A replay buffer stores transitions and samples a random mini-batch. This simple implementation is suitable for small examples; production systems may use preallocated arrays or optimized storage.",
+            "explanation": "The buffer uses a bounded deque so that older transitions are removed when capacity is reached. A transition records whether the task truly terminated.",
+            "code": "from collections import deque\nimport random\n\nclass ReplayBuffer:\n    def __init__(self, capacity):\n        self.data = deque(maxlen=capacity)\n\n    def add(self, state, action, reward, next_state, terminated):\n        self.data.append((state, action, reward, next_state, terminated))\n\n    def sample(self, batch_size):\n        if batch_size > len(self.data):\n            raise ValueError('Not enough transitions to sample')\n        return random.sample(self.data, batch_size)\n\n    def __len__(self):\n        return len(self.data)\n\nbuffer = ReplayBuffer(1000)\nbuffer.add(0, 1, 1.0, 1, False)\nprint('Stored transitions:', len(buffer))"
+        },
+        {
+            "id": "target-network",
+            "title": "Target Networks",
+            "type": "concept",
+            "content": "A target network is a delayed copy of the Q network used to calculate learning targets. Without a separate target network, each update can change both the prediction and the target at the same time, potentially creating a moving-target problem. DQN typically updates the online network every training step and synchronizes the target network periodically, or uses a soft update. The target network does not eliminate every source of instability, but it can make targets change more slowly and improve training behavior."
+        },
+        {
+            "id": "target-network-update",
+            "title": "Hard and Soft Target Updates",
+            "type": "math",
+            "content": "A hard target update copies all online-network parameters into the target network at specified intervals. A soft update moves the target parameters a small fraction toward the online parameters after each update. Hard updates create periods of fixed targets followed by a synchronization, while soft updates change the target more gradually.",
+            "formula": "\\theta_{target}\\leftarrow\\theta_{online}\\quad\\text{(hard update)};\\qquad\\theta_{target}\\leftarrow\\tau\\theta_{online}+(1-\\tau)\\theta_{target}\\quad\\text{(soft update)}",
+            "example": "If tau = 0.1, an online parameter is 4, and the current target parameter is 2, the soft-updated parameter becomes 0.1(4) + 0.9(2) = 2.2."
+        },
+        {
+            "id": "dqn-training-stability",
+            "title": "Why DQN Can Be Unstable",
+            "type": "concept",
+            "content": "DQN combines function approximation, bootstrapping, and off-policy data. This combination is sometimes called the deadly triad because it can lead to instability or divergence in some settings. Function approximation generalizes across states, bootstrapping uses estimates as targets, and off-policy learning trains from data generated by another behavior policy. Correlated samples, large learning rates, inaccurate targets, and poorly scaled rewards can worsen instability. Experience replay and target networks help, but they do not guarantee stable learning for every architecture or environment."
+        },
+        {
+            "id": "double-dqn",
+            "title": "Double DQN",
+            "type": "concept",
+            "content": "Standard Q-learning and DQN use a maximum over estimated action values in the target. Because estimates contain noise, selecting the maximum can systematically overestimate values. Double DQN reduces this effect by using the online network to select the next action and the target network to evaluate that action. The separation of selection and evaluation can improve value estimates. Double DQN is a common extension of DQN and illustrates how the structure of a target can influence estimation bias."
+        },
+        {
+            "id": "double-dqn-equation",
+            "title": "Double DQN Target",
+            "type": "math",
+            "content": "Double DQN chooses the next action using the online network and evaluates that selected action using the target network. This differs from taking the maximum target-network value directly.",
+            "formula": "y=r+\\gamma(1-d)Q_{target}(s',\\arg\\max_{a'}Q_{online}(s',a'))",
+            "example": "The online network selects action 2 because it predicts the largest next-state value. The target network then supplies the value for action 2, even if another action has a slightly larger noisy target-network estimate."
+        },
+        {
+            "id": "dueling-dqn",
+            "title": "Dueling Network Architecture",
+            "type": "concept",
+            "content": "A dueling DQN separates the network into a state-value stream and an action-advantage stream. The value stream estimates how good the state is overall, while the advantage stream estimates how much better or worse each action is relative to the others. The streams are combined to produce action values, often with a centering operation on advantages to make the decomposition identifiable. This can help when many actions have similar effects in a state, although the architecture is not guaranteed to improve every task."
+        },
+        {
+            "id": "prioritized-replay",
+            "title": "Prioritized Experience Replay",
+            "type": "concept",
+            "content": "Uniform replay samples stored transitions with equal probability. Prioritized experience replay samples some transitions more frequently, often based on the magnitude of their TD errors. Transitions with large errors may contain useful learning signals, but large errors can also arise from noise or unusual events. Prioritized sampling changes the training distribution, so importance-sampling weights are commonly used to reduce the resulting bias. Priority updates and sampling probabilities add complexity and should be evaluated against uniform replay."
+        },
+        {
+            "id": "dqn-hyperparameters",
+            "title": "Important DQN Hyperparameters",
+            "type": "concept",
+            "content": "DQN performance depends on learning rate, discount factor, epsilon schedule, replay capacity, batch size, target-network update interval, warm-up steps, network architecture, and reward scaling. Hyperparameters interact: a larger batch size changes gradient noise, a longer target interval changes target stability, and a faster epsilon decay changes which states enter the replay buffer. Hyperparameter tuning should use a separate evaluation procedure rather than repeatedly choosing settings based only on a final test score. Results should be compared across several seeds when feasible."
+        },
+        {
+            "id": "dqn-evaluation",
+            "title": "Evaluating a DQN Agent",
+            "type": "concept",
+            "content": "Evaluation should measure task outcomes rather than training loss alone. Useful metrics include average episode return, success rate, episode length, constraint violations, and resource use. Training reward may be inflated by exploration or may fail to reveal safety issues. During evaluation, exploration is often reduced or disabled, depending on the intended deployment policy. Evaluate across multiple episodes, initial conditions, and random seeds. For stochastic environments, report variability rather than only the best run."
+        },
+        {
+            "id": "dqn-limitations",
+            "title": "Limitations of DQN",
+            "type": "concept",
+            "content": "DQN is most suitable for discrete action spaces and can require substantial data in large or visually complex environments. It may overestimate values, forget rare experiences, or become unstable when the training distribution changes. It can also learn brittle behavior that performs well on training conditions but fails under distribution shift. Continuous action spaces require specialized methods because maximizing a neural Q function over an arbitrary continuous action space is difficult. DQN variants address some problems, but no single modification removes the need for careful experimental design."
+        },
+        {
+            "id": "q-learning-debugging",
+            "title": "Debugging Q-Learning Implementations",
+            "type": "concept",
+            "content": "Start with a tiny deterministic environment where the expected solution is easy to inspect. Check that action indices match the environment, rewards are associated with the correct transition, and terminal targets omit future value. Verify that epsilon-greedy exploration actually explores and that evaluation does not accidentally keep training. Track episode return, episode length, Q-value magnitudes, and the fraction of actions chosen greedily. If values grow without bound, inspect reward loops, terminal handling, discounting, and target construction. Small reproducible tests are often more useful than immediately training on a large environment."
+        },
+        {
+            "id": "q-learning-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Q-learning is an off-policy, model-free algorithm that learns action values using a reward plus discounted maximum next-state Q estimate. Epsilon-greedy behavior balances exploration and exploitation. Tabular Q-learning is effective for small discrete environments, while DQN uses a neural network to approximate action values. Experience replay improves data reuse and reduces short-range sample correlation, while target networks stabilize targets by updating them more slowly. Double DQN, dueling architectures, and prioritized replay address specific limitations. Correct terminal handling, meaningful rewards, robust evaluation, and reproducible experiments remain essential."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "q-learning-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Is Q-learning model-based or model-free?",
+            "correctAnswer": "Q-learning is model-free because it can learn from sampled transitions without knowing the environment's transition model in advance.",
+            "solution": "The update uses the observed reward and next state together with the current Q estimates. It does not require explicit transition probabilities."
+        },
+        {
+            "id": "q-learning-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "The current Q value is 3, reward is 2, gamma is 0.9, and the maximum next-state Q value is 5. Calculate the Q-learning target.",
+            "correctAnswer": "6.5",
+            "solution": "The target is 2 + 0.9(5) = 6.5."
+        },
+        {
+            "id": "q-learning-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Using the target from the previous exercise, calculate the updated Q value if the current value is 3 and alpha is 0.2.",
+            "correctAnswer": "3.7",
+            "solution": "Q_new = 3 + 0.2(6.5 - 3) = 3 + 0.7 = 3.7."
+        },
+        {
+            "id": "q-learning-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is Q-learning called off-policy?",
+            "correctAnswer": "It can learn toward a greedy target policy while collecting experience using a different exploratory behavior policy.",
+            "solution": "The update uses the maximum next-state Q value instead of the Q value of the next action actually selected by the behavior policy."
+        },
+        {
+            "id": "q-learning-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the purpose of epsilon-greedy exploration?",
+            "correctAnswer": "It allows the agent to try alternative actions while usually selecting the action with the highest estimated Q value.",
+            "solution": "Exploration helps discover useful actions whose values are not yet known. Exploitation uses current estimates to choose promising actions."
+        },
+        {
+            "id": "q-learning-ex-6",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A terminal transition produces reward 7. What target should Q-learning use for that transition?",
+            "correctAnswer": "7",
+            "solution": "A terminal transition has no future return to bootstrap from, so the target is the observed reward alone."
+        },
+        {
+            "id": "q-learning-ex-7",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "How does SARSA differ from Q-learning?",
+            "correctAnswer": "SARSA uses the Q value of the next action actually selected by the behavior policy, while Q-learning uses the maximum next-state Q value.",
+            "solution": "SARSA is on-policy, whereas Q-learning is off-policy. Their different targets can lead to different behavior when exploration is active."
+        },
+        {
+            "id": "q-learning-ex-8",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why does DQN use a target network?",
+            "correctAnswer": "A target network makes learning targets change more slowly, reducing instability caused by changing predictions and targets at the same time.",
+            "solution": "The online network is trained toward targets calculated with a delayed network. Periodic or soft synchronization slows target movement, although it does not guarantee stability in every environment."
+        },
+        {
+            "id": "q-learning-ex-9",
+            "type": "coding",
+            "difficulty": "hard",
+            "question": "Write a Q-learning update that correctly handles terminal transitions.",
+            "correctAnswer": "Use zero future value when terminated; otherwise use the maximum Q value for the next state.",
+            "solution": "Example: def update(q, s, a, r, next_s, alpha, gamma, terminated):\n    future = 0.0 if terminated else max(q[next_s])\n    target = r + gamma * future\n    q[s][a] += alpha * (target - q[s][a])\n    return target"
+        },
+        {
+            "id": "q-learning-ex-10",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A DQN has increasing training reward but performs poorly during evaluation. Give three possible explanations.",
+            "correctAnswer": "Possible explanations include overfitting to training conditions, evaluation using a different observation or action pipeline, and reward hacking or a mismatch between training reward and the true task objective.",
+            "solution": "Inspect evaluation preprocessing, terminal handling, action selection, and independent task metrics. Test several seeds and initial conditions. Also check whether the agent learned shortcuts that increase reward without accomplishing the intended task."
+        }
+    ],
+    "summary": "Q-learning learns optimal action values from sampled experience using a temporal-difference update that bootstraps from the maximum next-state Q estimate. Epsilon-greedy exploration balances information gathering and exploitation. Tabular Q-learning is appropriate for small discrete state spaces, while DQN approximates Q values with a neural network. Experience replay improves data reuse, and target networks reduce moving-target instability. Double DQN, dueling architectures, and prioritized replay address particular weaknesses. Reliable implementations require correct terminal handling, suitable hyperparameters, independent evaluation, and reproducible experiments.",
+    "relatedTopics": [
+        "markov-decision-processes",
+        "value-functions",
+        "policy-gradients",
+        "actor-critic",
+        "ppo",
+        "rlhf-connection"
+    ]
+}

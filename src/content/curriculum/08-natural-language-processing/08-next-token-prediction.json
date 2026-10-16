@@ -1,1 +1,300 @@
-{}
+{
+    "id": "module-08-natural-language-processing-next-token-prediction",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 8,
+    "title": "Next-Token Prediction",
+    "slug": "next-token-prediction",
+    "href": "/curriculum/08-natural-language-processing/next-token-prediction",
+    "filePath": "content/curriculum/08-natural-language-processing/08-next-token-prediction.json",
+    "description": "Learn how autoregressive language models predict the next token, calculate logits and probabilities, optimize cross-entropy loss, and generate sequences using greedy decoding, sampling, temperature, and top-k or top-p filtering.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Vocabulary Construction",
+        "Word Embeddings",
+        "Language Modeling",
+        "Probability and Logarithms",
+        "Neural Network Fundamentals"
+    ],
+    "learningObjectives": [
+        "Explain next-token prediction as a conditional probability problem.",
+        "Describe input and target construction for autoregressive training.",
+        "Understand logits, softmax, and cross-entropy loss.",
+        "Calculate a next-token probability distribution from logits.",
+        "Explain teacher forcing and shifted targets.",
+        "Implement greedy decoding and temperature-based sampling.",
+        "Compare top-k and top-p sampling.",
+        "Understand causal masking and generation limitations."
+    ],
+    "sections": [
+        {
+            "id": "next-token-introduction",
+            "title": "What Is Next-Token Prediction?",
+            "type": "concept",
+            "content": "Next-token prediction trains a model to estimate the next token given the preceding tokens. Given the prefix 'Machine learning is', the model produces a probability distribution over possible next tokens. Candidates might include 'useful', 'powerful', or 'popular', depending on the model and vocabulary. The training objective rewards the model for assigning high probability to the actual next token in the training sequence. Repeating this process supports autoregressive text generation."
+        },
+        {
+            "id": "conditional-probability",
+            "title": "Conditional Probability Formulation",
+            "type": "math",
+            "content": "For token sequence x_1, x_2, ..., x_T, an autoregressive language model factorizes the sequence probability as P(x_1, ..., x_T) = Π_t P(x_t | x_1, ..., x_{t-1}). Each next-token prediction is conditioned on the preceding prefix. The model estimates these conditional probabilities using its learned parameters. The factorization permits the probability of a complete sequence to be computed as a product of its conditional token probabilities."
+        },
+        {
+            "id": "token-sequence-example",
+            "title": "A Simple Prediction Example",
+            "type": "concept",
+            "content": "Suppose the prefix is 'The sky is' and the model predicts probabilities: blue = 0.55, clear = 0.20, dark = 0.15, and green = 0.10. These probabilities sum to one. Greedy decoding selects 'blue', the token with the highest probability. Sampling may choose another token according to the distribution. The probabilities reflect the model's learned distribution and should not be interpreted as objective truth."
+        },
+        {
+            "id": "tokenizer-and-next-token",
+            "title": "Why Prediction Happens at the Token Level",
+            "type": "concept",
+            "content": "Language models predict tokenizer-defined units rather than necessarily predicting complete words. A tokenizer may represent a word as one token or several subword tokens. Consequently, the next generated token might be punctuation, whitespace-related text, part of a word, or a complete word. Tokenization affects sequence length, output vocabulary size, generation behavior, and how a model's context window is consumed."
+        },
+        {
+            "id": "input-target-shifting",
+            "title": "Constructing Inputs and Targets",
+            "type": "concept",
+            "content": "Autoregressive training commonly creates targets by shifting the token sequence one position to the left relative to the inputs. For tokens [A, B, C, D], the input positions may contain [A, B, C], while the corresponding targets are [B, C, D]. The model learns to predict B from A, C from A and B, and D from A, B, and C. Padding and special tokens must be handled according to the model's training configuration."
+        },
+        {
+            "id": "shifted-target-example",
+            "title": "Worked Example of Shifted Targets",
+            "type": "math",
+            "content": "Given the sequence [12, 7, 24, 5], a standard causal training setup can use input IDs [12, 7, 24] and labels [7, 24, 5]. At the first prediction position, the model sees token 12 and predicts 7. At the second position, it sees 12 and 7 and predicts 24. At the third position, it sees 12, 7, and 24 and predicts 5. Frameworks differ in whether shifting is performed by the dataset, model, or loss function, so check the implementation."
+        },
+        {
+            "id": "teacher-forcing",
+            "title": "Teacher Forcing",
+            "type": "concept",
+            "content": "Teacher forcing means providing the correct preceding training tokens to the model when computing predictions during training. It allows the model to calculate losses at many sequence positions in parallel when the architecture supports it. During free-running generation, however, the model consumes its own previously generated tokens. A wrong generated token can affect later predictions, so generation behavior may differ from teacher-forced training."
+        },
+        {
+            "id": "causal-mask",
+            "title": "Why Causal Masking Is Necessary",
+            "type": "concept",
+            "content": "During training, a Transformer can process many token positions simultaneously. Without a causal attention mask, an earlier position could access later tokens, including its prediction target, creating information leakage. A causal mask prevents position t from attending to positions greater than t. It allows attention to current and preceding positions, depending on the implementation. Padding masks may be used in addition to causal masks."
+        },
+        {
+            "id": "causal-mask-math",
+            "title": "Causal Attention Mask",
+            "type": "math",
+            "content": "For sequence length L, a causal mask can be represented as an L × L matrix in which entries corresponding to future positions are disallowed. Using zero for allowed attention and negative infinity for disallowed attention before softmax, a row for position t has allowed entries at positions j ≤ t and blocked entries at positions j > t. Softmax assigns zero probability to entries whose logits are negative infinity in exact arithmetic."
+        },
+        {
+            "id": "logits",
+            "title": "What Are Logits?",
+            "type": "concept",
+            "content": "Logits are unnormalized real-valued scores produced by the model for each vocabulary token. If the vocabulary size is V, the next-token logits form a vector in R^V. Logits can be positive, negative, or zero and do not need to sum to one. Softmax converts them into a probability distribution. A larger logit generally corresponds to a larger softmax probability relative to the other logits."
+        },
+        {
+            "id": "softmax",
+            "title": "Softmax and Token Probabilities",
+            "type": "math",
+            "content": "Given logits z_1 through z_V, softmax defines p_i = exp(z_i) / Σ_j exp(z_j). The resulting probabilities are nonnegative and sum to one. For numerical stability, implementations commonly subtract the maximum logit before exponentiation: p_i = exp(z_i - max(z)) / Σ_j exp(z_j - max(z)). This transformation leaves the probabilities unchanged while reducing overflow risk."
+        },
+        {
+            "id": "softmax-python",
+            "title": "Implement Softmax in Python",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax(logits):\n    logits = np.asarray(logits, dtype=float)\n    shifted = logits - np.max(logits)\n    exp_values = np.exp(shifted)\n    return exp_values / exp_values.sum()\n\nlogits = [2.0, 1.0, 0.1]\nprobabilities = softmax(logits)\nprint(probabilities)\nprint(\"Sum:\", probabilities.sum())",
+            "explanation": "Subtracting the maximum logit improves numerical stability. The output contains probabilities that sum to one, up to floating-point rounding. This simple implementation is appropriate for educational examples; production training usually uses framework-provided stable loss operations."
+        },
+        {
+            "id": "cross-entropy-loss",
+            "title": "Cross-Entropy Loss",
+            "type": "math",
+            "content": "For a target token y and predicted distribution p, the loss is L = -log p_y. Assigning a high probability to the correct token produces a small loss, while assigning a low probability produces a large loss. For a sequence, the training objective commonly averages the negative log-probability over valid target positions. Padding positions are usually excluded from the loss through an ignore index or explicit mask."
+        },
+        {
+            "id": "cross-entropy-example",
+            "title": "A Worked Cross-Entropy Example",
+            "type": "concept",
+            "content": "Suppose the correct next token is 'blue'. If the model assigns it probability 0.8, its natural-log loss is -ln(0.8), approximately 0.223. If the model assigns probability 0.1, the loss is -ln(0.1), approximately 2.303. Both are valid probabilities, but the second prediction is penalized much more strongly because the correct token received less probability."
+        },
+        {
+            "id": "loss-code",
+            "title": "Calculate Next-Token Loss",
+            "type": "code",
+            "language": "python",
+            "content": "import math\n\ndef token_loss(correct_token_probability):\n    if not 0 < correct_token_probability <= 1:\n        raise ValueError(\"Probability must be in (0, 1]\")\n    return -math.log(correct_token_probability)\n\nprint(token_loss(0.8))\nprint(token_loss(0.1))",
+            "explanation": "The function computes negative log-likelihood for a single target token. Neural training uses logits and a numerically stable cross-entropy implementation, which also supports gradient computation."
+        },
+        {
+            "id": "sequence-loss",
+            "title": "Sequence-Level Training Loss",
+            "type": "math",
+            "content": "For T valid target positions, the mean next-token loss is L = -(1/T) Σ_t log P(x_t | x_{<t}). The sum measures total sequence negative log-likelihood, while the mean normalizes by the number of prediction targets. When comparing training runs, ensure the averaging policy, tokenization, and treatment of padding are consistent."
+        },
+        {
+            "id": "backpropagation",
+            "title": "How the Model Learns",
+            "type": "concept",
+            "content": "The cross-entropy loss is differentiated with respect to model parameters using backpropagation. Gradients flow through the output projection, hidden states, attention layers, feed-forward layers, and embeddings. An optimizer uses these gradients to update parameters. Repeated training encourages the model to assign higher probability to observed next tokens. The objective does not directly guarantee factual accuracy, reasoning ability, or alignment with user preferences."
+        },
+        {
+            "id": "greedy-decoding",
+            "title": "Greedy Decoding",
+            "type": "concept",
+            "content": "Greedy decoding selects the token with the highest probability at each generation step. It is deterministic when logits and tie-breaking are deterministic. The method is computationally simple but can repeatedly choose locally likely tokens that lead to repetitive, generic, or globally suboptimal continuations. A sequence formed by greedy choices is not necessarily the most probable complete sequence among all possible continuations."
+        },
+        {
+            "id": "greedy-code",
+            "title": "Implement Greedy Decoding",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nvocabulary = [\"blue\", \"green\", \"clear\", \"dark\"]\nprobabilities = np.array([0.55, 0.10, 0.25, 0.10])\nselected_index = int(np.argmax(probabilities))\nprint(\"Next token:\", vocabulary[selected_index])",
+            "explanation": "argmax returns the index with the highest probability. In this example, greedy decoding selects 'blue'. The code demonstrates one generation step; a real model must recompute next-token logits after appending the selected token."
+        },
+        {
+            "id": "sampling",
+            "title": "Sampling from a Probability Distribution",
+            "type": "concept",
+            "content": "Sampling chooses a token randomly according to the predicted probability distribution. A token with probability 0.6 is selected more frequently than a token with probability 0.05, but neither outcome is guaranteed in an individual draw. Sampling can create more varied text than greedy decoding. Reproducibility requires controlling random seeds and relevant generation settings, though some hardware and framework operations can still introduce nondeterminism."
+        },
+        {
+            "id": "sampling-code",
+            "title": "Sample a Next Token",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nrng = np.random.default_rng(42)\nvocabulary = [\"blue\", \"green\", \"clear\", \"dark\"]\nprobabilities = [0.55, 0.10, 0.25, 0.10]\nselected = rng.choice(vocabulary, p=probabilities)\nprint(\"Sampled token:\", selected)",
+            "explanation": "NumPy samples a token according to the supplied probability distribution. The random generator makes the example reproducible for a fixed environment and sequence of operations."
+        },
+        {
+            "id": "temperature",
+            "title": "Temperature Scaling",
+            "type": "concept",
+            "content": "Temperature changes the sharpness of a probability distribution before sampling. Given logits z and temperature T > 0, compute softmax(z / T). Lower temperatures concentrate probability on the highest-scoring tokens. Higher temperatures flatten the distribution and increase the chance of selecting lower-scoring alternatives. Temperature does not add knowledge to the model; it changes how the model's existing scores are converted into sampling probabilities."
+        },
+        {
+            "id": "temperature-math",
+            "title": "Temperature Formula",
+            "type": "math",
+            "content": "Temperature-scaled probabilities are p_i(T) = exp(z_i / T) / Σ_j exp(z_j / T). When T = 1, the original softmax distribution is preserved. As T approaches zero from above, the distribution increasingly concentrates on the maximum-logit token, subject to ties. As T becomes large, probabilities approach a more uniform distribution over a fixed finite set of logits."
+        },
+        {
+            "id": "temperature-code",
+            "title": "Implement Temperature Scaling",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax_temperature(logits, temperature=1.0):\n    if temperature <= 0:\n        raise ValueError(\"Temperature must be positive\")\n    logits = np.asarray(logits, dtype=float) / temperature\n    logits -= logits.max()\n    exp_values = np.exp(logits)\n    return exp_values / exp_values.sum()\n\nlogits = [2.0, 1.0, 0.1]\nfor temperature in [0.5, 1.0, 2.0]:\n    print(temperature, softmax_temperature(logits, temperature))",
+            "explanation": "The function scales logits before applying a numerically stable softmax. Comparing temperatures shows how the distribution becomes sharper or flatter. Temperature is typically used during generation, not as a replacement for the model's training objective."
+        },
+        {
+            "id": "top-k-sampling",
+            "title": "Top-K Sampling",
+            "type": "concept",
+            "content": "Top-k sampling restricts the candidate set to the k tokens with the highest logits or probabilities, then renormalizes their probabilities and samples from that set. Tokens outside the top k receive zero probability for that step. This can prevent sampling from an extremely long tail of unlikely tokens. However, a fixed k may be too restrictive for a predictable context and too permissive for a highly uncertain one."
+        },
+        {
+            "id": "top-p-sampling",
+            "title": "Top-P or Nucleus Sampling",
+            "type": "concept",
+            "content": "Top-p sampling selects the smallest set of highest-probability tokens whose cumulative probability reaches or exceeds a chosen threshold p. The probabilities of the selected tokens are then renormalized before sampling. Unlike top-k, the number of candidates varies with the shape of the distribution. A concentrated distribution may require only a few candidates, while a flatter distribution may require many."
+        },
+        {
+            "id": "sampling-comparison",
+            "title": "Comparing Decoding Strategies",
+            "type": "concept",
+            "content": "Greedy decoding always chooses the highest-probability next token. Ordinary sampling uses the full distribution. Temperature sampling modifies the distribution's sharpness. Top-k restricts the number of candidates to a fixed maximum, while top-p retains a probability mass threshold. These methods can be combined, for example by applying temperature before top-p filtering. Generation quality depends on the model, prompt, task, stopping conditions, and decoding settings."
+        },
+        {
+            "id": "generation-loop",
+            "title": "The Autoregressive Generation Loop",
+            "type": "concept",
+            "content": "Autoregressive generation begins with a prompt token sequence. The model computes next-token logits, a decoding strategy selects a token, and that token is appended to the context. The model then predicts again using the extended sequence. Generation stops when an end-of-sequence token appears, a stopping condition is met, or a maximum token budget is reached. Long generation can become expensive because the model repeatedly processes context, although key-value caching can reduce repeated attention computation."
+        },
+        {
+            "id": "generation-pseudocode",
+            "title": "Generation Pseudocode",
+            "type": "concept",
+            "content": "Initialize the sequence with prompt tokens. Repeat until a stopping condition: compute logits for the next position, convert logits to probabilities, choose a token using the selected decoding policy, append the token, and check for termination. In a batched implementation, finished sequences may require separate tracking. Production generation must also handle context limits, padding, cache management, stop sequences, and model-specific special tokens."
+        },
+        {
+            "id": "generation-transformers-code",
+            "title": "Generate Text with a Pretrained Model",
+            "type": "code",
+            "language": "python",
+            "content": "from transformers import AutoTokenizer, AutoModelForCausalLM\n\nmodel_name = \"distilgpt2\"\ntokenizer = AutoTokenizer.from_pretrained(model_name)\nmodel = AutoModelForCausalLM.from_pretrained(model_name)\nprompt = \"Machine learning is\"\ninputs = tokenizer(prompt, return_tensors=\"pt\")\noutputs = model.generate(**inputs, max_new_tokens=40, do_sample=True, temperature=0.8, top_p=0.9, pad_token_id=tokenizer.eos_token_id)\nprint(tokenizer.decode(outputs[0], skip_special_tokens=True))",
+            "explanation": "This example uses a pretrained causal language model to generate up to 40 new tokens. Sampling uses temperature and top-p filtering. The result is stochastic and may vary across runs. The code requires PyTorch, Transformers, and access to the model files."
+        },
+        {
+            "id": "context-window",
+            "title": "Context Windows and Long Prompts",
+            "type": "concept",
+            "content": "A model's context window limits how many tokens it can process in a single input sequence or generation context. The limit is measured in tokenizer-defined tokens, not words or characters. A long document can exceed the limit even when it appears short to a human. Systems can manage long inputs through chunking, retrieval, summarization, sliding windows, or architectures designed for longer contexts. Each approach introduces trade-offs in information retention and computation."
+        },
+        {
+            "id": "repetition-and-stopping",
+            "title": "Repetition and Stopping Criteria",
+            "type": "concept",
+            "content": "Autoregressive generation can become repetitive or continue longer than desired. Common controls include end-of-sequence tokens, maximum new-token limits, stop sequences, and repetition penalties. These controls alter the generation procedure but do not guarantee coherent or correct output. Excessive repetition penalties may damage legitimate repeated phrases, code, or structured text, so generation settings should be tested on representative prompts."
+        },
+        {
+            "id": "next-token-limitations",
+            "title": "What Next-Token Prediction Does Not Guarantee",
+            "type": "concept",
+            "content": "Next-token prediction optimizes the probability of observed text sequences. It does not directly guarantee truth, reliable reasoning, factual grounding, instruction following, or safety. Models may generate fluent statements that are incorrect or unsupported. Additional training, retrieval, tools, evaluation, and safety mechanisms can improve practical behavior, but every system should be tested for the risks relevant to its deployment."
+        },
+        {
+            "id": "next-token-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Next-token prediction estimates the conditional probability of each token given its preceding context. Training uses shifted targets and cross-entropy, while causal masking prevents future-token leakage. Models produce logits that are converted to probabilities with softmax. Generation methods include greedy decoding, sampling, temperature scaling, top-k, and top-p. These choices affect diversity and predictability but do not guarantee factual correctness."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "next-token-exercise-1",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "A model assigns probability 0.25 to the correct next token. What is its negative log-likelihood using natural logarithms?",
+            "correctAnswer": "Approximately 1.386.",
+            "solution": "The loss is -ln(0.25) = ln(4) ≈ 1.386."
+        },
+        {
+            "id": "next-token-exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why are next-token training targets shifted relative to input tokens?",
+            "correctAnswer": "The model must predict the following token rather than simply reproduce the token at the same position.",
+            "solution": "For input sequence [A, B, C], targets are typically [B, C, D]. Each position learns to predict the next token from the prefix available at that position."
+        },
+        {
+            "id": "next-token-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Given logits [3, 1], which token is selected by greedy decoding?",
+            "correctAnswer": "The token corresponding to logit 3.",
+            "solution": "Softmax preserves the ranking of logits, so the token with the largest logit has the largest probability. Greedy decoding selects that token."
+        },
+        {
+            "id": "next-token-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What happens to the softmax distribution when temperature is increased substantially?",
+            "correctAnswer": "The distribution becomes flatter, giving lower-ranked tokens a larger share of probability.",
+            "solution": "Dividing logits by a larger positive temperature reduces their relative differences before softmax, producing a more uniform distribution."
+        },
+        {
+            "id": "next-token-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You are building a deterministic code-completion tool. Which decoding strategy would you test first, and why?",
+            "correctAnswer": "Greedy decoding is a reasonable starting point because it selects the highest-probability token at each step without sampling randomness.",
+            "solution": "Greedy decoding is simple and reproducible under deterministic model execution, but it may not always produce the best complete sequence. Evaluate code correctness and consider beam search or constrained decoding if the task requires additional structure."
+        }
+    ],
+    "summary": "Next-token prediction is the central objective behind autoregressive language models. The model predicts each token from preceding context, using shifted training targets, causal masking, and cross-entropy loss. Logits become probabilities through softmax, and generation uses strategies such as greedy decoding, temperature scaling, top-k, and top-p sampling. The decoding method controls output behavior, while factuality and reliability require separate evaluation and safeguards.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-language-modeling",
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-subword-tokenization-bpe",
+        "module-09-large-language-models-pretraining",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-07-transformers-causal-masking"
+    ]
+}

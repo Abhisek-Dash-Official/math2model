@@ -1,1 +1,239 @@
-{}
+{
+    "id": "module-08-natural-language-processing-sentence-representations",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 6,
+    "title": "Sentence Representations",
+    "slug": "sentence-representations",
+    "href": "/curriculum/08-natural-language-processing/sentence-representations",
+    "filePath": "content/curriculum/08-natural-language-processing/06-sentence-representations.json",
+    "description": "Explore how sentences are converted into fixed-size numerical vectors using pooling, recurrent models, pretrained encoders, and Transformer-based representations.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Vocabulary Construction",
+        "Word Embeddings",
+        "Basic Linear Algebra",
+        "Neural Network Fundamentals"
+    ],
+    "learningObjectives": [
+        "Explain why sentence-level representations are useful in NLP.",
+        "Distinguish token embeddings from sentence embeddings.",
+        "Implement average and max pooling over token vectors.",
+        "Understand recurrent and Transformer-based sentence representations.",
+        "Calculate cosine similarity between sentence embeddings.",
+        "Explain the role of contrastive learning in sentence embedding models.",
+        "Identify common evaluation and representation pitfalls."
+    ],
+    "sections": [
+        {
+            "id": "sentence-representation-introduction",
+            "title": "What Is a Sentence Representation?",
+            "type": "concept",
+            "content": "A sentence representation is a numerical vector or structured representation intended to capture useful information about a sentence. It allows machine learning systems to compare sentences, classify text, retrieve related documents, and cluster semantic content. A common approach represents a sentence with one fixed-dimensional vector. For example, a sentence embedding may contain 384 or 768 floating-point values. The usefulness of the representation depends on how it is constructed and what training objective shaped it."
+        },
+        {
+            "id": "why-sentence-embeddings",
+            "title": "Why Sentence Representations Matter",
+            "type": "concept",
+            "content": "Many NLP tasks require reasoning about a complete phrase or sentence rather than an isolated token. A search system may need to retrieve documents expressing the same idea with different words. A classifier may need to determine whether a sentence expresses positive sentiment. A clustering system may need to group paraphrases together. Sentence representations provide a compact numerical interface for these tasks, making similarity computation and downstream learning easier."
+        },
+        {
+            "id": "token-vs-sentence-representations",
+            "title": "Token Embeddings Versus Sentence Embeddings",
+            "type": "concept",
+            "content": "A token embedding represents an individual token, while a sentence embedding summarizes an entire sequence. If a sentence has L tokens and embedding dimension d, token-level representations commonly form a matrix of shape L × d. A pooling operation or sequence encoder can transform this matrix into a fixed-size vector of shape d. The transformation may lose word-order details, so the best method depends on the task and required level of semantic information."
+        },
+        {
+            "id": "average-pooling",
+            "title": "Average Pooling",
+            "type": "concept",
+            "content": "Average pooling computes the arithmetic mean of token vectors. If a sentence contains token vectors h_1 through h_L, its mean representation is s = (1/L) Σ_i h_i. It is simple, efficient, and independent of sequence length after pooling. However, ordinary averaging does not explicitly preserve word order and can dilute the influence of important words. Padding tokens must be excluded from the average when sequences are batched."
+        },
+        {
+            "id": "average-pooling-math",
+            "title": "Mathematical Example of Average Pooling",
+            "type": "math",
+            "content": "Suppose a sentence has three token vectors h_1 = [1, 0], h_2 = [0, 2], and h_3 = [2, 1]. The mean vector is ([1, 0] + [0, 2] + [2, 1]) / 3 = [3/3, 3/3] = [1, 1]. The output dimension remains two regardless of the number of tokens. Different sentences can produce the same mean vector, so averaging is a lossy summary."
+        },
+        {
+            "id": "average-pooling-code",
+            "title": "Implement Average Pooling",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ntoken_vectors = np.array([[1.0, 0.0], [0.0, 2.0], [2.0, 1.0]])\nsentence_vector = token_vectors.mean(axis=0)\nprint(sentence_vector)",
+            "explanation": "The matrix has one row per token and one column per embedding dimension. Taking the mean along axis zero averages the token rows and returns one vector representing the sentence."
+        },
+        {
+            "id": "masked-average-pooling",
+            "title": "Masked Mean Pooling",
+            "type": "concept",
+            "content": "When sentences are padded to equal lengths, padding vectors should not contribute to the pooled representation. Let m_i equal 1 for a real token and 0 for padding. Masked mean pooling is s = Σ_i m_i h_i / max(Σ_i m_i, 1). The denominator counts valid tokens rather than the padded sequence length. This prevents the representation from changing simply because extra padding was added."
+        },
+        {
+            "id": "masked-pooling-code",
+            "title": "Implement Masked Mean Pooling",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef masked_mean_pooling(token_vectors, mask):\n    vectors = np.asarray(token_vectors, dtype=float)\n    mask = np.asarray(mask, dtype=float).reshape(-1, 1)\n    return (vectors * mask).sum(axis=0) / max(mask.sum(), 1.0)\n\nvectors = [[1, 2], [3, 4], [0, 0]]\nmask = [1, 1, 0]\nprint(masked_mean_pooling(vectors, mask))",
+            "explanation": "The third vector is padding and has mask value zero, so it does not affect the average. Masking is essential when pooling padded batches of variable-length sentences."
+        },
+        {
+            "id": "max-pooling",
+            "title": "Max Pooling",
+            "type": "concept",
+            "content": "Max pooling takes the maximum value in each embedding dimension across the token sequence. For token vectors h_i, the output dimension j is s_j = max_i h_ij. This can retain strong feature activations even when only one token expresses a feature. However, it discards information about how frequently a feature appears and where it appears. Padding must be handled carefully so padded values do not distort the result."
+        },
+        {
+            "id": "weighted-pooling",
+            "title": "Weighted Pooling",
+            "type": "concept",
+            "content": "Weighted pooling assigns different importance weights to token vectors. If weights a_i sum to one, the sentence vector is s = Σ_i a_i h_i. Weights may be learned through attention or computed from heuristics such as inverse document frequency. Weighted pooling can emphasize informative words and reduce the influence of common tokens. The quality of the result depends on how the weights are chosen and whether they match the task."
+        },
+        {
+            "id": "tfidf-representations",
+            "title": "Sparse Sentence Representations with TF-IDF",
+            "type": "concept",
+            "content": "Not all sentence representations are dense neural vectors. TF-IDF represents a document or sentence using weighted vocabulary features. Term frequency measures how often a term appears, while inverse document frequency reduces the weight of terms common across documents. TF-IDF vectors are usually sparse and high-dimensional. They remain useful for classical text classification and information retrieval, particularly when lexical overlap is important and compute resources are limited."
+        },
+        {
+            "id": "tfidf-example",
+            "title": "Create TF-IDF Sentence Vectors",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.feature_extraction.text import TfidfVectorizer\n\nsentences = [\n    \"neural networks learn representations\",\n    \"sentence embeddings represent meaning\",\n    \"neural models learn from data\"\n]\nvectorizer = TfidfVectorizer()\nX = vectorizer.fit_transform(sentences)\nprint(\"Shape:\", X.shape)\nprint(\"Vocabulary:\", vectorizer.get_feature_names_out())",
+            "explanation": "TF-IDF produces a sparse matrix with one row per sentence and one column per learned vocabulary term. The vectorizer must be fitted on training text and then reused for validation and inference in a supervised pipeline."
+        },
+        {
+            "id": "recurrent-sentence-encoding",
+            "title": "Recurrent Sentence Encoders",
+            "type": "concept",
+            "content": "Recurrent neural networks process tokens sequentially and update a hidden state at each step. The final hidden state can serve as a sentence representation. LSTMs and GRUs improve the handling of long-term dependencies compared with a basic RNN. However, compressing a long sentence into a single final state can still lose information, and recurrent processing is less parallelizable across positions than Transformer processing."
+        },
+        {
+            "id": "cnn-sentence-encoding",
+            "title": "CNN-Based Sentence Representations",
+            "type": "concept",
+            "content": "Convolutional neural networks can apply filters over neighboring token embeddings to detect local patterns. Pooling over the resulting feature maps produces a fixed-size representation. Such models can efficiently identify local phrases, sentiment cues, or character patterns. Their receptive field depends on convolution depth and kernel size, so capturing long-range relationships may require additional layers or other mechanisms."
+        },
+        {
+            "id": "transformer-sentence-encoding",
+            "title": "Transformer-Based Sentence Representations",
+            "type": "concept",
+            "content": "A Transformer encoder contextualizes each token by allowing it to interact with other tokens through self-attention. The output is a sequence of contextual vectors rather than automatically being a single universal sentence embedding. A model can produce a sentence vector using a dedicated classification token, masked mean pooling, or a trained pooling head. The pooling method should match the model's training objective because a useful token-level representation is not guaranteed to be an effective sentence-level embedding."
+        },
+        {
+            "id": "cls-pooling",
+            "title": "Classification-Token Pooling",
+            "type": "concept",
+            "content": "Some encoder architectures introduce a special classification token, often written as [CLS]. Its final contextual representation can be used as a sequence-level feature. Whether this vector is useful for semantic similarity depends on pretraining and fine-tuning objectives. A model trained for classification may produce strong classification features without naturally producing well-calibrated cosine similarities between arbitrary sentences."
+        },
+        {
+            "id": "sentence-embedding-objectives",
+            "title": "Learning Sentence Embeddings",
+            "type": "concept",
+            "content": "Sentence embeddings can be trained using labeled sentence pairs, paraphrase data, natural-language inference datasets, retrieval supervision, or contrastive objectives. The model is encouraged to place related sentences near one another and unrelated sentences farther apart according to a defined training signal. The quality of the resulting space depends on the examples, negative sampling strategy, objective, and evaluation distribution."
+        },
+        {
+            "id": "contrastive-learning",
+            "title": "Contrastive Learning for Sentence Embeddings",
+            "type": "concept",
+            "content": "Contrastive learning trains representations by comparing positive and negative examples. A positive pair may consist of two paraphrases, while negative pairs contain unrelated or less relevant sentences. The loss encourages the model to assign higher similarity to positive pairs than to negatives. In-batch negatives can reuse other examples in the same batch, making training efficient. False negatives are a concern when apparently unrelated examples actually express similar meanings."
+        },
+        {
+            "id": "contrastive-loss",
+            "title": "Contrastive Objective",
+            "type": "math",
+            "content": "A common contrastive objective uses similarities sim(z_i, z_j), often cosine similarities, divided by a temperature parameter τ. For an anchor i and positive example p, an InfoNCE-style loss is -log(exp(sim(z_i,z_p)/τ) / Σ_j exp(sim(z_i,z_j)/τ)). The denominator includes candidate examples. Lower temperature sharpens the distribution and makes similarity differences more influential. The precise objective and batch construction vary across embedding methods."
+        },
+        {
+            "id": "sentence-similarity",
+            "title": "Sentence Similarity with Cosine Distance",
+            "type": "math",
+            "content": "Given sentence embeddings u and v, cosine similarity is (u · v) / (||u|| ||v||). A similarity near one indicates that the vectors point in similar directions. For ranking, candidates can be sorted by cosine similarity to a query embedding. Similarity values are model-dependent and should not be interpreted as calibrated probabilities unless a separate calibration procedure supports that interpretation."
+        },
+        {
+            "id": "sentence-similarity-code",
+            "title": "Compare Sentence Embeddings",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef cosine_similarity(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    denom = np.linalg.norm(a) * np.linalg.norm(b)\n    return float(np.dot(a, b) / denom) if denom else 0.0\n\nquery = np.array([0.8, 0.2, 0.5])\ncandidates = {\n    \"candidate_a\": np.array([0.7, 0.3, 0.4]),\n    \"candidate_b\": np.array([-0.2, 0.8, 0.1])\n}\nfor name, vector in candidates.items():\n    print(name, cosine_similarity(query, vector))",
+            "explanation": "The example ranks simple illustrative vectors by cosine similarity. Real sentence embeddings should come from a model trained for semantic similarity or retrieval; arbitrary vectors do not have linguistic meaning."
+        },
+        {
+            "id": "sentence-transformers",
+            "title": "Using a Pretrained Sentence Embedding Model",
+            "type": "code",
+            "language": "python",
+            "content": "from sentence_transformers import SentenceTransformer\n\nmodel = SentenceTransformer(\"sentence-transformers/all-MiniLM-L6-v2\")\nsentences = [\n    \"A model learns from examples.\",\n    \"Machine learning systems learn from data.\",\n    \"The weather is sunny today.\"\n]\nembeddings = model.encode(sentences, normalize_embeddings=True)\nsimilarities = embeddings @ embeddings.T\nprint(\"Embedding shape:\", embeddings.shape)\nprint(similarities)",
+            "explanation": "This example loads a pretrained sentence embedding model and creates normalized sentence vectors. With normalized vectors, matrix multiplication computes cosine similarities. The example requires sentence-transformers and access to the pretrained model files."
+        },
+        {
+            "id": "sentence-embedding-evaluation",
+            "title": "Evaluating Sentence Representations",
+            "type": "concept",
+            "content": "Sentence representations can be evaluated on semantic textual similarity, paraphrase detection, retrieval, clustering, and downstream classification. A model that performs well on one benchmark may perform poorly on a different domain. Evaluation should include realistic queries, difficult negative examples, long sentences, multilingual cases if relevant, and domain-specific terminology. For retrieval systems, ranking metrics such as Recall@k and mean reciprocal rank can be more informative than raw vector similarity alone."
+        },
+        {
+            "id": "sentence-embedding-pitfalls",
+            "title": "Common Pitfalls",
+            "type": "concept",
+            "content": "Common errors include averaging padding vectors, assuming a model's [CLS] vector is automatically suitable for semantic search, comparing embeddings with incompatible dimensions, forgetting vector normalization, and interpreting cosine similarity as a probability. Another problem is evaluating only easy examples, which can conceal poor performance on hard negatives. Always verify the intended pooling strategy and model training objective."
+        },
+        {
+            "id": "sentence-representation-applications",
+            "title": "Applications",
+            "type": "concept",
+            "content": "Sentence representations support semantic search, retrieval-augmented generation, duplicate-question detection, paraphrase identification, clustering, recommendation, document routing, and semantic classification. In retrieval-augmented generation, a query embedding can be compared with document-chunk embeddings to identify relevant context. Retrieval quality depends not only on the embedding model but also on chunking, indexing, filtering, ranking, and the quality of the source documents."
+        },
+        {
+            "id": "sentence-representation-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Sentence representations summarize text into vectors or structured features. Simple methods include TF-IDF, average pooling, and max pooling; neural methods include recurrent encoders and Transformers. Contrastive learning can train sentence embeddings for semantic similarity and retrieval. Pooling, padding masks, model objectives, normalization, and task-specific evaluation all influence representation quality."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "sentence-representation-exercise-1",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "Calculate the average of vectors [2, 0] and [4, 2].",
+            "correctAnswer": "[3, 1]",
+            "solution": "Average each dimension independently: [(2 + 4) / 2, (0 + 2) / 2] = [3, 1]."
+        },
+        {
+            "id": "sentence-representation-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why must padding positions be excluded from masked mean pooling?",
+            "correctAnswer": "Padding vectors are not real sentence content and would otherwise distort the average.",
+            "solution": "The pooling numerator and denominator should include only valid token positions. Use a mask to multiply padded positions by zero and divide by the number of valid tokens."
+        },
+        {
+            "id": "sentence-representation-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might a pretrained Transformer encoder's final [CLS] vector be unsuitable for direct semantic search?",
+            "correctAnswer": "The model may not have been trained to make cosine similarity between arbitrary sentence vectors reflect semantic similarity.",
+            "solution": "The vector's usefulness depends on the pretraining and fine-tuning objective. A model designed for classification does not automatically produce an effective retrieval embedding space."
+        },
+        {
+            "id": "sentence-representation-exercise-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You are building semantic search for educational articles. Which aspects should you evaluate beyond the embedding dimension?",
+            "correctAnswer": "Evaluate retrieval relevance, Recall@k, domain terminology, query variation, chunking, normalization, and latency.",
+            "solution": "Embedding dimension alone does not indicate semantic quality. Test realistic user queries and relevant documents, compare ranking quality, and inspect how the system handles paraphrases and domain-specific vocabulary."
+        }
+    ],
+    "summary": "Sentence representations convert text into features suitable for comparison and prediction. TF-IDF and pooling offer simple baselines, while recurrent and Transformer encoders produce learned representations. Contrastive learning helps train sentence embeddings for semantic similarity and retrieval. Correct masking, pooling, normalization, and task-specific evaluation are essential for reliable results.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-language-modeling",
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-07-transformers-encoder",
+        "module-09-large-language-models-model-architecture"
+    ]
+}

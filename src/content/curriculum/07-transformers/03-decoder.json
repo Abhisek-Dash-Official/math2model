@@ -1,1 +1,192 @@
-{}
+{
+    "id": "module-07-transformers-decoder",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 3,
+    "title": "Decoder Layer Breakdown",
+    "slug": "decoder",
+    "href": "/curriculum/07-transformers/decoder",
+    "filePath": "content/curriculum/07-transformers/03-decoder.json",
+    "description": "Understand Transformer decoders, including causal self-attention, cross-attention in encoder-decoder models, feed-forward networks, residual connections, normalization, autoregressive generation, and decoder implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-06-attention-masked-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-cross-attention"
+    ],
+    "learningObjectives": [
+        "Explain the role of a Transformer decoder.",
+        "Distinguish decoder self-attention from encoder-decoder cross-attention.",
+        "Derive and interpret the causal attention mask.",
+        "Understand the order of operations in an encoder-decoder decoder layer.",
+        "Explain how decoder-only language models use a simplified decoder block.",
+        "Trace the process of autoregressive next-token prediction.",
+        "Understand teacher forcing and shifted target sequences.",
+        "Implement a simplified decoder block in PyTorch.",
+        "Recognize common masking and target-leakage errors."
+    ],
+    "sections": [
+        {
+            "id": "decoder-01-purpose",
+            "title": "1. What Does a Transformer Decoder Do?",
+            "type": "concept",
+            "content": "A Transformer decoder transforms target-side representations into states that support sequence generation. In an encoder-decoder architecture, the decoder can use both its previously available target-side context and the source information encoded by the encoder. In a decoder-only architecture, there is no separate encoder stack, and the decoder processes the prompt and generated tokens using causal self-attention. The exact components depend on the architecture family. A traditional encoder-decoder decoder contains masked self-attention, cross-attention, and a feed-forward network. A decoder-only language model usually contains causal self-attention and a feed-forward network, without encoder cross-attention."
+        },
+        {
+            "id": "decoder-02-causal-generation",
+            "title": "2. Why Decoders Use Causal Attention",
+            "type": "concept",
+            "content": "Autoregressive generation predicts a future token from the tokens that are already available. During training, the full target sequence may be present in memory, but a position must not use later target tokens when predicting the next token. A causal attention mask enforces this restriction. For a sequence of length four, the first position can attend only to itself, the second to positions one and two, the third to positions one through three, and the fourth to all four positions. This triangular access pattern prevents future-token leakage. Without the mask, a model could exploit information from the answer it is supposed to predict, producing misleading training results."
+        },
+        {
+            "id": "decoder-03-causal-mask-math",
+            "title": "3. Mathematical Form of the Causal Mask",
+            "type": "math",
+            "content": "Let the score matrix be S = QK^T / sqrt(dk), with shape (B, T, T) for a self-attention layer. Define an allowed-position matrix A where A[i,j] is true when j is less than or equal to i. A position can attend to itself and earlier positions, but not future positions. An additive mask M can use zero for allowed positions and negative infinity for blocked positions. The masked scores are S' = S + M. Softmax is then applied along the key-position dimension. In a lower-triangular convention, the allowed positions appear on and below the main diagonal. API conventions vary, so the meaning of a boolean mask must be checked carefully."
+        },
+        {
+            "id": "decoder-04-masked-self-attention",
+            "title": "4. Masked Self-Attention",
+            "type": "concept",
+            "content": "Masked self-attention uses the decoder's own current representation to produce queries, keys, and values. Each position can retrieve information from the permitted target-side context. The causal mask restricts which keys are visible to each query. In a decoder-only language model, this is the main attention mechanism inside each decoder block. In an encoder-decoder architecture, masked self-attention first processes the target-side context before cross-attention retrieves information from the encoder output. Padding masks may also be needed when training with padded target sequences. Causal and padding masks solve different problems and may need to be combined."
+        },
+        {
+            "id": "decoder-05-cross-attention",
+            "title": "5. Cross-Attention in an Encoder-Decoder Decoder",
+            "type": "concept",
+            "content": "In a conventional encoder-decoder Transformer, the decoder contains a cross-attention sublayer after masked self-attention. The decoder's current hidden states provide queries, and the encoder's final representations provide keys and values. This allows each target position to retrieve information from the source sequence. For translation, a target-side state can use source-language representations to help predict a corresponding target word. Unlike target-side self-attention, cross-attention does not usually require a causal mask over the source, because the full source input is available before target generation. A source padding mask may still be required to hide padded source positions."
+        },
+        {
+            "id": "decoder-06-traditional-layer",
+            "title": "6. The Traditional Decoder Layer",
+            "type": "process",
+            "content": "A traditional encoder-decoder decoder layer commonly performs three major sublayer operations. First, masked self-attention lets target positions exchange information without seeing future target tokens. Second, cross-attention allows decoder representations to retrieve information from encoder outputs. Third, a position-wise feed-forward network transforms each position's features. Residual connections and normalization are used around these operations. In a pre-normalization layout, each sublayer receives normalized input and its result is added to a residual pathway. In a post-normalization layout, normalization follows the residual addition. Exact ordering and dropout placement depend on the architecture."
+        },
+        {
+            "id": "decoder-07-decoder-only-layer",
+            "title": "7. Decoder-Only Transformer Layers",
+            "type": "comparison",
+            "content": "Decoder-only models use a stack of causal Transformer blocks but typically omit the separate encoder and the encoder-decoder cross-attention sublayer. The prompt is processed as a sequence, and each position can attend to the preceding context and itself. A vocabulary projection produces next-token logits. During training, target tokens are shifted so the hidden state at one position predicts the following token. During inference, the model repeatedly predicts a token and adds it to the context. Although decoder-only architectures are inspired by decoder-style Transformer blocks, modern implementations may differ in normalization, activation functions, positional methods, attention variants, and key-value caching."
+        },
+        {
+            "id": "decoder-08-shifted-targets",
+            "title": "8. Shifted Targets and Teacher Forcing",
+            "type": "concept",
+            "content": "For next-token training, the model receives a sequence such as [BOS, The, cat, sat] and is trained to predict [The, cat, sat, EOS]. The inputs and labels are shifted relative to one another. During training, the correct preceding tokens are supplied as context; this is commonly called teacher forcing. The causal mask prevents the model from using later target tokens while making each prediction. Many training frameworks implement the shift and masking through carefully designed input and label tensors. If inputs and labels are not aligned correctly, the model may learn to predict the wrong position or accidentally access the answer token. Special tokens and padding require consistent treatment."
+        },
+        {
+            "id": "decoder-09-next-token-probability",
+            "title": "9. From Hidden States to Next-Token Probabilities",
+            "type": "math",
+            "content": "Let H have shape (B, T, d_model) after the final decoder block. A language-modeling head projects each hidden state into vocabulary logits using a learned matrix Wvocab. If the vocabulary size is V, the logits have shape (B, T, V). Softmax over the vocabulary dimension converts logits into a probability distribution for each position. During next-token training, a cross-entropy loss compares the distribution at each valid position with the corresponding next-token label. Padding labels are commonly excluded from the loss. At inference time, the model uses the logits for the final available position to choose or sample the next token."
+        },
+        {
+            "id": "decoder-10-generation-loop",
+            "title": "10. The Autoregressive Generation Loop",
+            "type": "process",
+            "content": "Generation begins with a prompt. The decoder processes the available tokens and produces logits for the next token. A decoding strategy selects the next token, which is appended to the sequence. The updated sequence is processed again until the model emits an end-of-sequence token or reaches a configured generation limit. Without caching, the model may recompute representations for much of the existing prefix on every step. Key-value caching stores attention keys and values from previous tokens so new steps can reuse them. Sampling controls such as temperature, top-k, and nucleus sampling modify token selection, but they do not change the underlying causal attention rule."
+        },
+        {
+            "id": "decoder-11-complexity",
+            "title": "11. Decoder Attention Complexity",
+            "type": "math",
+            "content": "For sequence length T and attention dimension dk, dense causal attention has score-computation complexity proportional to T squared times dk, although only the permitted triangular positions carry useful attention. Efficient implementations may exploit the causal pattern without storing a full dense matrix. During autoregressive inference, key-value caching reduces repeated work for past tokens. With caching, the new query typically attends to cached keys and values from the previous context plus the current token. The per-step attention computation still grows with context length, and the total cost of generating a long sequence remains significant. Memory use also grows with the number of cached tokens, layers, and key-value heads."
+        },
+        {
+            "id": "decoder-12-pytorch-mask",
+            "title": "12. Building a Causal Mask in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\n\ndef make_causal_block_mask(seq_len, device=None):\n    \"\"\"Return a boolean mask where True means the position is blocked.\n\n    Shape: (seq_len, seq_len).\n    Rows represent query positions; columns represent key positions.\n    \"\"\"\n    return torch.triu(\n        torch.ones(seq_len, seq_len, dtype=torch.bool, device=device),\n        diagonal=1,\n    )\n\n\nseq_len = 5\nmask = make_causal_block_mask(seq_len)\nprint(mask.int())\n\n# A row for query position i blocks every key position j > i.\n# PyTorch attention APIs have specific mask conventions; verify the\n# convention of the function being used before passing this mask.\n\nscores = torch.randn(1, seq_len, seq_len)\nmasked_scores = scores.masked_fill(mask.unsqueeze(0), float('-inf'))\nweights = torch.softmax(masked_scores, dim=-1)\nprint(weights.shape)\nprint(weights[0].sum(dim=-1))",
+            "explanation": "The mask is upper triangular above the diagonal, so future key positions are blocked. Rows correspond to query positions and columns to key positions. Softmax is applied across each row. This example shows a simple blocked-position convention; attention APIs may interpret boolean masks differently, so do not pass a mask into an unfamiliar API without checking its documentation."
+        },
+        {
+            "id": "decoder-13-simplified-decoder-block",
+            "title": "13. A Simplified Decoder-Only Block",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\n\nclass CausalDecoderBlock(nn.Module):\n    def __init__(self, d_model=128, nhead=4, d_ff=512, dropout=0.1):\n        super().__init__()\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.attn = nn.MultiheadAttention(\n            d_model,\n            nhead,\n            dropout=dropout,\n            batch_first=True,\n        )\n        self.ffn = nn.Sequential(\n            nn.Linear(d_model, d_ff),\n            nn.GELU(),\n            nn.Dropout(dropout),\n            nn.Linear(d_ff, d_model),\n        )\n        self.dropout = nn.Dropout(dropout)\n\n    def forward(self, x, padding_mask=None):\n        seq_len = x.size(1)\n        causal_mask = torch.triu(\n            torch.ones(seq_len, seq_len, dtype=torch.bool, device=x.device),\n            diagonal=1,\n        )\n        z = self.norm1(x)\n        attended, _ = self.attn(\n            z, z, z,\n            attn_mask=causal_mask,\n            key_padding_mask=padding_mask,\n            need_weights=False,\n        )\n        x = x + self.dropout(attended)\n        x = x + self.dropout(self.ffn(self.norm2(x)))\n        return x\n\n\nx = torch.randn(2, 12, 128)\nblock = CausalDecoderBlock()\ny = block(x)\nprint(y.shape)",
+            "explanation": "This is a simplified pre-normalization decoder-only block. It combines causal self-attention with a feed-forward network and residual connections. It omits token embeddings, positional information, the final normalization, and the vocabulary prediction head. When combining causal and padding masks, confirm the mask semantics of the exact PyTorch version and API being used."
+        },
+        {
+            "id": "decoder-14-masking-errors",
+            "title": "14. Masking Errors and Target Leakage",
+            "type": "concept",
+            "content": "A reversed causal mask can allow future tokens while blocking valid previous tokens. An incorrect diagonal convention may prevent a position from attending to itself. A mask applied to the wrong dimensions may silently restrict the wrong relationships or raise a shape error. Another common issue is assuming every boolean mask uses the same meaning across APIs. Padding masks may also be needed alongside causal masks. Target leakage can occur if the input and label shifts are wrong, even when the attention mask itself appears correct. To validate a decoder, test a very short sequence and inspect which entries are allowed in each row before training on a large dataset."
+        },
+        {
+            "id": "decoder-15-encoder-decoder-vs-decoder-only",
+            "title": "15. Encoder-Decoder Versus Decoder-Only",
+            "type": "comparison",
+            "content": "An encoder-decoder model uses an encoder to process the source and a decoder to generate the target. The decoder combines causal self-attention with cross-attention to encoder outputs. This structure is well suited to many input-to-output tasks, including translation and conditional summarization. A decoder-only model processes the prompt and output as one causal sequence, using causal self-attention without a separate encoder. Both approaches can generate text, and either can be adapted to a variety of tasks. Their data flow, training objective, and inference behavior differ, so the choice depends on the problem and engineering constraints."
+        },
+        {
+            "id": "decoder-16-summary",
+            "title": "16. Summary",
+            "type": "summary",
+            "content": "Transformer decoders build representations that support autoregressive generation. Causal self-attention prevents access to future target tokens. Traditional encoder-decoder decoders also use cross-attention to retrieve source information. Feed-forward networks, residual connections, and normalization complete the block. Shifted targets and teacher forcing support parallel training, while inference generates tokens sequentially. Correct mask orientation, target alignment, and tensor dimensions are essential for reliable decoder implementations."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "decoder-ex-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why does a decoder-only language model use causal self-attention?",
+            "correctAnswer": "To prevent a position from using future tokens when predicting the next token.",
+            "solution": "The causal mask restricts each query to its own position and the permitted preceding context, preventing target leakage."
+        },
+        {
+            "id": "decoder-ex-02",
+            "type": "masking",
+            "difficulty": "intermediate",
+            "question": "For a sequence of length four, which key positions may query position 2 attend to using zero-based indexing?",
+            "correctAnswer": "Positions 0, 1, and 2.",
+            "solution": "Causal attention allows key position j when j is less than or equal to query position i. For i = 2, positions 0, 1, and 2 are allowed."
+        },
+        {
+            "id": "decoder-ex-03",
+            "type": "comparison",
+            "difficulty": "intermediate",
+            "question": "What extra attention mechanism is present in a traditional encoder-decoder decoder but normally absent from a decoder-only block?",
+            "correctAnswer": "Cross-attention to encoder outputs.",
+            "solution": "The traditional decoder retrieves source information through cross-attention, while a decoder-only model processes its prompt and output using causal self-attention."
+        },
+        {
+            "id": "decoder-ex-04",
+            "type": "mathematical",
+            "difficulty": "intermediate",
+            "question": "If the vocabulary contains 30,000 tokens and the decoder output is shaped (4, 20, 512), what is the shape of the vocabulary logits?",
+            "correctAnswer": "(4, 20, 30000).",
+            "solution": "The output projection maps the 512-dimensional hidden representation at each position to one logit per vocabulary token."
+        },
+        {
+            "id": "decoder-ex-05",
+            "type": "implementation",
+            "difficulty": "advanced",
+            "question": "What should you inspect if a decoder can use future tokens during training despite having a causal mask?",
+            "correctAnswer": "The mask orientation and semantics, the attention API's mask convention, and the alignment of input tokens with target labels.",
+            "solution": "A reversed mask or incorrectly shifted labels can introduce target leakage. Inspect a small mask matrix and test the exact forward pass before large-scale training."
+        },
+        {
+            "id": "decoder-ex-06",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "How does key-value caching speed up autoregressive generation?",
+            "correctAnswer": "It reuses keys and values computed for previous tokens instead of recomputing them at every generation step.",
+            "solution": "The new token can attend to cached representations from the existing prefix and newly computed representations for the current step."
+        }
+    ],
+    "summary": "A Transformer decoder uses causal self-attention to maintain autoregressive information flow. Encoder-decoder decoders additionally use cross-attention to retrieve source representations. Shifted targets support next-token training, while inference repeatedly predicts and appends tokens. Mask correctness and target alignment are critical.",
+    "relatedTopics": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-07-transformers-residual-connections-layer-norm",
+        "module-07-transformers-causal-masking",
+        "module-07-transformers-decoder-only-models",
+        "module-07-transformers-encoder-decoder-models"
+    ]
+}

@@ -1,1 +1,176 @@
-{}
+{
+    "id": "module-09-large-language-models-learning-rate-schedules",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 8,
+    "title": "Learning-Rate Schedules",
+    "slug": "learning-rate-schedules",
+    "href": "/curriculum/09-large-language-models/learning-rate-schedules",
+    "filePath": "content/curriculum/09-large-language-models/08-learning-rate-schedules.json",
+    "description": "Understand how learning rates control optimization, why LLM training uses warmup and decay, and how to implement constant, step, cosine, linear, inverse-square-root, and warmup-based schedules.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-training-objective-cross-entropy"
+    ],
+    "learningObjectives": [
+        "Explain how learning rate influences the magnitude of parameter updates.",
+        "Distinguish optimizer choice from learning-rate scheduling.",
+        "Understand constant, step, exponential, linear, cosine, and inverse-square-root schedules.",
+        "Explain learning-rate warmup and why it is useful in large-model training.",
+        "Derive and implement a warmup-plus-cosine schedule.",
+        "Understand schedule step counts, training horizons, and token-based progress.",
+        "Use PyTorch learning-rate schedulers correctly.",
+        "Diagnose unstable or slow training through learning-rate and loss curves.",
+        "Explain the relationship between batch size, optimizer behavior, and learning-rate tuning.",
+        "Plan schedule behavior when resuming a training run from a checkpoint."
+    ],
+    "sections": [
+        {
+            "id": "learning-rate-intuition",
+            "title": "1. What Is the Learning Rate?",
+            "type": "concept",
+            "content": "The learning rate controls how strongly an optimizer responds to the current gradient. In plain gradient descent, the parameter update is the gradient multiplied by the learning rate and subtracted from the parameter. In adaptive optimizers such as AdamW, the learning rate scales an update that has already been adjusted using gradient statistics.\n\nA learning rate that is too high can cause oscillation, unstable loss, or divergence. A learning rate that is too low can make training unnecessarily slow or prevent useful progress within the available compute budget. A schedule changes the learning rate during training instead of keeping it fixed for the entire run.\n\nLearning rate is not the same as the gradient magnitude, batch size, or weight decay. These factors interact, but they have different roles. A good training configuration treats them as related yet distinct choices."
+        },
+        {
+            "id": "constant-learning-rate",
+            "title": "2. Constant Learning Rate",
+            "type": "math",
+            "content": "A constant schedule uses the same learning rate for every optimizer update. It is simple and can work well for short experiments, some fine-tuning tasks, or carefully tuned training regimes. However, one value may not be ideal throughout a long run: larger updates can help early learning, while smaller updates can help refine parameters later.\n\nA constant learning rate does not mean the parameter update has constant magnitude. The gradient changes over time, and adaptive optimizers change their internal state. Only the explicit learning-rate multiplier remains fixed.\n\nWhen comparing schedules, hold the model, dataset, batch construction, optimizer, and evaluation procedure constant where possible. Otherwise, it becomes difficult to determine whether a performance difference is caused by the schedule or another training change.",
+            "formula": "eta_t = eta_0",
+            "example": "If the initial learning rate is 0.0003, a constant schedule uses 0.0003 at every update until training ends or another explicit change is made."
+        },
+        {
+            "id": "step-and-exponential-decay",
+            "title": "3. Step and Exponential Decay",
+            "type": "math",
+            "content": "Step decay reduces the learning rate at selected milestones. A typical schedule multiplies the current rate by a factor gamma after every specified number of epochs or optimizer updates. It is easy to understand and implement, but the abrupt changes may not be ideal for every large-scale training run.\n\nExponential decay reduces the learning rate continuously according to a multiplicative factor. One formulation is eta_t = eta_0 * gamma^t, where t is the chosen time index and gamma is between zero and one. If gamma is close to one, decay is slow; if it is substantially smaller, the rate shrinks rapidly.\n\nThese schedules can be appropriate for certain supervised learning tasks, but modern LLM pretraining often uses a warmup phase followed by linear, cosine, or another carefully designed decay schedule. The best choice depends on model size, training length, data, and optimization stability.",
+            "formula": "Step decay: eta_t = eta_0 * gamma^floor(t / milestone); exponential decay: eta_t = eta_0 * gamma^t",
+            "example": "With an initial rate of 0.001 and gamma = 0.1, one step-decay milestone reduces the rate to 0.0001. A second milestone reduces it to 0.00001."
+        },
+        {
+            "id": "linear-decay",
+            "title": "4. Linear Learning-Rate Decay",
+            "type": "math",
+            "content": "Linear decay decreases the learning rate along a straight line from a starting value to a final value. If the decay begins at step t_w and ends at step T, a normalized progress value can be computed as u = (t - t_w) / (T - t_w). The learning rate is then eta_t = eta_start * (1 - u) + eta_end * u.\n\nWhen eta_end is zero, the rate decreases linearly to zero at the end of the planned training horizon. Some implementations use a small nonzero final value. The scheduler should clamp progress so it does not accidentally produce negative learning rates after the intended end step.\n\nLinear decay is straightforward to reason about and commonly appears in fine-tuning recipes. In long pretraining runs, cosine decay is also widely used because its curve decreases gradually at first and more strongly near the end of the decay interval.",
+            "formula": "eta_t = eta_start * (1 - u) + eta_end * u, where u is normalized progress",
+            "example": "If eta_start = 0.001, eta_end = 0, and progress u = 0.25, the learning rate is 0.00075."
+        },
+        {
+            "id": "cosine-decay",
+            "title": "5. Cosine Learning-Rate Decay",
+            "type": "math",
+            "content": "Cosine decay changes the learning rate according to part of a cosine curve. A common schedule begins at a peak value and decreases smoothly toward a minimum value. The shape avoids the abrupt drops of step decay and allows a gradual reduction in update scale.\n\nFor normalized decay progress u between zero and one, a common formula is eta_t = eta_min + 0.5 * (eta_max - eta_min) * (1 + cos(pi * u)). At u = 0, the rate is eta_max. At u = 1, the rate is eta_min. At u = 0.5, the cosine term is zero, so the rate is halfway between eta_min and eta_max.\n\nCosine decay is often combined with warmup for LLM pretraining. Some recipes use a minimum learning rate instead of decaying all the way to zero, and others use cosine restarts or multiple phases. Those variants should be specified explicitly rather than assumed to be equivalent.",
+            "formula": "eta_t = eta_min + 0.5 * (eta_max - eta_min) * (1 + cos(pi * u))",
+            "example": "If eta_max = 0.001, eta_min = 0.0001, and u = 0.5, then eta_t = 0.00055.",
+            "code": "import math\n\ndef cosine_lr(step, total_steps, max_lr, min_lr=0.0):\n    progress = min(max(step / total_steps, 0.0), 1.0)\n    return min_lr + 0.5 * (max_lr - min_lr) * (1 + math.cos(math.pi * progress))\n\nfor step in (0, 250, 500, 750, 1000):\n    print(step, cosine_lr(step, 1000, 1e-3, 1e-4))",
+            "explanation": "The function clamps progress to the interval [0, 1] so steps beyond the planned horizon do not make the cosine rise again. This implementation represents the decay phase only; warmup can be added as a separate phase."
+        },
+        {
+            "id": "learning-rate-warmup",
+            "title": "6. Learning-Rate Warmup",
+            "type": "concept",
+            "content": "Warmup gradually increases the learning rate from a small initial value to a target peak over a specified number of updates or tokens. This can make early optimization more stable, especially when the model's parameters and optimizer statistics have not yet adapted to the training data.\n\nDuring the first steps, Adam-style moment estimates are still being formed, the model's predictions may be poorly calibrated, and large updates can be disruptive. A gradual warmup limits early update magnitude before the schedule reaches its intended peak.\n\nWarmup does not guarantee stability and is not always necessary in every training regime. Its duration should be considered alongside the peak learning rate, model architecture, optimizer, batch size, and total training horizon. Warmup can be linear, constant followed by decay, or another designed progression.",
+            "formula": "For linear warmup, eta_t = eta_max * t / warmup_steps when 0 <= t <= warmup_steps",
+            "example": "With peak learning rate 0.0006 and 2,000 warmup steps, step 500 uses approximately 0.00015 under a simple linear warmup."
+        },
+        {
+            "id": "warmup-cosine",
+            "title": "7. Warmup Followed by Cosine Decay",
+            "type": "math",
+            "content": "Warmup-plus-cosine combines two phases. During warmup, the learning rate rises from a small initial value to the peak. After warmup, the rate follows a cosine curve toward the minimum value by the planned final step.\n\nLet W be the number of warmup steps and T the total number of training steps, with T greater than W. During warmup, use eta_t = eta_max * t / W for the simplest zero-start schedule. After warmup, define u = (t - W) / (T - W) and apply cosine decay to u. A nonzero warmup starting rate can be used when needed.\n\nThis piecewise structure makes the schedule easy to inspect. However, the definition of a training step matters: optimizer updates, micro-batches, examples, and tokens are not interchangeable. The schedule's counter must advance according to the intended unit and resume correctly from checkpoints.",
+            "formula": "Warmup: eta_t = eta_max * t / W; decay: eta_t = eta_min + 0.5 * (eta_max - eta_min) * (1 + cos(pi * (t-W)/(T-W)))",
+            "code": "import math\n\ndef warmup_cosine_lr(step, warmup_steps, total_steps, max_lr, min_lr=0.0):\n    if total_steps <= warmup_steps:\n        raise ValueError(\"total_steps must exceed warmup_steps\")\n    if step < warmup_steps:\n        return max_lr * max(step, 0) / max(1, warmup_steps)\n    progress = min(max((step - warmup_steps) / (total_steps - warmup_steps), 0.0), 1.0)\n    return min_lr + 0.5 * (max_lr - min_lr) * (1 + math.cos(math.pi * progress))\n\nprint([warmup_cosine_lr(s, 100, 1000, 3e-4, 3e-5) for s in (0, 50, 100, 500, 1000)])",
+            "explanation": "The function performs linear warmup followed by cosine decay and validates the schedule horizon. In a training loop, calculate the learning rate at the appropriate optimizer-update boundary."
+        },
+        {
+            "id": "inverse-square-root-schedule",
+            "title": "8. Inverse-Square-Root Schedule",
+            "type": "concept",
+            "content": "Inverse-square-root schedules reduce the learning rate proportionally to the inverse square root of training progress after a warmup period. They have been used in Transformer training recipes and remain important when studying historical optimization configurations.\n\nA simplified schedule can be written as eta_t proportional to 1 / sqrt(t) after warmup, with a scaling constant chosen to connect the warmup and decay phases. This produces a gradual reduction that differs from linear and cosine decay. The exact formula can vary across implementations, so reproduce the documented version for a particular model.\n\nDifferent schedules allocate optimization effort differently across the training horizon. A schedule that decays too quickly may leave the model undertrained, while one that remains high too long may produce unstable late training. Plotting the learning rate against the intended progress measure helps reveal whether the schedule matches the training plan."
+        },
+        {
+            "id": "scheduler-step-semantics",
+            "title": "9. When Should the Scheduler Step?",
+            "type": "concept",
+            "content": "Learning-rate schedulers must be advanced at the correct point in the training loop. Many schedulers are intended to update once per optimizer step, not once per micro-batch during gradient accumulation. If the scheduler advances too often, the learning rate may decay much faster than intended.\n\nThe order of optimizer.step() and scheduler.step() depends on the scheduler API and framework convention. For many standard PyTorch schedulers, the usual order is optimizer.step() followed by scheduler.step(). Follow the specific scheduler documentation to avoid skipping the initial scheduled value or shifting the schedule by one update.\n\nEpoch-based schedules advance once per epoch, whereas update-based schedules advance once per optimizer update. LLM pretraining often plans training in optimizer steps or tokens. The counter should use the same unit as the schedule definition, and resuming training should restore both optimizer and scheduler states."
+        },
+        {
+            "id": "pytorch-schedulers",
+            "title": "10. Implementing Schedulers in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\nmodel = torch.nn.Linear(16, 4)\noptimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)\nscheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=1000, eta_min=3e-5)\n\nfor step in range(1000):\n    optimizer.zero_grad(set_to_none=True)\n    loss = model(torch.randn(32, 16)).square().mean()\n    loss.backward()\n    optimizer.step()\n    scheduler.step()\n    if step % 200 == 0:\n        print(step + 1, scheduler.get_last_lr())",
+            "explanation": "CosineAnnealingLR implements cosine annealing over the configured horizon. This example advances the scheduler once per optimizer update. In a real LLM training loop, connect the schedule to the actual number of planned optimizer steps and save its state with the checkpoint."
+        },
+        {
+            "id": "learning-rate-and-batch-size",
+            "title": "11. Learning Rate, Batch Size, and Gradient Noise",
+            "type": "concept",
+            "content": "Batch size affects the noise in the gradient estimate. Larger batches generally average over more examples or tokens, producing a gradient estimate with different variance characteristics than a small batch. This can change how learning rates should be tuned, but there is no universal rule that every batch-size increase should be matched by a proportional learning-rate increase.\n\nIn distributed LLM training, the effective batch may combine local micro-batches, gradient accumulation, and data-parallel workers. Token counts can vary across batches, so two configurations with the same number of sequences may process different numbers of supervised tokens. Loss normalization also changes the scale of the gradient.\n\nWhen scaling batch size, evaluate training stability and throughput, not just nominal batch size. Track tokens per second, optimizer updates per token, validation behavior, gradient norms, and learning-rate schedule progress. Large-batch training may require changes to warmup, peak learning rate, or total training steps."
+        },
+        {
+            "id": "schedule-diagnostics",
+            "title": "12. Diagnosing Learning-Rate Problems",
+            "type": "concept",
+            "content": "If training loss spikes sharply after the warmup period, check whether the peak learning rate is too high, whether the scheduler reached its intended peak, and whether the optimizer state is valid. A schedule can be mathematically correct but still unsuitable for the model or data.\n\nIf loss decreases very slowly, verify that the learning rate is not too small or decaying too early. Check the schedule's counter, units, total-step estimate, and whether gradient accumulation causes the scheduler to advance too frequently. If training resumes from a checkpoint, confirm that the scheduler state and global step are restored consistently.\n\nPlot learning rate, training loss, validation loss, gradient norm, and tokens processed on a shared timeline. This makes it easier to connect optimization behavior with schedule phases. When changing a schedule, preserve other settings when possible so the experiment gives interpretable evidence."
+        },
+        {
+            "id": "schedule-design-for-llms",
+            "title": "13. Designing a Schedule for LLM Pretraining",
+            "type": "concept",
+            "content": "A practical LLM schedule starts with an explicit training horizon. Estimate the number of optimizer updates and the number of tokens that will be processed. Choose a peak learning rate appropriate to the architecture, model scale, optimizer, and batch configuration. Select a warmup duration and decay strategy, then define the final learning rate and the exact update at which the schedule ends.\n\nThe schedule should be consistent with the intended training budget. If training stops early, a schedule designed for a much longer run may still have a relatively high learning rate. If training extends beyond the planned horizon, a clamped schedule may remain at its minimum or require an explicit extension strategy. Neither case should be left accidental.\n\nFor reproducibility, save the optimizer state, scheduler state, global update count, and token count in checkpoints. Record the scheduler configuration alongside the dataset version, model configuration, random seeds, and precision settings. A resumed run should continue the intended schedule rather than silently restarting warmup."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "learning-rate-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "With a linear warmup to 0.0008 over 1,000 steps, what is the learning rate at step 250 if the starting rate is zero?",
+            "correctAnswer": "0.0002",
+            "solution": "The progress fraction is 250 / 1000 = 0.25. The learning rate is 0.0008 * 0.25 = 0.0002."
+        },
+        {
+            "id": "learning-rate-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A cosine schedule has maximum learning rate 0.001 and minimum learning rate 0.0001. What is the learning rate halfway through the decay phase?",
+            "correctAnswer": "0.00055",
+            "solution": "At normalized progress 0.5, cos(pi * 0.5) = 0. The learning rate is the midpoint: 0.0001 + 0.5 * (0.001 - 0.0001) = 0.00055."
+        },
+        {
+            "id": "learning-rate-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might a training run use learning-rate warmup?",
+            "correctAnswer": "To gradually increase update magnitudes and improve early optimization stability.",
+            "solution": "Warmup limits early updates while model predictions and optimizer statistics are still adapting. It can reduce disruptive initial updates, although its usefulness depends on the training setup."
+        },
+        {
+            "id": "learning-rate-exercise-4",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "In a standard update-based PyTorch training loop, where should scheduler.step() usually be called relative to optimizer.step()?",
+            "correctAnswer": "After optimizer.step(), following the scheduler's documented convention.",
+            "solution": "For many standard PyTorch schedulers, call optimizer.step() first and scheduler.step() afterward. Follow the specific scheduler API, because scheduler behavior and intended stepping frequency can differ."
+        },
+        {
+            "id": "learning-rate-exercise-5",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "A cosine schedule was intended to run for 100,000 optimizer updates but reaches its minimum after 25,000 updates. What should you investigate?",
+            "correctAnswer": "The scheduler stepping frequency, total-step configuration, accumulation logic, and restored scheduler state.",
+            "solution": "The scheduler may be advancing on every micro-batch instead of every optimizer update, or the configured horizon may be incorrect. Also inspect checkpoint restoration and global-step tracking. Verify the actual learning-rate curve against the intended schedule."
+        }
+    ],
+    "summary": "A learning-rate schedule changes the optimizer's update scale throughout training. Common choices include constant, step, exponential, linear, cosine, and inverse-square-root schedules. Warmup can improve early stability, while decay can reduce update magnitudes later. In LLM training, define the schedule horizon carefully, step the scheduler at the correct frequency, and checkpoint the scheduler state so resumed training follows the intended plan.",
+    "relatedTopics": [
+        "module-09-large-language-models-parameter-initialization",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-distributed-training",
+        "module-09-large-language-models-checkpointing"
+    ]
+}

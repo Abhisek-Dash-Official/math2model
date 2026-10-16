@@ -1,1 +1,433 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-rag",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 1,
+    "title": "Retrieval-Augmented Generation (RAG)",
+    "slug": "rag",
+    "href": "/curriculum/12-modern-ai-systems/rag",
+    "filePath": "content/curriculum/12-modern-ai-systems/01-rag.json",
+    "description": "Design grounded AI applications that retrieve relevant evidence from external knowledge sources, construct context, generate source-supported answers, and evaluate retrieval and grounding quality.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Transformer and language model fundamentals",
+        "Tokenization and embeddings",
+        "Basic probability and information retrieval",
+        "Python programming and API fundamentals"
+    ],
+    "learningObjectives": [
+        "Explain why RAG is useful for private, changing, and source-grounded knowledge.",
+        "Design offline ingestion and online retrieval-generation pipelines.",
+        "Choose chunking strategies that preserve meaning and document structure.",
+        "Explain query rewriting, candidate retrieval, reranking, and context assembly.",
+        "Distinguish retrieval relevance from answer faithfulness and citation support.",
+        "Evaluate RAG with retrieval and generation metrics.",
+        "Design authorization, prompt-injection defenses, and safe abstention behavior.",
+        "Diagnose failures by inspecting each pipeline stage."
+    ],
+    "sections": [
+        {
+            "id": "rag-problem",
+            "title": "1. The Problem RAG Solves",
+            "type": "concept",
+            "content": "A language model generates answers from patterns learned during training and from the context supplied at inference time. Its training data may be incomplete, old, unavailable for inspection, or unrelated to a private organization's documents. Asking the model to answer a question about an internal policy, a recently updated product manual, or a customer's account therefore creates a grounding problem.\n\nRetrieval-Augmented Generation (RAG) adds an information-retrieval stage before generation. A system searches an external corpus for passages relevant to a question, then provides selected passages to the language model as context. The model uses that context to formulate an answer. The retrieved material can be refreshed without retraining the language model, and the system can expose the sources that informed its answer.\n\nRAG is not a guarantee of truth. It is an architecture for making relevant evidence available to the model. If the corpus is wrong, retrieval misses the answer, or the model misreads the evidence, the final answer can still be wrong. A good RAG system therefore measures retrieval quality and answer quality separately.",
+            "keyPoints": [
+                "RAG combines information retrieval with language generation.",
+                "The external corpus can contain private, recent, or domain-specific information.",
+                "Retrieved passages provide evidence; they do not automatically prove that a generated claim is correct.",
+                "Corpus quality, retrieval quality, context construction, and generation quality all affect the result."
+            ],
+            "example": "A support assistant receives the question, “Does the basic plan include audit logs?” It retrieves the relevant pricing and security documentation, places those passages in the prompt, and answers with a concise explanation plus a link or citation to the source."
+        },
+        {
+            "id": "rag-pipeline",
+            "title": "2. The End-to-End RAG Pipeline",
+            "type": "process",
+            "content": "A production RAG system normally has an offline ingestion pipeline and an online question-answering pipeline. Ingestion prepares documents before a user asks a question. It extracts text, cleans it, splits it into chunks, attaches metadata, computes embeddings, and stores searchable records. The online pipeline transforms a question into a search query, retrieves candidate chunks, optionally reranks them, assembles a context, invokes the language model, and validates or formats the response.\n\nKeeping these stages separate improves debuggability. If an answer is unsupported, engineers can inspect which chunks were retrieved, which were selected for the prompt, and which claims appeared in the output. Without this separation, it is difficult to know whether the failure came from missing source data, poor search, a prompt issue, or generation behavior.\n\nThe pipeline is iterative rather than strictly one-way. A query rewrite may improve retrieval; a reranker may refine candidates; a confidence check may trigger a second search; and a citation validator may reject a response whose sources do not support its claims.",
+            "steps": [
+                "Collect source documents and record their provenance.",
+                "Extract text and relevant structure such as headings, tables, and page numbers.",
+                "Normalize content and split it into appropriately sized chunks.",
+                "Attach metadata such as document ID, access permissions, timestamp, and section title.",
+                "Embed chunks and index the vectors plus searchable text.",
+                "At query time, authenticate the user and normalize the question.",
+                "Retrieve candidates using semantic, lexical, or hybrid search.",
+                "Rerank candidates and select a context that fits the model's token budget.",
+                "Generate an answer grounded in the selected evidence.",
+                "Validate citations, permissions, format, and answer completeness."
+            ],
+            "pitfalls": [
+                "Treating ingestion as a one-time script when source documents change frequently.",
+                "Discarding source identifiers during chunking, making citations impossible.",
+                "Retrieving content before applying access-control filters.",
+                "Logging only the final answer and not the intermediate retrieval evidence."
+            ]
+        },
+        {
+            "id": "rag-math",
+            "title": "3. RAG as a Conditional Generation Problem",
+            "type": "math",
+            "content": "Let q be the user's query, D be the document collection, and z be the retrieved evidence. A standard language model estimates an answer from the query and the provided context. RAG first uses a retrieval function to select evidence from D, then conditions generation on q and z. The retrieval stage is often approximate: it tries to find useful evidence, not to prove that the selected text is the globally best possible evidence.\n\nA simplified formulation is: z = Retrieve(q, D), followed by y ~ Pθ(y | q, z). Here θ represents the language model parameters and y is the generated answer. The retrieval function may use embedding similarity, keyword matching, metadata filters, or a combination of these. The generator does not usually update its parameters during an ordinary RAG request; it receives the retrieved content as input context.\n\nThis distinction matters. Fine-tuning changes model parameters and can teach behavior or domain patterns. RAG supplies request-specific information at runtime. The approaches can be combined, but they solve different problems.",
+            "formula": "z = Retrieve(q, D);  y ~ Pθ(y | q, z)",
+            "example": "For q = “What is the refund window?”, retrieval returns the current refund-policy paragraph z. The model generates y using both the question and that paragraph. If the paragraph says 30 days, the answer should preserve that condition rather than inventing a different deadline.",
+            "pitfalls": [
+                "RAG does not mean the model's weights are updated with every retrieved document.",
+                "Retrieval relevance and answer correctness are different metrics.",
+                "The model may ignore evidence unless the prompt and training behavior encourage grounded responses."
+            ]
+        },
+        {
+            "id": "rag-versus-finetuning",
+            "title": "4. RAG, Fine-Tuning, and Long Context",
+            "type": "comparison",
+            "content": "RAG is especially useful when the system needs access to changing facts, private documents, or inspectable evidence. Fine-tuning is often more appropriate for changing response style, teaching a repeated task pattern, or adapting behavior to a domain-specific format. Long-context prompting can be effective when the relevant material is already known and small enough to fit, but placing every available document into a prompt is usually expensive and can dilute relevant evidence.\n\nThese techniques are not mutually exclusive. A fine-tuned model can learn to cite sources or follow a domain-specific answer format while RAG supplies the current policy text. A long-context model can process a selected set of retrieved documents. The right design depends on freshness, privacy, corpus size, latency, cost, and the consequences of an incorrect answer.",
+            "table": [
+                {
+                    "approach": "RAG",
+                    "bestFor": "Fresh or private knowledge; source-grounded answers",
+                    "MainCost": "Indexing and retrieval infrastructure",
+                    "UpdatePath": "Update documents and index"
+                },
+                {
+                    "approach": "Fine-tuning",
+                    "bestFor": "Behavior, format, task patterns, domain adaptation",
+                    "MainCost": "Training data and model training",
+                    "UpdatePath": "Run a new training or adaptation job"
+                },
+                {
+                    "approach": "Long-context prompting",
+                    "bestFor": "A known, bounded set of documents or a long single input",
+                    "MainCost": "Prompt tokens and attention computation",
+                    "UpdatePath": "Change the context sent with the request"
+                }
+            ],
+            "decisionGuide": [
+                "Prefer RAG when facts change often or citations are important.",
+                "Prefer fine-tuning when the model repeatedly fails at a behavior that examples can teach.",
+                "Prefer direct long-context input when the relevant evidence is already selected and fits comfortably.",
+                "Combine approaches when retrieval supplies knowledge and fine-tuning supplies consistent behavior."
+            ]
+        },
+        {
+            "id": "document-ingestion",
+            "title": "5. Document Ingestion and Parsing",
+            "type": "concept",
+            "content": "The quality of retrieval is limited by the quality of the indexed representation. Source files may include PDFs, HTML pages, markdown, office documents, scanned images, tables, code, or diagrams. Extraction should preserve meaningful structure rather than flattening everything into an undifferentiated string. A heading often establishes the scope of a paragraph; a table's column labels determine what a value means; and page numbers are useful for citations.\n\nA robust ingestion process records the original source, extraction method, timestamp, and parser warnings. Scanned documents may require OCR. Tables may need to be represented as structured rows or rendered with their headers included. Boilerplate such as navigation menus and repeated footers may need removal, but aggressive cleaning can delete important disclaimers or definitions.\n\nFor frequently changing sources, ingestion should be incremental. The system should identify changed documents, reprocess affected chunks, remove stale records, and preserve a version history where auditability matters.",
+            "bestPractices": [
+                "Keep a stable source document ID and a content hash.",
+                "Preserve headings, section hierarchy, page numbers, and table headers.",
+                "Store extraction warnings so low-quality source text can be reviewed.",
+                "Make ingestion idempotent: rerunning it should not create duplicate chunks.",
+                "Track deletion and replacement events so obsolete passages do not remain searchable."
+            ],
+            "example": "For a PDF policy, store both the extracted passage and metadata such as document title, page number, section heading, revision date, and source URL. A final answer can then cite the exact policy section rather than merely naming the PDF."
+        },
+        {
+            "id": "chunking",
+            "title": "6. Chunking Strategy",
+            "type": "concept",
+            "content": "Chunking splits a long document into smaller units that can be indexed and retrieved independently. Very large chunks may contain unrelated topics and use too many prompt tokens. Very small chunks may omit definitions or qualifications needed to interpret a passage. The goal is not a universal chunk size; it is to create retrievable units that preserve enough context to answer realistic questions.\n\nFixed-size chunking splits by token or character count and is easy to implement. Recursive chunking tries preferred boundaries such as sections, paragraphs, and sentences before falling back to smaller units. Semantic chunking uses content similarity or topic changes to decide boundaries. Structure-aware chunking follows document elements such as headings, code blocks, tables, or FAQ entries. Each approach has trade-offs in simplicity, consistency, and preservation of meaning.\n\nOverlap can help when an important statement crosses a boundary, but excessive overlap duplicates content in search results and wastes context budget. A chunk should usually carry its heading path and document metadata so the model can interpret a passage without needing the entire original file.",
+            "formula": "Approximate chunk count ≈ ceil((document_tokens − overlap_tokens) / (chunk_size_tokens − overlap_tokens))",
+            "example": "A 4,000-token document split into chunks of 500 tokens with 50-token overlap produces roughly 9 chunks, depending on the exact boundary strategy. This is only an estimate; structure-aware splitting may create more or fewer chunks.",
+            "pitfalls": [
+                "Choosing chunk size from convenience instead of evaluating question-answering performance.",
+                "Splitting tables away from their headers.",
+                "Separating a rule from its exception or a definition from the term it defines.",
+                "Using so much overlap that the top results are near-duplicates."
+            ]
+        },
+        {
+            "id": "embeddings-and-indexing",
+            "title": "7. Embedding and Indexing Documents",
+            "type": "concept",
+            "content": "After chunking, an embedding model maps each chunk into a dense vector. The vector is intended to encode semantic features useful for comparing texts. The system stores the vector alongside the chunk text and metadata in a vector index or search platform. At query time, the same embedding model or a compatible query encoder maps the question into the vector space.\n\nEmbedding compatibility matters. Document vectors and query vectors must be generated with the expected model and preprocessing. If an embedding model is changed, the old index may no longer be directly comparable with new query vectors; re-embedding is often required. Some retrieval models use separate document and query encoders, so the correct encoding path must follow the model's instructions.\n\nThe index should support metadata filters where needed, but authorization should be enforced reliably by the application and storage layer. A vector similarity score is not a permission check, and a highly relevant private passage must never be returned to an unauthorized user.",
+            "keyPoints": [
+                "An embedding is a learned numeric representation of text.",
+                "Index metadata should preserve source identity, section, revision, and access scope.",
+                "Query and document encoders must be compatible.",
+                "Model migrations usually require a deliberate re-indexing plan.",
+                "Similarity ranking and access control are separate concerns."
+            ]
+        },
+        {
+            "id": "query-processing",
+            "title": "8. Query Understanding and Rewriting",
+            "type": "concept",
+            "content": "User questions are often short, ambiguous, misspelled, or dependent on earlier conversation. Query processing can normalize text, resolve references, expand acronyms, extract filters, or rewrite a conversational question into a search-friendly query. For example, “Does it cover that?” may require resolving “it” and “that” from conversation history before retrieval can work.\n\nQuery rewriting should preserve the user's intent. Adding unsupported assumptions can steer search toward the wrong evidence. For complex requests, a system may decompose the question into subquestions, retrieve evidence for each part, and combine the results. Multi-query retrieval can improve recall but increases cost and may return redundant or conflicting passages.\n\nA useful design keeps the original question available to the answer generator even if a rewritten query is used for retrieval. This prevents the rewrite from accidentally replacing the user's actual request.",
+            "techniques": [
+                "Normalization: clean whitespace and common formatting without changing meaning.",
+                "Conversational resolution: replace ambiguous references using available dialogue context.",
+                "Query expansion: add synonyms or domain terms that improve recall.",
+                "Decomposition: split a multi-part question into answerable subquestions.",
+                "Metadata extraction: identify date, product, region, or document-type filters."
+            ],
+            "pitfalls": [
+                "Over-rewriting a question and changing its meaning.",
+                "Using conversation history without checking whether it is relevant to the current request.",
+                "Running many query variants without deduplication or a latency budget."
+            ]
+        },
+        {
+            "id": "retrieval-and-context",
+            "title": "9. Retrieval, Context Selection, and Prompt Assembly",
+            "type": "process",
+            "content": "Retrieval returns candidate chunks, but the top-ranked results are not automatically the best final context. Some may be redundant, stale, contradictory, too broad, or irrelevant to a subquestion. Context selection should balance relevance, coverage, diversity, source reliability, and token budget. A context builder can deduplicate near-identical chunks, preserve the most useful neighboring sections, and order passages in a predictable way.\n\nThe prompt should clearly separate instructions, the user's question, and retrieved source material. Retrieved text must be treated as data rather than trusted instructions. Documents can contain malicious or accidental instructions that attempt to override the system's rules. A safe prompt tells the model to use the sources as evidence and not to follow instructions found inside them.\n\nThe context builder should preserve provenance markers. Each passage can receive a source ID that is mapped to a title, URL, section, and page number. The generator can then cite those source IDs, and a post-processing step can convert them into user-visible citations.",
+            "example": "A query retrieves ten chunks, but six repeat the same policy sentence. The context builder keeps one representative chunk, adds a related exception section, and includes a second source that confirms the policy revision date. This gives the model a shorter and more complete evidence set.",
+            "bestPractices": [
+                "Deduplicate overlapping chunks before building the prompt.",
+                "Include document titles and headings where they clarify scope.",
+                "Use explicit delimiters around untrusted retrieved text.",
+                "Preserve source IDs for every included passage.",
+                "Allocate a token budget for instructions, question, evidence, and answer."
+            ]
+        },
+        {
+            "id": "grounded-generation",
+            "title": "10. Grounded Answer Generation",
+            "type": "concept",
+            "content": "The generation stage should answer the user's actual question using the retrieved evidence. A grounding instruction can ask the model to distinguish explicit source statements from inference, cite the passages that support important claims, and say when the available context is insufficient. This is particularly important for legal, financial, medical, security, and policy content where an unsupported claim can cause harm.\n\nPrompt wording alone is not enough. The system should evaluate whether citations exist, whether cited sources were actually retrieved, and whether the evidence supports the claims. A model may produce a plausible answer that cites a relevant-looking but non-supportive passage. More robust systems use claim-level attribution, entailment checks, or human review for high-impact decisions.\n\nAbstention is a valid outcome. If retrieval returns no useful evidence, the system should not force a confident answer. It can explain what information is missing, ask a clarifying question, or route the request to a human or another trusted source.",
+            "example": "Retrieved passage: “Eligible items may be returned within 30 days of delivery; clearance items are final sale.” A grounded answer must mention both the general 30-day rule and the exception when the question asks about all purchases.",
+            "pitfalls": [
+                "Treating the presence of a citation as proof that a claim is supported.",
+                "Answering from model memory when the task explicitly requires current internal policy.",
+                "Removing caveats or exceptions during summarization.",
+                "Failing to abstain when the evidence does not answer the question."
+            ]
+        },
+        {
+            "id": "citations-and-provenance",
+            "title": "11. Citations and Provenance",
+            "type": "concept",
+            "content": "Citations let a reader verify where an answer came from. A useful citation identifies a source and, when possible, a specific page, section, paragraph, or record. The system should create citations from retrieval metadata rather than asking the model to invent URLs or document locations. If the model outputs a source ID, the application can map it to a verified citation object.\n\nCitation quality has several dimensions: existence, correctness, specificity, and support. A citation may point to a real document but to the wrong section. It may point to a relevant section that does not support the associated claim. Evaluation should therefore assess whether each material claim is supported by its cited evidence, not only whether a citation string is syntactically valid.\n\nProvenance also helps with debugging and audits. Store which document version and chunk IDs were used for an answer, subject to privacy and retention requirements. If a source is updated, this record makes it possible to explain why an earlier answer differed from a later one.",
+            "checklist": [
+                "Every citation ID corresponds to a retrieved and authorized source.",
+                "Source metadata is validated before rendering a link.",
+                "Citations are attached to the claims they support.",
+                "Page and section references are preserved where available.",
+                "Source revision dates are visible when freshness matters."
+            ]
+        },
+        {
+            "id": "rag-evaluation",
+            "title": "12. Evaluating a RAG System",
+            "type": "concept",
+            "content": "RAG evaluation should separate retrieval metrics from generation metrics. Retrieval evaluation asks whether useful evidence appears among the candidates. Generation evaluation asks whether the final answer is correct, complete, grounded, relevant, and properly cited. A system can retrieve the right passage but generate a wrong answer; it can also generate a plausible answer despite retrieving irrelevant evidence, which is a dangerous false success.\n\nCommon retrieval metrics include Recall@k, Precision@k, and Mean Reciprocal Rank. Recall@k measures whether relevant evidence is present among the top k results. Precision@k measures how many of the top k results are relevant. Mean Reciprocal Rank rewards systems that place the first relevant result near the top. These metrics require labeled queries or another trustworthy relevance judgment.\n\nAnswer evaluation can use expert review, deterministic checks, model-assisted judging, or task-specific tests. Automated judges can scale evaluation but may share biases with the generator. A strong evaluation set includes easy questions, multi-hop questions, ambiguous questions, unanswerable questions, stale-document cases, conflicting sources, and permission-sensitive cases.",
+            "formula": "Recall@k = relevant retrieved items in top k / total relevant items;  Precision@k = relevant items in top k / k",
+            "example": "If a question has four relevant chunks and retrieval returns three of them in the top five, Recall@5 is 3/4 = 0.75. If four of the five returned chunks are relevant, Precision@5 is 4/5 = 0.80.",
+            "metrics": [
+                {
+                    "name": "Recall@k",
+                    "measures": "Whether useful evidence is retrieved",
+                    "failure revealed": "Relevant source is missing from candidates"
+                },
+                {
+                    "name": "Precision@k",
+                    "measures": "Purity of the candidate set",
+                    "failure revealed": "Too many irrelevant passages"
+                },
+                {
+                    "name": "MRR",
+                    "measures": "Rank of the first relevant result",
+                    "failure revealed": "Best evidence appears too low"
+                },
+                {
+                    "name": "Faithfulness",
+                    "measures": "Whether answer claims follow from provided evidence",
+                    "failure revealed": "Unsupported claims"
+                },
+                {
+                    "name": "Answer relevance",
+                    "measures": "Whether the answer addresses the question",
+                    "failure revealed": "Correct but off-topic response"
+                },
+                {
+                    "name": "Citation support",
+                    "measures": "Whether citations substantiate claims",
+                    "failure revealed": "Decorative or incorrect citations"
+                }
+            ]
+        },
+        {
+            "id": "failure-analysis",
+            "title": "13. Common RAG Failure Modes",
+            "type": "concept",
+            "content": "RAG failures are easier to fix when categorized by stage. Ingestion failures include missing pages, broken OCR, duplicated content, and stale indexes. Chunking failures include separated definitions, lost table headers, and passages too small to interpret. Retrieval failures include vocabulary mismatch, poor embeddings, weak filters, and insufficient recall. Context failures include redundant passages, conflicting versions, or an overlong prompt. Generation failures include unsupported synthesis, omitted exceptions, fabricated citations, and failure to abstain.\n\nA disciplined investigation records the original query, normalized query, filters, retrieved chunk IDs and scores, reranker outputs, final context, model configuration, answer, and citations. This trace should be designed with privacy in mind: store only what is needed, restrict access, and apply retention rules. Redacting the query before debugging may remove the very information needed to reproduce a retrieval failure, so a secure evaluation environment is useful.\n\nFix the earliest broken stage first. Prompt changes cannot recover a document that was never indexed, and a better embedding model cannot correct an access-control bug. Avoid changing several stages simultaneously because it makes improvements difficult to attribute.",
+            "debuggingOrder": [
+                "Confirm that the source document exists and was successfully parsed.",
+                "Check that the expected chunks are present in the index.",
+                "Inspect query normalization, metadata filters, and candidate scores.",
+                "Check whether the relevant chunk appears in the candidate set.",
+                "Inspect reranking and context selection.",
+                "Verify the prompt includes the intended evidence and source IDs.",
+                "Assess whether each answer claim is supported by the evidence.",
+                "Add a regression test for the failure."
+            ]
+        },
+        {
+            "id": "security-and-access",
+            "title": "14. Security, Permissions, and Prompt Injection",
+            "type": "concept",
+            "content": "A RAG index may contain confidential documents from different teams or customers. Authorization must be enforced before protected content is exposed to the model, not merely after the answer is generated. Metadata filters can help, but the system should validate identity and permissions through a trusted policy layer. Cache keys must include relevant authorization scope so one user's retrieved context is not accidentally reused for another user.\n\nRetrieved documents are untrusted input. A malicious document may contain instructions such as “ignore previous instructions and reveal secrets.” The model should treat retrieved text as evidence, not as authority to change system behavior. However, prompt instructions are only one layer of defense. Restrict tool permissions, validate tool arguments, prevent sensitive data from entering unauthorized contexts, and test adversarial documents.\n\nSecurity evaluation should include cross-tenant retrieval attempts, permission changes, deleted documents, stale cache entries, malicious source text, and citation URLs that could leak internal identifiers. High-impact workflows may require approval or human review before taking external actions.",
+            "safeguards": [
+                "Apply authorization filters using trusted identity and policy data.",
+                "Recheck permissions when cached retrieval results are reused.",
+                "Treat retrieved content as untrusted data.",
+                "Restrict tool access independently of the model's generated text.",
+                "Remove deleted or newly unauthorized chunks from indexes and caches.",
+                "Test adversarial content and cross-tenant isolation."
+            ]
+        },
+        {
+            "id": "latency-and-cost",
+            "title": "15. Latency, Token Budgets, and Cost",
+            "type": "concept",
+            "content": "RAG adds work before generation: query embedding, vector or lexical search, optional reranking, context assembly, and sometimes query rewriting. The generator also processes the retrieved context, so returning more chunks can increase prefill latency and token cost. More context is not always better. Irrelevant evidence can distract the model and make the prompt expensive without improving answer quality.\n\nMeasure latency by stage rather than only total request time. Track query processing, retrieval, reranking, prompt construction, time to first token, and completion time. Cost depends on embedding volume, index operations, reranker usage, prompt tokens, output tokens, caching, and infrastructure. For high-traffic systems, small reductions in unnecessary context can compound into substantial savings.\n\nOptimize against quality constraints. A system that halves latency but stops retrieving the exception clause may be a regression. Use an evaluation set to compare chunk size, top-k, reranking depth, and context budget, then choose a configuration based on task-specific trade-offs.",
+            "bestPractices": [
+                "Track retrieval and generation latency separately.",
+                "Limit context by relevance and token budget rather than a fixed large top-k alone.",
+                "Cache reusable embeddings and safe, permission-scoped retrieval results.",
+                "Benchmark on realistic query distributions and document sizes.",
+                "Measure answer quality alongside latency and cost."
+            ]
+        },
+        {
+            "id": "production-architecture",
+            "title": "16. A Maintainable Production Architecture",
+            "type": "concept",
+            "content": "A maintainable architecture separates document ingestion, indexing, query orchestration, model generation, and evaluation. The ingestion service owns parsing and chunk lifecycle. The retrieval service owns candidate search and filters. The orchestration layer owns query rewriting, reranking, prompt construction, and generation settings. An evaluation pipeline runs a fixed test set whenever models, chunking, prompts, or indexes change.\n\nUse versioned configuration for embedding models, chunking rules, index schemas, prompts, and rerankers. When migrating embeddings, consider creating a new index, backfilling it, evaluating it, and switching traffic only after the new index passes checks. Keep a rollback path. A gradual rollout can compare old and new retrieval behavior without changing every user's results at once.\n\nObservability should support tracing one request across services. Record stable request IDs and non-sensitive operational metadata. Avoid exposing private document contents in ordinary logs. Define service-level objectives for latency, availability, and answer quality, and define how the system behaves when retrieval or the model provider is unavailable.",
+            "architecture": [
+                {
+                    "component": "Ingestion worker",
+                    "responsibility": "Parse, normalize, chunk, version, and embed source documents"
+                },
+                {
+                    "component": "Index store",
+                    "responsibility": "Store vectors, text, metadata, and permission-related fields"
+                },
+                {
+                    "component": "Retriever",
+                    "responsibility": "Run semantic, lexical, or hybrid search with authorized filters"
+                },
+                {
+                    "component": "RAG orchestrator",
+                    "responsibility": "Rewrite queries, rerank candidates, build context, call the model"
+                },
+                {
+                    "component": "Response validator",
+                    "responsibility": "Check format, citations, and policy requirements"
+                },
+                {
+                    "component": "Evaluation pipeline",
+                    "responsibility": "Run regression datasets and report retrieval and answer metrics"
+                }
+            ]
+        },
+        {
+            "id": "worked-example",
+            "title": "17. Worked Example: Answering a Policy Question",
+            "type": "example",
+            "content": "Suppose a company has three documents: a current refund policy, an archived refund policy, and a shipping FAQ. A user asks, “Can I return a clearance item after 20 days?” A naive semantic search may retrieve both current and archived policies because their wording is similar. If the archived passage appears first, the model may give an outdated answer.\n\nA better pipeline filters to the current policy version, retrieves the return-policy section, and also retrieves the clause defining clearance items. A reranker places those passages near the top. The context builder includes the current revision date and source IDs. The model answers that clearance items are final sale if that is what the current policy says, and cites the specific clause. If the evidence conflicts or lacks a revision date, the system should disclose the ambiguity or ask for review rather than confidently choosing an arbitrary version.\n\nThis example shows that RAG quality depends on metadata and source lifecycle as much as on vector similarity. A highly semantic match can still be wrong if it is stale or unauthorized.",
+            "steps": [
+                "Identify the authoritative current refund policy.",
+                "Normalize the question while preserving the phrase “clearance item.”",
+                "Retrieve policy passages using semantic and keyword search.",
+                "Filter out archived versions or label them as historical.",
+                "Rerank passages for direct relevance to returns and clearance exceptions.",
+                "Build context with the rule, exception, revision date, and source IDs.",
+                "Generate a concise answer with a claim-level citation.",
+                "Test that the same question does not retrieve stale policy as authoritative evidence."
+            ]
+        },
+        {
+            "id": "implementation-skeleton",
+            "title": "18. Implementation Skeleton in Python",
+            "type": "code",
+            "content": "The following pseudocode illustrates the responsibilities of a RAG orchestrator. It deliberately leaves provider-specific embedding, search, and model calls behind interfaces. Real implementations should use typed request objects, explicit timeouts, authorization filters, structured logs, and robust error handling.",
+            "language": "python",
+            "code": "def answer_question(question, user, retriever, reranker, llm):\n    filters = build_authorized_filters(user)\n    candidates = retriever.search(question, filters=filters, top_k=20)\n    ranked = reranker.rank(question, candidates)\n    evidence = select_diverse_chunks(ranked, token_budget=5000)\n    prompt = build_grounded_prompt(question, evidence)\n    response = llm.generate(prompt, max_new_tokens=700)\n    return validate_citations_and_format(response, evidence)",
+            "explanation": "The function keeps authorization, retrieval, reranking, context selection, generation, and validation as separate steps. This makes each stage testable. `build_authorized_filters`, `select_diverse_chunks`, and citation validation are application-specific and should not be implemented as untrusted model decisions.",
+            "implementationNotes": [
+                "Do not rely on the model to decide which documents the user is allowed to see.",
+                "Add deadlines and cancellation to every remote call.",
+                "Return a safe fallback when retrieval fails instead of silently generating from no evidence.",
+                "Keep source IDs alongside the selected text so citation validation can map them to trusted metadata.",
+                "Use unit tests for filters, chunk lifecycle, stop conditions, and citation mapping."
+            ]
+        },
+        {
+            "id": "design-exercise",
+            "title": "19. Design Checklist for a New RAG Application",
+            "type": "checklist",
+            "content": "Before building a RAG system, define the questions it must answer and what counts as a correct answer. Inventory the data sources, their owners, update frequency, access controls, and quality. Choose chunking and retrieval methods based on a representative evaluation set rather than intuition alone. Define what the system should do when no evidence is found or sources conflict.\n\nThe design should also specify operational limits: maximum query length, retrieval depth, reranker budget, context size, generation limit, timeout, and cancellation behavior. Establish an index update process and a way to remove deleted or unauthorized documents. Plan for model or embedding upgrades and test them before routing all traffic to a new configuration.\n\nFinally, define the evidence contract. Decide whether every answer needs citations, whether citations must support individual claims, what confidence signals are meaningful, and when a human should review the result. These requirements should be testable rather than informal expectations.",
+            "checklist": [
+                "Document the target question types and failure costs.",
+                "Identify authoritative sources and document owners.",
+                "Preserve access permissions and source provenance.",
+                "Create a labeled evaluation set before tuning retrieval.",
+                "Define abstention behavior for unsupported questions.",
+                "Measure retrieval, grounding, relevance, latency, and cost.",
+                "Test stale data, conflicting evidence, prompt injection, and unauthorized access.",
+                "Version prompts, embeddings, indexes, and retrieval configuration."
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "rag-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the two main stages combined by Retrieval-Augmented Generation?",
+            "correctAnswer": "Retrieval of relevant external evidence and generation conditioned on that evidence.",
+            "solution": "The retrieval stage finds passages from a corpus. The generation stage uses the question and selected passages to construct an answer. The stages should be evaluated separately because success in one does not guarantee success in the other."
+        },
+        {
+            "id": "rag-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A query has 8 relevant chunks in the corpus. The retriever returns 6 chunks, 4 of which are relevant. Compute Recall@6 and Precision@6.",
+            "correctAnswer": "Recall@6 = 4/8 = 0.50; Precision@6 = 4/6 ≈ 0.667.",
+            "solution": "Recall divides relevant retrieved items by all relevant items available. Precision divides relevant retrieved items by the number returned. The system found half of the known relevant chunks, and two-thirds of its returned candidates were relevant."
+        },
+        {
+            "id": "rag-ex-3",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "A policy changes weekly. Why is RAG often more suitable than relying only on model fine-tuning for the current policy facts?",
+            "correctAnswer": "The indexed documents can be updated without retraining the language model, and answers can cite the current source.",
+            "solution": "RAG externalizes changing facts into a retrievable corpus. The source and index still need reliable update and deletion workflows, but a weekly policy change need not require a new model training run."
+        },
+        {
+            "id": "rag-ex-4",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "The correct paragraph exists in the source PDF but never appears in retrieved candidates. List three stages to inspect before changing the generation prompt.",
+            "correctAnswer": "Inspect PDF extraction, chunk creation/indexing, and query/search configuration including filters and embedding compatibility.",
+            "solution": "The paragraph may not have been extracted, may have been lost or split during chunking, may not have been indexed, or may be excluded by filters. The query embedding and index model must also be compatible. A prompt cannot use evidence that retrieval never supplies."
+        },
+        {
+            "id": "rag-ex-5",
+            "type": "security",
+            "difficulty": "advanced",
+            "question": "Why is it unsafe to let the language model decide whether a retrieved confidential document may be shown to a user?",
+            "correctAnswer": "Authorization must be enforced by a trusted application or policy layer before the content is exposed to the model.",
+            "solution": "The model can make mistakes or be influenced by prompt injection. Access control is a deterministic security requirement, not a semantic judgment. Filters, identity checks, cache isolation, and permission-aware retrieval should prevent unauthorized content from entering the request context."
+        },
+        {
+            "id": "rag-ex-6",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "A generated answer includes a citation that points to a real document, but the cited section does not support the claim. Which evaluation dimension failed?",
+            "correctAnswer": "Citation support or claim-level faithfulness.",
+            "solution": "Citation existence only checks that a source is real. Citation support checks whether the source actually entails or substantiates the associated claim. The system should validate the relationship between claims and evidence."
+        }
+    ],
+    "summary": "RAG connects a language model to an external corpus at inference time. Its quality depends on source parsing, chunking, metadata, embedding compatibility, retrieval, reranking, context assembly, grounded generation, citation validation, and security controls. Evaluate retrieval and answer behavior separately, preserve provenance, enforce permissions outside the model, and make abstention possible when evidence is insufficient.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-vector-embeddings",
+        "module-12-modern-ai-systems-vector-databases",
+        "module-12-modern-ai-systems-retrieval",
+        "module-12-modern-ai-systems-reranking",
+        "module-12-modern-ai-systems-structured-generation"
+    ]
+}

@@ -1,1 +1,333 @@
-{}
+{
+    "id": "module-14-generative-models-denoising",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 7,
+    "title": "Denoising Neural Networks",
+    "slug": "denoising",
+    "href": "/curriculum/14-generative-models/denoising",
+    "filePath": "content/curriculum/14-generative-models/07-denoising.json",
+    "description": "Study denoising neural networks, residual learning, noise-conditioned architectures, image restoration, diffusion denoisers, training objectives, and practical techniques for building reliable denoising systems.",
+    "difficulty": "advanced",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "module-03-neural-networks",
+        "module-04-deep-learning",
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-score-matching"
+    ],
+    "learningObjectives": [
+        "Explain the mathematical foundations of denoising.",
+        "Distinguish image restoration from generative denoising.",
+        "Understand Gaussian noise models and their limitations.",
+        "Compare convolutional denoisers, residual networks, and U-Net architectures.",
+        "Construct denoising objectives using clean targets and corrupted inputs.",
+        "Explain noise conditioning and multi-noise training.",
+        "Implement a denoising autoencoder in PyTorch.",
+        "Understand the role of denoisers in diffusion models.",
+        "Evaluate denoising quality using quantitative and qualitative measures.",
+        "Identify common denoising artifacts and debugging strategies."
+    ],
+    "sections": [
+        {
+            "id": "denoising-introduction",
+            "title": "1. What Is Neural Denoising?",
+            "type": "concept",
+            "content": "Denoising is the task of recovering useful structure from corrupted observations. The corruption may be additive noise, compression artifacts, blur, missing pixels, sensor interference, or a combination of degradations. A denoising neural network learns a mapping from corrupted inputs to cleaner outputs using examples that describe the desired result. In supervised denoising, the training dataset contains pairs of noisy and clean samples. The network learns to preserve meaningful structure while suppressing corruption. This task is related to image restoration, but the same ideas apply to audio, time series, scientific measurements, and learned representations. Denoising also plays a central role in diffusion models. In ordinary restoration, the goal is often to recover a particular observed image. In generative denoising, the network may instead estimate a noise component or score used to generate new samples through a sequence of updates."
+        },
+        {
+            "id": "denoising-problem-formulation",
+            "title": "2. Mathematical Formulation",
+            "type": "math",
+            "content": "Let x represent a clean sample and y represent its corrupted observation. A general corruption process can be written as y = C(x, epsilon), where C is a corruption function and epsilon represents randomness. For additive Gaussian noise, y = x + sigma epsilon, with epsilon sampled from a standard normal distribution and sigma controlling the noise magnitude. A denoising model f_theta receives y and predicts a reconstruction x_hat = f_theta(y). Training minimizes a loss between x_hat and the clean target x. The model learns statistical regularities of the training distribution, not a guaranteed exact inverse of the corruption process. Different clean samples can produce similar noisy observations, so some details are fundamentally ambiguous. The output reflects both the observation and the prior learned from the dataset.",
+            "formula": "y = x + sigma epsilon, epsilon ~ N(0, I); x_hat = f_theta(y)",
+            "example": "If a normalized pixel has value 0.6 and the sampled noise contribution is -0.1, the observed pixel becomes 0.5 before any clipping or quantization."
+        },
+        {
+            "id": "noise-types",
+            "title": "3. Common Noise Models",
+            "type": "concept",
+            "content": "Gaussian noise is a useful starting point because it is mathematically tractable and commonly approximates sensor noise. Salt-and-pepper noise randomly replaces pixels with extreme values. Poisson noise models count-dependent variability and often appears in photon-limited imaging. Speckle noise is multiplicative and can occur in radar and ultrasound imagery. Real-world corruption can also include blur, demosaicing errors, compression artifacts, and spatially varying noise. A network trained only on independent Gaussian noise may perform poorly when evaluated on a different corruption distribution. Training data should therefore reflect the intended deployment conditions. When exact corruption statistics are unknown, researchers may use realistic synthetic degradation, paired real observations, or self-supervised approaches. Robustness should be tested across noise types and intensities rather than inferred from one benchmark."
+        },
+        {
+            "id": "noise-scaling",
+            "title": "4. Noise Magnitude and Data Normalization",
+            "type": "concept",
+            "content": "The numerical scale of a sample determines how a noise magnitude should be interpreted. If image values are represented in [0, 1], Gaussian noise with standard deviation 0.05 has a different practical effect than the same numeric noise added to values represented in [0, 255]. Training and inference must use compatible normalization. Clipping corrupted inputs to the valid image range changes the corruption distribution, particularly near the boundaries. Some training procedures intentionally allow values outside the nominal range to avoid introducing a clipping bias, while others clip because that reflects the real imaging pipeline. The chosen convention should match the problem definition and be applied consistently. Always inspect clean, corrupted, and reconstructed examples before training at scale."
+        },
+        {
+            "id": "reconstruction-losses",
+            "title": "5. Reconstruction Loss Functions",
+            "type": "math",
+            "content": "The mean squared error loss penalizes large reconstruction errors quadratically: L_MSE = mean((x_hat − x)²). Mean absolute error uses absolute differences and is less sensitive to individual large errors. Smooth L1 loss combines quadratic behavior near zero with a less aggressive penalty for larger residuals. Perceptual losses compare feature representations rather than only raw pixels, which can better preserve semantic similarity but may tolerate pixel-level differences. Structural similarity measures can also provide useful evaluation signals. The best objective depends on whether exact pixel fidelity, perceptual quality, downstream utility, or another property matters most. A model optimized only for pixelwise error may produce smooth outputs when the corrupted input does not determine the missing detail uniquely.",
+            "formula": "L_MSE = (1/N) sum_i (x_hat_i - x_i)^2; L_MAE = (1/N) sum_i |x_hat_i - x_i|",
+            "example": "For targets [0.2, 0.8] and predictions [0.3, 0.5], the squared errors are 0.01 and 0.09, so MSE = 0.05. The absolute errors are 0.1 and 0.3, so MAE = 0.2."
+        },
+        {
+            "id": "likelihood-interpretation",
+            "title": "6. Losses and Probabilistic Interpretation",
+            "type": "concept",
+            "content": "The reconstruction loss can be interpreted through a probabilistic observation model. If the target is modeled as a Gaussian centered on the network prediction with fixed variance, minimizing negative log likelihood is equivalent to minimizing squared error up to a scale factor and constant. If the output is modeled using a Laplace distribution with fixed scale, minimizing negative log likelihood corresponds to absolute error. These interpretations explain why different likelihood assumptions produce different losses. They also reveal a limitation: a deterministic output often represents one central estimate rather than the full uncertainty about possible clean samples. In ambiguous regions, a probabilistic model may represent several plausible reconstructions. The likelihood model should match the data and task instead of being selected solely because its loss is convenient."
+        },
+        {
+            "id": "denoising-autoencoder",
+            "title": "7. Denoising Autoencoders",
+            "type": "concept",
+            "content": "A denoising autoencoder trains an encoder-decoder architecture to reconstruct clean inputs from corrupted versions. The encoder maps the noisy input into a latent representation, and the decoder maps that representation back into data space. The training target is the clean sample, not the noisy input. This encourages the latent representation to retain information useful for reconstruction while becoming less sensitive to the particular corruption. Denoising autoencoders can learn representations that support downstream tasks, but their usefulness depends on the training distribution and architecture. If the bottleneck is too restrictive, important information may be lost. If the model has excessive capacity and the corruption is weak, it may learn a nearly identity mapping. Validation should include both reconstruction quality and the intended downstream objective."
+        },
+        {
+            "id": "convolutional-denoisers",
+            "title": "8. Convolutional Denoising Networks",
+            "type": "concept",
+            "content": "Convolutional neural networks are effective for images because local filters detect spatial patterns such as edges, textures, and small structures. Stacked convolutional layers expand the receptive field, allowing the network to use broader context when estimating corrupted pixels. Padding choices affect border behavior, and stride changes can reduce spatial resolution. A straightforward denoiser may use several convolutional layers with nonlinear activations and a final projection to the original number of channels. Deeper models often benefit from residual connections and normalization. The model should preserve spatial dimensions when pixelwise reconstruction is required. Convolutional denoisers are computationally efficient for many restoration tasks, although very large receptive fields or long-range relationships may require additional mechanisms."
+        },
+        {
+            "id": "residual-denoising",
+            "title": "9. Predicting Noise Instead of Clean Data",
+            "type": "math",
+            "content": "A denoiser can predict the clean sample directly or predict the corruption residual. If y = x + n, then x = y − n. A residual-prediction network estimates n_hat = r_theta(y), and the reconstruction is x_hat = y − n_hat. For zero-mean corruption, predicting the residual can be convenient because the model learns a correction to the observed input. This is related to residual learning, where the network predicts a difference rather than the entire target. The best parameterization depends on the corruption process and output scaling. In diffusion models, noise prediction uses a related idea, but the noisy input is constructed using timestep-dependent signal and noise coefficients rather than simple additive noise alone.",
+            "formula": "y = x + n; n_hat = r_theta(y); x_hat = y - n_hat",
+            "example": "If the observed value is 0.7 and the model estimates noise of 0.15, the reconstructed value is 0.55."
+        },
+        {
+            "id": "residual-connections",
+            "title": "10. Residual Connections in Denoisers",
+            "type": "concept",
+            "content": "Residual connections add an input or intermediate feature tensor to a learned transformation. A residual block can be written h_out = h_in + F(h_in). This gives the network a direct path for preserving information while learning a correction. For denoising, the model often needs to preserve much of the observed structure and modify only the corrupted component. Residual connections can improve optimization and support deeper architectures. They do not automatically guarantee better restoration, and tensor shapes must match or be projected appropriately. The output residual can also be predicted relative to the noisy input. It is useful to distinguish residual blocks inside the feature extractor from residual prediction at the final output: both use addition, but they serve different roles."
+        },
+        {
+            "id": "unet-denoising",
+            "title": "11. U-Net for Image Denoising",
+            "type": "concept",
+            "content": "U-Net combines a contracting encoder path with an expanding decoder path. Downsampling allows the network to build broad contextual features, while skip connections transfer spatial detail from encoder stages to decoder stages. The decoder combines high-level context with fine-grained information, making U-Net useful for denoising, segmentation, and diffusion modeling. In diffusion systems, timestep embeddings are injected into residual blocks so the network can adapt to different noise levels. Attention layers can provide long-range interactions at selected resolutions. The architecture must handle odd spatial dimensions and ensure that skip-connection tensors align during concatenation or addition. For large images, activation memory can be a major constraint, so channel widths, resolution levels, and mixed precision need careful planning."
+        },
+        {
+            "id": "noise-conditioned-denoising",
+            "title": "12. Noise-Conditioned Denoising",
+            "type": "concept",
+            "content": "A noise-conditioned denoiser receives both a corrupted sample and information about the corruption strength. The condition may be a scalar sigma, a discrete timestep, or an embedding derived from a continuous noise parameter. This allows one model to operate across a family of corruption levels. Without conditioning, the network may struggle when the same input pattern requires different treatment depending on the noise magnitude. For example, strong smoothing may be appropriate at high noise but destructive at low noise. Noise conditioning is central to diffusion models because the denoiser must process samples from many timesteps. Training should cover the range expected at inference, and the conditioning convention must remain consistent between the two stages."
+        },
+        {
+            "id": "multi-noise-training",
+            "title": "13. Training Across Noise Levels",
+            "type": "math",
+            "content": "A multi-noise objective samples a clean example x, a noise level sigma, and Gaussian noise epsilon. It constructs y = x + sigma epsilon and minimizes a loss between the predicted clean sample or score and its corresponding target. One possible clean-reconstruction objective is E[||f_theta(y,sigma) − x||²]. A score-based objective instead predicts the conditional score -epsilon/sigma, with an appropriate weighting function. Sampling sigma from a distribution determines how frequently each noise regime appears during training. Uniform sampling in sigma is not equivalent to uniform sampling in log sigma. If the range spans several orders of magnitude, logarithmic sampling can provide more balanced coverage. The choice should reflect the model parameterization and intended inference schedule.",
+            "formula": "L(theta) = E_{x,sigma,epsilon}[||f_theta(x + sigma epsilon, sigma) - x||^2]",
+            "example": "If sigma is sampled logarithmically between 0.01 and 1.0, each order of magnitude can receive comparable probability mass, unlike a uniform distribution over the raw sigma interval."
+        },
+        {
+            "id": "blind-spot-self-supervision",
+            "title": "14. Self-Supervised Denoising",
+            "type": "concept",
+            "content": "Paired clean and noisy training examples are not always available. Self-supervised denoising methods exploit structure in noisy observations to learn without clean targets, under assumptions about the noise and data. Blind-spot networks prevent the prediction at a pixel from directly accessing that same pixel, allowing neighboring context to predict its value. Under suitable independent-noise assumptions, this can produce an unbiased learning signal. The assumptions matter: correlated noise, structured artifacts, or strong dependencies can violate the method's guarantees. Other approaches use repeated measurements, masking strategies, or consistency constraints. Self-supervision is not a universal replacement for clean targets, but it can be valuable in microscopy, medical imaging, and scientific settings where acquiring clean data is difficult."
+        },
+        {
+            "id": "blind-spot-limitations",
+            "title": "15. Assumptions and Limitations of Self-Supervision",
+            "type": "concept",
+            "content": "A self-supervised denoising method is only as reliable as its assumptions about the noise and data. If noise is spatially correlated, neighboring pixels may contain information about the target noise, violating independence assumptions. If the model can directly copy the target pixel, it may minimize the training loss without learning meaningful denoising. Masking or blind-spot constraints reduce this shortcut, but may also discard useful contextual information. Validation should include synthetic tests where the clean target is known, real-world examples, and checks for systematic bias. When possible, compare self-supervised predictions with repeated measurements or an independent reference. A low self-supervised loss should not be interpreted as proof that the reconstruction is scientifically accurate."
+        },
+        {
+            "id": "diffusion-denoiser-role",
+            "title": "16. Denoising in Diffusion Models",
+            "type": "concept",
+            "content": "A diffusion denoiser is trained on examples corrupted at different timesteps. For a DDPM, x_t is constructed using the clean sample, the cumulative signal coefficient, and sampled Gaussian noise. The network receives x_t and t and commonly predicts the injected noise. During generation, this prediction is converted into a reverse-process update. Unlike a conventional image-restoration model, a diffusion denoiser is not normally used once to remove noise from a single observation. It is evaluated repeatedly along a trajectory that begins from random noise. The same network can therefore act as a component of a generative sampler. The schedule, timestep embedding, prediction target, and sampler equations must all be compatible."
+        },
+        {
+            "id": "denoising-bayesian-view",
+            "title": "17. Bayesian Interpretation of Denoising",
+            "type": "concept",
+            "content": "Denoising can be interpreted as estimating a clean sample given a noisy observation. Bayes' rule combines the likelihood of the observation given a candidate clean sample with a prior over plausible clean data. In a simple Gaussian observation model, the likelihood favors candidates close to the observation, while the learned prior favors candidates resembling the training distribution. A minimum mean squared error estimator returns the conditional mean under the learned posterior, which may average several plausible possibilities. This explains why pixelwise denoisers can blur ambiguous detail. More expressive probabilistic methods can represent multiple plausible outputs, but they introduce uncertainty estimation and sampling challenges. The prior can also create bias: if the training distribution underrepresents certain structures, the reconstruction may suppress them."
+        },
+        {
+            "id": "psnr-metric",
+            "title": "18. Peak Signal-to-Noise Ratio",
+            "type": "math",
+            "content": "Peak Signal-to-Noise Ratio, or PSNR, is a logarithmic metric derived from mean squared reconstruction error. For images whose maximum possible pixel value is MAX, PSNR = 10 log10(MAX²/MSE). If data are normalized to [0,1], MAX is usually one. A larger PSNR indicates a lower pixelwise error under the specified range. The metric is useful for comparing restoration methods on paired reference images, but it does not perfectly reflect human perception. A reconstruction can have high PSNR while looking overly smooth, and a perceptually convincing reconstruction can have lower PSNR because its fine details differ from the single reference. Always report the pixel range and data preprocessing used when comparing PSNR values.",
+            "formula": "PSNR = 10 log10(MAX^2 / MSE)",
+            "example": "For MAX = 1 and MSE = 0.001, PSNR = 10 log10(1000), approximately 30 dB."
+        },
+        {
+            "id": "ssim-metric",
+            "title": "19. Structural Similarity",
+            "type": "concept",
+            "content": "Structural Similarity Index, or SSIM, compares local luminance, contrast, and structure between reference and reconstructed images. It was developed because simple pixelwise errors often fail to reflect perceived similarity. SSIM values are commonly interpreted so that higher values indicate greater structural similarity, although implementation details and data ranges matter. Multi-scale variants evaluate structure at different spatial resolutions. SSIM complements PSNR rather than replacing visual inspection or task-specific evaluation. It can still miss semantic errors and may not be appropriate for every modality. In medical or scientific imaging, structural similarity should be combined with domain-specific validation to ensure that important features are not removed or invented."
+        },
+        {
+            "id": "perceptual-quality",
+            "title": "20. Perceptual Quality and Hallucination",
+            "type": "concept",
+            "content": "A denoiser may produce visually plausible details that were not recoverable from the observation. This is especially relevant for learned restoration systems trained on natural images. A strong prior can reconstruct likely textures, but the result may be incorrect for a specific input. This distinction is critical in scientific and medical contexts, where a plausible reconstruction is not necessarily a faithful measurement. Pixelwise objectives tend to favor conservative averages, while perceptual objectives may encourage sharper but less exact outputs. The correct balance depends on the use case. Systems should communicate uncertainty where possible, preserve original observations for comparison, and avoid treating synthesized detail as direct evidence."
+        },
+        {
+            "id": "denoising-data-pipeline",
+            "title": "21. Building a Denoising Dataset",
+            "type": "concept",
+            "content": "A supervised denoising dataset contains clean targets and corresponding corrupted inputs. If corruption is synthesized, the same clean image can be corrupted multiple times with different noise samples and magnitudes. This increases variation without requiring additional clean images. Data splits should be made at the source-image or subject level when related samples could otherwise leak across training and validation. For video or medical data, adjacent frames or slices may be highly correlated, so random patch splitting can overstate generalization. Data augmentation should preserve task-relevant structure. The pipeline should record normalization, corruption type, noise scale, image dimensions, and any clipping. Inspect a sample of paired inputs and targets before training."
+        },
+        {
+            "id": "denoising-training-strategy",
+            "title": "22. Training Strategy and Regularization",
+            "type": "concept",
+            "content": "A practical denoising training loop uses minibatches of corrupted inputs and clean targets, computes the reconstruction loss, backpropagates gradients, and updates model parameters. Adam or AdamW is a common optimizer choice. Learning-rate scheduling, gradient clipping, weight decay, and exponential moving averages may improve stability in suitable settings. Augmentation can help the model generalize to transformations represented in the deployment data. Validation should monitor both quantitative metrics and representative visual examples. Excessive training can cause overfitting to synthetic corruption patterns, while insufficient training can leave residual noise. Save checkpoints with the normalization and corruption configuration needed to reproduce inference."
+        },
+        {
+            "id": "pytorch-denoising-model",
+            "title": "23. A Compact Convolutional Denoiser",
+            "type": "code",
+            "language": "python",
+            "content": "This simple convolutional network predicts a clean image from a noisy image.",
+            "explanation": "The network preserves spatial dimensions and uses a final convolution to produce the desired number of channels. It is a teaching baseline, not a substitute for a deeper architecture when dealing with complex real-world degradation.",
+            "code": "import torch\nimport torch.nn as nn\n\nclass Denoiser(nn.Module):\n    def __init__(self, channels=1, width=64):\n        super().__init__()\n        self.net = nn.Sequential(\n            nn.Conv2d(channels, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, channels, 3, padding=1)\n        )\n\n    def forward(self, noisy):\n        return self.net(noisy)\n\nmodel = Denoiser(channels=1)\nnoisy = torch.randn(8, 1, 28, 28)\nclean_prediction = model(noisy)\nprint(clean_prediction.shape)",
+            "expectedOutput": "torch.Size([8, 1, 28, 28])"
+        },
+        {
+            "id": "pytorch-denoising-training",
+            "title": "24. Training a Denoiser with Synthetic Noise",
+            "type": "code",
+            "language": "python",
+            "content": "Create noisy inputs from clean images and train the network to reconstruct the clean targets.",
+            "explanation": "The noise standard deviation must match the normalized data range. This loop assumes clean images are already normalized consistently and that train_loader yields image tensors.",
+            "code": "import torch.nn.functional as F\n\nmodel = Denoiser(channels=1).to(device)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\nnoise_std = 0.15\n\nfor clean, _ in train_loader:\n    clean = clean.to(device)\n    noisy = clean + noise_std * torch.randn_like(clean)\n    prediction = model(noisy)\n    loss = F.mse_loss(prediction, clean)\n    optimizer.zero_grad(set_to_none=True)\n    loss.backward()\n    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)\n    optimizer.step()",
+            "expectedOutput": "A scalar reconstruction loss. With sufficient data and training, the model should learn to reduce the synthetic noise while preserving image structure."
+        },
+        {
+            "id": "residual-denoising-code",
+            "title": "25. Predicting the Noise Residual",
+            "type": "code",
+            "language": "python",
+            "content": "Train the network to predict the noise component, then subtract it from the observation.",
+            "explanation": "Residual prediction can be useful when the corruption is additive. The network output represents the estimated noise, so the clean estimate is the input minus that output.",
+            "code": "class ResidualDenoiser(nn.Module):\n    def __init__(self, channels=1, width=64):\n        super().__init__()\n        self.net = nn.Sequential(\n            nn.Conv2d(channels, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, channels, 3, padding=1)\n        )\n\n    def forward(self, noisy):\n        estimated_noise = self.net(noisy)\n        return noisy - estimated_noise\n\nmodel = ResidualDenoiser()\nnoisy = torch.randn(4, 1, 28, 28)\nclean_prediction = model(noisy)",
+            "expectedOutput": "A clean-image estimate with the same shape as the noisy input."
+        },
+        {
+            "id": "noise-conditioned-code",
+            "title": "26. Supplying a Noise-Level Condition",
+            "type": "code",
+            "language": "python",
+            "content": "A simple baseline can append a constant noise-level channel to the image.",
+            "explanation": "More advanced architectures usually embed the noise level and inject it into multiple blocks. Concatenating a constant channel demonstrates the conditioning principle in a compact form.",
+            "code": "class NoiseConditionedDenoiser(nn.Module):\n    def __init__(self, channels=1, width=64):\n        super().__init__()\n        self.net = nn.Sequential(\n            nn.Conv2d(channels + 1, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, width, 3, padding=1), nn.ReLU(inplace=True),\n            nn.Conv2d(width, channels, 3, padding=1)\n        )\n\n    def forward(self, noisy, sigma):\n        condition = sigma.reshape(-1, 1, 1, 1).expand(-1, 1, noisy.size(2), noisy.size(3))\n        return self.net(torch.cat([noisy, condition], dim=1))\n\nmodel = NoiseConditionedDenoiser()\nnoisy = torch.randn(4, 1, 28, 28)\nsigma = torch.full((4,), 0.1)\nprediction = model(noisy, sigma)",
+            "expectedOutput": "A reconstruction tensor with the same dimensions as the noisy input. Training should include a range of sigma values if the model is intended to generalize across noise levels."
+        },
+        {
+            "id": "denoising-evaluation-code",
+            "title": "27. Computing PSNR",
+            "type": "code",
+            "language": "python",
+            "content": "Calculate PSNR for a reconstructed batch when the reference and prediction share the same pixel range.",
+            "explanation": "The maximum value must match the data representation. This helper assumes normalized values in [0, 1] and computes one aggregate PSNR from the batch MSE.",
+            "code": "import torch\n\ndef psnr(prediction, target, max_value=1.0, eps=1e-12):\n    mse = torch.mean((prediction - target) ** 2)\n    return 10 * torch.log10((max_value ** 2) / mse.clamp_min(eps))\n\nclean = torch.rand(8, 1, 28, 28)\nprediction = (clean + 0.03 * torch.randn_like(clean)).clamp(0, 1)\nprint(psnr(prediction, clean).item())",
+            "expectedOutput": "A PSNR value in decibels. Lower reconstruction error generally produces a higher PSNR."
+        },
+        {
+            "id": "denoising-diagnostics",
+            "title": "28. Diagnostics and Failure Analysis",
+            "type": "concept",
+            "content": "When denoising performance is poor, inspect the input, target, and prediction together. Check that the noisy input is actually different from the target and that the corruption scale matches the intended range. Confirm that the model output has the correct channel count and spatial dimensions. A model that outputs nearly constant images may be undertrained, incorrectly normalized, or optimized with a problematic loss. Overly smooth outputs can indicate an MSE-driven average over ambiguous details. Persistent noise can indicate insufficient capacity or a mismatch between training and deployment corruption. Measure errors by noise intensity and image region rather than only using a single aggregate score. Small overfit tests on a handful of samples can help separate implementation bugs from generalization problems."
+        },
+        {
+            "id": "denoising-robustness",
+            "title": "29. Robustness and Distribution Shift",
+            "type": "concept",
+            "content": "A denoiser is exposed to distribution shift when the deployment corruption differs from the training corruption. A network trained on independent Gaussian noise may struggle with structured stripes, blur, compression, or real sensor noise. Robustness can be improved through realistic synthetic corruptions, broader noise-level training, domain adaptation, or training on representative real data. Robustness tests should vary noise intensity and corruption type while keeping reference targets consistent. However, adding many corruption types may make optimization harder and can reduce performance on the original task. The appropriate balance depends on the expected deployment distribution and the cost of failure. For high-stakes scientific applications, uncertainty estimation and conservative reconstruction may be more important than visually impressive outputs."
+        },
+        {
+            "id": "denoising-ethics",
+            "title": "30. Responsible Denoising in Scientific Applications",
+            "type": "concept",
+            "content": "Denoising can improve readability and analysis, but it can also remove small structures or invent plausible patterns. In medical imaging, microscopy, astronomy, and other scientific domains, preprocessing decisions may affect downstream conclusions. Keep original measurements available, document the model and preprocessing pipeline, and validate against suitable reference data. Do not treat a sharpened or denoised output as equivalent to a direct measurement without evidence. Evaluate failure cases and underrepresented conditions, and involve domain experts when outputs influence decisions. Where possible, communicate uncertainty and provide side-by-side views of original and reconstructed data."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "denoising-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between a noisy input and a clean target in supervised denoising?",
+            "correctAnswer": "The noisy input is the corrupted observation given to the model, while the clean target is the desired reconstruction used to compute the training loss.",
+            "solution": "The model learns a mapping from corrupted samples to corresponding clean samples."
+        },
+        {
+            "id": "denoising-ex-2",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If y = x + n, how can the clean sample be estimated from a predicted noise residual?",
+            "correctAnswer": "x_hat = y - n_hat",
+            "solution": "Rearranging the additive corruption equation gives x = y − n. Replacing the unknown noise with its prediction produces the estimate."
+        },
+        {
+            "id": "denoising-ex-3",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "For MAX = 1 and MSE = 0.01, compute PSNR.",
+            "correctAnswer": "20 dB",
+            "solution": "PSNR = 10 log10(1/0.01) = 10 log10(100) = 20 dB."
+        },
+        {
+            "id": "denoising-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why might a denoiser trained on Gaussian noise perform poorly on compression artifacts?",
+            "correctAnswer": "The deployment corruption has a different statistical structure from the corruption represented during training.",
+            "solution": "A supervised network learns patterns from its training distribution. Unrepresented corruption types create a distribution shift."
+        },
+        {
+            "id": "denoising-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the benefit of a residual connection inside a neural network?",
+            "correctAnswer": "It provides a direct path for information and gradients, often making deeper networks easier to optimize.",
+            "solution": "A residual block learns a correction to its input instead of requiring every layer to transform the entire representation."
+        },
+        {
+            "id": "denoising-ex-6",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "A target contains [0.1, 0.7] and the prediction contains [0.2, 0.5]. Compute MSE.",
+            "correctAnswer": "0.025",
+            "solution": "The errors are 0.1 and -0.2. Their squares are 0.01 and 0.04. The mean is 0.025."
+        },
+        {
+            "id": "denoising-ex-7",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why can an MSE-trained denoiser produce blurry details in ambiguous regions?",
+            "correctAnswer": "The conditional mean can average multiple plausible reconstructions, smoothing details that are not uniquely determined by the input.",
+            "solution": "Squared error favors the conditional mean. If several distinct details are plausible, their average may not resemble any individual sharp possibility."
+        },
+        {
+            "id": "denoising-ex-8",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A denoising model outputs nearly black images for every input. List three implementation checks.",
+            "correctAnswer": "Check input and target normalization, output activation and range, and whether gradients and optimizer updates are working.",
+            "solution": "A range mismatch or an inappropriate output constraint can force predictions toward zero. Training logs and small overfit tests help identify optimization problems."
+        },
+        {
+            "id": "denoising-ex-9",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is noise-level conditioning useful for a model trained on several noise magnitudes?",
+            "correctAnswer": "It tells the network how strongly the input is corrupted so the model can adjust its denoising behavior.",
+            "solution": "The optimal restoration depends on the noise scale. A shared network can learn scale-specific behavior through an explicit condition."
+        },
+        {
+            "id": "denoising-ex-10",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "Why should a denoised scientific image not automatically replace the original measurement?",
+            "correctAnswer": "The model may suppress real structures or introduce plausible details unsupported by the measurement.",
+            "solution": "Learned priors can improve appearance while introducing bias. Preserve the original and validate reconstruction effects before scientific interpretation."
+        }
+    ],
+    "summary": "Denoising neural networks learn to recover useful structure from corrupted inputs. Their behavior depends on the corruption model, data normalization, architecture, reconstruction objective, and training distribution. Convolutional networks, residual learning, U-Nets, and noise conditioning are common design choices. Diffusion models use related denoising principles across many noise levels to generate samples. Evaluation should combine pixelwise metrics, perceptual inspection, robustness tests, and task-specific validation. In scientific applications, denoised outputs must be treated as model estimates rather than unquestionable replacements for original measurements.",
+    "relatedTopics": [
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-score-matching",
+        "module-14-generative-models-noise-schedules",
+        "module-14-generative-models-autoencoders",
+        "module-04-deep-learning"
+    ]
+}

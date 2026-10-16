@@ -1,1 +1,161 @@
-{}
+{
+    "id": "training-validation-test-sets",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 2,
+    "title": "Training, Validation, and Test Sets",
+    "slug": "training-validation-test-sets",
+    "description": "Master data splitting, model selection, cross-validation, leakage prevention, stratification, time-aware evaluation, and reliable estimation of model generalization.",
+    "difficulty": "beginner",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Basic Python",
+        "Basic probability",
+        "Understanding of features, labels, and model training"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of training, validation, and test datasets.",
+        "Choose suitable split proportions for different data regimes.",
+        "Understand cross-validation and stratified sampling.",
+        "Identify target leakage and preprocessing leakage.",
+        "Choose group-aware and time-aware evaluation strategies.",
+        "Explain why repeated test-set tuning creates optimistic estimates.",
+        "Implement a reproducible split and evaluation pipeline in scikit-learn."
+    ],
+    "sections": [
+        {
+            "id": "why-split",
+            "title": "1. Why Do We Split Data?",
+            "type": "concept",
+            "content": "A model's performance on the data used to fit it usually gives an optimistic estimate of how it will perform on unseen examples. Training data is used to estimate model parameters, so the model has already adapted to that data. A separate evaluation dataset helps estimate performance on observations not used for fitting. The central goal is not to score well on examples the model has already seen; it is to estimate how the complete learning procedure will behave on future or otherwise unseen data. A split must reflect the intended deployment scenario. Randomly splitting independent records may be reasonable for an independent and identically distributed dataset, but it can be misleading for time series, repeated observations from the same person, or data with related groups."
+        },
+        {
+            "id": "three-sets",
+            "title": "2. Training, Validation, and Test Sets",
+            "type": "concept",
+            "content": "The training set is used to fit model parameters. The validation set supports model selection, hyperparameter tuning, threshold selection, and comparisons among candidate pipelines. The test set is reserved for a final assessment after development decisions are complete. If the test set is repeatedly inspected while changing models, it gradually becomes part of the development process and no longer provides a clean final estimate. A common split is 70% training, 15% validation, and 15% testing, but there is no universal ratio. Large datasets may reserve a smaller percentage for evaluation, while small datasets may benefit from cross-validation. The most important requirement is enough independent evaluation data to estimate the metrics that matter."
+        },
+        {
+            "id": "split-math",
+            "title": "3. Split Sizes and Sampling",
+            "type": "math",
+            "content": "For a dataset containing N independent examples, a split proportion can be translated into counts. If N = 10,000 and the proportions are 70%, 15%, and 15%, the sets contain 7,000, 1,500, and 1,500 examples. This arithmetic does not guarantee that each set is representative. If the target classes are imbalanced, random sampling can accidentally produce very few positive examples in a small validation set. Stratified splitting attempts to preserve approximate class proportions across subsets. In grouped data, however, keeping class proportions is not enough if related observations cross the split boundary. The sampling procedure should be chosen based on the data-generating process rather than habit."
+        },
+        {
+            "id": "cross-validation",
+            "title": "4. K-Fold Cross-Validation",
+            "type": "concept",
+            "content": "In K-fold cross-validation, the dataset is divided into K folds. The model is fitted K times, each time using K-1 folds for training and the remaining fold for validation. The K validation scores are aggregated, commonly by their mean and sometimes their standard deviation. With five-fold cross-validation, each observation is used for validation once and for training in the other four runs. Cross-validation makes more efficient use of limited data than a single holdout split, though it costs more computation. It is especially useful for model selection on small and medium-sized datasets. The final test set, if one is available, should remain separate from the cross-validation process used for development."
+        },
+        {
+            "id": "nested-cv",
+            "title": "5. Nested Cross-Validation",
+            "type": "concept",
+            "content": "When hyperparameters are selected using cross-validation, the resulting best cross-validation score can be optimistic because many configurations were compared. Nested cross-validation separates hyperparameter selection from performance estimation. An inner cross-validation loop selects the configuration, while an outer loop evaluates the selected procedure on held-out folds. This can provide a less biased estimate of model-selection performance, particularly when datasets are small and many configurations are compared. Nested cross-validation is computationally more expensive and is not required for every production workflow. A sufficiently large untouched test set can often provide a practical alternative for final evaluation."
+        },
+        {
+            "id": "leakage",
+            "title": "6. Data Leakage",
+            "type": "concept",
+            "content": "Data leakage occurs when information unavailable to a legitimate prediction process influences training or evaluation. Target leakage can occur when a feature directly or indirectly contains the outcome, such as using a final medical billing code to predict a decision that happened before the code was created. Preprocessing leakage occurs when a transformation learns from validation or test data before evaluation, such as computing feature means using the entire dataset before splitting. Leakage can produce impressive offline scores and disappointing real-world results. Fit learned transformations only on the training partition, and apply the fitted transformations to validation, test, and deployment data. Pipelines help enforce this discipline."
+        },
+        {
+            "id": "split-types",
+            "title": "7. Choosing the Correct Split Strategy",
+            "type": "concept",
+            "content": "Random splitting is appropriate when observations are sufficiently independent and future data resembles the sampled population. Stratified splitting is useful for classification when maintaining class proportions matters. Group splitting prevents observations from the same person, customer, patient, household, or source group from appearing in both training and evaluation sets. Time-based splitting trains on earlier observations and evaluates on later ones when the system predicts the future. Spatial or site-based splitting may be needed when generalizing to new locations or institutions. The wrong split can allow near-duplicate or correlated examples into both sets, making evaluation look better than actual deployment performance."
+        },
+        {
+            "id": "reproducibility",
+            "title": "8. Reproducibility and Random Seeds",
+            "type": "concept",
+            "content": "Many split functions use random sampling. A fixed random seed makes the split reproducible for the same data and software behavior, which is helpful for debugging and comparisons. Reproducibility does not mean a single split is statistically definitive. Performance may vary across different samples, especially for small datasets. Report the split strategy, seed when relevant, dataset size, evaluation metric, and uncertainty where possible. Do not select a random seed simply because it produces the most favorable result."
+        },
+        {
+            "id": "metrics-uncertainty",
+            "title": "9. Metrics, Variability, and Sample Size",
+            "type": "concept",
+            "content": "An evaluation score is an estimate rather than a guarantee. Small evaluation sets can yield noisy metrics, especially when positive examples are rare. Reporting only the best fold or the best random split can hide instability. Cross-validation means and standard deviations provide one view of variability, although folds are not fully independent statistical experiments. Confidence intervals or bootstrap estimates may help quantify uncertainty. Evaluation should also consider whether the chosen metric matches the application. For a rare-event classifier, accuracy alone can be misleading; precision, recall, PR-AUC, calibration, or a cost-based metric may be more useful."
+        },
+        {
+            "id": "python-example",
+            "title": "10. A Leakage-Safe Scikit-Learn Workflow",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import classification_report\n\nX, y = load_breast_cancer(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = make_pipeline(\n    StandardScaler(),\n    LogisticRegression(max_iter=2000)\n)\n\ncv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)\nscores = cross_val_score(model, X_train, y_train, cv=cv, scoring='roc_auc')\nprint('CV ROC-AUC:', scores.mean(), '+/-', scores.std())\n\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\nprint(classification_report(y_test, predictions))",
+            "explanation": "The test set is separated before cross-validation. Cross-validation is performed only on the training portion, and the pipeline ensures that standardization is fitted separately inside each fold. The final model is fitted on all training data and evaluated on the untouched test set."
+        },
+        {
+            "id": "checklist",
+            "title": "11. Practical Evaluation Checklist",
+            "type": "concept",
+            "content": "Before trusting an evaluation, ask: Does the split reflect the intended deployment scenario? Are related records separated where necessary? Is the target defined at the correct prediction time? Are all transformations fitted only on training data? Were model and threshold decisions made without repeatedly consulting the final test set? Is the metric aligned with the costs of false positives and false negatives? Are the test sample size and class counts sufficient? Are preprocessing, feature selection, resampling, and calibration included within the appropriate training or cross-validation procedure? These questions prevent many common sources of inflated performance."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "q1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A dataset contains 2,000 records. With a 70/15/15 split, how many records go into each partition?",
+            "correctAnswer": "Training: 1,400; validation: 300; test: 300.",
+            "solution": "Compute 0.70 × 2,000 = 1,400 and 0.15 × 2,000 = 300 for each of the remaining partitions."
+        },
+        {
+            "id": "q2",
+            "type": "short-answer",
+            "difficulty": "easy",
+            "question": "What is the main purpose of a validation set?",
+            "correctAnswer": "To compare candidate models and select hyperparameters without using the final test set.",
+            "solution": "The validation set informs development decisions. The test set should be reserved for final assessment."
+        },
+        {
+            "id": "q3",
+            "type": "scenario",
+            "difficulty": "medium",
+            "question": "A dataset contains 100,000 transactions, but only 0.2% are fraudulent. Which split consideration is important?",
+            "correctAnswer": "Use a suitable stratified split for independent records, verify positive counts, and choose metrics suitable for rare events.",
+            "solution": "At 0.2%, a random small evaluation sample may contain too few fraud cases for a stable estimate. Stratification can preserve class proportions, but evaluation size and operational realism must also be considered."
+        },
+        {
+            "id": "q4",
+            "type": "scenario",
+            "difficulty": "medium",
+            "question": "You have multiple years of sales data and want to predict next month's sales. Should you randomly shuffle all rows before splitting?",
+            "correctAnswer": "Usually no. Use a time-aware split that trains on earlier periods and evaluates on later periods.",
+            "solution": "Random splitting can let future information influence training relative to the validation period. A chronological split better represents forecasting into the future."
+        },
+        {
+            "id": "q5",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A developer standardizes all features using the entire dataset and then splits it into training and test sets. What is wrong?",
+            "correctAnswer": "The transformation uses test-set statistics, causing preprocessing leakage.",
+            "solution": "Split first, fit the scaler on training data, and transform test data using that fitted scaler. A scikit-learn pipeline makes this safer, particularly during cross-validation."
+        },
+        {
+            "id": "q6",
+            "type": "scenario",
+            "difficulty": "hard",
+            "question": "A hospital dataset contains several records for each patient. How should the team split data if the objective is to evaluate performance on unseen patients?",
+            "correctAnswer": "Use patient-level group splitting so that a patient's records do not appear in both training and evaluation sets.",
+            "solution": "Random row-level splitting can place records from the same patient in multiple partitions. The model may exploit patient-specific patterns, leading to overly optimistic evaluation on supposedly unseen data."
+        }
+    ],
+    "summary": [
+        "Training data fits parameters, validation data guides development, and test data estimates final generalization.",
+        "Cross-validation helps compare models when data is limited.",
+        "Nested cross-validation can reduce selection bias when estimating a hyperparameter-selection procedure.",
+        "Leakage can arise through targets, feature construction, preprocessing, or incorrect temporal splits.",
+        "Use stratified, grouped, time-aware, or other specialized splitting strategies when appropriate.",
+        "A fixed random seed supports reproducibility but does not eliminate evaluation uncertainty.",
+        "Evaluation design must reflect the real deployment setting."
+    ],
+    "relatedTopics": [
+        "what-is-learning",
+        "loss-functions",
+        "evaluation-metrics",
+        "regularization",
+        "overfitting-underfitting"
+    ]
+}

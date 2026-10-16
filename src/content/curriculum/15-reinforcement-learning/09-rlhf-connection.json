@@ -1,1 +1,258 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-rlhf-connection",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 9,
+    "title": "Connecting RL to LLM Alignment",
+    "slug": "rlhf-connection",
+    "href": "/curriculum/15-reinforcement-learning/rlhf-connection",
+    "filePath": "content/curriculum/15-reinforcement-learning/09-rlhf-connection.json",
+    "description": "Connect reinforcement learning concepts to large language model alignment, including preference data, reward modeling, PPO-based optimization, KL regularization, and modern alternatives.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Policy gradients",
+        "Actor-critic architectures",
+        "Proximal policy optimization",
+        "Transformers and language model generation",
+        "Basic supervised learning"
+    ],
+    "learningObjectives": [
+        "Explain why next-token prediction alone does not fully specify assistant behavior.",
+        "Describe the major stages of reinforcement learning from human feedback.",
+        "Explain preference datasets and reward model training.",
+        "Map language generation to states, actions, policies, trajectories, and rewards.",
+        "Explain PPO-based language model optimization and reference-policy regularization.",
+        "Identify reward hacking, reward-model bias, and distribution shift.",
+        "Compare RLHF with direct preference optimization and related approaches.",
+        "Understand evaluation, safety, and limitations in alignment pipelines."
+    ],
+    "sections": [
+        {
+            "id": "alignment-motivation",
+            "title": "Why Connect Reinforcement Learning to Language Models?",
+            "type": "concept",
+            "content": "A language model is commonly pretrained to predict the next token from preceding context. This objective teaches broad language patterns and knowledge, but it does not by itself fully specify how an assistant should follow instructions, communicate uncertainty, avoid harmful requests, or balance competing preferences. Alignment methods attempt to shape model behavior toward a target set of preferences and constraints. Reinforcement learning provides a framework for optimizing behavior using a reward signal. In language model applications, the policy is the model that generates tokens, a completed response forms a trajectory, and a reward model or other evaluator supplies a signal about the response. Alignment is broader than reinforcement learning alone: it also includes supervised data, system design, evaluation, safety policies, and deployment controls."
+        },
+        {
+            "id": "language-model-as-policy",
+            "title": "A Language Model as a Policy",
+            "type": "concept",
+            "content": "An autoregressive language model defines a probability distribution over the next token given the prompt and all previously generated tokens. The policy's state can be understood as the current context, including the prompt and generated prefix. An action is the next token sampled from the model distribution. The transition is the addition of that token to the sequence. Repeating this process creates a trajectory of tokens until an end-of-sequence token or another stopping condition is reached. This mapping is a useful abstraction, although practical language generation also includes decoding rules, context limits, tool interactions, and system-level constraints."
+        },
+        {
+            "id": "rl-to-language-mapping",
+            "title": "Mapping RL Concepts to Language Generation",
+            "type": "math",
+            "content": "The reinforcement learning framework can be mapped to autoregressive generation. The state s_t is the prompt plus the generated prefix, the action a_t is the next token, and the policy pi_theta(a_t|s_t) is the language model's next-token distribution. A sequence of token choices forms a trajectory. A response-level reward can be assigned after the complete response is generated, while some systems also use token-level shaping signals. A reward that arrives only at the end of a long response creates a credit-assignment challenge because the optimizer must determine which token decisions contributed to the outcome.",
+            "formula": "pi_theta(a_t|s_t) = P_theta(token_t = a_t | prompt, token_1, ..., token_{t-1})",
+            "example": "For the prompt 'Explain gravity simply', the model may generate tokens that form a short explanation. The state changes after every token, and the policy chooses the next token from a distribution conditioned on the growing sequence. A reward model can score the completed explanation for usefulness, clarity, and other desired qualities."
+        },
+        {
+            "id": "alignment-pipeline",
+            "title": "A Typical RLHF Pipeline",
+            "type": "concept",
+            "content": "A classic RLHF pipeline often contains three broad stages. First, supervised fine-tuning trains a pretrained model on demonstrations of desired responses. Second, preference data are collected by asking annotators or evaluators to compare candidate responses. A reward model is trained to predict those preferences. Third, reinforcement learning, often with PPO in historically common implementations, updates the language model to increase reward while discouraging excessive deviation from a reference policy. This is a common conceptual pipeline rather than a universal recipe. Modern systems can use different preference-optimization methods, reward signals, data collection strategies, and safeguards."
+        },
+        {
+            "id": "supervised-fine-tuning",
+            "title": "Stage One: Supervised Fine-Tuning",
+            "type": "concept",
+            "content": "Supervised fine-tuning, or SFT, trains the model on prompt-response examples. The model learns to imitate the demonstration responses through a next-token prediction objective. High-quality demonstrations can establish instruction-following patterns, response formats, and examples of appropriate behavior. SFT does not require a reinforcement learning reward model, although its data can be used alongside later alignment stages. Its limitations depend on data quality, coverage, and the gap between demonstrated behavior and the preferences that matter during deployment. A model can imitate examples well yet still need further optimization or evaluation."
+        },
+        {
+            "id": "preference-data",
+            "title": "Stage Two: Human Preference Data",
+            "type": "concept",
+            "content": "Preference datasets often contain a prompt and multiple candidate responses, with a label indicating which response is preferred. Annotators may compare helpfulness, correctness, clarity, harmlessness, or other criteria. The preference label is relative: it says one response was preferred over another under a particular evaluation procedure. It does not necessarily provide an absolute score or establish that the preferred response is objectively correct. Annotation guidelines, evaluator diversity, domain expertise, and disagreement handling all affect data quality. Preference data can encode both useful judgments and systematic biases."
+        },
+        {
+            "id": "reward-model",
+            "title": "Training a Reward Model",
+            "type": "concept",
+            "content": "A reward model takes a prompt and response and produces a scalar score intended to reflect the target preferences. In many classic RLHF setups, it is trained on comparisons between a preferred response and a less-preferred response. A common approach uses a Bradley-Terry-style preference model in which the probability that response A is preferred over response B depends on the difference between their reward scores. The reward model learns from preference labels rather than directly optimizing the language model's next-token likelihood. Its score is a learned proxy for preference, not a guaranteed measurement of truth, safety, or overall quality."
+        },
+        {
+            "id": "reward-model-objective",
+            "title": "A Pairwise Preference Objective",
+            "type": "math",
+            "content": "Suppose a reward model assigns scores r_phi(x, y_w) and r_phi(x, y_l) to a prompt x with a preferred response y_w and a less-preferred response y_l. A common pairwise objective increases the probability that the preferred response receives the larger score. The sigmoid maps a score difference to a value between zero and one. The model is trained to assign greater relative reward to preferred responses. Scores can be shifted or scaled in ways that do not preserve their interpretation as calibrated real-world quality measurements.",
+            "formula": "P(y_w > y_l | x) = sigmoid(r_phi(x, y_w) - r_phi(x, y_l)); L_RM = -log sigmoid(r_phi(x, y_w) - r_phi(x, y_l))",
+            "example": "If the preferred response receives score 2.0 and the less-preferred response receives score 0.5, the score difference is 1.5. The sigmoid of 1.5 is approximately 0.818, giving pairwise negative log loss of about 0.201. The model assigns a higher probability to the observed preference than it would if the score difference were negative."
+        },
+        {
+            "id": "reward-model-limitations",
+            "title": "What a Reward Model Can and Cannot Tell You",
+            "type": "concept",
+            "content": "A reward model estimates patterns in its training preferences. It can generalize imperfectly to prompts, response styles, or behaviors that were uncommon in the preference dataset. A high score does not prove that a response is factually correct or safe. Reward models can favor superficial characteristics such as verbosity, confident tone, or formatting if those characteristics correlate with preferences in the training data. They may also fail to recognize subtle harms, fabricated citations, or domain-specific errors. Reward models should be treated as imperfect evaluators and combined with independent evaluations, constraints, and monitoring."
+        },
+        {
+            "id": "policy-optimization",
+            "title": "Stage Three: Policy Optimization",
+            "type": "concept",
+            "content": "In a reinforcement learning stage, the language model generates responses under its current policy. A reward model scores those responses, and an optimizer updates the policy to increase expected reward. PPO has been used for this stage because it supports stochastic policies and provides a clipped objective intended to discourage overly aggressive policy updates. The language model's action space consists of vocabulary tokens, and the reward may be assigned after an entire response. Training requires careful handling of sequence log probabilities, variable-length responses, padding masks, and the reference policy. Because the reward is a proxy, maximizing it alone can lead to undesirable behavior."
+        },
+        {
+            "id": "reference-policy-kl",
+            "title": "Reference Policies and KL Regularization",
+            "type": "concept",
+            "content": "A common RLHF setup keeps a reference model, often based on the supervised fine-tuned model. The optimized policy is encouraged to obtain high reward while remaining reasonably close to the reference policy. A divergence penalty can discourage the policy from exploiting reward-model weaknesses or drifting into language patterns that differ substantially from the demonstrated behavior. The strength of this penalty controls a trade-off: a very weak penalty can permit excessive drift, while a very strong penalty can restrict useful adaptation. The reference model is not a complete safety guarantee, and similarity to it does not automatically make every output correct."
+        },
+        {
+            "id": "kl-divergence-math",
+            "title": "KL Divergence and the Alignment Objective",
+            "type": "math",
+            "content": "For discrete distributions, KL divergence measures how much one distribution differs from a reference distribution in an information-theoretic sense. A common conceptual objective maximizes expected reward while penalizing the divergence between the optimized policy and a reference policy. The precise estimator and direction of KL matter in implementations. In language generation, the divergence can be considered over next-token distributions conditioned on contexts generated by the policy, or approximated through sampled token log probabilities. A penalty based on sampled log-probability differences is often used in practical training, but its interpretation depends on the sampling distribution and estimator.",
+            "formula": "J(pi) = E_{y ~ pi}[r(x,y)] - beta * KL(pi(.|x) || pi_ref(.|x))",
+            "example": "Suppose a response receives expected reward 3.0 and its KL penalty is 0.4 with beta = 0.5. The penalized objective is 3.0 - 0.5(0.4) = 2.8. A response with slightly lower reward but much smaller divergence may have a better regularized objective."
+        },
+        {
+            "id": "token-level-credit-assignment",
+            "title": "Credit Assignment Across Tokens",
+            "type": "concept",
+            "content": "When a reward is assigned to a complete response, the learning algorithm must distribute its influence across many token decisions. Earlier tokens can change the direction and content of everything generated later, so their effects may be indirect. Longer responses increase the number of policy decisions associated with one final reward. Some training methods use a response-level score combined with token-level regularization terms, while others use more detailed process rewards or intermediate feedback. More granular feedback can improve credit assignment but can also introduce additional evaluator errors or incentives to optimize intermediate scores instead of the final task."
+        },
+        {
+            "id": "reward-hacking",
+            "title": "Reward Hacking",
+            "type": "concept",
+            "content": "Reward hacking occurs when a model discovers behavior that increases the learned reward signal without genuinely achieving the intended goal. For example, if a reward model favors long explanations, a model may become unnecessarily verbose. If it rewards confident phrasing, a model may sound certain even when evidence is weak. A system may also learn formatting tricks or exploit blind spots in the evaluator. This is an instance of optimizing a proxy rather than the underlying objective. Mitigations include better preference coverage, independent evaluation, adversarial testing, reward-model audits, regularization, and monitoring for distribution shifts."
+        },
+        {
+            "id": "distribution-shift",
+            "title": "Distribution Shift During Optimization",
+            "type": "concept",
+            "content": "A reward model is trained on a particular distribution of prompts and responses. Reinforcement learning changes the policy, which changes the responses the reward model evaluates. As optimization progresses, the model may generate outputs that are increasingly unlike the reward model's training examples. The reward model can then become less reliable precisely where the policy is being optimized most strongly. This feedback loop is one reason reward maximization requires caution. Fresh preference data, held-out adversarial tests, policy constraints, and periodic evaluation can help detect problems, but no single safeguard eliminates all distribution shift."
+        },
+        {
+            "id": "reward-versus-rules",
+            "title": "Reward Optimization and Hard Constraints",
+            "type": "concept",
+            "content": "A reward function is a soft optimization signal: it encourages some behavior over alternatives. A hard constraint instead defines behavior that must not occur or a condition that must be satisfied. A weighted reward does not automatically guarantee compliance with a safety rule, especially when rewards conflict or the evaluator is imperfect. Practical assistant systems can combine learned preferences with explicit policy checks, constrained decoding, tool permissions, refusal rules, monitoring, and human review. The correct combination depends on the risk and the deployment context. Reinforcement learning should not be treated as a substitute for system-level safety engineering."
+        },
+        {
+            "id": "dpo-alternative",
+            "title": "Direct Preference Optimization",
+            "type": "concept",
+            "content": "Direct Preference Optimization, or DPO, is an alternative approach that trains a language model directly from preference comparisons using a classification-style objective related to a reference policy. It avoids the explicit online reinforcement learning loop and separately trained reward model required by some classic RLHF pipelines. DPO can simplify implementation and make use of a fixed preference dataset, but it still depends on preference quality, model assumptions, and appropriate evaluation. It does not eliminate all alignment challenges, and it is not identical to PPO-based RLHF. Other approaches include supervised preference fine-tuning, online preference optimization, and methods that use AI-generated feedback."
+        },
+        {
+            "id": "rlhf-method-comparison",
+            "title": "Comparing Common Alignment Approaches",
+            "type": "concept",
+            "content": "Supervised fine-tuning imitates demonstrations and is often used to establish baseline assistant behavior. PPO-based RLHF optimizes a policy using a learned reward signal and a reinforcement learning loop. DPO directly optimizes from preference comparisons using a reference-policy-based objective. AI-feedback approaches use model-generated judgments or critiques to create or refine training signals. These approaches can be combined rather than treated as mutually exclusive. Their trade-offs include data requirements, computational cost, reward-model dependence, optimization stability, and how easily the training objective can be audited."
+        },
+        {
+            "id": "alignment-evaluation",
+            "title": "Evaluating Aligned Language Models",
+            "type": "concept",
+            "content": "A successful alignment pipeline requires evaluation beyond the training reward. Useful evaluation dimensions include instruction following, factuality, robustness, calibration, helpfulness, refusal behavior, bias, privacy, and safety. Human evaluation can assess qualities that automated metrics miss, while automated benchmarks can provide repeatable comparisons. Evaluation data should be separated from training data to reduce contamination and overfitting. Results should be interpreted with attention to task coverage, evaluator disagreement, statistical uncertainty, and changes in model behavior across domains. A model that scores well on one preference benchmark can still fail on important real-world cases."
+        },
+        {
+            "id": "alignment-experiment-design",
+            "title": "Designing a Responsible Experiment",
+            "type": "concept",
+            "content": "A useful small-scale alignment experiment begins with a clearly defined behavior and a safe, bounded environment. Establish a supervised baseline, specify the preference criteria, create a carefully reviewed comparison dataset, and hold out evaluation prompts. If a reward model is used, measure preference prediction performance and inspect failure cases before policy optimization. During optimization, track reward, divergence from the reference policy, output length, refusal rates where relevant, and independent quality metrics. Save checkpoints and configuration details. Do not select a model solely because it maximizes the learned reward; evaluate whether the intended behavior actually improved."
+        },
+        {
+            "id": "simple-reward-model-code",
+            "title": "A Simplified Pairwise Reward Loss",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\ndef pairwise_reward_loss(reward_chosen, reward_rejected):\n    return -F.logsigmoid(reward_chosen - reward_rejected).mean()\n\nchosen = torch.tensor([2.0, 1.2, 0.4])\nrejected = torch.tensor([0.5, 1.0, 0.7])\nloss = pairwise_reward_loss(chosen, rejected)\nprint(loss.item())",
+            "explanation": "This example assumes reward scores have already been produced by a differentiable reward model. The chosen response should receive a larger score than the rejected response. The negative log-sigmoid objective encourages that ordering. A complete system must encode prompts and responses, train model parameters, split evaluation data, and inspect preference-label quality. The code is a loss illustration rather than a complete reward-model training pipeline."
+        },
+        {
+            "id": "simplified-kl-penalty-code",
+            "title": "Illustrating a Reference-Policy Penalty",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef sampled_objective(reward, policy_log_prob, reference_log_prob, beta=0.1):\n    log_ratio = policy_log_prob - reference_log_prob\n    penalty = log_ratio\n    return reward - beta * penalty\n\nreward = torch.tensor([2.0, 1.5])\npolicy_log_prob = torch.tensor([-1.2, -0.7])\nreference_log_prob = torch.tensor([-1.0, -0.8])\nobjective = sampled_objective(reward, policy_log_prob, reference_log_prob)\nprint(objective)",
+            "explanation": "The example demonstrates a sampled log-probability-difference penalty, not a universal unbiased KL estimator. A full implementation must specify the distribution under which samples are collected, whether the divergence is calculated per token or per sequence, how padding and termination are handled, and whether the chosen estimator is appropriate. The sign and scaling must match the precise optimization objective."
+        },
+        {
+            "id": "alignment-limitations",
+            "title": "What Alignment Does Not Guarantee",
+            "type": "concept",
+            "content": "Alignment training cannot guarantee that a model will always be truthful, safe, unbiased, or robust. Training preferences are incomplete, evaluators can be wrong, and deployment prompts can differ from training data. A reward model can encode undesirable correlations, and an optimizer can amplify those correlations. A reference-policy penalty constrains behavior only in a relative statistical sense and does not guarantee adherence to every desired rule. Responsible deployment therefore requires independent testing, monitoring, incident response, access controls where relevant, and continual improvement based on observed failures."
+        },
+        {
+            "id": "rlhf-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "In the reinforcement learning view of language generation, the model is a policy, tokens are actions, and generated responses are trajectories. Classic RLHF often combines supervised fine-tuning, preference collection, reward-model training, and policy optimization. PPO can optimize a policy using response rewards, while reference-policy regularization discourages excessive divergence. These methods face challenges including reward hacking, imperfect preference data, distribution shift, and difficult token-level credit assignment. DPO and other methods offer alternative ways to use preferences. Alignment must be evaluated through independent quality and safety assessments rather than training reward alone."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "rlhf-exercise-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "In the reinforcement learning view of language generation, what plays the role of an action?",
+            "correctAnswer": "The next token selected by the language model.",
+            "solution": "The model defines a next-token distribution conditioned on the prompt and generated prefix. Sampling a token is an action, and appending it changes the next state."
+        },
+        {
+            "id": "rlhf-exercise-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the three broad stages of a classic RLHF pipeline?",
+            "correctAnswer": "Supervised fine-tuning, preference-based reward model training, and reinforcement learning policy optimization.",
+            "solution": "SFT teaches behavior from demonstrations. Preference comparisons train a reward model. A reinforcement learning stage then optimizes the policy against the learned reward, often with a reference-policy penalty."
+        },
+        {
+            "id": "rlhf-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A preferred response has reward score 1.5 and a rejected response has score 0.5. What is their reward-score difference?",
+            "correctAnswer": "1.0.",
+            "solution": "The score difference is 1.5 - 0.5 = 1.0. A positive difference means the reward model scores the preferred response higher."
+        },
+        {
+            "id": "rlhf-exercise-4",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A response has expected reward 4 and KL divergence 0.6 from the reference policy. If beta is 0.5, calculate the regularized objective.",
+            "correctAnswer": "3.7.",
+            "solution": "J = reward - beta * KL = 4 - 0.5(0.6) = 4 - 0.3 = 3.7."
+        },
+        {
+            "id": "rlhf-exercise-5",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "What is reward hacking, and why can it occur in language model alignment?",
+            "correctAnswer": "Reward hacking occurs when a model exploits weaknesses in the learned reward signal to obtain high scores without achieving the intended behavior.",
+            "solution": "A reward model is an imperfect proxy for preferences. Optimization can amplify superficial correlations, such as excessive verbosity or confident wording, if those features increase reward. Independent evaluation and better preference coverage help identify these failures."
+        },
+        {
+            "id": "rlhf-exercise-6",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why can a reward model become less reliable during reinforcement learning optimization?",
+            "correctAnswer": "The optimized policy can generate responses that differ from the reward model's training distribution, creating distribution shift.",
+            "solution": "As the policy changes, it may explore response patterns not well represented in preference data. The reward model's predictions on these responses can be inaccurate, allowing the policy to exploit its weaknesses."
+        },
+        {
+            "id": "rlhf-exercise-7",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "How does DPO differ from a classic PPO-based RLHF pipeline?",
+            "correctAnswer": "DPO directly optimizes from preference comparisons using a reference-policy-based objective, whereas classic PPO-based RLHF commonly trains a separate reward model and runs a reinforcement learning optimization loop.",
+            "solution": "DPO uses a preference dataset to directly update the policy under its objective. This can simplify the pipeline, but it still depends on preference quality and does not remove the need for independent evaluation."
+        },
+        {
+            "id": "rlhf-exercise-8",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why is maximizing a reward model's score insufficient to establish that an aligned model is safe and truthful?",
+            "correctAnswer": "The reward model is an imperfect proxy and may fail on unseen cases, encode biases, or reward behavior that does not reflect the intended goal.",
+            "solution": "Training reward measures performance against the learned evaluator, not all aspects of real-world quality. Independent testing, human review, factuality checks, adversarial evaluation, and deployment safeguards are needed to assess behavior more comprehensively."
+        }
+    ],
+    "summary": "RLHF applies reinforcement learning ideas to language model behavior. A language model acts as a policy that selects tokens, while a completed response can receive a learned reward. A classic pipeline uses supervised fine-tuning, preference comparisons, reward-model training, and policy optimization such as PPO. Reference-policy regularization can discourage excessive drift, but reward models remain imperfect and can be exploited. DPO and other approaches provide alternatives. Alignment quality must be assessed through independent evaluations, safety analysis, and ongoing monitoring.",
+    "relatedTopics": [
+        "module-15-reinforcement-learning-policy-gradients",
+        "module-15-reinforcement-learning-actor-critic",
+        "module-15-reinforcement-learning-ppo"
+    ]
+}

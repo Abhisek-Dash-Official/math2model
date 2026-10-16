@@ -1,1 +1,300 @@
-{}
+{
+    "id": "calculus-gradients",
+    "title": "Gradients",
+    "slug": "gradients",
+    "description": "Understand gradients as vectors of partial derivatives, learn their geometric meaning, and apply them to optimization and machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Functions",
+        "Derivatives",
+        "Partial Derivatives"
+    ],
+    "learningObjectives": [
+        "Define a gradient for a multivariable scalar-valued function.",
+        "Calculate gradients using partial derivatives.",
+        "Interpret gradients geometrically.",
+        "Understand the relationship between gradients and directional derivatives.",
+        "Use gradients to identify directions of steepest ascent and descent.",
+        "Understand how gradients support machine learning optimization.",
+        "Implement gradient calculations using Python."
+    ],
+    "sections": [
+        {
+            "id": "gradient-introduction",
+            "title": "1. Introduction to Gradients",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A gradient describes how a scalar-valued function changes with respect to each of its input variables. For a function with multiple inputs, the gradient combines all first-order partial derivatives into a vector."
+                },
+                {
+                    "type": "text",
+                    "value": "In machine learning, a model may have thousands or millions of parameters. The gradient of the loss function tells us how the loss changes with respect to those parameters and provides the information needed by gradient-based optimization algorithms."
+                },
+                {
+                    "type": "formula",
+                    "label": "Gradient of a two-variable function",
+                    "value": "∇f(x, y) = [∂f/∂x, ∂f/∂y]"
+                },
+                {
+                    "type": "formula",
+                    "label": "Gradient of a function with n variables",
+                    "value": "∇f(x₁, x₂, ..., xₙ) = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]ᵀ"
+                },
+                {
+                    "type": "text",
+                    "value": "The symbol ∇ is called nabla or del. When applied to a scalar-valued function, it produces a vector containing the function's first-order partial derivatives."
+                }
+            ]
+        },
+        {
+            "id": "gradient-calculation",
+            "title": "2. Calculating a Gradient",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "To calculate a gradient, differentiate the function with respect to each input variable separately. While differentiating with respect to one variable, treat the other variables as constants."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Gradient of a Polynomial",
+                    "problem": "Find the gradient of f(x, y) = x² + 3xy + 2y².",
+                    "steps": [
+                        "Differentiate with respect to x while treating y as constant: ∂f/∂x = 2x + 3y.",
+                        "Differentiate with respect to y while treating x as constant: ∂f/∂y = 3x + 4y.",
+                        "Combine the partial derivatives into a vector."
+                    ],
+                    "solution": "∇f(x, y) = [2x + 3y, 3x + 4y]ᵀ."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Evaluating a Gradient",
+                    "problem": "For f(x, y) = x² + 3xy + 2y², calculate the gradient at (1, 2).",
+                    "steps": [
+                        "Use the gradient: ∇f(x, y) = [2x + 3y, 3x + 4y]ᵀ.",
+                        "Substitute x = 1 and y = 2 into the first component: 2(1) + 3(2) = 8.",
+                        "Substitute into the second component: 3(1) + 4(2) = 11."
+                    ],
+                    "solution": "∇f(1, 2) = [8, 11]ᵀ."
+                },
+                {
+                    "type": "text",
+                    "value": "The gradient evaluated at a point is a vector. Its components describe the local rate of change of the function with respect to each coordinate direction."
+                }
+            ]
+        },
+        {
+            "id": "gradient-geometry",
+            "title": "3. Geometric Interpretation",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a differentiable scalar-valued function, the gradient points in the direction of the steepest local increase of the function. Its magnitude measures the maximum rate of increase at that point."
+                },
+                {
+                    "type": "formula",
+                    "label": "Gradient magnitude",
+                    "value": "||∇f(x)|| = √((∂f/∂x₁)² + ... + (∂f/∂xₙ)²)"
+                },
+                {
+                    "type": "text",
+                    "value": "The gradient is perpendicular to a level set at points where the level set is smooth and the gradient is nonzero. A level set consists of points where the function has the same value, such as f(x, y) = c."
+                },
+                {
+                    "type": "example",
+                    "title": "Interpreting a Gradient Vector",
+                    "problem": "Suppose ∇f(2, 1) = [3, 4]ᵀ. What is the maximum directional rate of increase at this point?",
+                    "steps": [
+                        "Calculate the magnitude: ||∇f|| = √(3² + 4²).",
+                        "Simplify: √(9 + 16) = √25."
+                    ],
+                    "solution": "The maximum directional rate of increase is 5, attained in the direction of the gradient."
+                },
+                {
+                    "type": "text",
+                    "value": "A zero gradient means that all first-order partial derivatives are zero. Such a point is called a stationary or critical point when the relevant derivatives exist. It may be a local minimum, local maximum, saddle point, or another type of stationary point."
+                }
+            ]
+        },
+        {
+            "id": "directional-derivatives",
+            "title": "4. Directional Derivatives",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A directional derivative measures how a function changes when moving from a point in a specified direction. It generalizes partial derivatives, which measure change along coordinate directions."
+                },
+                {
+                    "type": "formula",
+                    "label": "Directional derivative",
+                    "value": "Dᵤf(x) = ∇f(x) · u"
+                },
+                {
+                    "type": "text",
+                    "value": "Here u must be a unit vector. If a nonzero direction vector v is given, normalize it using u = v / ||v|| before computing the directional derivative."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Directional Derivative",
+                    "problem": "At a point, suppose ∇f = [3, 4]ᵀ. Find the directional derivative in the direction v = [1, 0]ᵀ.",
+                    "steps": [
+                        "Calculate ||v|| = 1, so the vector is already a unit vector.",
+                        "Take the dot product: [3, 4] · [1, 0] = 3(1) + 4(0)."
+                    ],
+                    "solution": "Dᵤf = 3."
+                },
+                {
+                    "type": "text",
+                    "value": "For a differentiable function, the directional derivative is largest in the direction of the gradient and smallest in the opposite direction. A direction perpendicular to the gradient has directional derivative zero."
+                }
+            ]
+        },
+        {
+            "id": "gradient-descent",
+            "title": "5. Gradients in Gradient Descent",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Gradient descent minimizes an objective function by repeatedly moving parameters in the direction opposite to the gradient. The negative gradient is the direction of steepest local decrease when the gradient is nonzero."
+                },
+                {
+                    "type": "formula",
+                    "label": "Gradient descent update",
+                    "value": "θₜ₊₁ = θₜ − η∇J(θₜ)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here θ represents model parameters, J is the objective or loss function, and η is the learning rate. A very large learning rate can cause overshooting or divergence, while a very small learning rate can make learning slow."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: One Gradient Descent Step",
+                    "problem": "Let J(w) = (w − 3)². Starting from w = 0 with learning rate η = 0.1, calculate one gradient descent update.",
+                    "steps": [
+                        "Differentiate: dJ/dw = 2(w − 3).",
+                        "Evaluate at w = 0: dJ/dw = 2(0 − 3) = −6.",
+                        "Apply the update: w_new = 0 − 0.1(−6)."
+                    ],
+                    "solution": "w_new = 0.6."
+                },
+                {
+                    "type": "text",
+                    "value": "Gradient descent is used to train many machine learning models, including linear regression, logistic regression, and neural networks. In neural networks, backpropagation efficiently computes gradients of the loss with respect to model parameters."
+                }
+            ]
+        },
+        {
+            "id": "gradient-python",
+            "title": "6. Computing Gradients with Python",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For simple functions, gradients can be derived by hand. Numerical tools and automatic differentiation libraries become useful when functions contain many variables or complex computational operations."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate a Gradient with SymPy",
+                    "value": "import sympy as sp\n\nx, y = sp.symbols('x y')\nf = x**2 + 3*x*y + 2*y**2\n\ngrad_f = [sp.diff(f, var) for var in (x, y)]\nprint(grad_f)\n\npoint = {x: 1, y: 2}\nprint([component.subs(point) for component in grad_f])"
+                },
+                {
+                    "type": "text",
+                    "value": "The symbolic gradient is [2*x + 3*y, 3*x + 4*y]. Evaluating it at (1, 2) gives [8, 11]."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Compute a Gradient with PyTorch",
+                    "value": "import torch\n\nx = torch.tensor(1.0, requires_grad=True)\ny = torch.tensor(2.0, requires_grad=True)\nf = x**2 + 3*x*y + 2*y**2\nf.backward()\n\nprint(x.grad.item())  # 8.0\nprint(y.grad.item())  # 11.0"
+                },
+                {
+                    "type": "text",
+                    "value": "PyTorch records the computation graph and uses automatic differentiation to calculate the derivatives. This is a central technique for training deep learning models."
+                }
+            ]
+        },
+        {
+            "id": "gradient-common-mistakes",
+            "title": "7. Common Mistakes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Confusing the gradient with the function value. The function value is a scalar, while the gradient of a scalar-valued function is a vector."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Forgetting to treat other variables as constants when calculating a partial derivative."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Using a non-unit vector in the standard directional derivative formula without normalizing it."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Assuming every point with a zero gradient is a minimum. Stationary points can also be maxima or saddle points."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Assuming gradient descent always finds the global minimum. For non-convex objectives, it may converge to a local minimum, saddle region, or another stationary region depending on the problem and optimization process."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "grad-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Find the gradient of f(x, y) = 4x² + 2y².",
+            "correctAnswer": "[8x, 4y]ᵀ",
+            "solution": "Differentiate with respect to x to obtain 8x. Differentiate with respect to y to obtain 4y. Combine the partial derivatives into the gradient vector."
+        },
+        {
+            "id": "grad-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the gradient of f(x, y) = xy + x² at (2, 3).",
+            "correctAnswer": "[7, 2]ᵀ",
+            "solution": "The partial derivatives are ∂f/∂x = y + 2x and ∂f/∂y = x. At (2, 3), these are 3 + 4 = 7 and 2."
+        },
+        {
+            "id": "grad-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If ∇f = [6, 8]ᵀ at a point, what is the maximum directional derivative there?",
+            "correctAnswer": "10",
+            "solution": "The maximum directional derivative equals the gradient magnitude: √(6² + 8²) = √100 = 10."
+        },
+        {
+            "id": "grad-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Let J(w) = (w − 2)². Starting at w = 0 with learning rate 0.25, perform one gradient descent update.",
+            "correctAnswer": "w_new = 1",
+            "solution": "The derivative is 2(w − 2). At w = 0, the gradient is −4. Thus w_new = 0 − 0.25(−4) = 1."
+        },
+        {
+            "id": "grad-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What does a zero gradient tell us, and what does it not tell us?",
+            "correctAnswer": "All first-order partial derivatives are zero, but the point is not necessarily a minimum.",
+            "solution": "A zero gradient indicates a stationary point when the gradient exists. Additional analysis is needed to determine whether it is a local minimum, local maximum, saddle point, or another type of stationary point."
+        }
+    ],
+    "summary": [
+        "The gradient collects the first-order partial derivatives of a scalar-valued function into a vector.",
+        "The gradient points in the direction of steepest local increase.",
+        "The gradient magnitude gives the maximum directional rate of increase.",
+        "Directional derivatives are computed using the dot product of the gradient and a unit direction vector.",
+        "Gradient descent updates parameters in the direction opposite to the gradient.",
+        "Automatic differentiation libraries such as PyTorch calculate gradients for machine learning models."
+    ],
+    "relatedTopics": [
+        "partial-derivatives",
+        "jacobians",
+        "chain-rule",
+        "optimization"
+    ]
+}

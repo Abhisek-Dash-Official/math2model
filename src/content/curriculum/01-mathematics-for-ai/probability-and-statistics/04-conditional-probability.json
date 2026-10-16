@@ -1,1 +1,277 @@
-{}
+{
+    "id": "probability-conditional-probability",
+    "title": "Conditional Probability",
+    "slug": "conditional-probability",
+    "description": "Learn how probabilities change when information is available, including conditional probability, multiplication rules, independence, and applications in machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Random Variables",
+        "Probability Distributions",
+        "Expectation & Variance"
+    ],
+    "learningObjectives": [
+        "Define conditional probability.",
+        "Calculate conditional probabilities from joint and marginal probabilities.",
+        "Apply the multiplication rule.",
+        "Distinguish independent and dependent events.",
+        "Understand conditional distributions for random variables.",
+        "Use the law of total probability.",
+        "Apply conditional probability to classification and probabilistic inference."
+    ],
+    "sections": [
+        {
+            "id": "conditional-probability-definition",
+            "title": "1. Definition of Conditional Probability",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Conditional probability measures the probability of an event A given that another event B has occurred. The additional information changes the relevant sample space to outcomes consistent with B."
+                },
+                {
+                    "type": "formula",
+                    "label": "Conditional probability",
+                    "value": "P(A | B) = P(A ∩ B) / P(B), provided P(B) > 0"
+                },
+                {
+                    "type": "text",
+                    "value": "The symbol P(A | B) is read as the probability of A given B. The intersection A ∩ B contains outcomes where both events occur."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Drawing a Card",
+                    "problem": "A standard 52-card deck contains 4 aces. Given that a randomly drawn card is an ace, what is the probability that it is a spade?",
+                    "steps": [
+                        "There is one ace of spades among the four aces.",
+                        "Within the condition that the card is an ace, the relevant outcomes are the four aces.",
+                        "One of those four cards is a spade."
+                    ],
+                    "solution": "P(spade | ace) = 1/4."
+                }
+            ]
+        },
+        {
+            "id": "conditional-multiplication-rule",
+            "title": "2. Multiplication Rule",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Multiplication rule",
+                    "value": "P(A ∩ B) = P(A | B)P(B) = P(B | A)P(A)"
+                },
+                {
+                    "type": "text",
+                    "value": "The multiplication rule connects joint probability with conditional and marginal probabilities. It is useful for finding the probability that several events occur together."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Two Cards Without Replacement",
+                    "problem": "Two cards are drawn sequentially from a standard deck without replacement. Find the probability that both are aces.",
+                    "steps": [
+                        "The probability that the first card is an ace is 4/52.",
+                        "After an ace is drawn, 3 aces remain among 51 cards.",
+                        "Apply the multiplication rule: P(both aces) = (4/52)(3/51)."
+                    ],
+                    "solution": "P(both aces) = 12/2652 = 1/221 ≈ 0.00452."
+                },
+                {
+                    "type": "text",
+                    "value": "Because the first card is not replaced, the probability of an ace on the second draw depends on the first draw. This is an example of dependent events."
+                }
+            ]
+        },
+        {
+            "id": "conditional-independence",
+            "title": "3. Independence of Events",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Two events A and B are independent if knowing that one occurred does not change the probability of the other. When P(B) is positive, independence means P(A | B) = P(A)."
+                },
+                {
+                    "type": "formula",
+                    "label": "Independence condition",
+                    "value": "P(A ∩ B) = P(A)P(B)"
+                },
+                {
+                    "type": "text",
+                    "value": "If the equality holds, the events are independent. Otherwise, they are dependent. Mutual independence among three or more events requires more than checking pairwise independence alone."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Independent Coin Tosses",
+                    "problem": "A fair coin is tossed twice. Find the probability that both tosses are heads.",
+                    "steps": [
+                        "The probability of heads on the first toss is 1/2.",
+                        "The tosses are independent, so the probability of heads on the second toss remains 1/2.",
+                        "Multiply the probabilities: (1/2)(1/2)."
+                    ],
+                    "solution": "P(both heads) = 1/4."
+                }
+            ]
+        },
+        {
+            "id": "conditional-joint-marginal",
+            "title": "4. Joint, Marginal, and Conditional Probability",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A joint probability describes the probability of two events or variables occurring together. A marginal probability describes one variable without specifying the other. A conditional probability describes one event or variable after another is known."
+                },
+                {
+                    "type": "formula",
+                    "label": "Marginalization for discrete variables",
+                    "value": "P(X = x) = Σᵧ P(X = x, Y = y)"
+                },
+                {
+                    "type": "formula",
+                    "label": "Conditional probability for discrete variables",
+                    "value": "P(X = x | Y = y) = P(X = x, Y = y) / P(Y = y)"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: A Joint Distribution",
+                    "problem": "Suppose P(A ∩ B) = 0.12 and P(B) = 0.30. Calculate P(A | B).",
+                    "steps": [
+                        "Use P(A | B) = P(A ∩ B)/P(B).",
+                        "Substitute 0.12/0.30.",
+                        "Evaluate the ratio."
+                    ],
+                    "solution": "P(A | B) = 0.4."
+                },
+                {
+                    "type": "text",
+                    "value": "For continuous random variables, conditional distributions are described using conditional densities. When the marginal density f_Y(y) is positive, f_(X|Y)(x|y) = f_(X,Y)(x,y)/f_Y(y)."
+                }
+            ]
+        },
+        {
+            "id": "law-total-probability",
+            "title": "5. Law of Total Probability",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The law of total probability calculates the probability of an event by splitting the sample space into mutually exclusive and exhaustive cases. Each case contributes its conditional probability weighted by the probability of that case."
+                },
+                {
+                    "type": "formula",
+                    "label": "Law of total probability",
+                    "value": "P(A) = Σᵢ P(A | Bᵢ)P(Bᵢ)"
+                },
+                {
+                    "type": "text",
+                    "value": "The events B₁, B₂, ..., Bₙ must form a partition: they are mutually exclusive, collectively cover the sample space, and have probabilities that sum to one. Conditional probabilities are interpreted only for cases with positive probability."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Two Factories",
+                    "problem": "Factory A produces 60% of items with a defect rate of 2%. Factory B produces 40% with a defect rate of 5%. Find the overall defect probability.",
+                    "steps": [
+                        "P(A) = 0.60 and P(B) = 0.40.",
+                        "P(defect | A) = 0.02 and P(defect | B) = 0.05.",
+                        "Apply total probability: P(defect) = 0.02(0.60) + 0.05(0.40).",
+                        "Calculate 0.012 + 0.020."
+                    ],
+                    "solution": "P(defect) = 0.032, or 3.2%."
+                }
+            ]
+        },
+        {
+            "id": "conditional-machine-learning",
+            "title": "6. Conditional Probability in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Classification models often estimate a conditional probability such as P(Y = class | X = x). It describes the probability of a class given the observed features."
+                },
+                {
+                    "type": "text",
+                    "value": "For example, an email classifier may estimate P(spam | email features). A medical risk model may estimate P(outcome | observed features), provided the model is trained and evaluated appropriately and its predictions are used within suitable safeguards."
+                },
+                {
+                    "type": "text",
+                    "value": "The Naive Bayes classifier uses Bayes' theorem and assumes that features are conditionally independent given the class. This assumption is often unrealistic, but the resulting model can still work well for certain tasks."
+                },
+                {
+                    "type": "text",
+                    "value": "Conditional probability is also central to probabilistic graphical models, sequence models, hidden-state models, and generative modeling."
+                }
+            ]
+        },
+        {
+            "id": "conditional-python",
+            "title": "7. Conditional Probability with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate Conditional Probability",
+                    "value": "p_a_and_b = 0.12\np_b = 0.30\n\nif p_b > 0:\n    p_a_given_b = p_a_and_b / p_b\n    print(p_a_given_b)\nelse:\n    print('Conditional probability is undefined when P(B) = 0')"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate Total Probability",
+                    "value": "p_factory_a = 0.60\np_factory_b = 0.40\np_defect_given_a = 0.02\np_defect_given_b = 0.05\n\np_defect = (\n    p_defect_given_a * p_factory_a\n    + p_defect_given_b * p_factory_b\n)\n\nprint(p_defect)  # 0.032"
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "cp-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If P(A ∩ B) = 0.18 and P(B) = 0.60, calculate P(A | B).",
+            "correctAnswer": "0.3",
+            "solution": "P(A | B) = P(A ∩ B)/P(B) = 0.18/0.60 = 0.3."
+        },
+        {
+            "id": "cp-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A fair die is rolled. Given that the result is even, what is the probability that the result is greater than 3?",
+            "correctAnswer": "2/3",
+            "solution": "The even outcomes are {2, 4, 6}. Among these, the outcomes greater than 3 are {4, 6}. The conditional probability is 2/3."
+        },
+        {
+            "id": "cp-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Two cards are drawn without replacement. What is the probability that both are kings?",
+            "correctAnswer": "1/221",
+            "solution": "The probability is (4/52)(3/51) = 12/2652 = 1/221."
+        },
+        {
+            "id": "cp-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A company uses supplier A for 70% of its products and supplier B for 30%. Their defect rates are 1% and 4%, respectively. Find the overall defect rate.",
+            "correctAnswer": "0.019, or 1.9%",
+            "solution": "P(defect) = 0.70(0.01) + 0.30(0.04) = 0.007 + 0.012 = 0.019."
+        },
+        {
+            "id": "cp-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the difference between independent events and mutually exclusive events?",
+            "correctAnswer": "Independent events do not change each other's probabilities; mutually exclusive events cannot occur together.",
+            "solution": "Independence means P(A ∩ B) = P(A)P(B). Mutual exclusivity means P(A ∩ B) = 0. Two mutually exclusive events with positive probabilities are not independent."
+        }
+    ],
+    "summary": [
+        "Conditional probability updates an event's probability given additional information.",
+        "The multiplication rule connects conditional and joint probabilities.",
+        "Independence means one event does not change the probability of another.",
+        "Joint, marginal, and conditional probabilities describe different views of a distribution.",
+        "The law of total probability combines probabilities across a partition of cases.",
+        "Conditional probability is fundamental to classification and probabilistic inference."
+    ],
+    "relatedTopics": [
+        "random-variables",
+        "probability-distributions",
+        "expectation-variance",
+        "bayes-theorem",
+        "maximum-likelihood"
+    ]
+}

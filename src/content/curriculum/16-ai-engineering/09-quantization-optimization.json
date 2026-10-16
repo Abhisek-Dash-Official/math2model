@@ -1,1 +1,164 @@
-{}
+{
+    "id": "module-16-ai-engineering-quantization-optimization",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 9,
+    "title": "Model Optimization & Kernel Fusion",
+    "slug": "quantization-optimization",
+    "href": "/curriculum/16-ai-engineering/quantization-optimization",
+    "filePath": "content/curriculum/16-ai-engineering/09-quantization-optimization.json",
+    "description": "Explore model quantization, pruning, operator fusion, compilation, memory optimization, and hardware-aware techniques for improving inference speed and reducing deployment costs.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "cuda-basics",
+        "mixed-precision",
+        "model-serving"
+    ],
+    "learningObjectives": [
+        "Distinguish training precision from inference quantization.",
+        "Explain uniform quantization, scales, zero points, and quantization error.",
+        "Compare post-training quantization with quantization-aware training.",
+        "Understand symmetric and asymmetric quantization.",
+        "Explain pruning, sparsity, and their hardware-dependent performance effects.",
+        "Understand operator fusion and the costs of intermediate tensor materialization.",
+        "Use PyTorch compilation tools and benchmark optimized models.",
+        "Evaluate performance improvements alongside model quality and memory usage."
+    ],
+    "sections": [
+        {
+            "id": "optimization-objectives",
+            "title": "1. Why Optimize Models?",
+            "type": "concept",
+            "content": "A model may be too slow, too large, or too expensive for its deployment environment. Optimization attempts to reduce latency, memory consumption, energy use, or inference cost while preserving acceptable quality. The most effective technique depends on the bottleneck. Quantization reduces numerical representation precision, pruning removes or suppresses selected parameters or structures, kernel fusion combines operations, and compilation can specialize execution for a workload. Optimizations should be evaluated end to end because reducing parameter count does not guarantee lower latency, and faster isolated kernels do not always improve application-level response time.",
+            "example": "A model may spend more time transferring intermediate activations than performing arithmetic. Fusing compatible operations can reduce memory traffic even when the number of mathematical operations changes very little."
+        },
+        {
+            "id": "quantization-fundamentals",
+            "title": "2. Quantization Fundamentals",
+            "type": "math",
+            "content": "Quantization maps values from a higher-precision representation into a lower-precision set of representable values. Integer quantization commonly uses a scale and, for asymmetric schemes, a zero point. The scale controls the real-value interval represented by one integer step. The zero point aligns the integer representation with real zero. Quantization reduces storage and can enable efficient integer arithmetic on supported hardware. However, rounding and clipping introduce error, and the available operators and performance depend on the backend.",
+            "formula": "q = clamp(round(x / s) + z, q_min, q_max); x_hat = s × (q - z).",
+            "example": "With scale s = 0.1 and zero point z = 0, the real value 1.26 maps to round(12.6) = 13, giving a reconstructed value of 1.3."
+        },
+        {
+            "id": "symmetric-asymmetric",
+            "title": "3. Symmetric and Asymmetric Quantization",
+            "type": "concept",
+            "content": "Symmetric quantization places the quantized zero point at zero and typically represents positive and negative values using a shared magnitude scale. It is convenient for many weight quantization schemes. Asymmetric quantization includes a zero point that can represent distributions whose minimum and maximum magnitudes are unbalanced. This can use the integer range more effectively for some activation distributions but may require additional arithmetic. Per-tensor quantization uses one scale for an entire tensor, while per-channel quantization uses different scales for separate channels or output dimensions. Per-channel scaling can reduce error when different channels have very different ranges.",
+            "example": "If one output channel contains values with magnitudes near 0.1 and another contains values near 10, per-channel scales may represent both more effectively than a single shared scale."
+        },
+        {
+            "id": "post-training-quantization",
+            "title": "4. Post-Training Quantization",
+            "type": "concept",
+            "content": "Post-training quantization converts a trained model to a lower-precision representation without requiring a full retraining process. Dynamic quantization determines some activation properties at runtime and is supported for selected operations and backends. Static quantization calibrates activation ranges using representative data before deployment. Weight-only quantization reduces weight storage while leaving some or most computations in higher precision. Calibration data should represent the inputs expected in deployment, but it must remain separate from final test data when used for model selection. Support and recommended APIs vary by PyTorch version and target hardware.",
+            "example": "A CPU model with large linear layers may benefit from supported dynamic quantization of those layers. A convolution-heavy model may need a different quantization path and should be benchmarked on the intended backend."
+        },
+        {
+            "id": "quantization-aware-training",
+            "title": "5. Quantization-Aware Training",
+            "type": "concept",
+            "content": "Quantization-aware training simulates quantization effects during training so the model can adapt to reduced precision. Fake-quantization operations model rounding and clipping while often retaining floating-point parameters for optimization. The resulting model is then converted using a compatible quantization workflow. QAT can recover accuracy when post-training quantization causes unacceptable degradation, but it requires additional training and a supported conversion path. The choice between QAT and post-training quantization depends on accuracy requirements, training budget, target backend, and deployment constraints.",
+            "example": "If post-training quantization noticeably reduces a classifier's recall for a critical class, QAT may help the model adapt to the lower-precision representation. Re-evaluate all important metrics after conversion."
+        },
+        {
+            "id": "quantization-error",
+            "title": "6. Quantization Error and Calibration",
+            "type": "math",
+            "content": "Quantization error arises because continuous values are rounded to a finite set of representable values. Clipping error occurs when a value lies outside the selected range. A narrow calibration range wastes fewer integer levels on unused values but may clip outliers; a wide range reduces clipping but gives less resolution to ordinary values. Calibration methods estimate useful ranges from representative data. Mean squared error can measure reconstruction error, but minimizing tensor-level reconstruction error does not guarantee that downstream task accuracy is preserved. Validate the quantized model using task-specific metrics.",
+            "formula": "MSE = (1 / N) × Σᵢ(xᵢ - x_hatᵢ)².",
+            "example": "A calibration set containing only small inputs may fail to reveal large activation values encountered in production, leading to clipping and degraded predictions."
+        },
+        {
+            "id": "pruning-and-sparsity",
+            "title": "7. Pruning and Sparsity",
+            "type": "concept",
+            "content": "Pruning removes or suppresses parameters judged less important according to a chosen criterion. Unstructured pruning sets individual weights to zero, while structured pruning removes entire channels, filters, heads, or blocks. Unstructured sparsity may reduce storage when compressed, but ordinary dense matrix operations often remain just as expensive unless the runtime exploits the sparse pattern. Structured pruning can produce smaller dense tensors and more predictable speedups, but it may require fine-tuning to restore accuracy. The pruning pattern and target hardware determine whether the optimization is useful.",
+            "example": "Removing a convolutional channel can reduce the dimensions of downstream layers. Setting scattered weights to zero may not accelerate the same model unless sparse kernels and compatible storage formats are used."
+        },
+        {
+            "id": "operator-fusion",
+            "title": "8. Operator Fusion and Memory Traffic",
+            "type": "concept",
+            "content": "Deep learning frameworks commonly execute a model as a sequence of operations. Each operation can involve kernel-launch overhead, reading inputs, writing intermediate tensors, and scheduling work. Kernel fusion combines compatible operations into a single kernel, potentially reducing launches and intermediate memory traffic. A fused implementation must preserve the intended numerical behavior and handle tensor shapes, broadcasting, and edge cases correctly. Fusion is especially valuable when separate operations are small or memory-bound, but a fused kernel is not guaranteed to be faster for every shape or device.",
+            "example": "A linear operation followed by an activation may be fused by a compiler or specialized backend, avoiding the need to materialize and reread some intermediate values."
+        },
+        {
+            "id": "torch-compile",
+            "title": "9. Compilation and Graph Optimization",
+            "type": "code",
+            "language": "python",
+            "content": "PyTorch compilation can capture and optimize supported portions of a model. Compilation may reduce Python overhead and enable operator fusion or specialized kernels. The first calls can be slower due to compilation, so benchmarks should separate warm-up from steady-state execution. Dynamic shapes, unsupported operations, and graph breaks can limit optimization. Compare compiled and eager execution on the target hardware, verify output consistency, and measure end-to-end latency.",
+            "code": "import time\nimport torch\nimport torch.nn as nn\n\nmodel = nn.Sequential(nn.Linear(512, 1024), nn.GELU(), nn.Linear(1024, 256)).eval()\ninputs = torch.randn(64, 512)\ncompiled_model = torch.compile(model)\n\n@torch.inference_mode()\ndef benchmark(fn, warmup=10, iterations=50):\n    for _ in range(warmup):\n        fn()\n    if inputs.is_cuda:\n        torch.cuda.synchronize()\n    start = time.perf_counter()\n    for _ in range(iterations):\n        fn()\n    if inputs.is_cuda:\n        torch.cuda.synchronize()\n    return (time.perf_counter() - start) / iterations\n\n# The example uses CPU tensors. Move both models and inputs to CUDA to benchmark a GPU workload.\neager_time = benchmark(lambda: model(inputs))\ncompiled_time = benchmark(lambda: compiled_model(inputs))\nprint({\"eager_seconds\": eager_time, \"compiled_seconds\": compiled_time, \"speedup\": eager_time / compiled_time})",
+            "explanation": "The first calls may trigger compilation, which is excluded from the steady-state timing after warm-up. This example benchmarks a CPU workload because the tensors are on CPU; for GPU measurements, move the model and input to the same CUDA device and synchronize as shown. Compilation support and speedups vary by model, PyTorch version, and hardware."
+        },
+        {
+            "id": "memory-optimization",
+            "title": "10. Memory and Activation Optimization",
+            "type": "concept",
+            "content": "Inference memory includes model weights, temporary activations, input and output tensors, workspace buffers, and runtime overhead. Quantization can reduce weight storage, while smaller batches can reduce activation memory at the cost of throughput. Reusing buffers, avoiding unnecessary tensor copies, and controlling maximum sequence length can reduce peak memory. During training, activation checkpointing trades extra computation for lower activation storage; it is primarily a training-memory technique rather than a direct inference optimization. Always distinguish reserved memory from allocated memory when diagnosing PyTorch CUDA memory usage.",
+            "example": "A transformer serving system can reduce activation and attention-workspace requirements by limiting maximum sequence length or using an efficient attention implementation, provided the application can satisfy its output-quality and context-length requirements."
+        },
+        {
+            "id": "optimization-benchmarking",
+            "title": "11. Benchmarking Optimizations",
+            "type": "concept",
+            "content": "An optimization should be evaluated against an unoptimized baseline using the same inputs, batch sizes, hardware, and measurement protocol. Measure warm and cold latency where relevant, throughput under realistic concurrency, peak memory, model artifact size, and task quality. Report compilation and initialization costs separately from steady-state execution. For stochastic or generative models, use consistent decoding settings and evaluation datasets. Repeat measurements to reduce noise and confirm that apparent improvements persist in the actual serving environment.",
+            "example": "A quantized model that reduces artifact size by 60% but loses substantial recall may be unsuitable for the application. A smaller speedup with stable quality may be the better engineering choice."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "optimization-ex-1",
+            "type": "math",
+            "difficulty": "easy",
+            "question": "Using q = round(x / s) with zero point zero, quantize x = 1.26 with scale s = 0.1 and reconstruct it.",
+            "correctAnswer": "q = 13 and x_hat = 1.3.",
+            "solution": "q = round(1.26 / 0.1) = round(12.6) = 13. The reconstructed value is 13 × 0.1 = 1.3."
+        },
+        {
+            "id": "optimization-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does setting many individual weights to zero not always improve inference speed?",
+            "correctAnswer": "Dense kernels may still execute the same operations unless the runtime can exploit the sparse representation.",
+            "solution": "Unstructured zeros do not necessarily reduce the dimensions of dense matrix operations. Acceleration requires suitable sparse storage, compatible kernels, and a sparsity pattern that the hardware can exploit."
+        },
+        {
+            "id": "optimization-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the main difference between post-training quantization and quantization-aware training?",
+            "correctAnswer": "Post-training quantization converts a trained model after training, while QAT simulates quantization effects during additional training.",
+            "solution": "PTQ is usually simpler and cheaper to apply. QAT gives the model an opportunity to adapt to quantization effects but requires training and a compatible conversion workflow."
+        },
+        {
+            "id": "optimization-ex-4",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A compiled model is slower on the first request but faster on subsequent requests. Explain why and how you should benchmark it.",
+            "correctAnswer": "Compilation and initialization add first-request overhead; measure cold-start cost separately from warmed steady-state performance.",
+            "solution": "The runtime may compile graphs, specialize kernels, and allocate resources on initial calls. Report startup latency separately, warm up before measuring steady-state performance, and assess whether the improvement matters for the service's request pattern."
+        },
+        {
+            "id": "optimization-ex-5",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A quantized model is faster but its validation F1 score drops significantly. What should you investigate?",
+            "correctAnswer": "Calibration data and ranges, quantization granularity, sensitive layers, target backend, and alternative quantization strategies such as QAT.",
+            "solution": "Check whether the calibration distribution represents deployment data, inspect clipping and quantization error, compare per-channel and per-tensor schemes where supported, and test QAT if PTQ cannot meet the quality threshold. Retain the optimized model only if it satisfies the acceptance criteria."
+        }
+    ],
+    "summary": "Model optimization balances runtime performance, memory use, model size, and predictive quality. Quantization reduces numerical precision, pruning introduces sparsity, operator fusion reduces execution overhead and intermediate memory traffic, and compilation may specialize execution. No technique is universally faster; benchmark the target workload and validate task quality before deployment.",
+    "relatedTopics": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "cuda-basics",
+        "mixed-precision",
+        "model-serving",
+        "evaluation-infrastructure"
+    ]
+}

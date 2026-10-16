@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-04-transfer-learning",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 8,
+  "title": "Transfer Learning",
+  "slug": "transfer-learning",
+  "href": "/curriculum/04-deep-learning/transfer-learning",
+  "filePath": "content/curriculum/04-deep-learning/08-transfer-learning.json",
+  "description": "Learn how pretrained models can reduce data and compute requirements, and how to choose between feature extraction and fine-tuning.",
+  "difficulty": "intermediate",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "CNNs",
+    "Image Classification",
+    "Optimizers: Momentum, RMSProp, Adam"
+  ],
+  "learningObjectives": [
+    "Explain pretraining and transfer learning.",
+    "Compare frozen-feature extraction with fine-tuning.",
+    "Apply the correct preprocessing for pretrained weights.",
+    "Design a leakage-aware transfer-learning evaluation."
+  ],
+  "sections": [
+    {
+      "id": "idea",
+      "title": "Why Transfer Learning Works",
+      "type": "concept",
+      "content": "Transfer learning reuses knowledge learned on a source task or dataset for a related target task. A model pretrained on a large image dataset may already represent edges, textures, shapes, and object parts. A smaller target dataset can then train a new classifier head or adapt some of the pretrained weights.\n\nTransfer is most effective when the source representation contains features useful for the target domain. Large domain differences, label mismatches, or source-specific shortcuts can limit the benefit."
+    },
+    {
+      "id": "strategies",
+      "title": "Feature Extraction vs Fine-Tuning",
+      "type": "concept",
+      "content": "In feature extraction, freeze the pretrained backbone and train only a new task-specific head. This is computationally efficient and often a good baseline for small datasets. In fine-tuning, unfreeze some or all backbone layers and continue training on target data. Fine-tuning can adapt representations but increases overfitting risk and compute requirements.\n\nA common schedule is to train the head first, then unfreeze later backbone blocks and use a smaller learning rate for pretrained parameters than for the new head."
+    },
+    {
+      "id": "preprocessing",
+      "title": "Preprocessing and Model Contracts",
+      "type": "concept",
+      "content": "Pretrained weights often expect particular input dimensions, channel normalization, and color conventions. Use the preprocessing documented for the exact weight set; inconsistent normalization can substantially degrade results. Training augmentation may differ from inference preprocessing, but validation and test preprocessing should be deterministic.\n\nNever fit normalization statistics or select augmentations using held-out test labels. Keep image identities and related samples separated across splits when necessary."
+    },
+    {
+      "id": "code",
+      "title": "Freeze a Pretrained Backbone",
+      "type": "code",
+      "content": "from torchvision import models\nfrom torch import nn\n\nweights = models.ResNet18_Weights.DEFAULT\nmodel = models.resnet18(weights=weights)\nfor param in model.parameters():\n    param.requires_grad = False\n\nnum_features = model.fc.in_features\nmodel.fc = nn.Linear(num_features, 5)\n# Optimize only the new classifier head\noptimizer = torch.optim.Adam(model.fc.parameters(), lr=1e-3)\n",
+      "language": "python",
+      "explanation": "The example freezes all existing parameters and replaces the final fully connected layer for five target classes. Use weights.transforms() for the associated inference preprocessing. For fine-tuning, unfreeze selected layers and consider a lower learning rate for the backbone."
+    },
+    {
+      "id": "fine-tune",
+      "title": "A Practical Fine-Tuning Plan",
+      "type": "concept",
+      "content": "First establish a baseline using the frozen backbone. Track validation metrics and training time. Then unfreeze the final block, train with a smaller learning rate, and compare. If the target dataset is sufficiently large and related, gradually unfreezing more layers may help. Early stopping and weight decay can reduce overfitting.\n\nUse separate parameter groups when different layers need different learning rates. Keep a copy of the best validation checkpoint rather than assuming the final epoch is best."
+    },
+    {
+      "id": "risks",
+      "title": "Risks and Evaluation",
+      "type": "concept",
+      "content": "Pretraining data can contain biases, outdated information, or examples overlapping with evaluation data. Transfer learning does not remove the need for representative target data and rigorous testing. Evaluate per-class metrics, calibration when relevant, and performance on expected deployment conditions.\n\nFor non-image tasks, the same idea applies to pretrained language, audio, and multimodal encoders, but each model has its own tokenization, input formatting, and license or usage conditions."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "tl-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What is feature extraction in transfer learning?",
+      "correctAnswer": "Freeze the pretrained backbone and train a new task-specific head.",
+      "solution": "The backbone provides fixed representations while the new head learns the target labels."
+    },
+    {
+      "id": "tl-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why might the backbone use a smaller learning rate than a newly initialized classifier head?",
+      "correctAnswer": "The pretrained features are already useful and large updates may damage them, while the new head needs to learn quickly.",
+      "solution": "Differential learning rates allow controlled adaptation of pretrained weights and faster learning in new parameters."
+    },
+    {
+      "id": "tl-ex3",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "A pretrained image model performs poorly even on familiar images. What preprocessing mismatch should you check first?",
+      "correctAnswer": "Input size, channel order, value scaling, and normalization expected by the pretrained weights.",
+      "solution": "Pretrained models are sensitive to their expected input pipeline; use the transform associated with the exact weights."
+    },
+    {
+      "id": "tl-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why should a frozen-backbone baseline be measured before full fine-tuning?",
+      "correctAnswer": "It provides a cheaper reference point and helps determine whether adapting the backbone improves validation performance.",
+      "solution": "A baseline supports meaningful comparison and avoids unnecessary training complexity."
+    }
+  ],
+  "summary": "Transfer learning reuses pretrained representations. Start with a frozen-backbone baseline, use the correct preprocessing, and fine-tune carefully with validation-based model selection.",
+  "relatedTopics": [
+    "cnns",
+    "image-classification",
+    "embeddings-representation-learning",
+    "autoencoders"
+  ]
+}

@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-sequential-data",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 1,
+  "title": "Sequential Data Fundamentals",
+  "slug": "sequential-data",
+  "href": "/curriculum/05-sequence-models/sequential-data",
+  "filePath": "content/curriculum/05-sequence-models/01-sequential-data.json",
+  "description": "Understand ordered data, temporal dependencies, sequence windows, padding, masking, and the practical challenges of modeling sequences.",
+  "difficulty": "beginner",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "Basic Python",
+    "Linear Algebra",
+    "Neural Network Fundamentals"
+  ],
+  "learningObjectives": [
+    "Distinguish sequential data from independent tabular examples.",
+    "Explain temporal dependencies and sequence windows.",
+    "Describe padding, truncation, and masking.",
+    "Choose suitable evaluation splits for time-dependent data."
+  ],
+  "sections": [
+    {
+      "id": "intuition",
+      "title": "What Makes Data Sequential?",
+      "type": "concept",
+      "content": "Sequential data consists of observations whose order carries information. Examples include words in a sentence, sensor readings, stock measurements, user actions, audio frames, and daily energy consumption. Unlike an ordinary collection of independent rows, a sequence can contain dependencies between earlier and later observations.\n\nOrder changes meaning: the sequence “dog bites person” differs from “person bites dog.” In a sensor series, yesterday's value may help predict today's value. A sequence model learns patterns across positions or time steps rather than treating every observation as unrelated."
+    },
+    {
+      "id": "types",
+      "title": "Sequence Tasks",
+      "type": "concept",
+      "content": "Common sequence tasks include sequence classification (predict one label for an entire sequence), time-series forecasting (predict future values), token classification (predict a label at each position), and sequence generation (produce a sequence one step at a time). Machine translation is a sequence-to-sequence task because an input sequence is transformed into an output sequence.\n\nThe target determines the data pipeline and loss. Forecasting must not use future information unavailable at prediction time. Token-level tasks need alignment between each input position and its target label."
+    },
+    {
+      "id": "windows",
+      "title": "Windowing and Temporal Features",
+      "type": "math",
+      "content": "For a univariate series x_1, x_2, ..., x_T, a sliding window of length L can use [x_t, ..., x_(t+L−1)] to predict x_(t+L). For multivariate series, each time step contains a feature vector. Window length controls how much history is available; stride controls how often windows are sampled.\n\nExample: series [10, 12, 11, 15, 16], window length 3 and one-step-ahead targets yields inputs [10,12,11]→15 and [12,11,15]→16. In practice, generate more windows while ensuring that validation and test evaluation respect time order."
+    },
+    {
+      "id": "variable",
+      "title": "Variable-Length Sequences",
+      "type": "concept",
+      "content": "Sequences may have different lengths. Batching usually requires equal-sized tensors, so examples are padded to a common length or grouped into similar-length batches. A padding mask marks positions that are not real data. Without correct masking, a model or loss may learn from artificial padding values.\n\nTruncation limits maximum length and memory use but may remove important context. Choose a policy based on task needs; for classification, retaining the most recent part may be reasonable in some domains, while other tasks need both beginning and end."
+    },
+    {
+      "id": "splits",
+      "title": "Time-Aware Splitting and Leakage",
+      "type": "concept",
+      "content": "For forecasting, random splitting of overlapping windows can leak near-duplicate time periods across train and test. A safer approach is to split by time: train on earlier observations, validate on a later interval, and test on a still later interval. Fit scaling and imputation parameters using training data only.\n\nIn grouped sequences, such as recordings from many people or machines, also consider splitting by entity so that the same entity does not appear in both training and evaluation when deployment requires generalization to new entities."
+    },
+    {
+      "id": "code",
+      "title": "Create Sliding Windows",
+      "type": "code",
+      "content": "import numpy as np\n\ndef make_windows(series, window_size):\n    X, y = [], []\n    for start in range(len(series) - window_size):\n        X.append(series[start:start + window_size])\n        y.append(series[start + window_size])\n    return np.asarray(X), np.asarray(y)\n\nseries = np.array([10, 12, 11, 15, 16, 18])\nX, y = make_windows(series, window_size=3)\nprint(X.shape, y.shape)  # (3, 3) (3,)\nprint(X[0], '->', y[0])  # [10 12 11] -> 15",
+      "language": "python",
+      "explanation": "Each input window contains three consecutive observations and the target is the next observation. For real forecasting, split the raw series chronologically before building windows, or ensure no target/time leakage crosses split boundaries."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "seqfund-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "Give two examples of sequential data and explain what makes their order meaningful.",
+      "correctAnswer": "Text tokens and sensor readings; word order changes sentence meaning, while sensor order expresses temporal evolution.",
+      "solution": "Sequence data contains dependencies or meaning tied to position or time."
+    },
+    {
+      "id": "seqfund-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "A series contains 100 observations. How many one-step-ahead windows are available with window length 12 and stride 1?",
+      "correctAnswer": "88 windows.",
+      "solution": "There are N−L windows when each window predicts the next value: 100−12=88."
+    },
+    {
+      "id": "seqfund-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why can random splitting be dangerous for overlapping time-series windows?",
+      "correctAnswer": "Very similar windows or future information may appear in both training and test sets.",
+      "solution": "Use chronological splits and fit preprocessing only on training data."
+    },
+    {
+      "id": "seqfund-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What is the purpose of a padding mask?",
+      "correctAnswer": "To distinguish real sequence positions from artificial padding positions.",
+      "solution": "Masks prevent padding from influencing attention, pooling, or loss calculations when those operations support masking."
+    }
+  ],
+  "summary": "Sequence modeling depends on order, context, and careful handling of length. Windowing, padding, masks, and time-aware splits are essential foundations for reliable sequential learning.",
+  "relatedTopics": [
+    "rnn",
+    "backpropagation-through-time",
+    "lstm",
+    "sequence-to-sequence-models"
+  ]
+}

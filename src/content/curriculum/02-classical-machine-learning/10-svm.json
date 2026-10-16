@@ -1,1 +1,158 @@
-{}
+{
+    "id": "svm",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 10,
+    "title": "Support Vector Machines (SVM)",
+    "slug": "svm",
+    "description": "Understand maximum-margin classification, support vectors, soft margins, kernel methods, feature scaling, and practical SVM model selection.",
+    "difficulty": "advanced",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "linear-algebra",
+        "loss-functions",
+        "gradient-descent",
+        "regularization",
+        "logistic-regression"
+    ],
+    "learningObjectives": [
+        "Explain the geometric intuition behind maximum-margin classification.",
+        "Derive the equation of a linear decision boundary.",
+        "Understand support vectors and geometric margins.",
+        "Distinguish hard-margin and soft-margin SVMs.",
+        "Explain the role of C in regularization.",
+        "Understand kernel functions and nonlinear decision boundaries.",
+        "Recognize why feature scaling is important for SVMs.",
+        "Train and evaluate linear and nonlinear SVM classifiers."
+    ],
+    "sections": [
+        {
+            "id": "svm-introduction",
+            "title": "1. What Is a Support Vector Machine?",
+            "type": "concept",
+            "content": "A support vector machine is a supervised learning method commonly used for classification. Its central idea is to find a decision boundary that separates classes while maximizing the margin between the boundary and nearby training examples.\n\nFor a binary classification problem, imagine points belonging to two classes in a two-dimensional plane. Many lines might separate the classes. SVM seeks a separating line with a large margin, meaning that the closest examples from the two classes are as far from the boundary as possible under the chosen feature geometry.\n\nA linear SVM defines a decision function f(x) = w^T x + b. The predicted class is determined by the sign of this score, subject to the chosen label encoding. The decision boundary is the set of points satisfying w^T x + b = 0.\n\nThe training observations closest to the boundary are called support vectors. These observations are especially influential in defining the fitted separating surface. Points far away from the margin often have no direct effect on the solution of a standard hard-margin SVM once the boundary is established.\n\nSVMs can be effective in high-dimensional spaces, including settings where the number of features is large relative to the number of observations. Their performance depends on feature scaling, the regularization parameter, kernel choice, and the amount of overlap or noise between classes."
+        },
+        {
+            "id": "linear-boundary",
+            "title": "2. Linear Decision Boundaries and Margins",
+            "type": "math",
+            "content": "For a linear classifier, the decision boundary is:\n\nw^T x + b = 0.\n\nThe signed score is f(x) = w^T x + b. For a nonzero vector w, the perpendicular distance from a point x to the boundary is |w^T x + b| / ||w||, where ||w|| is the Euclidean norm of w.\n\nWhen labels are encoded as y in {-1, +1}, correct classification requires y_i(w^T x_i + b) > 0. A common margin constraint for a separable dataset is:\n\ny_i(w^T x_i + b) >= 1.\n\nUnder this scaling, the two supporting hyperplanes are w^T x + b = 1 and w^T x + b = -1. Their perpendicular separation is 2 / ||w||. Maximizing the margin is therefore equivalent to minimizing ||w||, or equivalently 0.5*||w||^2, under the constraints.\n\nThe numerical scale of w and b can be multiplied by a positive constant without changing the decision boundary, so a margin convention is needed to make the optimization meaningful. The constraint with a margin of one is a convenient normalization.\n\nThe maximum-margin principle is a geometric regularization idea. A larger margin can improve robustness to small perturbations under suitable conditions, but it does not guarantee good performance when classes overlap, labels are noisy, or deployment data differ from training data."
+        },
+        {
+            "id": "support-vectors",
+            "title": "3. Support Vectors",
+            "type": "concept",
+            "content": "Support vectors are training examples that determine or strongly influence the fitted margin. In the ideal hard-margin setting, they lie on the margin boundaries. In a soft-margin setting, support vectors may lie on the margin, inside the margin, or on the wrong side of the decision boundary.\n\nThe SVM solution can be expressed in terms of selected training observations and their associated coefficients. Observations with nonzero dual coefficients are support vectors. The exact relationship depends on whether the point lies outside, on, or inside the margin and on the optimization constraints.\n\nThis is important because the boundary is not determined simply by the average position of every observation. In a standard kernel SVM, predictions can be expressed through similarities between a new example and the support vectors, rather than requiring an explicit representation of every training point in the prediction formula.\n\nSupport vectors should not automatically be considered erroneous observations. Some are correctly classified and lie exactly on the margin. Others may violate the margin or be misclassified when the data are not perfectly separable.\n\nIf a fitted model has many support vectors, it may reflect overlapping classes, a flexible kernel, the chosen regularization strength, or the geometry of the data. The fraction of support vectors alone is not a universal measure of model quality."
+        },
+        {
+            "id": "hard-soft-margin",
+            "title": "4. Hard-Margin and Soft-Margin SVM",
+            "type": "math",
+            "content": "A hard-margin SVM requires every training example to be correctly classified with a margin of at least one:\n\ny_i(w^T x_i + b) >= 1.\n\nThe optimization minimizes 0.5*||w||^2 subject to those constraints. This approach requires linearly separable training data and can be highly sensitive to outliers or mislabeled observations.\n\nReal datasets often contain overlapping classes or noisy labels. A soft-margin SVM introduces slack variables xi_i >= 0 to allow margin violations:\n\ny_i(w^T x_i + b) >= 1 - xi_i.\n\nA common primal objective is:\n\nMinimize 0.5*||w||^2 + C * sum_i xi_i.\n\nThe coefficient C controls the trade-off between a large margin and violations of the margin constraints. Another equivalent formulation uses hinge loss with a regularization term, although exact scaling differs across formulations.\n\nA larger C penalizes violations more strongly and tends to fit training examples more aggressively. A smaller C allows more violations in exchange for stronger regularization and potentially a wider margin. The exact behavior depends on the dataset and kernel.\n\nHard-margin behavior is a special theoretical case and is rarely a sensible default for noisy real-world classification. Soft margins provide a more practical compromise, but the value of C should be selected using validation data."
+        },
+        {
+            "id": "hinge-loss",
+            "title": "5. Hinge Loss and the SVM Objective",
+            "type": "math",
+            "content": "For a binary label y in {-1, +1} and score f(x), hinge loss is:\n\nL(y, f(x)) = max(0, 1 - y*f(x)).\n\nIf y*f(x) >= 1, the example is correctly classified with the required margin and hinge loss is zero. If y*f(x) is 0.4, the loss is 0.6. If y*f(x) is -1, the loss is 2.\n\nA common regularized linear SVM objective combines a weight penalty with summed or averaged hinge loss. One convention is:\n\n0.5*||w||^2 + C * sum_i max(0, 1 - y_i*(w^T x_i + b)).\n\nThe weight penalty encourages a large margin, while hinge loss penalizes examples that are incorrectly classified or lie within the required margin. Libraries differ in objective scaling, so the numerical value of C should be interpreted according to the estimator being used.\n\nHinge loss is a surrogate objective: it is easier to optimize than direct classification error in many settings. It is not the same as accuracy and is not a probability-calibration loss.\n\nA standard SVM's decision score can rank examples, but it should not automatically be interpreted as a probability. If probabilities are required, probability calibration may be applied using a suitable validation procedure."
+        },
+        {
+            "id": "kernel-trick",
+            "title": "6. The Kernel Trick",
+            "type": "concept",
+            "content": "A linear boundary cannot separate every pattern in the original feature space. Kernel methods allow SVMs to represent nonlinear boundaries by using similarity functions that correspond to inner products in a transformed feature space.\n\nConceptually, let phi(x) map the original input into a possibly high-dimensional feature space. A linear classifier in that transformed space is:\n\nf(x) = w^T phi(x) + b.\n\nThe kernel trick uses a function K(x,z) = phi(x)^T phi(z) without necessarily computing phi(x) explicitly. This can make certain nonlinear calculations practical.\n\nA linear kernel corresponds to a linear boundary in the original feature space. A polynomial kernel can model interactions up to a degree determined by its settings. A radial basis function, or RBF, kernel measures similarity according to distance and can produce flexible nonlinear boundaries.\n\nFor the RBF kernel, a common definition is:\n\nK(x,z) = exp(-gamma * ||x-z||^2).\n\nNearby points have kernel similarity close to one, while distant points have smaller similarity. Gamma controls how rapidly similarity decreases with distance. A large gamma produces highly localized influence and can create complex boundaries; a small gamma produces smoother, broader influence.\n\nKernel choice adds flexibility but also increases the importance of careful tuning. Kernel SVM training can become computationally expensive on large datasets, and complex boundaries may overfit when the kernel parameters and regularization are not appropriate."
+        },
+        {
+            "id": "svm-scaling",
+            "title": "7. Feature Scaling and Hyperparameter Selection",
+            "type": "concept",
+            "content": "SVMs are sensitive to feature scale because their margins and kernel similarities depend on geometric distances in feature space. Suppose one feature measures age from 0 to 100 while another measures annual income from 0 to 1,000,000. Without scaling, income can dominate distance calculations and affect the separating boundary disproportionately.\n\nStandardization is a common preprocessing step. For each feature, subtract its training mean and divide by its training standard deviation. Fit the scaler only on training data and apply the fitted transformation to validation, test, and future observations.\n\nFor an RBF SVM, C and gamma are particularly important. C controls the trade-off between margin regularization and training violations. Gamma controls the spatial reach of each example's influence under the kernel. Their effects interact, so tune them jointly rather than assuming one universal setting.\n\nA practical search may test C and gamma over logarithmically spaced ranges using cross-validation. The ranges should reflect the feature scales and dataset size. A very small C with a very small gamma can produce an overly smooth model, while a large C with a large gamma can create an excessively flexible model.\n\nFor high-dimensional sparse text data, a linear SVM may be a useful baseline. For smaller datasets with nonlinear structure, an RBF SVM may work well. The best choice should be supported by validation results, computational constraints, and the requirements of the deployment setting."
+        },
+        {
+            "id": "multiclass-svm",
+            "title": "8. Multiclass Classification with SVMs",
+            "type": "concept",
+            "content": "The classic SVM formulation is binary, but many tasks contain more than two classes. Libraries commonly extend SVMs to multiclass problems using strategies such as one-vs-rest or one-vs-one.\n\nIn one-vs-rest, one binary classifier is trained for each class, treating that class as positive and all remaining classes as negative. Prediction combines the resulting class scores according to the implementation's decision rule.\n\nIn one-vs-one, a classifier is trained for each pair of classes. With K classes, this creates K*(K-1)/2 pairwise classifiers. Their predictions are combined using a voting or score-aggregation strategy.\n\nThese strategies have different training and inference costs. One-vs-one trains more classifiers as the number of classes grows, while one-vs-rest trains one classifier per class. Library behavior varies, and some estimators use a native multiclass optimization rather than either wrapper strategy.\n\nMulticlass SVM outputs are not automatically calibrated class probabilities. If an application requires reliable probabilities, use a suitable calibration method and evaluate calibration quality on data that were not used to fit the base model.\n\nClass imbalance can also affect multiclass performance. Examine per-class precision and recall, confusion matrices, and the distribution of training examples rather than relying only on aggregate accuracy."
+        },
+        {
+            "id": "svm-code",
+            "title": "9. Training Linear and RBF SVMs",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.svm import SVC\nfrom sklearn.metrics import accuracy_score, classification_report\n\nX, y = load_breast_cancer(return_X_y=True)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodels = {\n    'Linear SVM': make_pipeline(\n        StandardScaler(), SVC(kernel='linear', C=1.0)\n    ),\n    'RBF SVM': make_pipeline(\n        StandardScaler(), SVC(kernel='rbf', C=1.0, gamma='scale')\n    )\n}\n\nfor name, model in models.items():\n    model.fit(X_train, y_train)\n    predictions = model.predict(X_test)\n    print('\\n', name)\n    print('Test accuracy:', accuracy_score(y_test, predictions))\n    print(classification_report(y_test, predictions))",
+            "explanation": "The pipeline ensures that standardization is learned from training data only. The linear and RBF kernels represent different decision-boundary assumptions. The example uses illustrative hyperparameters; tune C and kernel parameters with cross-validation before choosing a final model."
+        },
+        {
+            "id": "svm-limitations",
+            "title": "10. Strengths and Limitations",
+            "type": "concept",
+            "content": "SVMs can perform well in high-dimensional feature spaces and provide a principled maximum-margin formulation. Linear SVMs are useful for many sparse or high-dimensional tasks, while kernel SVMs can model nonlinear boundaries without manually constructing every transformed feature.\n\nKernel SVMs can require substantial computation and memory as the training dataset grows. They may be less convenient for very large datasets than linear methods or tree-based approaches. Their behavior also depends on feature scaling and careful hyperparameter tuning.\n\nSVMs are not automatically robust to every outlier. A soft margin limits the influence of some violations through the objective, but mislabeled or unusual examples can still affect the boundary, particularly under aggressive settings.\n\nInterpretability varies by model. A linear SVM has a weight vector that can sometimes be examined, while a nonlinear kernel model is harder to explain directly. Neither model's coefficients nor support vectors establish causality.\n\nUse SVMs as candidates rather than defaults for every problem. Compare them with logistic regression, tree-based models, and suitable baselines. Select based on validation performance, runtime, calibration requirements, and the operational cost of mistakes."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "svm-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main geometric objective of a maximum-margin SVM?",
+            "correctAnswer": "To find a separating boundary with a large margin between the boundary and the nearest relevant training observations.",
+            "solution": "For a linear SVM, the margin width under the standard normalization is related to 2 divided by the weight-vector norm. Minimizing the weight norm maximizes this margin under the constraints."
+        },
+        {
+            "id": "svm-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For y = +1 and score f(x) = 0.4, calculate hinge loss.",
+            "correctAnswer": "0.6.",
+            "solution": "L = max(0, 1 - y*f(x)) = max(0, 1 - 0.4) = 0.6."
+        },
+        {
+            "id": "svm-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What role does C play in a soft-margin SVM?",
+            "correctAnswer": "It controls the trade-off between margin regularization and penalties for margin violations.",
+            "solution": "A larger C generally penalizes violations more strongly, while a smaller C allows more violations in exchange for stronger regularization. The exact scaling depends on the implementation."
+        },
+        {
+            "id": "svm-ex-4",
+            "type": "comparison",
+            "difficulty": "medium",
+            "question": "How does an RBF kernel differ from a linear kernel?",
+            "correctAnswer": "A linear kernel uses linear feature-space similarity, while an RBF kernel can represent nonlinear decision boundaries through distance-based similarity.",
+            "solution": "The RBF kernel is exp(-gamma times squared distance). Its gamma parameter controls how rapidly similarity decreases with distance and therefore influences boundary complexity."
+        },
+        {
+            "id": "svm-ex-5",
+            "type": "diagnosis",
+            "difficulty": "hard",
+            "question": "An RBF SVM performs very well on training data but poorly on validation data. What should you investigate?",
+            "correctAnswer": "Try less aggressive regularization settings such as lower C, examine gamma, verify feature scaling, check data leakage, and tune using cross-validation.",
+            "solution": "A large C combined with a large gamma can produce a highly flexible boundary. However, the gap could also reflect leakage or distribution differences. Compare a structured hyperparameter search against a simple baseline."
+        },
+        {
+            "id": "svm-ex-6",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "You have a very large dataset with sparse text features. Would you start with an RBF SVM or a linear SVM, and why?",
+            "correctAnswer": "A linear SVM is often a practical starting point because it scales more favorably to large sparse datasets and can be effective in high-dimensional text classification.",
+            "solution": "Kernel methods may require expensive pairwise similarity calculations as the dataset grows. A linear SVM avoids much of this overhead and provides a strong baseline. Validate its performance against other appropriate models."
+        }
+    ],
+    "summary": [
+        "SVMs seek a maximum-margin separating boundary.",
+        "Support vectors are the training observations that determine or strongly influence the margin.",
+        "Soft-margin SVMs allow violations controlled by the regularization parameter C.",
+        "Hinge loss penalizes incorrect predictions and predictions that fall inside the required margin.",
+        "Kernel functions enable nonlinear boundaries without explicitly constructing every transformed feature.",
+        "Feature scaling and joint hyperparameter tuning are especially important for RBF SVMs.",
+        "SVM decision scores are not automatically calibrated probabilities."
+    ],
+    "relatedTopics": [
+        "loss-functions",
+        "regularization",
+        "gradient-descent",
+        "evaluation-metrics",
+        "knn"
+    ]
+}

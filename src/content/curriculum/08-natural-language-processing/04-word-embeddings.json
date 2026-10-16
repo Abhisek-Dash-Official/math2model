@@ -1,1 +1,241 @@
-{}
+{
+    "id": "module-08-natural-language-processing-word-embeddings",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 4,
+    "title": "Word Embeddings (Word2Vec, GloVe)",
+    "slug": "word-embeddings",
+    "href": "/curriculum/08-natural-language-processing/word-embeddings",
+    "filePath": "content/curriculum/08-natural-language-processing/04-word-embeddings.json",
+    "description": "Explore dense vector representations of words, distributional semantics, Word2Vec's CBOW and Skip-gram objectives, GloVe's global co-occurrence approach, and embedding evaluation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Vocabulary Construction",
+        "One-Hot Encoding",
+        "Basic Linear Algebra",
+        "Basic Probability"
+    ],
+    "learningObjectives": [
+        "Explain why NLP models use dense word embeddings.",
+        "Describe the distributional hypothesis and contextual similarity.",
+        "Explain the CBOW and Skip-gram architectures in Word2Vec.",
+        "Understand negative sampling and its training objective.",
+        "Explain how GloVe uses global word co-occurrence statistics.",
+        "Compare Word2Vec, GloVe, and contextual embeddings.",
+        "Implement and inspect a small embedding model with Python."
+    ],
+    "sections": [
+        {
+            "id": "embedding-definition",
+            "title": "What Are Word Embeddings?",
+            "type": "concept",
+            "content": "A word embedding maps a token to a dense numerical vector. Instead of representing each word with a vocabulary-sized one-hot vector, an embedding might represent it with 100 or 300 learned numbers. These values are optimized using a learning objective and text data. Words that occur in similar contexts can develop related vectors, although similarity is not guaranteed to perfectly match human judgments. An embedding is a learned representation, not a complete definition of a word."
+        },
+        {
+            "id": "distributional-hypothesis",
+            "title": "The Distributional Hypothesis",
+            "type": "concept",
+            "content": "The distributional hypothesis suggests that words appearing in similar contexts tend to have related meanings. For example, 'doctor' and 'nurse' may occur near words such as 'hospital', 'patient', and 'treatment'. A model can learn useful relationships by predicting nearby words or learning from word co-occurrence statistics. The resulting vectors capture patterns in the training corpus, including both meaningful relationships and biases present in the data."
+        },
+        {
+            "id": "embedding-geometry",
+            "title": "Embedding Space and Geometry",
+            "type": "concept",
+            "content": "An embedding places each word at a point in a multidimensional vector space. Similarity can be measured with cosine similarity, which compares vector directions rather than raw magnitude. A value near 1 indicates similar directions, a value near 0 indicates approximate orthogonality, and a value near -1 indicates opposite directions. These interpretations are geometric; their linguistic usefulness depends on the training method, corpus, and evaluation task."
+        },
+        {
+            "id": "cosine-similarity",
+            "title": "Cosine Similarity",
+            "type": "math",
+            "content": "For nonzero vectors u and v, cosine similarity is cos(u, v) = (u · v) / (||u||₂ ||v||₂). The numerator is the dot product, and the denominator normalizes by vector length. This makes the measure insensitive to positive rescaling of either vector. In word embeddings, cosine similarity is commonly used to retrieve words whose vectors point in similar directions. It should not be interpreted as a universal measure of semantic equivalence."
+        },
+        {
+            "id": "cosine-python",
+            "title": "Calculate Cosine Similarity",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef cosine_similarity(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n    denominator = np.linalg.norm(a) * np.linalg.norm(b)\n    if denominator == 0:\n        raise ValueError(\"Cosine similarity is undefined for zero vectors\")\n    return float(np.dot(a, b) / denominator)\n\nprint(cosine_similarity([1, 2, 3], [2, 4, 6]))",
+            "explanation": "The vectors point in the same direction, so their cosine similarity is 1. The function checks for zero vectors because cosine similarity is undefined when either vector has zero norm."
+        },
+        {
+            "id": "embedding-matrix",
+            "title": "The Embedding Matrix",
+            "type": "math",
+            "content": "For vocabulary size V and embedding dimension d, an embedding table can be represented by E ∈ R^(V × d). Token ID i selects row E_i. If a sequence has length L, embedding lookup produces a matrix in R^(L × d). For a batch of B sequences padded to length L, the output commonly has shape B × L × d. The embedding table is learned during training unless it is frozen or initialized from external pretrained vectors."
+        },
+        {
+            "id": "why-dense-vectors",
+            "title": "Why Dense Embeddings Help",
+            "type": "concept",
+            "content": "Dense embeddings reduce the dimensionality of token representations and allow the model to learn shared features. Similar words can receive similar representations because their contexts and training objectives overlap. Unlike one-hot vectors, embeddings can generalize across related tokens through their vector geometry. However, embeddings are not inherently interpretable, and their learned structure depends on the data distribution, optimization, dimension, and training objective."
+        },
+        {
+            "id": "word2vec-overview",
+            "title": "Word2Vec Overview",
+            "type": "concept",
+            "content": "Word2Vec is a family of methods for learning word vectors from local context. Two popular training architectures are Continuous Bag of Words (CBOW) and Skip-gram. CBOW predicts a target word from nearby context words. Skip-gram predicts surrounding context words from a target word. Both use a predictive learning objective to shape word representations, and both can be trained efficiently on large text corpora."
+        },
+        {
+            "id": "cbow",
+            "title": "Continuous Bag of Words (CBOW)",
+            "type": "concept",
+            "content": "CBOW uses surrounding words to predict a central target word. For the sentence 'the model learns language', a training example might use 'the', 'learns', and 'language' as context to predict 'model', depending on the chosen window. The context embeddings are typically combined, often by summation or averaging, before prediction. Because the context is treated as a bag, ordinary CBOW does not preserve the order of context words within that representation."
+        },
+        {
+            "id": "cbow-example",
+            "title": "CBOW Training Example",
+            "type": "concept",
+            "content": "Suppose the token sequence is ['the', 'cat', 'sat', 'outside'] and the context window radius is one. For the target 'sat', the context consists of 'cat' and 'outside'. CBOW learns to predict 'sat' from those context tokens. Sliding the window across a corpus generates many examples. Window size affects the relationships learned: smaller windows emphasize local syntactic relationships, while larger windows can capture broader topical associations."
+        },
+        {
+            "id": "skipgram",
+            "title": "Skip-gram",
+            "type": "concept",
+            "content": "Skip-gram predicts surrounding context tokens from a central target token. For the sequence 'the cat sat outside', the central token 'sat' may generate training pairs such as ('sat', 'cat') and ('sat', 'outside'). A larger context window generates more pairs. Skip-gram can provide useful learning signals for less frequent words, but the number of training pairs can be large. Sampling methods make training practical on large corpora."
+        },
+        {
+            "id": "skipgram-objective",
+            "title": "Skip-gram Objective",
+            "type": "math",
+            "content": "The Skip-gram objective maximizes the log probability of context words given a target word. A simplified objective is J = Σ_t Σ_{c ∈ C(t)} log P(c | w_t), where w_t is the center word and C(t) is its context set. The model learns parameters that assign higher probabilities to observed target-context pairs. Directly normalizing over a huge vocabulary can be expensive, motivating efficient approximations such as negative sampling or hierarchical softmax."
+        },
+        {
+            "id": "negative-sampling",
+            "title": "Negative Sampling",
+            "type": "concept",
+            "content": "Negative sampling trains a model to distinguish observed word-context pairs from sampled pairs that are treated as negatives. Rather than computing a full probability distribution over every vocabulary item for every update, it updates a small set of positive and negative examples. A common objective increases the score of a true pair and decreases the scores of sampled negative pairs. The quality of the learned embeddings depends on the negative-sampling distribution and the training corpus."
+        },
+        {
+            "id": "negative-sampling-math",
+            "title": "Negative-Sampling Objective",
+            "type": "math",
+            "content": "For a positive pair (w, c) and K sampled negative contexts n_1 through n_K, a common objective is log σ(v_c^T v_w) + Σ_i log σ(-v_{n_i}^T v_w). Here σ is the sigmoid function and v_w and v_c are learned vectors. The first term rewards a high score for the observed pair. The negative terms reward low scores for sampled negative pairs. This objective is not the same as a full softmax likelihood."
+        },
+        {
+            "id": "word2vec-training-data",
+            "title": "Preparing Word2Vec Training Data",
+            "type": "concept",
+            "content": "Word2Vec training begins with a tokenized corpus. Rare tokens may be removed or downsampled, and a context window generates target-context examples. Frequent function words can dominate raw text counts, so some implementations use subsampling to reduce their influence. The model then optimizes its predictive objective over many examples. Preprocessing choices influence the relationships learned and should be documented for reproducibility."
+        },
+        {
+            "id": "glove-overview",
+            "title": "GloVe Overview",
+            "type": "concept",
+            "content": "GloVe, short for Global Vectors for Word Representation, learns word vectors from aggregated global word co-occurrence statistics. A co-occurrence matrix X records how frequently context word j appears near target word i under a chosen counting scheme. GloVe trains vectors so that their dot products, together with bias terms, approximate a transformation of co-occurrence counts. Unlike the local predictive framing of Word2Vec, GloVe explicitly uses global corpus statistics."
+        },
+        {
+            "id": "cooccurrence-matrix",
+            "title": "Word Co-Occurrence Matrix",
+            "type": "concept",
+            "content": "A co-occurrence matrix summarizes how words appear near one another. For example, 'doctor' may co-occur frequently with 'patient', 'hospital', and 'treatment'. Rows and columns represent vocabulary terms, and entries record co-occurrence counts or weighted counts. The matrix is often sparse because most word pairs do not occur near each other. Its construction depends on the context window, distance weighting, vocabulary, and corpus."
+        },
+        {
+            "id": "glove-objective",
+            "title": "GloVe Objective",
+            "type": "math",
+            "content": "A standard GloVe objective is J = Σ_ij f(X_ij)(w_i^T w_tilde_j + b_i + b_tilde_j - log X_ij)^2, summed over observed co-occurrences. Here X_ij is the co-occurrence count, w_i and w_tilde_j are word and context vectors, and b terms are biases. The weighting function f reduces the influence of extremely frequent pairs and limits the impact of rare counts. The objective encourages vector relationships to reflect global co-occurrence patterns."
+        },
+        {
+            "id": "word2vec-vs-glove",
+            "title": "Word2Vec Versus GloVe",
+            "type": "concept",
+            "content": "Word2Vec learns from predictive context tasks, using architectures such as CBOW and Skip-gram. GloVe learns from a global co-occurrence matrix with a weighted regression objective. Both produce static word vectors: a word usually receives the same vector regardless of the sentence in which it appears. Their differences concern how training signals are formed, not a guarantee that one method always produces better representations. Corpus quality and evaluation matter substantially."
+        },
+        {
+            "id": "static-vs-contextual",
+            "title": "Static and Contextual Embeddings",
+            "type": "concept",
+            "content": "Word2Vec and GloVe are static embedding methods. A token such as 'bank' receives one learned vector even when it means a financial institution in one sentence and a river edge in another. Contextual language models generate representations that depend on surrounding text, allowing different occurrences of the same token to receive different vectors. Static embeddings remain useful for lightweight systems and educational experiments, while contextual representations are common in modern language understanding."
+        },
+        {
+            "id": "trainable-embeddings",
+            "title": "Training Embeddings with a Neural Model",
+            "type": "concept",
+            "content": "Embedding matrices can be learned from scratch through downstream task training or initialized using pretrained vectors. When trained end to end, gradients update the rows associated with tokens in the training examples. Rare tokens may receive few updates, and some tokens may never appear. Freezing pretrained embeddings preserves their initial values, while fine-tuning allows adaptation to the target domain. The best choice depends on dataset size, domain similarity, and overfitting risk."
+        },
+        {
+            "id": "embedding-example-python",
+            "title": "A Tiny Embedding Lookup",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nrng = np.random.default_rng(7)\nvocabulary = {\"cat\": 0, \"dog\": 1, \"bird\": 2}\nembedding_dim = 4\nE = rng.normal(0, 0.1, size=(len(vocabulary), embedding_dim))\n\nids = [vocabulary[\"cat\"], vocabulary[\"bird\"]]\nvectors = E[ids]\nprint(\"Embedding matrix shape:\", E.shape)\nprint(\"Selected vectors shape:\", vectors.shape)\nprint(vectors)",
+            "explanation": "This example demonstrates lookup in a randomly initialized embedding matrix. The vectors do not yet encode meaningful semantics. Meaningful relationships require training on data with a suitable objective or loading pretrained vectors."
+        },
+        {
+            "id": "embedding-quality",
+            "title": "Evaluating Embedding Quality",
+            "type": "concept",
+            "content": "Embedding quality can be evaluated through word similarity datasets, analogy tasks, nearest-neighbor inspection, and downstream application performance. Intrinsic evaluations are convenient but may not predict success in a particular task. A vector space can reflect corpus biases, frequency effects, and historical stereotypes. For practical systems, evaluate the embeddings on representative data and consider fairness, domain coverage, and stability in addition to geometric similarity."
+        },
+        {
+            "id": "embedding-bias",
+            "title": "Bias and Limitations",
+            "type": "concept",
+            "content": "Embeddings learn statistical patterns from their training data. If a corpus contains stereotypes or imbalanced representation, those patterns may appear in vector relationships. Static vectors also struggle with polysemy, rare words, domain shifts, and changing meanings. Debiasing methods may reduce selected associations, but they do not guarantee that a model is unbiased. Careful data selection, task-specific evaluation, and broader system-level testing remain necessary."
+        },
+        {
+            "id": "embedding-applications",
+            "title": "Applications of Word Embeddings",
+            "type": "concept",
+            "content": "Word embeddings have been used in sentiment classification, named-entity recognition, document categorization, information retrieval, recommendation systems, semantic search, and neural translation. They can initialize downstream neural networks or support similarity-based retrieval. For short-text and low-resource applications, pretrained static embeddings can provide a useful starting point. More complex tasks often benefit from contextual representations produced by pretrained Transformer models."
+        },
+        {
+            "id": "embedding-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Word embeddings map tokens to compact dense vectors. Word2Vec learns from local predictive tasks using CBOW or Skip-gram, often with negative sampling. GloVe learns from global co-occurrence statistics. Both methods produce static representations whose geometry reflects patterns in training data. Cosine similarity and downstream evaluation help assess usefulness, but embeddings can preserve corpus biases and may not capture context-dependent meanings."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "embedding-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the main difference between a one-hot vector and a learned word embedding?",
+            "correctAnswer": "A one-hot vector identifies a token using a sparse vocabulary-sized vector, while an embedding represents it using a dense learned vector.",
+            "solution": "One-hot vectors contain one active entry and no intrinsic semantic similarity. Embeddings have trainable values that can capture relationships learned from data."
+        },
+        {
+            "id": "embedding-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "How do CBOW and Skip-gram differ in their prediction direction?",
+            "correctAnswer": "CBOW predicts a central target word from its context; Skip-gram predicts context words from a central target word.",
+            "solution": "CBOW aggregates neighboring words and predicts the center. Skip-gram uses the center token to predict surrounding words."
+        },
+        {
+            "id": "embedding-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Calculate the cosine similarity of vectors [1, 0] and [0, 1].",
+            "correctAnswer": "0",
+            "solution": "Their dot product is zero and both vectors have unit norm. Therefore cosine similarity equals 0."
+        },
+        {
+            "id": "embedding-exercise-4",
+            "type": "analytical",
+            "difficulty": "intermediate",
+            "question": "Why can static embeddings struggle with the two meanings of 'bank' in 'river bank' and 'bank account'?",
+            "correctAnswer": "A static embedding assigns one vector to the word type regardless of its sentence context.",
+            "solution": "Static embeddings combine evidence from different contexts into a single representation. Contextual models compute representations using surrounding tokens and can distinguish different uses."
+        },
+        {
+            "id": "embedding-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You need embeddings for a low-resource medical classification task. What factors would you consider when deciding between training from scratch and using pretrained vectors?",
+            "correctAnswer": "Consider training-data size, domain similarity, vocabulary coverage, task performance, rare medical terminology, and the risk of overfitting.",
+            "solution": "Pretrained vectors can provide useful linguistic information when labeled data is limited. However, domain mismatch or missing medical terms can hurt performance. Compare approaches on a validation set and inspect coverage of important domain vocabulary."
+        }
+    ],
+    "summary": "Word embeddings transform discrete tokens into dense vectors that can capture statistical and semantic relationships. Word2Vec uses CBOW or Skip-gram predictive objectives, often optimized with negative sampling. GloVe uses global word co-occurrence statistics. These static embeddings are efficient and educationally important, but contextual models handle ambiguity more effectively. Evaluate embeddings on real tasks and account for data bias, vocabulary coverage, and domain mismatch.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-vocabulary",
+        "module-08-natural-language-processing-one-hot-encoding",
+        "module-08-natural-language-processing-subword-tokenization-bpe",
+        "module-08-natural-language-processing-sentence-representations"
+    ]
+}

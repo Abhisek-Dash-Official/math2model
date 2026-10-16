@@ -1,1 +1,387 @@
-{}
+{
+  "id": "programming-fundamentals",
+  "title": "Programming Fundamentals",
+  "slug": "programming-fundamentals",
+  "module": "Foundations",
+  "description": "Build a strong programming foundation by learning how programs represent information, make decisions, repeat work, decompose problems into functions, and handle errors. These skills are prerequisites for implementing mathematical ideas and AI algorithms.",
+  "difficulty": "Beginner",
+  "estimatedHours": 8,
+  "prerequisites": [],
+  "learningObjectives": [
+    "Explain the relationship between a problem, an algorithm, and a program.",
+    "Use variables, primitive data types, expressions, and operators correctly.",
+    "Write conditional logic and loops, including nested loops when appropriate.",
+    "Design reusable functions with parameters, return values, and clear responsibilities.",
+    "Choose appropriate built-in collections for common tasks.",
+    "Read tracebacks, test assumptions, and debug syntax, runtime, and logic errors.",
+    "Write small, testable programs that form the building blocks of data and AI workflows."
+  ],
+  "sections": [
+    {
+      "id": "problem-algorithm-program",
+      "title": "Problems, Algorithms, and Programs",
+      "content": [
+        {
+          "type": "text",
+          "value": "Programming begins with a problem, not with code. A problem describes a desired result and the information available. An algorithm is a finite, unambiguous sequence of steps that transforms inputs into outputs. A program expresses an algorithm in a language that a computer can execute."
+        },
+        {
+          "type": "text",
+          "value": "For example, suppose the task is to calculate the mean of a list of measurements. The algorithm is: count the values, add them, then divide the sum by the count. Python is one way to express those steps. Keeping these three levels separate helps you reason about correctness before worrying about syntax."
+        },
+        {
+          "type": "text",
+          "value": "A useful problem specification identifies inputs, outputs, assumptions, and edge cases. For a mean function, inputs might be a list of numbers; the output is a numeric average; and an empty list needs an explicit policy because division by zero is undefined."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def mean(values):\n    if len(values) == 0:\n        raise ValueError(\"mean requires at least one value\")\n    return sum(values) / len(values)\n\nprint(mean([2, 4, 6, 8]))  # 5.0"
+        },
+        {
+          "type": "text",
+          "value": "In AI development, the same discipline applies to data preprocessing, loss functions, evaluation metrics, and model inference. A clear specification prevents an implementation from silently doing the wrong thing."
+        }
+      ],
+      "keyTakeaways": [
+        "Define inputs and outputs before writing code.",
+        "List edge cases explicitly.",
+        "A program can run without being logically correct."
+      ]
+    },
+    {
+      "id": "variables-types",
+      "title": "Variables, Values, and Types",
+      "content": [
+        {
+          "type": "text",
+          "value": "A variable is a name bound to a value. In Python, assignment uses =, while == compares values. Python is dynamically typed: a name can be rebound to values of different types, though using consistent types usually makes programs easier to understand."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "sample_count = 128        # int\nlearning_rate = 0.001    # float\nmodel_name = \"MLP\"       # str\nis_training = True       # bool\nmissing_value = None     # NoneType\n\nprint(type(sample_count))\nprint(type(learning_rate))"
+        },
+        {
+          "type": "text",
+          "value": "Integers represent whole numbers, floating-point values approximate real numbers, strings represent text, and booleans represent truth values. None is commonly used to indicate the absence of a value. Lists and dictionaries hold collections, which are discussed later."
+        },
+        {
+          "type": "text",
+          "value": "Floating-point numbers are stored with finite precision. For example, 0.1 + 0.2 may not be exactly equal to 0.3 in binary floating-point arithmetic. In numerical work, compare values using a tolerance when exact equality is not appropriate."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "value = 0.1 + 0.2\nprint(value)  # commonly displays 0.30000000000000004\n\ntolerance = 1e-9\nprint(abs(value - 0.3) < tolerance)"
+        },
+        {
+          "type": "text",
+          "value": "Names should communicate meaning. Prefer learning_rate over lr_value_thing when clarity matters. Constants are conventionally written in uppercase, such as DEFAULT_BATCH_SIZE = 32, although Python does not enforce immutability for ordinary variables."
+        }
+      ],
+      "keyTakeaways": [
+        "Use descriptive names.",
+        "Know the type of each value and how operations behave on it.",
+        "Floating-point arithmetic is approximate."
+      ]
+    },
+    {
+      "id": "operators-expressions",
+      "title": "Operators and Expressions",
+      "content": [
+        {
+          "type": "text",
+          "value": "Expressions combine values and operators to produce new values. Arithmetic operators include +, -, *, /, //, %, and **. Comparison operators such as <, >=, ==, and != produce booleans. Logical operators and, or, and not combine conditions."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "a, b = 10, 3\nprint(a + b)   # 13\nprint(a / b)   # 3.333...\nprint(a // b)  # 3, floor division\nprint(a % b)   # 1, remainder\nprint(a ** b)  # 1000\n\ntemperature = 22\nhas_data = True\nshould_train = temperature > 0 and has_data\nprint(should_train)"
+        },
+        {
+          "type": "text",
+          "value": "Operator precedence determines how expressions are grouped. Parentheses make intent explicit and reduce mistakes. For example, write (correct / total) * 100 rather than relying on a reader to remember precedence."
+        },
+        {
+          "type": "text",
+          "value": "Assignment operators such as += update a variable. Be careful with chained comparisons and truthiness: empty collections, zero, None, and False are false-like in conditions, but they are not interchangeable values."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "loss = 1.0\nloss -= 0.2\nloss *= 0.5\n\nif loss and loss < 1:\n    print(\"A non-zero loss below one:\", loss)"
+        }
+      ],
+      "keyTakeaways": [
+        "Use parentheses when they improve clarity.",
+        "Distinguish / from //.",
+        "Do not confuse truthiness with a value's meaning."
+      ]
+    },
+    {
+      "id": "conditionals",
+      "title": "Conditional Logic",
+      "content": [
+        {
+          "type": "text",
+          "value": "Conditional statements choose which code runs based on a condition. Python uses if, elif, and else. Conditions should express a meaningful decision, and branches should cover the cases the problem requires."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "score = 0.84\n\nif score >= 0.90:\n    label = \"excellent\"\nelif score >= 0.75:\n    label = \"acceptable\"\nelse:\n    label = \"needs review\"\n\nprint(label)"
+        },
+        {
+          "type": "text",
+          "value": "Conditions often combine several checks. Use and when all conditions must be true and or when at least one condition is sufficient. Python short-circuits these operators, so the second operand may not be evaluated if the first determines the result."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "values = [1, 2, 3]\n\nif values and len(values) > 0:\n    print(\"The collection has values\")"
+        },
+        {
+          "type": "text",
+          "value": "Nested conditionals can become difficult to follow. When logic grows, consider early returns, named helper functions, or a mapping from cases to actions. Clear branching is particularly important in validation code that decides whether inputs are safe to process."
+        }
+      ],
+      "keyTakeaways": [
+        "Every branch should have a clear purpose.",
+        "Check boundary values such as exactly 0.75 or 0.90.",
+        "Validate inputs before performing operations that assume validity."
+      ]
+    },
+    {
+      "id": "loops",
+      "title": "Loops and Iteration",
+      "content": [
+        {
+          "type": "text",
+          "value": "A for loop iterates over items in an iterable, while a while loop repeats as long as a condition remains true. Use for when the items or iteration count are known; use while when repetition depends on a changing condition."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "values = [1.5, 2.0, 3.5]\ntotal = 0.0\n\nfor value in values:\n    total += value\n\nprint(total)"
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "attempts = 0\nmax_attempts = 3\n\nwhile attempts < max_attempts:\n    print(\"Attempt\", attempts + 1)\n    attempts += 1"
+        },
+        {
+          "type": "text",
+          "value": "range(stop) produces integer values from zero up to but not including stop. range(start, stop, step) controls the start and increment. The loop variable takes each value in sequence."
+        },
+        {
+          "type": "text",
+          "value": "break exits the nearest loop; continue skips the rest of the current iteration. Avoid modifying a collection while iterating over it unless you understand the consequences. For filtering, a new list comprehension is often clearer."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "even_values = []\nfor value in range(10):\n    if value % 2 != 0:\n        continue\n    even_values.append(value)\n\nprint(even_values)"
+        },
+        {
+          "type": "text",
+          "value": "Nested loops can multiply work. If one loop runs n times and an inner loop runs m times, the body executes n × m times, giving O(nm) work. This matters when datasets or model dimensions grow."
+        }
+      ],
+      "keyTakeaways": [
+        "Choose for and while based on the task.",
+        "Make loop termination conditions explicit.",
+        "Analyze nested loops before applying them to large data."
+      ]
+    },
+    {
+      "id": "functions",
+      "title": "Functions, Parameters, and Return Values",
+      "content": [
+        {
+          "type": "text",
+          "value": "A function gives a reusable name to a task. Parameters receive inputs; return sends a result to the caller. Functions should generally do one coherent job and have a clear contract describing valid inputs and output behavior."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def linear_prediction(x, weight, bias):\n    return weight * x + bias\n\nprediction = linear_prediction(\n    x=2.5,\n    weight=0.8,\n    bias=0.1\n)\nprint(prediction)"
+        },
+        {
+          "type": "text",
+          "value": "Local variables exist within a function call. Returning a value is different from printing it: return makes a result available to other code, while print is primarily for displaying information. Reusable libraries should normally return values rather than print them."
+        },
+        {
+          "type": "text",
+          "value": "Default parameters can make common cases convenient, but avoid mutable defaults such as a list created directly in the function signature. That list would be shared between calls."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def append_item(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n\nprint(append_item(\"data\"))\nprint(append_item(\"model\"))"
+        },
+        {
+          "type": "text",
+          "value": "A function can validate assumptions and raise an informative exception when they are violated. This is better than allowing confusing downstream errors."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def divide(numerator, denominator):\n    if denominator == 0:\n        raise ValueError(\"denominator must not be zero\")\n    return numerator / denominator"
+        },
+        {
+          "type": "math",
+          "value": "y = wx + b"
+        },
+        {
+          "type": "text",
+          "value": "The linear expression above is a simple example of turning a mathematical definition into a function. Later, the same idea extends to vector and matrix operations."
+        }
+      ],
+      "keyTakeaways": [
+        "Use return for results and print for display.",
+        "Keep functions focused and testable.",
+        "Document assumptions and handle invalid inputs."
+      ]
+    },
+    {
+      "id": "collections",
+      "title": "Lists, Tuples, Dictionaries, and Sets",
+      "content": [
+        {
+          "type": "text",
+          "value": "A list is an ordered, mutable sequence. It is useful when the number or contents of elements may change. A tuple is an ordered sequence commonly used for fixed groups of values. A dictionary maps hashable keys to values, and a set stores unique elements."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "features = [0.2, 0.5, 0.9]\nshape = (32, 128)  # batch size, feature count\nconfig = {\"learning_rate\": 0.001, \"epochs\": 20}\nlabels = {\"cat\", \"dog\", \"bird\"}\n\nfeatures.append(1.2)\nconfig[\"epochs\"] = 25\nprint(features, shape, config, labels)"
+        },
+        {
+          "type": "text",
+          "value": "Lists support indexing and slicing. Negative indexes count from the end. Slicing uses an exclusive stop index: values[1:4] selects indexes 1, 2, and 3. Dictionaries provide efficient average-case key lookup and are often used for configurations and records."
+        },
+        {
+          "type": "text",
+          "value": "Aliasing is important: assigning b = a does not copy a list; both names refer to the same object. Use a.copy() for a shallow copy when appropriate. Nested mutable objects may still be shared by a shallow copy."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "a = [1, 2, 3]\nb = a\nb.append(4)\nprint(a)  # [1, 2, 3, 4]\n\nc = a.copy()\nc.append(5)\nprint(a)  # unchanged by the append to c"
+        },
+        {
+          "type": "text",
+          "value": "Choose a data structure based on the operations you need. Use a list for ordered sequences, a dictionary for key-value lookup, a set for membership and uniqueness, and a tuple for fixed structured values."
+        }
+      ],
+      "keyTakeaways": [
+        "Choose data structures by their behavior, not habit.",
+        "Understand mutation and aliasing.",
+        "Validate dictionary keys before assuming they exist."
+      ]
+    },
+    {
+      "id": "errors-testing-debugging",
+      "title": "Errors, Testing, and Debugging",
+      "content": [
+        {
+          "type": "text",
+          "value": "Syntax errors prevent code from being parsed. Runtime errors occur during execution, such as dividing by zero or accessing a missing key. Logic errors produce a result but not the intended result, making them especially difficult to notice."
+        },
+        {
+          "type": "text",
+          "value": "Read tracebacks from the final error message upward to locate the exception type and the relevant line in your code. Add small diagnostic checks, inspect intermediate values, and reduce the failing case to the smallest example that reproduces the issue."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def normalize(values):\n    if not values:\n        raise ValueError(\"values must not be empty\")\n    total = sum(values)\n    if total == 0:\n        raise ValueError(\"sum must not be zero\")\n    return [value / total for value in values]\n\nassert normalize([1, 1, 2]) == [0.25, 0.25, 0.5]"
+        },
+        {
+          "type": "text",
+          "value": "Assertions are useful for checking invariants during development, but they should not replace validation of untrusted user input because assertions can be disabled. Use explicit exceptions for conditions that must be enforced."
+        },
+        {
+          "type": "text",
+          "value": "Testing should include ordinary cases, boundary cases, and invalid inputs. For a mean function, test a one-element list, positive and negative numbers, and an empty list. A test is most useful when its expected result is clear."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def square(x):\n    return x * x\n\nassert square(0) == 0\nassert square(3) == 9\nassert square(-4) == 16\nprint(\"Basic tests passed\")"
+        }
+      ],
+      "keyTakeaways": [
+        "Reproduce bugs with small examples.",
+        "Test normal, boundary, and invalid cases.",
+        "A passing test suite increases confidence but does not prove all behavior is correct."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Implement a simple prediction pipeline",
+      "problem": "Given a list of inputs, a weight, and a bias, produce predictions while validating the input collection.",
+      "solution": "def predict_many(inputs, weight, bias):\n    if not inputs:\n        raise ValueError(\"inputs must not be empty\")\n    return [weight * x + bias for x in inputs]\n\nprint(predict_many([0, 1, 2], 2.0, 1.0))",
+      "explanation": "The function validates its input, uses a list comprehension to apply the same mathematical rule to every value, and returns results instead of printing from inside the reusable function."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Temperature Converter",
+      "difficulty": "Beginner",
+      "problem": "Write a function that converts Celsius to Fahrenheit using F = (9/5)C + 32. Test it with 0, 25, and -40 degrees Celsius.",
+      "hints": [
+        "Use a function parameter and return the computed value."
+      ],
+      "solution": "def celsius_to_fahrenheit(celsius):\n    return (9 / 5) * celsius + 32"
+    },
+    {
+      "id": "exercise-2",
+      "title": "Dataset Summary",
+      "difficulty": "Beginner",
+      "problem": "Write a function that accepts a non-empty list and returns its minimum, maximum, and mean.",
+      "hints": [
+        "Consider what should happen for an empty list."
+      ],
+      "solution": "def summarize(values):\n    if not values:\n        raise ValueError('values must not be empty')\n    return {'min': min(values), 'max': max(values), 'mean': sum(values) / len(values)}"
+    },
+    {
+      "id": "exercise-3",
+      "title": "Count Labels",
+      "difficulty": "Beginner",
+      "problem": "Given a list of class labels, return a dictionary containing the frequency of each label.",
+      "hints": [
+        "Use dict.get(label, 0) to handle unseen labels."
+      ],
+      "solution": "def count_labels(labels):\n    counts = {}\n    for label in labels:\n        counts[label] = counts.get(label, 0) + 1\n    return counts"
+    },
+    {
+      "id": "exercise-4",
+      "title": "Validate a Configuration",
+      "difficulty": "Intermediate",
+      "problem": "Write a function that checks whether a configuration has a positive learning rate and a positive number of epochs.",
+      "hints": [
+        "Check for missing keys and invalid values separately."
+      ],
+      "solution": "def validate_config(config):\n    if 'learning_rate' not in config or config['learning_rate'] <= 0:\n        raise ValueError('learning_rate must be positive')\n    if 'epochs' not in config or config['epochs'] <= 0:\n        raise ValueError('epochs must be positive')\n    return True"
+    },
+    {
+      "id": "exercise-5",
+      "title": "Linear Model",
+      "difficulty": "Intermediate",
+      "problem": "Implement y = wx + b for one input and for a list of inputs. Explain why the second function can reuse the first.",
+      "hints": [
+        "Keep the mathematical operation in one small function."
+      ]
+    }
+  ],
+  "relatedTopics": [
+    "python-for-ai",
+    "numpy",
+    "data-structures-algorithms",
+    "computational-thinking"
+  ]
+}

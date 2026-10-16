@@ -1,1 +1,104 @@
-{}
+{
+  "id": "module-04-autoencoders",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 7,
+  "title": "Autoencoders",
+  "slug": "autoencoders",
+  "href": "/curriculum/04-deep-learning/autoencoders",
+  "filePath": "content/curriculum/04-deep-learning/07-autoencoders.json",
+  "description": "Learn encoder-decoder networks that reconstruct inputs, including bottlenecks, denoising, latent representations, and anomaly-detection uses.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "MLPs",
+    "Loss Functions",
+    "Backpropagation"
+  ],
+  "learningObjectives": [
+    "Explain encoder, latent code, and decoder roles.",
+    "Describe reconstruction losses and bottlenecks.",
+    "Distinguish ordinary and denoising autoencoders.",
+    "Identify limitations of reconstruction-based anomaly detection."
+  ],
+  "sections": [
+    {
+      "id": "architecture",
+      "title": "Encoder, Latent Code, Decoder",
+      "type": "concept",
+      "content": "An autoencoder learns to reproduce an input. The encoder maps x to a latent representation z=f(x); the decoder maps z back to a reconstruction x_hat=g(z). Training minimizes a reconstruction loss between x and x_hat. A bottleneck restricts the latent capacity and can encourage the model to preserve the most useful structure.\n\nAn autoencoder does not automatically discover meaningful or disentangled factors. The learned representation depends on architecture, objective, data, regularization, and training quality."
+    },
+    {
+      "id": "loss",
+      "title": "Reconstruction Objectives",
+      "type": "math",
+      "content": "For real-valued inputs, mean squared error is a common objective: L = (1/n) sum_i (x_i−x_hat_i)^2. Mean absolute error is less sensitive to large residuals. For binary-valued inputs, binary cross-entropy may be suitable when decoder outputs represent Bernoulli probabilities.\n\nThe loss must match the data and output parameterization. Image reconstruction using pixel-wise losses can yield blurry results when multiple plausible reconstructions exist."
+    },
+    {
+      "id": "variants",
+      "title": "Undercomplete, Sparse, and Denoising Autoencoders",
+      "type": "concept",
+      "content": "An undercomplete autoencoder uses a latent representation smaller than the input. A sparse autoencoder encourages many latent activations to be zero or near zero, often with a sparsity penalty. A denoising autoencoder receives a corrupted input but is trained to reconstruct the clean target, encouraging robustness to selected corruptions.\n\nVariational autoencoders introduce a probabilistic latent-variable model and a regularized objective. They are related but conceptually distinct from a plain deterministic autoencoder."
+    },
+    {
+      "id": "applications",
+      "title": "Applications and Limitations",
+      "type": "concept",
+      "content": "Autoencoders can support dimensionality reduction, feature learning, denoising, compression experiments, and anomaly detection. For anomaly detection, one may flag examples with unusually high reconstruction error relative to normal training data.\n\nHowever, a powerful autoencoder may reconstruct anomalies well too, and benign examples may have high error. Thresholds should be selected on representative validation data, and anomaly detection should be evaluated using precision-recall trade-offs when labels are available."
+    },
+    {
+      "id": "code",
+      "title": "A Small Autoencoder",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nclass Autoencoder(nn.Module):\n    def __init__(self, input_dim=100, latent_dim=16):\n        super().__init__()\n        self.encoder = nn.Sequential(nn.Linear(input_dim, 64), nn.ReLU(), nn.Linear(64, latent_dim))\n        self.decoder = nn.Sequential(nn.Linear(latent_dim, 64), nn.ReLU(), nn.Linear(64, input_dim))\n    def forward(self, x):\n        z = self.encoder(x)\n        return self.decoder(z)\n\nmodel = Autoencoder()\nx = torch.randn(32, 100)\nx_hat = model(x)\nloss = nn.MSELoss()(x_hat, x)\nprint(x_hat.shape, float(loss))",
+      "language": "python",
+      "explanation": "The encoder compresses 100 features into a 16-dimensional code, and the decoder reconstructs 100 values. For normalized image pixels or binary inputs, another output activation and loss may be appropriate; do not assume MSE is correct for every data type."
+    },
+    {
+      "id": "evaluation",
+      "title": "Evaluate More Than Reconstruction Loss",
+      "type": "concept",
+      "content": "A low reconstruction loss indicates faithful reconstruction on the measured distribution, but not necessarily useful downstream features. Compare against simple baselines, inspect reconstructions, and test representations on the intended downstream task. For anomaly detection, examine error distributions for normal and anomalous examples and report threshold-dependent metrics."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "ae-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What are the two main components of an autoencoder?",
+      "correctAnswer": "An encoder and a decoder.",
+      "solution": "The encoder creates a latent code and the decoder maps that code back to a reconstruction."
+    },
+    {
+      "id": "ae-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "If the input is [1, 2] and reconstruction is [2, 2], what is mean squared error?",
+      "correctAnswer": "0.5.",
+      "solution": "Squared errors are 1 and 0; their mean is (1+0)/2 = 0.5."
+    },
+    {
+      "id": "ae-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "How does a denoising autoencoder differ from a standard autoencoder?",
+      "correctAnswer": "It receives a corrupted input and learns to reconstruct the clean target.",
+      "solution": "This trains the representation to recover stable structure despite the chosen corruption."
+    },
+    {
+      "id": "ae-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why is reconstruction error not a perfect anomaly score?",
+      "correctAnswer": "Some anomalies may be reconstructed well, while valid examples can have high error.",
+      "solution": "The score depends on the learned reconstruction function and the data distribution, so it requires validation."
+    }
+  ],
+  "summary": "Autoencoders learn to reconstruct inputs through a latent representation. Bottlenecks and corruption can encourage useful features, but reconstruction quality alone does not guarantee semantic usefulness or reliable anomaly detection.",
+  "relatedTopics": [
+    "embeddings-representation-learning",
+    "mlps",
+    "transfer-learning"
+  ]
+}

@@ -1,1 +1,483 @@
-{}
+{
+    "id": "scalars-vectors-matrices-tensors",
+    "title": "Scalars, Vectors, Matrices, and Tensors",
+    "slug": "scalars-vectors-matrices-tensors",
+    "module": "mathematics-for-ai",
+    "description": "Understand the fundamental mathematical objects used to represent data, parameters, features, and computations in machine learning, from individual numbers to multidimensional tensors.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Programming Fundamentals",
+        "Python for AI",
+        "NumPy"
+    ],
+    "learningObjectives": [
+        "Define scalars, vectors, matrices, and tensors mathematically.",
+        "Distinguish between scalar values, one-dimensional arrays, two-dimensional arrays, and higher-dimensional arrays.",
+        "Understand dimensions, shapes, axes, and indices.",
+        "Represent real-world datasets using vectors, matrices, and tensors.",
+        "Use Python and NumPy to create, inspect, reshape, and manipulate numerical arrays.",
+        "Understand how neural networks represent inputs, weights, activations, and batches using tensors.",
+        "Recognize common shape errors and understand why dimensional consistency matters."
+    ],
+    "sections": [
+        {
+            "id": "intuition-and-motivation",
+            "title": "1. Intuition: Why Do We Need Different Mathematical Objects?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Imagine building an AI system that predicts the price of a house. A single house might be described by its area, number of bedrooms, age, and distance from the city center. Each individual measurement is a number, but a collection of measurements is more naturally represented as a vector. When we collect information about many houses, we can arrange their feature vectors into a matrix. If we work with color images, video clips, or batches of images, we need structures capable of representing data across several dimensions. These structures are scalars, vectors, matrices, and tensors."
+                },
+                {
+                    "type": "text",
+                    "value": "The distinction is not merely mathematical terminology. It tells us how information is organized, how operations can be applied, and what shapes a machine learning model expects. Many programming errors in AI arise because two arrays contain the right numbers but have incompatible shapes or represent different arrangements of information."
+                },
+                {
+                    "type": "math",
+                    "value": "\\text{Scalar} \\rightarrow \\text{Vector} \\rightarrow \\text{Matrix} \\rightarrow \\text{Higher-dimensional Tensor}"
+                },
+                {
+                    "type": "text",
+                    "value": "A scalar is one value. A vector is an ordered collection of values. A matrix is a rectangular arrangement of values. A tensor generalizes these ideas to multidimensional arrays. In machine learning, all four are important because models transform numerical representations of the world into predictions."
+                }
+            ]
+        },
+        {
+            "id": "mathematical-foundations",
+            "title": "2. Mathematical Foundations and Definitions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A scalar is a single numerical quantity. Scalars can be real numbers, such as 3.5, -2, or 0.01. In machine learning, a scalar might represent a learning rate, a model's loss value, a probability, or an individual weight."
+                },
+                {
+                    "type": "math",
+                    "value": "a \\in \\mathbb{R}"
+                },
+                {
+                    "type": "text",
+                    "value": "The symbol R represents the set of real numbers. Writing a ∈ R means that a is one real number. A vector is an ordered collection of numbers. An n-dimensional real vector belongs to R^n and can be written as a column of n components."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{x} = \\begin{bmatrix}x_1 \\\\ x_2 \\\\ \\vdots \\\\ x_n\\end{bmatrix} \\in \\mathbb{R}^{n}"
+                },
+                {
+                    "type": "text",
+                    "value": "The word dimension has a specific meaning here: the vector contains n components. For example, a vector with three components may represent the height, weight, and age of a person. The components have an order, so changing their positions can change their meaning."
+                },
+                {
+                    "type": "text",
+                    "value": "A matrix is a rectangular arrangement of numbers with m rows and n columns. It belongs to R^(m×n). The first dimension counts rows and the second counts columns. A matrix can represent a dataset where each row is one observation and each column is one feature."
+                },
+                {
+                    "type": "math",
+                    "value": "A \\in \\mathbb{R}^{m \\times n}"
+                },
+                {
+                    "type": "text",
+                    "value": "A tensor is a generalization of these numerical structures to an arbitrary number of dimensions. In common machine learning terminology, a scalar has zero array dimensions, a vector has one, a matrix has two, and a higher-dimensional tensor has three or more. This terminology describes array structure; the word tensor also has a more formal meaning in advanced mathematics."
+                },
+                {
+                    "type": "math",
+                    "value": "\\text{Shape of a tensor} = (d_1, d_2, \\ldots, d_k)"
+                },
+                {
+                    "type": "text",
+                    "value": "The shape specifies the size along each axis. A shape of (3, 4) means three rows and four columns. A shape of (2, 3, 4) means that the data has three axes with sizes two, three, and four. The total number of stored elements is the product of the axis sizes."
+                },
+                {
+                    "type": "math",
+                    "value": "N = \\prod_{i=1}^{k} d_i"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, a tensor with shape (2, 3, 4) contains 2 × 3 × 4 = 24 elements. Shape alone does not tell us what each axis means. In an image tensor, the axes might represent height, width, and color channels. In a batch of images, an additional axis may represent the number of images."
+                }
+            ]
+        },
+        {
+            "id": "scalars-in-machine-learning",
+            "title": "3. Scalars: Individual Quantities",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Scalars are the simplest numerical objects, but machine learning depends on them constantly. A model may have thousands or billions of parameters, yet each individual parameter is a scalar. A loss function often returns one scalar that summarizes how poorly a model's predictions match the targets for a particular batch."
+                },
+                {
+                    "type": "math",
+                    "value": "\\text{Mean Squared Error} = \\frac{1}{n}\\sum_{i=1}^{n}(y_i - \\hat{y}_i)^2"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, n is the number of observations, y_i is the true value, and ŷ_i is the predicted value. The summation combines the squared errors, and division by n produces a single scalar. During training, an optimizer attempts to adjust the model parameters to reduce this scalar objective."
+                },
+                {
+                    "type": "text",
+                    "value": "Other scalar quantities include a learning rate such as 0.001, a probability such as 0.85, a regularization coefficient, and a threshold used by a classifier. Even when a scalar is stored in a numerical library as a zero-dimensional array or tensor object, its mathematical role can still be scalar-valued."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nlearning_rate = 0.001\nprediction = 4.5\nactual_value = 5.0\n\nsquared_error = (actual_value - prediction) ** 2\n\nprint(\"Squared error:\", squared_error)\nprint(\"Python type:\", type(squared_error))\n\nscalar_array = np.array(learning_rate)\nprint(\"NumPy scalar array:\", scalar_array)\nprint(\"Shape:\", scalar_array.shape)\nprint(\"Number of dimensions:\", scalar_array.ndim)"
+                },
+                {
+                    "type": "text",
+                    "value": "The Python expression produces an individual numerical value. The NumPy object created with np.array(learning_rate) has shape (), which means it has zero axes. Do not confuse a scalar value with a one-element vector: their shapes and dimensional structures differ."
+                }
+            ]
+        },
+        {
+            "id": "vectors-and-features",
+            "title": "4. Vectors: Ordered Numerical Representations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A vector represents several numerical values as one ordered object. Consider a house represented by its area in square meters, number of bedrooms, and age in years. One possible feature vector is x = [120, 3, 8]. This vector contains three features, but those features have different units and meanings. The model must learn how to use their combined information."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{x} = \\begin{bmatrix}120 \\\\ 3 \\\\ 8\\end{bmatrix} \\in \\mathbb{R}^{3}"
+                },
+                {
+                    "type": "text",
+                    "value": "Vectors can be written as row vectors or column vectors. In many mathematical treatments, vectors are written as columns. NumPy's one-dimensional array does not inherently behave as either a row or a column matrix. This distinction matters when performing matrix multiplication."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nfeatures = np.array([120.0, 3.0, 8.0])\n\nprint(\"Vector:\", features)\nprint(\"Shape:\", features.shape)\nprint(\"Dimensions:\", features.ndim)\nprint(\"Number of elements:\", features.size)\nprint(\"Area feature:\", features[0])\nprint(\"Bedrooms feature:\", features[1])"
+                },
+                {
+                    "type": "text",
+                    "value": "The shape of this one-dimensional array is (3,), not (3, 1). To create a column-shaped two-dimensional array, use features.reshape(3, 1) or features[:, np.newaxis]. To create a row-shaped two-dimensional array, use features.reshape(1, 3). These arrays contain the same numerical values but have different shapes."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "column_vector = features.reshape(3, 1)\nrow_matrix = features.reshape(1, 3)\n\nprint(\"Original shape:\", features.shape)\nprint(\"Column shape:\", column_vector.shape)\nprint(\"Column vector:\\n\", column_vector)\nprint(\"Row shape:\", row_matrix.shape)\nprint(\"Row matrix:\\n\", row_matrix)"
+                },
+                {
+                    "type": "text",
+                    "value": "Vectors are useful for representing a single observation, a word embedding, a user profile, a model's parameters, or the activations of a neural network layer. An embedding is a vector whose coordinates are learned so that useful relationships between objects can be represented numerically."
+                }
+            ]
+        },
+        {
+            "id": "matrices-and-datasets",
+            "title": "5. Matrices: Organizing Multiple Observations",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Suppose a dataset contains three houses, each described by area, bedrooms, and age. We can place each house's feature vector into one row of a matrix. The resulting matrix has three rows and three columns. Rows represent observations, and columns represent features under this chosen convention."
+                },
+                {
+                    "type": "math",
+                    "value": "X = \\begin{bmatrix}120 & 3 & 8 \\\\ 90 & 2 & 15 \\\\ 150 & 4 & 3\\end{bmatrix} \\in \\mathbb{R}^{3 \\times 3}"
+                },
+                {
+                    "type": "text",
+                    "value": "The entry x_ij refers to the value at row i and column j. For instance, x_21 is the first feature of the second observation, which is 90 in this example. Matrix indexing conventions differ across mathematical notation and programming languages, so pay attention to whether indexing starts at zero or one."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nX = np.array([\n    [120.0, 3.0, 8.0],\n    [90.0, 2.0, 15.0],\n    [150.0, 4.0, 3.0]\n])\n\nprint(\"Dataset:\\n\", X)\nprint(\"Shape:\", X.shape)\nprint(\"Rows:\", X.shape[0])\nprint(\"Columns:\", X.shape[1])\nprint(\"Second house:\", X[1])\nprint(\"Area of second house:\", X[1, 0])\nprint(\"Bedroom counts:\", X[:, 1])"
+                },
+                {
+                    "type": "text",
+                    "value": "In NumPy, indexing begins at zero. Therefore, X[1, 0] selects the second row and first column. The expression X[:, 1] selects every row in the second column. The colon means that the corresponding axis is not restricted to one index."
+                },
+                {
+                    "type": "text",
+                    "value": "A dataset matrix commonly has shape (number_of_samples, number_of_features). However, not every algorithm or library uses that convention. Some mathematical formulations store examples as columns, and some neural network operations use transposed weights or different batch-axis arrangements. Always check the expected input shape of the operation or model."
+                }
+            ]
+        },
+        {
+            "id": "tensors-and-higher-dimensional-data",
+            "title": "6. Tensors: Beyond Two Dimensions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A tensor generalizes numerical arrays to multiple axes. Consider a color image with height 64 pixels, width 64 pixels, and three color channels. A common representation has shape (64, 64, 3). Each position along the height and width axes identifies a pixel, and the channel axis stores its red, green, and blue components."
+                },
+                {
+                    "type": "math",
+                    "value": "\\text{Image shape} = (H, W, C)"
+                },
+                {
+                    "type": "text",
+                    "value": "A batch of 32 images might have shape (32, 64, 64, 3) in a channels-last representation. The first axis identifies the image within the batch. A different framework or operation may expect channels first, producing shape (32, 3, 64, 64). The same images can be represented in either layout, but the axes must be interpreted correctly."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nimage = np.zeros((64, 64, 3), dtype=np.float32)\nimage_batch = np.zeros((32, 64, 64, 3), dtype=np.float32)\n\nprint(\"Image shape:\", image.shape)\nprint(\"Image dimensions:\", image.ndim)\nprint(\"Batch shape:\", image_batch.shape)\nprint(\"Batch dimensions:\", image_batch.ndim)\nprint(\"Image batch element count:\", image_batch.size)"
+                },
+                {
+                    "type": "text",
+                    "value": "Tensors are not limited to images. A batch of time series can have shape (batch_size, time_steps, features). A language model may process token representations organized by batch, sequence position, and embedding dimension. A video representation may include batch, time, height, width, and channel axes."
+                },
+                {
+                    "type": "text",
+                    "value": "The meaning of a tensor depends on the application and the conventions used by the system. A shape tells us how many elements each axis contains, but it does not tell us whether an axis represents time, color, a feature, or a batch. Meaning must come from the data specification and the code that manipulates it."
+                }
+            ]
+        },
+        {
+            "id": "shape-axes-and-reshaping",
+            "title": "7. Shape, Axes, Indexing, and Reshaping",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Shape is one of the most important concepts in numerical programming. It describes the size of an array along each axis. The number of dimensions, accessed through ndim in NumPy, tells us how many axes the array has. The size attribute gives the total number of elements."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.arange(24)\nprint(\"Original:\", A)\nprint(\"Shape:\", A.shape)\nprint(\"Dimensions:\", A.ndim)\nprint(\"Size:\", A.size)\n\nB = A.reshape(4, 6)\nC = A.reshape(2, 3, 4)\n\nprint(\"Matrix shape:\", B.shape)\nprint(\"Tensor shape:\", C.shape)"
+                },
+                {
+                    "type": "text",
+                    "value": "Reshaping changes how the same sequence of elements is organized into axes. It does not create or remove elements. Therefore, the product of the requested dimensions must equal the number of elements in the original array. An array containing 24 values can be reshaped into (4, 6), (2, 3, 4), or (24,), but not (5, 5)."
+                },
+                {
+                    "type": "math",
+                    "value": "\\prod_{i=1}^{k} d_i = \\text{number of elements before reshaping}"
+                },
+                {
+                    "type": "text",
+                    "value": "NumPy allows one dimension in reshape to be specified as -1. NumPy infers that dimension from the number of elements and the remaining dimensions. Only one inferred dimension is allowed because the other dimensions must determine it unambiguously."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "data = np.arange(12)\n\nmatrix = data.reshape(3, 4)\nflattened = matrix.reshape(-1)\ncolumn = data.reshape(-1, 1)\n\nprint(\"Matrix:\\n\", matrix)\nprint(\"Flattened shape:\", flattened.shape)\nprint(\"Column shape:\", column.shape)"
+                },
+                {
+                    "type": "text",
+                    "value": "Flattening converts an array into one dimension. It is useful in some machine learning pipelines, but flattening can destroy structural information. For example, flattening an image removes its explicit height and width axes. Whether this is appropriate depends on the model architecture."
+                },
+                {
+                    "type": "text",
+                    "value": "A transpose changes the order of axes. For a matrix, transpose exchanges rows and columns. For a higher-dimensional array, transpose can reorder multiple axes. Transposition is different from reshaping: reshaping changes the arrangement described by the shape, while transposition permutes axes and changes how existing coordinates map to positions."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "M = np.array([\n    [1, 2, 3],\n    [4, 5, 6]\n])\n\nprint(\"Original shape:\", M.shape)\nprint(\"Transpose:\\n\", M.T)\nprint(\"Transposed shape:\", M.T.shape)"
+                }
+            ]
+        },
+        {
+            "id": "worked-examples",
+            "title": "8. Worked Examples: From Data to Tensor Shapes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Example 1: A weather observation contains temperature, humidity, and wind speed. One observation can be represented by a three-component vector. If we collect 100 observations, each with three features, the resulting dataset matrix has shape (100, 3), assuming one observation per row."
+                },
+                {
+                    "type": "math",
+                    "value": "X \\in \\mathbb{R}^{100 \\times 3}"
+                },
+                {
+                    "type": "text",
+                    "value": "Example 2: A grayscale image with 28 rows and 28 columns can be represented as a matrix of shape (28, 28). A batch of 64 such images may have shape (64, 28, 28). If the model expects an explicit channel axis, the batch might instead have shape (64, 1, 28, 28) or (64, 28, 28, 1), depending on the convention."
+                },
+                {
+                    "type": "text",
+                    "value": "Example 3: Suppose a neural network receives 128 examples, each with 20 numerical features. Its input matrix has shape (128, 20). A dense layer with 10 output units often uses a weight matrix shaped (20, 10) and a bias vector shaped (10,). The output then has shape (128, 10)."
+                },
+                {
+                    "type": "math",
+                    "value": "(128 \\times 20)(20 \\times 10) = (128 \\times 10)"
+                },
+                {
+                    "type": "text",
+                    "value": "The inner dimensions, 20 and 20, match, so the matrix multiplication is valid. The output retains the batch dimension and replaces the feature dimension with the number of output units. This is one of the most common shape transformations in neural networks."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nbatch_size = 128\ninput_features = 20\noutput_units = 10\n\nX = np.random.randn(batch_size, input_features)\nW = np.random.randn(input_features, output_units)\nb = np.zeros(output_units)\n\nY = X @ W + b\n\nprint(\"Input:\", X.shape)\nprint(\"Weights:\", W.shape)\nprint(\"Bias:\", b.shape)\nprint(\"Output:\", Y.shape)\n\nassert Y.shape == (128, 10)"
+                },
+                {
+                    "type": "text",
+                    "value": "The random values in this example are placeholders, not trained parameters. The example demonstrates shapes and the forward computation. The expression X @ W performs matrix multiplication, while adding b uses NumPy broadcasting to add the same bias vector to each row of the output."
+                }
+            ]
+        },
+        {
+            "id": "python-numpy-implementation",
+            "title": "9. Practical NumPy Reference",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "NumPy provides a practical way to create and manipulate numerical arrays. The following example demonstrates how to construct each kind of object, inspect its shape, select elements, and perform basic arithmetic."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\n# Scalar-like zero-dimensional array\nscalar = np.array(7.5)\n\n# One-dimensional array\nvector = np.array([1.0, 2.0, 3.0])\n\n# Two-dimensional array\nmatrix = np.array([\n    [1, 2, 3],\n    [4, 5, 6]\n])\n\n# Three-dimensional array\ntensor = np.arange(24).reshape(2, 3, 4)\n\nfor name, array in [\n    (\"scalar\", scalar),\n    (\"vector\", vector),\n    (\"matrix\", matrix),\n    (\"tensor\", tensor)\n]:\n    print(f\"{name}: shape={array.shape}, ndim={array.ndim}, size={array.size}\")\n\nprint(\"Vector plus 10:\", vector + 10)\nprint(\"Matrix transpose:\\n\", matrix.T)\nprint(\"Tensor first slice:\\n\", tensor[0])"
+                },
+                {
+                    "type": "text",
+                    "value": "NumPy operations often work element by element when their shapes are compatible. Adding a scalar to a vector adds that scalar to every element. Broadcasting generalizes this behavior to compatible shapes. Broadcasting is convenient, but it should not be treated as a substitute for understanding the dimensions of the underlying data."
+                },
+                {
+                    "type": "text",
+                    "value": "When debugging a model, print the shapes of the input, intermediate activations, weight matrices, and output. A shape mismatch is often easier to locate by checking each stage than by inspecting a large computation all at once."
+                }
+            ]
+        },
+        {
+            "id": "common-mistakes",
+            "title": "10. Common Mistakes and Misconceptions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Assuming a one-dimensional NumPy array is automatically a row vector or a column vector. An array with shape (3,) has one axis, while shapes (1, 3) and (3, 1) have two axes."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Confusing the number of dimensions with the total number of elements. An array with shape (2, 3, 4) has three dimensions and 24 elements."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Reshaping an array into a shape with a different number of elements. Reshape preserves the number of elements, so incompatible shapes raise an error."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Assuming the shape tells the whole story. Two arrays with shape (32, 3, 64, 64) could represent different data layouts unless their axis meanings are known."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Treating transpose and reshape as interchangeable. Transpose changes axis order. Reshape reorganizes the interpretation of the element sequence. Their effects differ, particularly for multidimensional arrays."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 6: Forgetting units and feature order. A vector containing [temperature, humidity] is not equivalent in meaning to [humidity, temperature] unless the corresponding model and processing pipeline also change their feature interpretation."
+                }
+            ]
+        },
+        {
+            "id": "practical-ai-connection",
+            "title": "11. How These Structures Appear in AI",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "In supervised learning, a dataset is often represented by a feature matrix X and a target vector y. Each row of X describes an observation, and each entry of y contains the corresponding target. A model transforms X into predictions, compares them with y, and calculates a loss."
+                },
+                {
+                    "type": "math",
+                    "value": "\\hat{y} = f(X; \\theta)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here, f is the model, X is the input data, θ represents the model parameters, and ŷ represents the predictions. Depending on the model, θ may include vectors, matrices, or higher-dimensional tensors."
+                },
+                {
+                    "type": "text",
+                    "value": "In a dense neural network, weight matrices transform input activations into new representations. In convolutional neural networks, filters and image batches are represented using multidimensional arrays. In language models, token IDs, attention masks, embeddings, and intermediate activations are stored in tensors with axes for batches, sequence positions, and feature dimensions."
+                },
+                {
+                    "type": "text",
+                    "value": "Understanding these objects allows you to reason about the structure of a computation before running it. You can determine whether dimensions are compatible, estimate memory requirements from array sizes and data types, and identify whether an operation is applied to the intended axis."
+                }
+            ]
+        },
+        {
+            "id": "mini-project",
+            "title": "12. Mini Project: Represent a Small Dataset",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Build a small NumPy dataset for five students. Each student has three features: hours studied, attendance percentage, and previous exam score. Represent each student as one row, calculate the dataset shape, select a feature column, normalize the hours-studied feature using its mean and standard deviation, and reshape the normalized column into a two-dimensional array."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nstudents = np.array([\n    [2.0, 75.0, 60.0],\n    [4.0, 85.0, 72.0],\n    [6.0, 95.0, 88.0],\n    [3.0, 80.0, 68.0],\n    [5.0, 90.0, 81.0]\n])\n\nprint(\"Dataset shape:\", students.shape)\nprint(\"Number of students:\", students.shape[0])\nprint(\"Number of features:\", students.shape[1])\n\nhours = students[:, 0]\nmean_hours = hours.mean()\nstd_hours = hours.std()\n\nnormalized_hours = (hours - mean_hours) / std_hours\nnormalized_column = normalized_hours.reshape(-1, 1)\n\nprint(\"Hours:\", hours)\nprint(\"Mean hours:\", mean_hours)\nprint(\"Standard deviation:\", std_hours)\nprint(\"Normalized hours:\\n\", normalized_column)\nprint(\"Normalized shape:\", normalized_column.shape)"
+                },
+                {
+                    "type": "text",
+                    "value": "The normalization formula subtracts the mean and divides by the standard deviation. This places the feature on a standardized scale when the standard deviation is nonzero. In a real machine learning workflow, calculate preprocessing statistics on the training split only, then apply those same statistics to validation and test data to avoid data leakage."
+                },
+                {
+                    "type": "text",
+                    "value": "Extension: Add exam results as a target vector, split the data into input features and targets, and explain the shapes required by a model that predicts one score for every student."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Classify each object by its array dimensionality: a single learning-rate value, a vector of 12 features, a matrix containing 100 observations and 12 features, and a batch of 16 RGB images of size 32 × 32. Give the shape of each object where applicable.",
+            "hints": [
+                "A scalar has zero array dimensions.",
+                "A vector has one axis.",
+                "An RGB image commonly has three axes, and a batch adds another axis."
+            ],
+            "solution": "The learning rate is a scalar with shape (). The feature vector has shape (12,). The dataset matrix has shape (100, 12). The image batch in channels-last layout has shape (16, 32, 32, 3). The image batch has four axes and 16 × 32 × 32 × 3 elements."
+        },
+        {
+            "id": "exercise-2",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Create a NumPy array with 60 consecutive integers and reshape it into a matrix with 5 rows. Print its shape, number of dimensions, and total number of elements.",
+            "hints": [
+                "Use np.arange(60).",
+                "A reshape into five rows must have 12 columns."
+            ],
+            "solution": "import numpy as np\n\nvalues = np.arange(60)\nmatrix = values.reshape(5, 12)\n\nprint(matrix.shape)\nprint(matrix.ndim)\nprint(matrix.size)\n\n# Expected output: (5, 12), 2, 60"
+        },
+        {
+            "id": "exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "A dataset contains 250 examples, each described by 18 features. A dense layer maps these examples to 7 output values per example. What are the shapes of the input matrix, weight matrix, bias vector, and output matrix?",
+            "hints": [
+                "Use one row per example.",
+                "The inner dimensions of the matrix multiplication must match."
+            ],
+            "solution": "The input has shape (250, 18), the weight matrix has shape (18, 7), the bias vector has shape (7,), and the output has shape (250, 7). The matrix multiplication produces (250, 7), and broadcasting adds the bias to every output row."
+        },
+        {
+            "id": "exercise-4",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Create an array of shape (2, 3, 4). Select its second 3 × 4 slice, then reshape the full array into a matrix with 6 rows. Print all relevant shapes.",
+            "hints": [
+                "Use np.arange(24).reshape(2, 3, 4).",
+                "NumPy indexing starts at zero.",
+                "The reshaped matrix must preserve all 24 elements."
+            ],
+            "solution": "import numpy as np\n\nT = np.arange(24).reshape(2, 3, 4)\nsecond_slice = T[1]\nM = T.reshape(6, 4)\n\nprint(T.shape)             # (2, 3, 4)\nprint(second_slice.shape)  # (3, 4)\nprint(M.shape)             # (6, 4)"
+        },
+        {
+            "id": "exercise-5",
+            "type": "analysis",
+            "difficulty": "intermediate",
+            "question": "Explain why arrays with shapes (10, 5) and (10, 5, 1) should not automatically be treated as equivalent, even if the data values are related.",
+            "hints": [
+                "Compare the number of axes.",
+                "Think about the meaning of the final dimension and the operations that might consume the arrays."
+            ],
+            "solution": "The first array is a two-dimensional matrix with 10 rows and 5 columns. The second is a three-dimensional array with an additional axis of length 1. They have different ranks and shapes, which can change indexing, broadcasting, and compatibility with downstream operations. A singleton axis may be useful for broadcasting or representing a channel, but it must match the intended operation."
+        }
+    ],
+    "relatedTopics": [
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality",
+        "numpy"
+    ]
+}

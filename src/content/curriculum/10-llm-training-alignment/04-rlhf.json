@@ -1,1 +1,202 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-rlhf",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 4,
+    "title": "Reinforcement Learning from Human Feedback (RLHF)",
+    "slug": "rlhf",
+    "href": "/curriculum/10-llm-training-alignment/rlhf",
+    "filePath": "content/curriculum/10-llm-training-alignment/04-rlhf.json",
+    "description": "Understand the RLHF pipeline, reward models, policy optimization, KL regularization, PPO, reward hacking, and the practical limitations of preference-based language-model alignment.",
+    "difficulty": "advanced",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-09-large-language-models-gradient-computation-optimizers"
+    ],
+    "learningObjectives": [
+        "Explain the motivation and stages of RLHF.",
+        "Describe the roles of the policy, reward model, and reference model.",
+        "Understand how human preferences supervise reward-model training.",
+        "Explain the language-model policy-optimization objective.",
+        "Describe PPO clipping and KL regularization at a conceptual level.",
+        "Identify reward hacking, distribution shift, and alignment limitations.",
+        "Design a basic evaluation strategy for an RLHF-trained model."
+    ],
+    "sections": [
+        {
+            "id": "rlhf-introduction",
+            "title": "What Is RLHF?",
+            "type": "concept",
+            "content": "Reinforcement Learning from Human Feedback (RLHF) is a family of methods that uses human preference judgments to guide a model toward desired behavior. In a common language-model pipeline, a pretrained model is first supervised fine-tuned, a reward model is trained using preference comparisons, and reinforcement learning is used to optimize the policy against the learned reward while controlling deviation from a reference model. The method can improve helpfulness and response quality, but the reward signal is an imperfect proxy for human values and must be evaluated carefully."
+        },
+        {
+            "id": "why-rlhf",
+            "title": "Why Use RLHF?",
+            "type": "concept",
+            "content": "Supervised fine-tuning teaches a model to imitate demonstrated responses. However, many desirable properties are easier to express as comparisons than as one canonical answer. Human reviewers may prefer one response because it is more accurate, useful, safe, or well calibrated. RLHF converts such preference judgments into a training signal that can be used to optimize model behavior. The result depends on the quality of the preferences, the reward model, the optimization procedure, and the evaluation criteria."
+        },
+        {
+            "id": "rlhf-pipeline",
+            "title": "The Typical RLHF Pipeline",
+            "type": "concept",
+            "content": "A common pipeline has three broad stages. First, supervised fine-tuning creates an initial policy that can respond to prompts. Second, a reward model learns to score responses using preference comparisons. Third, reinforcement learning optimizes the policy to obtain higher predicted reward while often penalizing excessive divergence from a reference policy. Implementations differ in data collection, reward modeling, policy optimization, and safety constraints. RLHF is not a single fixed algorithm."
+        },
+        {
+            "id": "policy-reward-reference",
+            "title": "Policy, Reward Model, and Reference Model",
+            "type": "concept",
+            "content": "The policy is the language model being optimized; it generates responses to prompts. The reward model estimates how desirable a response is under the learned preference signal. The reference model is usually a frozen copy of an earlier policy, often the supervised fine-tuned model, and helps constrain updates. Some implementations also use a value model to estimate expected returns for PPO. These components serve different roles and should not be confused with one another."
+        },
+        {
+            "id": "preference-data",
+            "title": "Preference Data for RLHF",
+            "type": "concept",
+            "content": "Preference training data usually contains a prompt and two candidate responses, one preferred over the other. Human annotators or carefully validated processes produce these judgments using a rubric. The data should cover realistic prompts, diverse tasks, edge cases, and relevant safety situations. Incorrect or biased preferences can teach the reward model to favor the wrong behavior. Dataset quality, provenance, annotator agreement, and coverage are important parts of the RLHF pipeline."
+        },
+        {
+            "id": "reward-model",
+            "title": "Reward Model Training",
+            "type": "concept",
+            "content": "A reward model takes a prompt-response pair and outputs a scalar score. It is commonly trained so that preferred responses receive higher scores than rejected responses. A popular formulation uses a logistic preference probability based on the score difference. The reward model does not directly prove that a response is correct or safe; it estimates patterns in the preference labels. Its scores can be miscalibrated, biased, or exploitable by the policy being optimized."
+        },
+        {
+            "id": "reward-loss",
+            "title": "Pairwise Reward-Model Loss",
+            "type": "math",
+            "content": "Let rθ(x, y) be the reward assigned to response y for prompt x. For a chosen response y_w and rejected response y_l, the model can predict the probability that the chosen response is preferred using a sigmoid of their reward difference. The objective encourages the preferred response to receive a higher score.",
+            "formula": "P(y_w ≻ y_l | x) = σ(rθ(x, y_w) - rθ(x, y_l))",
+            "example": "If the reward difference is 2, the predicted preference probability is σ(2), approximately 0.881. The score difference is meaningful within the learned model, but raw reward values should not automatically be interpreted as calibrated human approval probabilities."
+        },
+        {
+            "id": "reward-model-loss",
+            "title": "Reward-Model Training Objective",
+            "type": "math",
+            "content": "Pairwise reward models are often trained with binary cross-entropy over preference comparisons. The loss penalizes the model when it assigns a low probability to the observed preferred response. Regularization and careful data splits can reduce overfitting. Because rewards may be identifiable only up to certain transformations under the preference model, the absolute scale and offset of rewards need careful interpretation.",
+            "formula": "L_RM(θ) = -E[log σ(rθ(x, y_w) - rθ(x, y_l))]",
+            "example": "If the reward model gives a chosen answer a score of 1.5 and a rejected answer a score of 0.5, the difference is 1. Its predicted preference probability is σ(1), approximately 0.731."
+        },
+        {
+            "id": "policy-optimization",
+            "title": "Policy Optimization",
+            "type": "concept",
+            "content": "During policy optimization, the current model generates responses for prompts and receives reward-model scores. An RL algorithm then updates the policy to increase expected reward. Since language generation involves many sequential token decisions, the policy's action space consists of token choices and the generated response forms a trajectory. Optimization is difficult because the reward is usually associated with the whole response, while parameter updates affect token probabilities throughout the sequence."
+        },
+        {
+            "id": "kl-regularization",
+            "title": "KL Regularization",
+            "type": "concept",
+            "content": "Optimizing only the reward model can push the policy toward unusual outputs that exploit weaknesses in the learned reward. KL regularization penalizes the policy when its token distribution diverges too far from a reference model. This helps preserve language quality and previously learned behavior while allowing adaptation. Too much regularization can prevent meaningful improvement, while too little can lead to instability or reward exploitation. The appropriate coefficient depends on the training setup."
+        },
+        {
+            "id": "rlhf-objective",
+            "title": "A Simplified RLHF Objective",
+            "type": "math",
+            "content": "A common conceptual objective maximizes expected reward while penalizing divergence from a reference policy. In a simplified expression, prompts are drawn from a distribution, responses are sampled from the current policy, and the reward model scores each response. The KL term controls how far the policy moves away from the reference distribution.",
+            "formula": "J(π) = E[x, y ~ π(·|x)][r(x, y)] - β E[x][D_KL(π(·|x) || π_ref(·|x))]",
+            "example": "If a policy update raises reward but greatly increases divergence from the reference, the KL penalty can reduce the total objective. The coefficient β determines the strength of this constraint."
+        },
+        {
+            "id": "ppo-overview",
+            "title": "Proximal Policy Optimization (PPO)",
+            "type": "concept",
+            "content": "PPO is a policy-gradient algorithm commonly used in traditional RLHF pipelines. It limits how aggressively the policy changes by clipping a probability ratio between the current policy and an older policy. PPO implementations for language models often use reward scores, estimated advantages, value predictions, entropy terms, and KL-related penalties. The complete training setup is more involved than simply maximizing reward, and careful handling of sequence-level and token-level quantities is essential."
+        },
+        {
+            "id": "ppo-clipping",
+            "title": "PPO Clipping Intuition",
+            "type": "math",
+            "content": "PPO compares the current policy probability with the probability under the policy used to collect the rollout. The ratio is clipped to reduce the incentive for excessively large policy updates. Advantage estimates indicate whether an action was better or worse than expected. Clipping is a stabilization mechanism, not a guarantee that training will be stable under every configuration.",
+            "formula": "L_CLIP(θ) = E[min(ρₜ(θ)Aₜ, clip(ρₜ(θ), 1-ε, 1+ε)Aₜ)]",
+            "example": "If ε = 0.2, the clipped ratio range is [0.8, 1.2]. The objective limits the contribution of ratios outside this interval, with the precise effect depending on the sign of the advantage."
+        },
+        {
+            "id": "reward-hacking",
+            "title": "Reward Hacking",
+            "type": "concept",
+            "content": "Reward hacking occurs when a policy discovers outputs that receive high reward-model scores without genuinely satisfying the intended objective. For example, a reward model might overvalue confident wording, excessive detail, or a particular formatting pattern. The policy can learn to exploit such correlations. Mitigations include stronger preference data, adversarial testing, independent evaluations, reward-model audits, conservative optimization, and monitoring for behavior changes as policy performance improves."
+        },
+        {
+            "id": "distribution-shift",
+            "title": "Distribution Shift",
+            "type": "concept",
+            "content": "The reward model is trained on a particular distribution of prompts and candidate responses. During policy optimization, the model may generate responses that differ from those training examples. This creates distribution shift: reward predictions may become unreliable on policy-generated outputs. Repeatedly optimizing an imperfect reward model can amplify the problem. Fresh preference collection, active sampling, uncertainty-aware review, and independent evaluations help identify and reduce these failures."
+        },
+        {
+            "id": "reward-model-overoptimization",
+            "title": "Over-Optimization of Reward",
+            "type": "concept",
+            "content": "Higher reward-model scores do not necessarily mean that real response quality has improved. A policy can exploit weaknesses in the reward function, particularly when optimization is strong or the reward model is inaccurate. Monitor reward alongside human judgments, factuality, task success, safety, response diversity, and divergence from the reference policy. If reward rises while external quality falls, investigate reward hacking and adjust the data or optimization strategy."
+        },
+        {
+            "id": "rlhf-evaluation",
+            "title": "Evaluating RLHF Models",
+            "type": "concept",
+            "content": "Evaluation should use held-out prompts, human preference studies, domain-specific correctness tests, safety evaluations, robustness checks, and comparisons with the supervised fine-tuned baseline. Blind pairwise evaluation can reduce evaluator bias. Randomize response order and use a consistent rubric. Report uncertainty and subgroup performance where relevant. A single aggregate win rate cannot capture every capability or risk, and evaluation prompts should not leak into training."
+        },
+        {
+            "id": "rlhf-practical-workflow",
+            "title": "Practical RLHF Workflow",
+            "type": "concept",
+            "content": "Start with a validated supervised fine-tuned policy and a clearly specified behavior target. Collect representative preference comparisons, train a reward model, and evaluate it on held-out comparisons. Configure policy optimization with appropriate reference-policy constraints and monitor training metrics. Evaluate intermediate checkpoints using independent quality and safety tests. Preserve the supervised baseline and stop or revise training if external quality deteriorates even when reward-model scores increase."
+        },
+        {
+            "id": "rlhf-limitations",
+            "title": "Limitations of RLHF",
+            "type": "concept",
+            "content": "RLHF depends on the quality and scope of human preferences, the reliability of reward models, and the stability of optimization. Preferences can be inconsistent, biased, or underspecified. A reward model may fail outside its training distribution, and optimization can exploit its weaknesses. RLHF does not guarantee truthfulness, fairness, harmlessness, or robust reasoning. It should be combined with clear policies, targeted evaluations, safety mechanisms, and ongoing monitoring."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "rlhf-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the three common high-level stages in an RLHF pipeline?",
+            "correctAnswer": "Supervised fine-tuning, reward-model training from preference data, and policy optimization using reinforcement learning.",
+            "solution": "SFT initializes useful behavior, the reward model learns preferences, and policy optimization uses the reward signal to adapt the model."
+        },
+        {
+            "id": "rlhf-ex-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A reward model assigns scores 2.0 and 0.0 to chosen and rejected responses. Using σ(z) = 1/(1+e^-z), estimate the predicted preference probability.",
+            "correctAnswer": "Approximately 0.881.",
+            "solution": "The score difference is 2. Therefore, σ(2) = 1/(1+e^-2) ≈ 0.881."
+        },
+        {
+            "id": "rlhf-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is a reference policy often used during RLHF optimization?",
+            "correctAnswer": "To constrain excessive divergence from an earlier policy and reduce the risk of unstable behavior or reward exploitation.",
+            "solution": "A divergence penalty discourages the optimized policy from moving too far from the reference distribution."
+        },
+        {
+            "id": "rlhf-ex-4",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Reward-model scores increase throughout training, but human reviewers report declining response quality. What might be happening?",
+            "correctAnswer": "The policy may be exploiting weaknesses in the reward model, a form of reward hacking or reward over-optimization.",
+            "solution": "Investigate reward-model errors and distribution shift, collect fresh preference data, strengthen independent evaluations, and reconsider the optimization strength."
+        },
+        {
+            "id": "rlhf-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design an evaluation plan for comparing an RLHF policy with its supervised fine-tuned baseline.",
+            "correctAnswer": "Use held-out prompts, randomized blind pairwise comparisons, task-specific correctness tests, safety evaluations, robustness tests, and category-level reporting.",
+            "solution": "A reliable evaluation should measure real response quality independently of the reward model and detect regressions that aggregate preference scores can hide."
+        }
+    ],
+    "summary": "RLHF uses preference judgments to train a reward model and optimize a language-model policy. Common pipelines combine SFT, pairwise reward modeling, and policy optimization such as PPO. KL regularization can constrain policy drift, but imperfect reward signals create risks including reward hacking and distribution shift. Independent human evaluation, safety testing, and careful monitoring are essential.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-reward-models",
+        "module-10-llm-training-alignment-dpo",
+        "module-10-llm-training-alignment-evaluation"
+    ]
+}

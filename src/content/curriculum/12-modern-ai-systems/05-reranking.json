@@ -1,1 +1,267 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-reranking",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 5,
+    "title": "Reranking Models",
+    "slug": "reranking",
+    "href": "/curriculum/12-modern-ai-systems/reranking",
+    "filePath": "content/curriculum/12-modern-ai-systems/05-reranking.json",
+    "description": "Learn how reranking models improve retrieval quality using cross-encoders, late-interaction models, relevance scoring, candidate selection, ranking metrics, and production optimization.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-vector-embeddings",
+        "module-12-modern-ai-systems-vector-databases",
+        "module-12-modern-ai-systems-retrieval",
+        "Basic probability and linear algebra"
+    ],
+    "learningObjectives": [
+        "Explain why an initial retrieval stage may not produce the ideal final ranking.",
+        "Distinguish candidate retrieval from reranking.",
+        "Understand bi-encoder and cross-encoder architectures.",
+        "Explain how cross-encoders jointly process queries and candidate documents.",
+        "Understand late-interaction retrieval models.",
+        "Interpret relevance scores and ranking outputs.",
+        "Design a two-stage retrieval and reranking pipeline.",
+        "Understand candidate-pool size and its effect on recall and latency.",
+        "Evaluate rankings using MRR, nDCG, Precision@k, and Recall@k.",
+        "Recognize common reranking failure modes.",
+        "Optimize reranking throughput using batching and bounded concurrency.",
+        "Apply reranking safely in retrieval-augmented generation systems.",
+        "Understand reranking limitations involving long documents, bias, and domain shift."
+    ],
+    "sections": [
+        {
+            "id": "reranking-motivation",
+            "title": "1. Why Reranking Is Needed",
+            "type": "concept",
+            "content": "A retrieval system often searches a large corpus and returns an initial set of candidates. The first-stage retriever must be efficient because it may search millions of records. Dense vector search and lexical search are useful for this purpose, but their ranking functions are imperfect approximations of human relevance. A vector can be semantically close to a query without answering it, while a lexical match may contain the same words in an irrelevant context. Reranking introduces a more focused scoring stage that examines the query and each candidate more carefully. It reorders the candidate set so that the most useful evidence appears first. In a RAG application, this can improve the evidence supplied to the language model and reduce irrelevant context. Reranking cannot recover a relevant document that was never retrieved in the first place."
+        },
+        {
+            "id": "retrieval-vs-reranking",
+            "title": "2. Retrieval Versus Reranking",
+            "type": "concept",
+            "content": "Retrieval and reranking solve different problems. Retrieval searches a large collection and produces a manageable candidate pool. Reranking evaluates that smaller pool using a more expressive relevance model. A typical architecture might retrieve 100 candidates using a vector index, retrieve another 100 using lexical search, merge the lists, and rerank the resulting candidates. The final context builder may then select only the best five or ten chunks. The candidate-generation stage prioritizes speed and recall, while the reranking stage prioritizes ordering quality. Increasing the candidate pool can improve the chance that useful evidence is available, but it also increases reranking cost. The best design balances initial recall, final ranking quality, latency, and the context budget."
+        },
+        {
+            "id": "two-stage-architecture",
+            "title": "3. The Two-Stage Retrieval Architecture",
+            "type": "concept",
+            "content": "A two-stage retrieval architecture separates fast candidate generation from more expensive relevance scoring. Stage one uses lexical search, dense retrieval, or hybrid retrieval to select candidates. Stage two receives the original query and candidate text, computes relevance scores, and sorts the candidates. A post-processing stage may remove duplicates, apply document freshness rules, and preserve source metadata. Finally, context construction selects evidence for the language model. The separation allows each component to be improved independently. For example, an application can change its reranker without rebuilding its vector index, provided the candidate format remains compatible. Instrument each stage so that a missing document can be traced to candidate generation, reranking, filtering, or context selection."
+        },
+        {
+            "id": "bi-encoder-review",
+            "title": "4. Bi-Encoder Models",
+            "type": "concept",
+            "content": "A bi-encoder encodes a query and a document independently. The query encoder produces a query vector, and the document encoder produces a document vector. Similarity between those vectors estimates relevance. Document vectors can be computed in advance and stored in a vector index, making large-scale retrieval efficient. Depending on the model, the two encoders may share parameters or use different parameters. The important property is that the query and document representations can be computed separately. This allows approximate nearest-neighbor search but limits the model's ability to examine detailed token-to-token interactions at query time. Bi-encoders are therefore commonly used for first-stage semantic retrieval, though they can also serve other ranking roles."
+        },
+        {
+            "id": "cross-encoder-introduction",
+            "title": "5. Cross-Encoder Models",
+            "type": "concept",
+            "content": "A cross-encoder receives the query and candidate document together as a single model input. A transformer can use attention across both sequences to examine relationships between query terms and document tokens. The model then produces a relevance score or classification output. Because the query and document interact directly, a cross-encoder can detect details that separate embeddings may miss. For example, it may distinguish a passage explaining how to enable a feature from one explaining how to disable it. The main disadvantage is computational cost: each query-document pair generally requires a separate forward pass, although several pairs can be processed in a batch. This makes cross-encoders well suited to reranking a limited candidate set rather than searching every document in a huge corpus."
+        },
+        {
+            "id": "cross-encoder-input",
+            "title": "6. How a Cross-Encoder Processes a Pair",
+            "type": "concept",
+            "content": "A cross-encoder commonly constructs an input containing the query and candidate text separated by special tokens. The tokenizer converts this combined input into token IDs, and the transformer processes the sequence. Self-attention enables query tokens to interact with document tokens. A classification or regression head produces an output associated with relevance. The exact token format depends on the model family and tokenizer. Input length limits matter because a long document may be truncated. If the answer-bearing passage occurs after the truncation boundary, the model cannot evaluate that evidence. For chunk-based retrieval, reranking focused chunks is often more efficient than reranking entire books or large documents."
+        },
+        {
+            "id": "cross-encoder-score",
+            "title": "7. Interpreting Relevance Scores",
+            "type": "concept",
+            "content": "A reranker may output a scalar relevance score for each query-document pair. The scores are generally useful for ordering candidates under the model's scoring function, but they are not automatically calibrated probabilities. A score of 8 does not necessarily mean an 80 percent chance of relevance. Scores from different reranker models may have different distributions and should not be compared directly without validation. Even within one model, a score threshold that works for one domain may fail in another. Ranking systems usually sort scores and select the top candidates, while applications that need confidence-based abstention require separate calibration or validation. Inspect score distributions alongside actual relevance labels."
+        },
+        {
+            "id": "reranking-math",
+            "title": "8. Ranking Candidates by Score",
+            "type": "math",
+            "content": "Suppose a retriever returns a candidate set D = {d1, d2, ..., dn}. A reranker computes a relevance function s(q, di) for each candidate and orders the candidates from highest score to lowest score. The function can be learned from labeled query-document pairs or from preference and relevance training data. The ranking is only as useful as the model's learned relevance behavior and the candidate pool. A strong ranking model can improve the position of relevant documents, but it cannot guarantee that the highest-scoring candidate is correct for every query.",
+            "formula": "Ranking(q) = sort_descending({(d_i, s(q, d_i)) for d_i in D})",
+            "example": "For three candidates with scores 0.21, 0.87, and 0.55, the reranked order is the second candidate, the third candidate, and then the first candidate. The values are illustrative scores, not calibrated probabilities."
+        },
+        {
+            "id": "reranker-vs-similarity",
+            "title": "9. Reranker Scores Versus Vector Similarity",
+            "type": "concept",
+            "content": "A vector similarity score measures proximity between independently generated representations. A reranker score measures relevance according to a model that jointly considers the query and candidate, depending on the architecture. The two scores answer related but different questions. A passage can have high embedding similarity because it discusses the same broad subject but fail to answer the specific question. A cross-encoder may assign it a lower relevance score after considering the complete pair. Do not add raw vector similarity and reranker scores together without a validated combination method. In many systems, the first-stage score determines candidate retrieval, while the reranker score determines the final ordering."
+        },
+        {
+            "id": "reranking-example",
+            "title": "10. A Simple Reranking Example",
+            "type": "concept",
+            "content": "Imagine a user asks, 'How can I reduce database connection overhead?' The initial retriever returns three passages: one about connection pooling, one about database backups, and one about query indexing. All three concern databases, so vector similarity may place them near the query. A reranker can examine whether each passage directly addresses connection overhead. The connection-pooling passage should ideally rank first, the indexing passage may rank second if it discusses connection usage indirectly, and the backup passage should rank lower. This example demonstrates why topical similarity is not identical to answer relevance. A useful reranker learns distinctions between related subject matter and evidence that directly satisfies an information need."
+        },
+        {
+            "id": "reranking-pipeline-code",
+            "title": "11. Designing a Reranking Pipeline",
+            "type": "code",
+            "language": "python",
+            "content": "def rerank_candidates(query, candidates, score_pairs, limit=5):\n    if limit < 0:\n        raise ValueError(\"limit must be non-negative\")\n    if not candidates or limit == 0:\n        return []\n    pairs = [(query, item[\"text\"]) for item in candidates]\n    scores = score_pairs(pairs)\n    if len(scores) != len(candidates):\n        raise ValueError(\"The scorer must return one score per candidate\")\n    ranked = sorted(zip(candidates, scores), key=lambda item: item[1], reverse=True)\n    return [{**item, \"rerank_score\": float(score)} for item, score in ranked[:limit]]",
+            "explanation": "The function expects a scorer that accepts query-text pairs and returns one numeric score for every pair. It sorts candidates in descending score order and returns the requested number of results. It is an architectural example, not a model implementation. Production code should validate score finiteness, handle model failures, preserve stable IDs, and enforce access-control constraints before processing candidate text."
+        },
+        {
+            "id": "candidate-pool-size",
+            "title": "12. Choosing Candidate-Pool Size",
+            "type": "concept",
+            "content": "The reranker cannot rank documents outside its candidate pool. A small pool reduces latency and cost but may omit the correct evidence. A large pool can improve recall but requires more model computation and may introduce many irrelevant candidates. Candidate-pool size should be selected empirically. Measure first-stage Recall@k at several values of k, then measure final ranking quality and latency after reranking. Different query classes may require different candidate depths. An exact-ID query may be handled efficiently with a lexical branch, while a broad conceptual question may benefit from a larger dense-retrieval pool. Avoid increasing candidate depth without checking whether the additional results contain useful evidence."
+        },
+        {
+            "id": "reranking-latency",
+            "title": "13. Latency and Throughput",
+            "type": "concept",
+            "content": "Reranking latency depends on the number of candidate pairs, input token lengths, model architecture, batch size, hardware, and concurrency. Cross-encoder computation grows with the number of query-document pairs, and transformer attention can be expensive for long sequences. Batching improves accelerator utilization by processing several pairs together, but oversized batches can exceed memory limits or increase tail latency. A production system should measure p50, p95, and p99 latency under realistic traffic. If reranking becomes a bottleneck, reduce redundant candidates, optimize document lengths, batch requests, or use a smaller model. Any performance optimization should be evaluated for its effect on ranking quality."
+        },
+        {
+            "id": "batching",
+            "title": "14. Batching Reranker Requests",
+            "type": "concept",
+            "content": "Batching groups multiple query-document pairs into a single inference operation. It can improve throughput by reducing per-request overhead and making better use of accelerators. However, input lengths vary, and padding shorter sequences to the longest sequence in a batch can waste computation. Some inference systems use dynamic batching to combine requests that arrive close together. Dynamic batching must balance throughput against the extra waiting time imposed on each request. Set limits for batch size, token count, queue length, and waiting time. When a batch fails, design recovery so that one malformed pair does not unnecessarily discard every valid candidate."
+        },
+        {
+            "id": "late-interaction",
+            "title": "15. Late-Interaction Models",
+            "type": "concept",
+            "content": "Late-interaction architectures provide an alternative between a single-vector bi-encoder and a full cross-encoder. Instead of compressing an entire document into one vector, a model can retain multiple token-level vectors. At scoring time, query token representations interact with document token representations through a matching operation. This preserves more fine-grained evidence than a single document vector while allowing some document-side representations to be precomputed. The trade-off is greater storage and more complex scoring. Late-interaction systems can be useful when detailed token matching matters but exhaustive cross-encoding of every document is too expensive. Their exact storage and serving requirements depend on the architecture and implementation."
+        },
+        {
+            "id": "reranking-model-selection",
+            "title": "16. Selecting a Reranking Model",
+            "type": "concept",
+            "content": "Model selection should consider ranking quality, latency, cost, maximum input length, supported languages, domain vocabulary, deployment constraints, and licensing. A model trained on general web queries may not rank medical, legal, scientific, or internal engineering documents optimally. Multilingual applications need evaluation across their actual languages rather than relying only on an advertised language list. Compare candidate models on a held-out set of labeled query-document pairs. Record the model version and inference settings so results can be reproduced. Do not select a model solely because it has a high public benchmark score; differences in data and query distribution can change the result substantially."
+        },
+        {
+            "id": "reranking-evaluation",
+            "title": "17. Evaluating Reranking Quality",
+            "type": "concept",
+            "content": "Reranking quality should be evaluated by comparing the original candidate order with the reranked order. Mean Reciprocal Rank measures the position of the first relevant result. nDCG measures the ordering of results when relevance labels have multiple grades. Precision@k and Recall@k show how many relevant items appear within a selected depth. Evaluation should include difficult examples where candidates are topically similar but differ in whether they answer the query. Use the same candidate pool when comparing rerankers so that the comparison isolates ranking behavior. Also report latency and compute cost, because a small metric improvement may not justify a large increase in serving expense."
+        },
+        {
+            "id": "mrr-example",
+            "title": "18. Understanding MRR for Reranking",
+            "type": "math",
+            "content": "Mean Reciprocal Rank rewards systems that place the first relevant item near the top. For a single query, reciprocal rank is the inverse of the rank of the first relevant result. If the first relevant result moves from position five to position one, reciprocal rank increases from 0.2 to 1.0. Across a dataset, MRR averages the reciprocal ranks of all queries. MRR is especially useful when a user typically needs one correct passage quickly. It does not fully measure the placement of additional relevant passages, so it should be combined with recall or nDCG when broad evidence coverage matters.",
+            "formula": "RR(q) = 1 / rank(first relevant result); MRR = (1 / N) × Σ RR(q)",
+            "example": "If the first relevant results for three queries appear at ranks 1, 3, and 5, MRR = (1 + 1/3 + 1/5) / 3, approximately 0.511. If a query has no relevant result in the evaluated list, its reciprocal rank is typically zero."
+        },
+        {
+            "id": "reranker-training-data",
+            "title": "19. How Rerankers Learn Relevance",
+            "type": "concept",
+            "content": "Rerankers can be trained using query-document relevance labels, pairwise preferences, or other supervision. Pointwise training predicts a label or score for each query-document pair. Pairwise training teaches the model to prefer a relevant document over an irrelevant one. Listwise objectives consider the relative ordering of several candidates. Training examples should represent the target domain and include challenging negatives, such as documents that share terminology but do not answer the query. Poorly chosen negatives can teach superficial shortcuts. Label quality matters because the model learns the distinctions encoded by the training data. Evaluation should use separate queries or documents where possible to reduce leakage from training examples."
+        },
+        {
+            "id": "hard-negatives",
+            "title": "20. Hard Negatives and Difficult Candidates",
+            "type": "concept",
+            "content": "A hard negative is a candidate that looks plausible but is not actually relevant to the query. For example, a question about configuring database connection pooling may retrieve a passage about connection timeouts. Both discuss database connections, but only one may answer the question. Hard negatives teach a reranker to distinguish close alternatives instead of merely separating relevant passages from obviously unrelated text. They can be collected from initial retrieval systems and then reviewed or labeled. Incorrect negative labels can harm training, especially when a passage is partially relevant. Use clear relevance guidelines and inspect uncertain examples before including them in supervised training."
+        },
+        {
+            "id": "domain-adaptation",
+            "title": "21. Domain Adaptation and Specialized Vocabulary",
+            "type": "concept",
+            "content": "A general-purpose reranker may misunderstand specialized terminology, abbreviations, or domain-specific relationships. Domain adaptation can involve fine-tuning on representative query-document pairs, adding domain-specific preprocessing, or selecting a model trained on a relevant corpus. Specialized systems need carefully reviewed labels because errors can have greater consequences. Evaluate on real user queries, rare terminology, ambiguous acronyms, and recently introduced concepts. Keep a held-out test set and monitor quality after deployment. Fine-tuning is not always necessary: improved chunking, better metadata, or a more suitable base model may provide a simpler solution."
+        },
+        {
+            "id": "long-documents",
+            "title": "22. Long Documents and Truncation",
+            "type": "concept",
+            "content": "Rerankers have input-length limits. When a document is longer than the supported limit, the tokenizer or application may truncate it, potentially removing the answer-bearing passage. Chunking documents before reranking can reduce this risk and align scores with specific evidence. Another strategy is to identify candidate passages first and then rerank focused excerpts with their headings or surrounding context. Excessively short excerpts can remove necessary context, while excessively long excerpts increase computation. Evaluate chunk size, overlap, and truncation behavior on documents with known answer locations. Always inspect the actual tokenized input when debugging unexpected scores."
+        },
+        {
+            "id": "reranking-context",
+            "title": "23. Reranking in RAG Context Construction",
+            "type": "concept",
+            "content": "A RAG system should not blindly include the highest number of retrieved candidates. The context builder must balance relevance, coverage, redundancy, token limits, and source reliability. A reranker helps place useful passages first, allowing the application to select a smaller and more focused context. If a question has multiple parts, selecting only the single highest-scoring passage may omit evidence for the remaining parts. The context builder may therefore combine relevance scores with document diversity or subquestion coverage. Preserve source identifiers and locations so that generated claims can be traced back to the passages that support them."
+        },
+        {
+            "id": "reranking-security",
+            "title": "24. Security and Untrusted Candidate Text",
+            "type": "concept",
+            "content": "Rerankers process text that may originate from user uploads, external websites, or other untrusted sources. Candidate text must not be allowed to modify application instructions or authorization decisions. A reranker only assigns scores; it does not establish that a document is safe, accurate, or authorized for the requesting user. Apply access-control filters before candidate text is passed into downstream model calls. Avoid including secrets or unauthorized content in diagnostic traces. If retrieved passages contain prompt-injection instructions, keep them clearly separated from trusted instructions in later generation stages and enforce tool permissions independently."
+        },
+        {
+            "id": "reranking-failure-modes",
+            "title": "25. Common Reranking Failure Modes",
+            "type": "concept",
+            "content": "A reranker may fail because the relevant passage was not retrieved, the input was truncated, the model lacks domain knowledge, candidate text is malformed, or relevance labels do not reflect the actual task. A model can also overvalue lexical overlap, penalize concise answers, or rank popular but outdated passages too highly. Scores can shift after a model upgrade or preprocessing change. Diagnose failures by comparing the initial candidate list, the actual model inputs, scores, and final context. Use representative examples and controlled experiments. Avoid responding to every failure by increasing model size; the root cause may be indexing, chunking, filtering, or stale source data."
+        },
+        {
+            "id": "reranking-production",
+            "title": "26. Production Deployment Checklist",
+            "type": "concept",
+            "content": "Before deploying a reranker, define the expected candidate count, maximum input length, latency target, throughput, model version, and fallback behavior. Evaluate MRR, nDCG, precision, and recall against a held-out set. Benchmark under realistic concurrency and monitor tail latency. Validate behavior for empty candidate sets, malformed text, model timeouts, and partial failures. Preserve stable document IDs and source metadata. Apply authorization before model inference and keep sensitive content out of unnecessary logs. Version the model and preprocessing pipeline together, run regression tests before upgrades, and maintain a rollback plan."
+        },
+        {
+            "id": "reranking-lab",
+            "title": "27. Practical Lab: Compare Retrieval and Reranking",
+            "type": "exercise",
+            "content": "Create a corpus of technical documentation and prepare at least 30 queries with manually reviewed relevant chunks. Run a first-stage retriever and save its top 20 candidates for each query. Evaluate the original order using MRR and nDCG. Apply a cross-encoder to the same candidates, reorder them, and compute the metrics again. Measure inference latency and inspect cases where ranking improves or deteriorates. Include exact identifiers, paraphrases, long documents, and queries with no relevant result. Keep the candidate set fixed during the comparison so the effect of reranking can be measured independently."
+        },
+        {
+            "id": "reranking-design-example",
+            "title": "28. Worked Example: Internal Knowledge Assistant",
+            "type": "concept",
+            "content": "An internal knowledge assistant searches thousands of engineering documents. Hybrid retrieval returns 80 candidates containing relevant terminology and semantic matches. The reranker scores each query-document pair, placing direct troubleshooting instructions above general architectural discussions. A post-processing stage removes duplicate chunks and checks publication status. The context builder selects a handful of passages with source titles and section links. Evaluation compares hybrid retrieval alone with hybrid retrieval plus reranking. The team also measures p95 latency and checks whether older documentation incorrectly outranks current guidance. If the reranker improves ranking but exceeds the latency budget, the team can test smaller candidate pools, batching, or a more efficient model."
+        },
+        {
+            "id": "reranking-summary",
+            "title": "29. Key Takeaways",
+            "type": "concept",
+            "content": "Reranking is a second-stage relevance operation that reorders candidates produced by an initial retriever. Bi-encoders support efficient vector search by encoding queries and documents independently. Cross-encoders jointly process query-document pairs and can provide more precise relevance judgments at higher computational cost. Late-interaction models preserve token-level matching while offering a different storage and scoring trade-off. Effective reranking depends on candidate recall, input length, model quality, domain adaptation, and evaluation. Measure ranking improvements with MRR, nDCG, Precision@k, and Recall@k while tracking latency and cost. Reranking improves the evidence ordering; it does not replace authorization, source validation, or sound context construction."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "reranking-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main difference between retrieval and reranking?",
+            "correctAnswer": "Retrieval finds an initial candidate set from a large collection, while reranking reorders that smaller set using a more focused relevance model.",
+            "solution": "Retrieval is optimized to search efficiently at scale. Reranking spends more computation evaluating the relationship between the query and each candidate. A reranker cannot recover a relevant document that is absent from the candidate pool."
+        },
+        {
+            "id": "reranking-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why are cross-encoders usually not used to score every document in a collection containing millions of records?",
+            "correctAnswer": "Each query-document pair generally requires a model inference, making exhaustive cross-encoder scoring too expensive for many large-scale workloads.",
+            "solution": "A cross-encoder jointly processes query and document tokens, allowing richer interaction but requiring substantial computation for every pair. A first-stage retriever narrows the collection to a manageable candidate pool before reranking."
+        },
+        {
+            "id": "reranking-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "The first relevant result appears at rank 4 before reranking and rank 1 after reranking. What are the reciprocal-rank scores?",
+            "correctAnswer": "Before reranking: 0.25. After reranking: 1.0.",
+            "solution": "Reciprocal rank equals one divided by the position of the first relevant result. Before reranking, RR = 1/4 = 0.25. After reranking, RR = 1/1 = 1.0."
+        },
+        {
+            "id": "reranking-ex-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A reranker has excellent benchmark scores but performs poorly on internal engineering documentation. What should you investigate?",
+            "correctAnswer": "Domain mismatch, specialized vocabulary, candidate quality, chunking, truncation, and the relevance labels used in evaluation.",
+            "solution": "Public benchmarks may not represent the target domain. Inspect actual query-document pairs, check whether relevant evidence is present in the candidate pool, verify tokenization and input truncation, and evaluate on representative internal queries. Consider domain adaptation only after identifying the source of the failure."
+        },
+        {
+            "id": "reranking-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How can you reduce reranking latency without blindly sacrificing relevance?",
+            "correctAnswer": "Benchmark candidate-pool size, batch inference, remove duplicate candidates, optimize input length, and test a more efficient model.",
+            "solution": "Measure the effect of each change on ranking metrics and latency. Removing redundant candidates and batching can reduce cost, but excessive candidate reduction can exclude relevant evidence. Validate each optimization on a representative held-out query set."
+        }
+    ],
+    "summary": "Reranking improves the ordering of candidates returned by an initial retrieval stage. Bi-encoders enable efficient first-stage semantic search, while cross-encoders jointly process queries and documents to estimate relevance more precisely. Late-interaction models provide another design point between single-vector retrieval and full cross-encoding. Effective reranking depends on candidate recall, model choice, input length, batching, domain adaptation, and careful evaluation. Use MRR, nDCG, Precision@k, and Recall@k to measure ranking quality, and always consider latency, cost, security, and source traceability.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-vector-embeddings",
+        "module-12-modern-ai-systems-vector-databases",
+        "module-12-modern-ai-systems-retrieval",
+        "module-12-modern-ai-systems-tool-calling"
+    ]
+}

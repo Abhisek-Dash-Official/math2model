@@ -1,1 +1,161 @@
-{}
+{
+    "id": "backpropagation",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 7,
+    "title": "Backpropagation",
+    "slug": "backpropagation",
+    "description": "Master backpropagation, the algorithm used to calculate neural network parameter gradients, through computational graphs, the chain rule, numerical derivations, vectorized matrix formulas, and a working NumPy implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Derivatives and basic calculus",
+        "Forward propagation",
+        "Loss functions",
+        "Computational graphs",
+        "Matrix multiplication"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of backpropagation.",
+        "Distinguish forward propagation from backward propagation.",
+        "Calculate gradients for weights and biases in a single neuron.",
+        "Derive gradients for a two-layer neural network.",
+        "Understand error signals and the chain rule.",
+        "Implement backpropagation using NumPy.",
+        "Use PyTorch autograd to calculate gradients.",
+        "Identify common causes of incorrect or unstable gradients."
+    ],
+    "sections": [
+        {
+            "id": "backprop-introduction",
+            "title": "1. What Is Backpropagation?",
+            "type": "concept",
+            "content": "Backpropagation is an algorithm for calculating derivatives of a neural network's loss with respect to its trainable parameters. It is based on the chain rule of calculus and is usually implemented through reverse-mode automatic differentiation.\n\nA neural network may contain millions or billions of parameters. To train the network, we need to understand how changing each weight or bias would affect the loss. Calculating every derivative independently would be inefficient.\n\nBackpropagation reuses intermediate computations and propagates gradient information backward through the network. This makes it possible to calculate gradients for many parameters efficiently.\n\nA standard training iteration has four major stages:\n\n1. Forward propagation: Calculate predictions.\n2. Loss calculation: Compare predictions with targets.\n3. Backpropagation: Calculate parameter gradients.\n4. Optimization: Update weights and biases using the gradients.\n\nBackpropagation calculates gradients; it does not itself specify how parameters are updated. Gradient descent, SGD, Adam, and other optimizers use those gradients to perform updates."
+        },
+        {
+            "id": "backprop-basic-example",
+            "title": "2. Backpropagation Through a Single Neuron",
+            "type": "math",
+            "content": "Consider a linear neuron with one input:\n\nz = wx + b\ny_pred = z\n\nUse squared error with a factor of one-half:\n\nL = 0.5 * (y_pred - y)^2\n\nDefine the prediction error:\n\ne = y_pred - y\n\nThe derivative of the loss with respect to the prediction is:\n\ndL/dy_pred = e\n\nSince y_pred = z:\n\ndy_pred/dz = 1\n\nSince z = wx + b:\n\ndz/dw = x\ndz/db = 1\n\nApplying the chain rule:\n\ndL/dw = (dL/dy_pred) * (dy_pred/dz) * (dz/dw)\n\ndL/dw = e*x\n\nSimilarly:\n\ndL/db = e\n\nNumerical example:\n\nx = 2, w = 0.5, b = 0, y = 3\n\ny_pred = 0.5*2 = 1\ne = 1 - 3 = -2\n\nTherefore:\n\ndL/dw = -2*2 = -4\ndL/db = -2\n\nThe negative gradients indicate that a small increase in w or b would reduce the loss locally in this example."
+        },
+        {
+            "id": "backprop-gradient-descent",
+            "title": "3. Gradients and Parameter Updates",
+            "type": "math",
+            "content": "After backpropagation computes gradients, an optimizer uses them to update the parameters.\n\nFor basic gradient descent:\n\nw_new = w_old - learning_rate * dL/dw\n\nb_new = b_old - learning_rate * dL/db\n\nUsing the previous example:\n\nw = 0.5\nb = 0\nlearning_rate = 0.1\ndL/dw = -4\ndL/db = -2\n\nThe updated weight is:\n\nw_new = 0.5 - 0.1*(-4) = 0.9\n\nThe updated bias is:\n\nb_new = 0 - 0.1*(-2) = 0.2\n\nThe updated prediction for x = 2 becomes:\n\ny_pred_new = 0.9*2 + 0.2 = 2.0\n\nThe target is 3, so this update moves the prediction closer to the target.\n\nThis does not guarantee that every individual update decreases the loss in every setting. The learning rate, loss landscape, batch selection, and optimizer behavior all affect training. A learning rate that is too large can overshoot useful parameter values."
+        },
+        {
+            "id": "backprop-two-layer-network",
+            "title": "4. Backpropagation Through a Two-Layer Network",
+            "type": "math",
+            "content": "Consider a network with one hidden layer:\n\nz1 = W1*x + b1\na1 = ReLU(z1)\n\nz2 = W2*a1 + b2\ny_pred = z2\n\nUse the loss:\n\nL = 0.5 * (y_pred - y)^2\n\nFirst calculate the output error signal:\n\ndelta2 = dL/dz2 = y_pred - y\n\nThis equality holds because the output activation is linear and the loss includes the factor 0.5.\n\nThe output-layer gradients are:\n\ndL/dW2 = delta2 * a1^T\ndL/db2 = delta2\n\nThe gradient passed to the hidden activation is:\n\ndL/da1 = W2^T * delta2\n\nApplying the ReLU derivative:\n\ndelta1 = (W2^T * delta2) elementwise multiplied by ReLU'(z1)\n\nThen:\n\ndL/dW1 = delta1 * x^T\ndL/db1 = delta1\n\nFor a batch of examples, the same principle applies using matrix operations and a suitable reduction across the batch.\n\nThe important pattern is that the output-layer gradient is calculated first. Its gradient signal is then propagated backward to earlier layers."
+        },
+        {
+            "id": "backprop-numerical",
+            "title": "5. Worked Backpropagation Example",
+            "type": "math",
+            "content": "Consider a network with one input, one hidden ReLU neuron, and one linear output neuron.\n\nInput x = 2\ntarget y = 1\n\nHidden parameters:\n\nw1 = 0.5\nb1 = 0\n\nOutput parameters:\n\nw2 = 0.8\nb2 = 0.1\n\nUse L = 0.5*(y_pred - y)^2.\n\nForward pass:\n\nz1 = w1*x + b1 = 0.5*2 = 1\na1 = ReLU(1) = 1\n\nz2 = w2*a1 + b2 = 0.8*1 + 0.1 = 0.9\ny_pred = 0.9\n\ne = y_pred - y = -0.1\n\nLoss:\n\nL = 0.5*(-0.1)^2 = 0.005\n\nBackward pass:\n\ndelta2 = e = -0.1\n\ndL/dw2 = delta2*a1 = -0.1*1 = -0.1\n\ndL/db2 = -0.1\n\nGradient with respect to the hidden activation:\n\ndL/da1 = w2*delta2 = 0.8*(-0.1) = -0.08\n\nSince z1 is positive, ReLU'(z1) = 1.\n\ndelta1 = -0.08*1 = -0.08\n\ndL/dw1 = delta1*x = -0.08*2 = -0.16\n\ndL/db1 = -0.08\n\nThe loss is small because the prediction is already close to the target. All gradients are calculated from the original forward-pass values, before an optimizer applies an update."
+        },
+        {
+            "id": "backprop-batch-gradients",
+            "title": "6. Backpropagation for a Batch",
+            "type": "math",
+            "content": "Training normally uses batches rather than processing only one example at a time.\n\nSuppose X has shape (B, n), where B is the batch size and n is the number of input features. For a layer with m neurons:\n\nZ = XW^T + b\nA = f(Z)\n\nLet dZ denote the derivative of the batch loss with respect to Z.\n\nIf the batch loss is the mean of per-example losses, the output gradient typically incorporates the appropriate averaging factor.\n\nThe parameter gradients have the form:\n\ndL/dW = dZ^T * X\n\ndL/db = sum of dZ over the batch dimension\n\ndL/dX = dZ * W\n\nThe exact shapes and averaging factors depend on the reduction convention and whether the framework represents examples as rows or columns.\n\nThe key idea is that each example contributes to the gradient of the shared parameters. The batch gradient combines these contributions according to the chosen loss reduction.\n\nVectorized matrix operations make this process efficient on CPUs, GPUs, and specialized accelerators."
+        },
+        {
+            "id": "backprop-algorithm",
+            "title": "7. Backpropagation Algorithm",
+            "type": "concept",
+            "content": "A simplified training iteration can be organized as follows:\n\n1. Obtain a batch of input features and targets.\n2. Perform a forward pass through each layer.\n3. Calculate the loss using the targets and predictions.\n4. Initialize the backward pass with the derivative of the loss with respect to the network output.\n5. Propagate gradients through the output layer.\n6. Continue backward through each hidden layer using the chain rule.\n7. Accumulate gradients for weights and biases.\n8. Update parameters using an optimizer.\n9. Clear or reset accumulated gradients before the next update.\n\nThe forward pass typically stores intermediate values needed for the backward pass. Modern frameworks manage these values automatically, although memory can become significant for large models.\n\nBackpropagation is not restricted to fully connected networks. It is also used in convolutional networks, recurrent networks, and Transformer architectures. Each architecture has different operations, but the same chain-rule principle applies."
+        },
+        {
+            "id": "backprop-numpy",
+            "title": "8. Implementing Backpropagation from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\n# Dataset: one input feature and one target per example.\nX = np.array([[0.0], [1.0], [2.0], [3.0]])\ny = np.array([[0.0], [1.0], [2.0], [3.0]])\n\nrng = np.random.default_rng(42)\nW1 = rng.normal(0, 0.5, size=(3, 1))\nb1 = np.zeros((1, 3))\nW2 = rng.normal(0, 0.5, size=(1, 3))\nb2 = np.zeros((1, 1))\n\nlearning_rate = 0.01\nepochs = 1000\nn = len(X)\n\nfor epoch in range(epochs):\n    # Forward pass.\n    Z1 = X @ W1.T + b1\n    A1 = np.maximum(0, Z1)\n\n    predictions = A1 @ W2.T + b2\n    error = predictions - y\n\n    # Mean squared error over examples.\n    loss = np.mean(error ** 2)\n\n    # Backward pass.\n    # dL/dpredictions for mean squared error.\n    dY = (2.0 / n) * error\n\n    dW2 = dY.T @ A1\n    db2 = np.sum(dY, axis=0, keepdims=True)\n\n    dA1 = dY @ W2\n    dZ1 = dA1 * (Z1 > 0)\n\n    dW1 = dZ1.T @ X\n    db1_grad = np.sum(dZ1, axis=0, keepdims=True)\n\n    # Gradient descent update.\n    W2 -= learning_rate * dW2\n    b2 -= learning_rate * db2\n    W1 -= learning_rate * dW1\n    b1 -= learning_rate * db1_grad\n\n    if epoch % 200 == 0:\n        print(f'Epoch {epoch}: loss={loss:.6f}')\n\nprint('Final predictions:')\nprint(A1 @ W2.T + b2)",
+            "explanation": "This educational implementation uses one hidden ReLU layer and a linear output. It calculates gradients manually and applies gradient descent. The mean squared error derivative includes 2/n because the loss averages squared errors over the examples. This code is intended to illustrate backpropagation, not replace a mature deep learning framework."
+        },
+        {
+            "id": "backprop-pytorch",
+            "title": "9. Backpropagation Using PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\nX = torch.tensor(\n    [[0.0], [1.0], [2.0], [3.0]],\n    dtype=torch.float32\n)\ny = torch.tensor(\n    [[0.0], [1.0], [2.0], [3.0]],\n    dtype=torch.float32\n)\n\nmodel = nn.Sequential(\n    nn.Linear(1, 3),\n    nn.ReLU(),\n    nn.Linear(3, 1)\n)\n\noptimizer = torch.optim.SGD(model.parameters(), lr=0.01)\nloss_function = nn.MSELoss()\n\nfor epoch in range(1000):\n    predictions = model(X)\n    loss = loss_function(predictions, y)\n\n    optimizer.zero_grad()\n    loss.backward()\n    optimizer.step()\n\n    if epoch % 200 == 0:\n        print(f'Epoch {epoch}: loss={loss.item():.6f}')\n\nwith torch.no_grad():\n    print('Predictions:')\n    print(model(X))",
+            "explanation": "PyTorch builds the operation graph during the forward pass and calculates gradients when loss.backward() is called. optimizer.zero_grad() clears gradients from the previous iteration, and optimizer.step() updates parameters. The framework handles the derivative calculations for supported operations."
+        },
+        {
+            "id": "backprop-gradient-problems",
+            "title": "10. Vanishing and Exploding Gradients",
+            "type": "concept",
+            "content": "During backpropagation, gradients pass through multiple layers. The chain rule can involve repeated multiplication by derivatives and weight matrices.\n\nIf these products repeatedly shrink gradient magnitudes, earlier layers may receive extremely small gradients. This is called the vanishing-gradient problem. It can make learning slow or prevent earlier layers from learning useful representations.\n\nIf products grow excessively, gradients may become very large. This is called the exploding-gradient problem and can cause unstable updates or numerical overflow.\n\nPossible strategies include:\n\n- Use suitable activation functions and initialization methods.\n- Choose an appropriate learning rate.\n- Use residual connections in deep architectures where appropriate.\n- Apply gradient clipping when exploding gradients are a concern.\n- Consider normalization techniques where suitable.\n- Monitor gradient norms during training.\n\nThese methods address different aspects of optimization. There is no single technique that guarantees stable training for every architecture."
+        },
+        {
+            "id": "backprop-debugging",
+            "title": "11. Gradient Checking and Debugging",
+            "type": "concept",
+            "content": "A gradient implementation can contain subtle errors involving transposed matrices, incorrect averaging factors, activation derivatives, or mismatched tensor dimensions.\n\nOne debugging technique is finite-difference gradient checking. For a scalar parameter theta, estimate the derivative using:\n\ngradient_approx = [L(theta + epsilon) - L(theta - epsilon)] / (2*epsilon)\n\nCompare this approximation with the analytically computed gradient. The two should be close when epsilon is suitably chosen and the loss is sufficiently smooth around the parameter value.\n\nFinite-difference checking is expensive for large models, so it is most useful on small examples and custom operations.\n\nOther debugging techniques include checking gradients for NaN values, inspecting gradient norms, verifying that parameters change after optimizer steps, and confirming that a tiny model can overfit a tiny dataset.\n\nWhen testing ReLU near zero or other nondifferentiable points, finite-difference estimates can be misleading. Choose test values away from such points when checking ordinary gradients."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "backprop-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A linear neuron predicts 4 when the target is 7. For L = 0.5*(prediction - target)^2, calculate dL/dprediction.",
+            "correctAnswer": "-3",
+            "solution": "The derivative is prediction - target = 4 - 7 = -3."
+        },
+        {
+            "id": "backprop-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For a single linear neuron, x = 3 and the prediction error is -2. If dL/dw = error*x, calculate the weight gradient.",
+            "correctAnswer": "-6",
+            "solution": "dL/dw = -2 * 3 = -6."
+        },
+        {
+            "id": "backprop-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A parameter has value 0.4, gradient 2, and learning rate 0.05. Calculate its gradient-descent update.",
+            "correctAnswer": "The new parameter value is 0.3.",
+            "solution": "theta_new = theta_old - learning_rate*gradient = 0.4 - 0.05*2 = 0.3."
+        },
+        {
+            "id": "backprop-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the difference between backpropagation and gradient descent?",
+            "correctAnswer": "Backpropagation computes gradients; gradient descent uses gradients to update parameters.",
+            "solution": "Backpropagation applies the chain rule to calculate derivatives of the loss with respect to parameters. Gradient descent then moves parameters in the negative-gradient direction, scaled by the learning rate."
+        },
+        {
+            "id": "backprop-exercise-5",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "In a PyTorch training loop, which operations typically clear gradients, calculate new gradients, and update the parameters?",
+            "correctAnswer": "optimizer.zero_grad(), loss.backward(), and optimizer.step(), respectively.",
+            "solution": "zero_grad clears accumulated gradients, backward calculates gradients through autograd, and step applies the optimizer's parameter updates."
+        },
+        {
+            "id": "backprop-exercise-6",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why can sigmoid hidden layers contribute to vanishing gradients in a deep neural network?",
+            "correctAnswer": "Sigmoid derivatives can be very small in saturated regions, and repeated multiplication by small derivatives can shrink gradients through earlier layers.",
+            "solution": "The sigmoid derivative is sigmoid(z)*(1-sigmoid(z)), which approaches zero when the output approaches zero or one. Repeated chain-rule multiplication can make gradients reaching earlier layers extremely small."
+        }
+    ],
+    "summary": "Backpropagation efficiently calculates gradients of a neural network's loss with respect to weights and biases by applying the chain rule backward through the computational graph. Forward propagation calculates predictions, backpropagation calculates derivatives, and an optimizer updates parameters. Understanding local derivatives, gradient accumulation, batch matrix formulas, and gradient stability is essential for training neural networks reliably.",
+    "relatedTopics": [
+        "computational-graphs",
+        "chain-rule-in-neural-networks",
+        "forward-propagation",
+        "loss-functions",
+        "gradient-descent-sgd",
+        "mini-batch-training",
+        "weight-initialization",
+        "optimizers-momentum-rmsprop-adam"
+    ]
+}

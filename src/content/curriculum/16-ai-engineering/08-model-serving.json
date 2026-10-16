@@ -1,1 +1,156 @@
-{}
+{
+    "id": "module-16-ai-engineering-model-serving",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 8,
+    "title": "Model Serving & Deployment Systems",
+    "slug": "model-serving",
+    "href": "/curriculum/16-ai-engineering/model-serving",
+    "filePath": "content/curriculum/16-ai-engineering/08-model-serving.json",
+    "description": "Learn to package, serve, scale, monitor, and maintain machine learning models through production APIs, optimized inference pipelines, batching, and deployment infrastructure.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "pytorch",
+        "mixed-precision",
+        "data-pipelines",
+        "experiment-tracking"
+    ],
+    "learningObjectives": [
+        "Explain the difference between training, inference, and model serving.",
+        "Design a model-serving architecture using an HTTP API.",
+        "Package models with their preprocessing and postprocessing logic.",
+        "Understand latency, throughput, concurrency, and batching.",
+        "Implement input validation and robust inference error handling.",
+        "Apply model warm-up, health checks, and resource management.",
+        "Understand model versioning, rollout strategies, and rollback procedures.",
+        "Monitor model-serving systems in production."
+    ],
+    "sections": [
+        {
+            "id": "serving-fundamentals",
+            "title": "1. Understanding Model Serving",
+            "type": "concept",
+            "content": "Model serving makes a trained model available to applications through a stable interface. A typical request contains input data, the serving system validates and preprocesses it, the model performs inference, and postprocessing converts predictions into a response. Unlike training, inference generally does not calculate gradients or update model parameters. A production serving system must manage model loading, concurrent requests, memory, timeouts, failures, monitoring, and version compatibility. The model weights are only one part of the deployed system; preprocessing rules, tokenizers, label mappings, and output interpretation may be equally important.",
+            "example": "An image-classification service accepts an image, validates its format and size, resizes and normalizes it, runs the model, and returns the predicted class with an optional confidence score."
+        },
+        {
+            "id": "serving-architecture",
+            "title": "2. Model-Serving Architecture",
+            "type": "concept",
+            "content": "A common architecture contains a client, an API gateway or load balancer, an inference service, a model runtime, and optional storage or monitoring components. The API handles request validation and response formatting, while the inference runtime manages model execution. The model may run on a CPU, GPU, or specialized inference accelerator. Larger deployments can use multiple replicas behind a load balancer. Separate model-serving processes from unrelated application workloads when isolation, scaling, or resource management requires it. The correct architecture depends on request volume, latency targets, model size, and operational constraints.",
+            "example": "A web application sends a JSON request to a prediction API. The API validates the payload, calls an inference function, and returns a JSON response. A deployment can later add authentication, rate limits, logging, and multiple inference replicas without changing the model's mathematical definition."
+        },
+        {
+            "id": "latency-throughput",
+            "title": "3. Latency, Throughput, and Concurrency",
+            "type": "concept",
+            "content": "Latency is the time required to complete a request, while throughput is the number of requests completed per unit of time. Concurrency describes how many requests are being processed or awaited simultaneously. These measures interact: batching may improve throughput but increase the waiting time of individual requests. Tail latency, such as p95 or p99 latency, reveals slow requests that an average can hide. A production service should define targets for both throughput and latency and test them under realistic request distributions and concurrency levels.",
+            "formula": "Throughput = completed requests / elapsed time; request latency = response completion time - request arrival time.",
+            "example": "A service that completes 2,000 requests in 10 seconds has an observed throughput of 200 requests per second. This does not establish that its p95 latency meets a 100-millisecond service objective."
+        },
+        {
+            "id": "inference-mode",
+            "title": "4. Preparing a PyTorch Model for Inference",
+            "type": "code",
+            "language": "python",
+            "content": "PyTorch models should be placed in evaluation mode and executed without gradient tracking during ordinary inference. Evaluation mode changes the behavior of modules such as dropout and batch normalization. Inference mode reduces autograd overhead for tensors that do not require gradient tracking. Load a trusted checkpoint, reconstruct the expected architecture, and validate that the model and preprocessing configuration match the checkpoint.",
+            "code": "import torch\nimport torch.nn as nn\n\nclass Classifier(nn.Module):\n    def __init__(self, input_dim=128, num_classes=10):\n        super().__init__()\n        self.network = nn.Sequential(nn.Linear(input_dim, 256), nn.ReLU(), nn.Linear(256, num_classes))\n\n    def forward(self, x):\n        return self.network(x)\n\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nmodel = Classifier().to(device)\nstate = torch.load(\"model_weights.pt\", map_location=device, weights_only=True)\nmodel.load_state_dict(state)\nmodel.eval()\n\ndef predict(features):\n    if features.ndim != 2 or features.shape[1] != 128:\n        raise ValueError(\"Expected a tensor shaped [batch_size, 128]\")\n    features = features.to(device)\n    with torch.inference_mode():\n        logits = model(features)\n        probabilities = torch.softmax(logits, dim=-1)\n        predictions = probabilities.argmax(dim=-1)\n    return predictions.cpu(), probabilities.cpu()",
+            "explanation": "The checkpoint is assumed to contain a state dictionary compatible with Classifier. weights_only=True is appropriate for supported PyTorch versions when loading a plain tensor state dictionary. Only load trusted files, validate checkpoint compatibility, and include the actual training-time preprocessing steps before production deployment. The input shape check prevents incompatible feature tensors from reaching the model."
+        },
+        {
+            "id": "http-inference-api",
+            "title": "5. Building an Inference API",
+            "type": "code",
+            "language": "python",
+            "content": "A web framework can expose a prediction function through a JSON endpoint. This example uses FastAPI and a small numerical model to demonstrate the request-response contract. In a real service, load the trained model once during application startup rather than rebuilding it for every request.",
+            "code": "from contextlib import asynccontextmanager\nimport torch\nfrom fastapi import FastAPI, HTTPException\nfrom pydantic import BaseModel, Field\n\nclass PredictionRequest(BaseModel):\n    features: list[float] = Field(min_length=128, max_length=128)\n\nclass PredictionResponse(BaseModel):\n    predicted_class: int\n    probabilities: list[float]\n\n@asynccontextmanager\nasync def lifespan(app: FastAPI):\n    app.state.model = Classifier()\n    state = torch.load(\"model_weights.pt\", map_location=\"cpu\", weights_only=True)\n    app.state.model.load_state_dict(state)\n    app.state.model.eval()\n    yield\n\napp = FastAPI(title=\"Model Inference API\", lifespan=lifespan)\n\n@app.get(\"/health\")\ndef health():\n    return {\"status\": \"ok\"}\n\n@app.post(\"/predict\", response_model=PredictionResponse)\ndef predict(request: PredictionRequest):\n    try:\n        features = torch.tensor(request.features, dtype=torch.float32).unsqueeze(0)\n        with torch.inference_mode():\n            logits = app.state.model(features)\n            probabilities = torch.softmax(logits, dim=-1)[0]\n        return PredictionResponse(predicted_class=int(probabilities.argmax()), probabilities=probabilities.tolist())\n    except (RuntimeError, ValueError) as exc:\n        raise HTTPException(status_code=500, detail=\"Inference failed\") from exc",
+            "explanation": "This example assumes the Classifier class and compatible checkpoint are available in the application module. It runs on CPU to keep the example simple. For GPU serving, manage device placement and concurrent access deliberately. Production services also need request-size limits, authentication where required, timeouts, structured logs, model-version metadata, and appropriate exception handling. Avoid exposing internal exception details to clients."
+        },
+        {
+            "id": "batching",
+            "title": "6. Dynamic Batching and Request Scheduling",
+            "type": "concept",
+            "content": "Batching combines multiple inputs into one model invocation. It often improves accelerator utilization because matrix operations can process larger tensors efficiently. Static batching waits for a fixed batch size, while dynamic batching combines requests that arrive within a limited time window. Larger batches can increase throughput but consume more memory and may increase request latency. Batching requires compatible input shapes or an explicit padding strategy. Sequence models may benefit from length-based batching, while online services must balance throughput gains against response-time requirements.",
+            "example": "A service may combine up to 16 compatible requests that arrive within a short scheduling window. If traffic is sparse, the system should not wait indefinitely for the batch to fill."
+        },
+        {
+            "id": "model-warmup",
+            "title": "7. Warm-Up and Resource Management",
+            "type": "concept",
+            "content": "The first inference request may be slower because the runtime initializes kernels, allocates memory, loads data, or compiles specialized execution paths. Warm-up executes representative inputs before the service begins accepting traffic. Warm-up shapes should reflect actual serving workloads, especially when compilation or shape-dependent kernels are used. GPU memory allocation and concurrency limits must be planned around the model and maximum batch size. A service should fail clearly if initialization cannot complete instead of reporting healthy while the model is unusable.",
+            "example": "At startup, a vision service can execute one or more representative image batches and verify that outputs have the expected shape and contain finite values before marking the model ready."
+        },
+        {
+            "id": "health-readiness",
+            "title": "8. Health Checks and Readiness",
+            "type": "concept",
+            "content": "Health checks help orchestrators detect failed processes, while readiness checks determine whether an instance can safely receive traffic. A process can be alive but not ready because model loading is incomplete or an essential dependency is unavailable. Liveness checks should not depend on slow external operations that might cause unnecessary restarts. Readiness checks can validate that the model is loaded and required resources are available. Monitoring should also include error rates, timeouts, queue depth, resource usage, and model-specific quality signals.",
+            "example": "A health endpoint can report process status, while a readiness endpoint verifies that the model has loaded successfully and completed startup checks."
+        },
+        {
+            "id": "deployment-rollouts",
+            "title": "9. Model Versioning and Rollout Strategies",
+            "type": "concept",
+            "content": "Model deployment must distinguish the currently active model from candidate versions. A rolling deployment replaces instances gradually, while a canary deployment directs a small fraction of traffic to a new version before increasing exposure. Shadow deployment sends copied requests to a candidate model without using its output for customer responses. Blue-green deployment maintains separate environments and switches traffic when the new environment passes checks. Rollouts should include acceptance criteria, monitoring, and a rollback plan. Ensure that the API contract and preprocessing remain compatible across versions.",
+            "example": "Deploy a new classifier to 5% of eligible traffic, compare its error rate and latency with the current version, and increase traffic only if the predefined release criteria are met."
+        },
+        {
+            "id": "serving-security",
+            "title": "10. Security and Reliability",
+            "type": "concept",
+            "content": "A model endpoint is an application interface and must be secured accordingly. Validate types, dimensions, payload size, and acceptable value ranges. Apply authentication and authorization where appropriate, rate-limit expensive requests, and avoid logging credentials or sensitive raw inputs. Keep dependencies patched and use trusted model artifacts. Set resource limits and request timeouts to reduce denial-of-service risk. Define behavior for malformed inputs, overloaded workers, unavailable dependencies, and model failures. The model's prediction should not automatically be treated as authoritative in high-impact decisions without suitable evaluation and oversight.",
+            "example": "A tabular model can reject inputs with missing required features, non-finite numbers, or an unsupported schema version before invoking the model."
+        },
+        {
+            "id": "serving-observability",
+            "title": "11. Monitoring Production Inference",
+            "type": "concept",
+            "content": "Serving observability combines logs, metrics, and traces. Operational metrics include request count, throughput, error rate, p50/p95/p99 latency, queue depth, CPU and GPU utilization, and memory usage. Model monitoring may include input distributions, prediction distributions, calibration, and delayed evaluation once ground-truth labels become available. A shift in inputs does not automatically prove a decline in model quality, but it can trigger investigation. Define thresholds and response procedures so alerts lead to actionable decisions rather than noise.",
+            "example": "If p99 latency rises while GPU utilization remains low, investigate queueing, serialization, CPU preprocessing, and request scheduling rather than assuming the model itself has become slower."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "model-serving-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between model.eval() and torch.inference_mode()?",
+            "correctAnswer": "model.eval() switches modules into evaluation behavior; torch.inference_mode() disables autograd-related tracking and overhead for inference operations.",
+            "solution": "They solve different problems and are often used together. Evaluation mode affects layers such as dropout and batch normalization, while inference mode avoids building autograd graphs."
+        },
+        {
+            "id": "model-serving-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can dynamic batching improve throughput but increase latency?",
+            "correctAnswer": "It combines requests into more efficient model invocations, but requests may wait for additional inputs before execution.",
+            "solution": "Batching improves accelerator utilization, but the scheduling window introduces waiting time. The system must choose batch-size and timeout limits that satisfy service-level objectives."
+        },
+        {
+            "id": "model-serving-ex-3",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A newly deployed model has higher p99 latency and more errors than the previous version. What should the rollout system do?",
+            "correctAnswer": "Stop increasing traffic, investigate the regression, and roll back if predefined safety or reliability thresholds are breached.",
+            "solution": "Compare candidate and baseline metrics, inspect logs and traces, verify resource usage and input compatibility, and use the established rollback procedure if the candidate fails release criteria."
+        },
+        {
+            "id": "model-serving-ex-4",
+            "type": "practical",
+            "difficulty": "intermediate",
+            "question": "Name four components that should be versioned or documented alongside a deployed model.",
+            "correctAnswer": "Model weights, preprocessing configuration, model architecture or runtime configuration, and the evaluation report.",
+            "solution": "Depending on the model, also version tokenizers, label mappings, feature schemas, software dependencies, source revision, and API contract."
+        }
+    ],
+    "summary": "Production model serving combines model inference with API design, input validation, concurrency management, monitoring, and controlled deployment. Reliable services measure both throughput and tail latency, warm up models, distinguish health from readiness, and support safe rollouts and rollback. The complete deployment artifact must include the supporting preprocessing and configuration required to reproduce model behavior.",
+    "relatedTopics": [
+        "pytorch",
+        "mixed-precision",
+        "data-pipelines",
+        "experiment-tracking",
+        "quantization-optimization",
+        "evaluation-infrastructure"
+    ]
+}

@@ -1,1 +1,153 @@
-{}
+{
+    "id": "mini-batch-training",
+    "moduleId": "module-03-neural-networks",
+    "moduleIndex": 3,
+    "topicIndex": 10,
+    "title": "Mini-Batch Training",
+    "slug": "mini-batch-training",
+    "description": "Understand how mini-batch training processes datasets efficiently, including batch size, epochs, iterations, shuffling, data loaders, gradient computation, and practical neural network training.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Basic Python",
+        "NumPy arrays",
+        "Loss functions",
+        "Gradient descent",
+        "Basic neural network forward propagation"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of mini-batch training.",
+        "Differentiate batch size, iteration, and epoch.",
+        "Calculate the number of batches and updates per epoch.",
+        "Explain the effect of batch size on memory, gradient noise, and training.",
+        "Implement a mini-batch generator using NumPy.",
+        "Understand shuffling and handling incomplete final batches.",
+        "Implement a simple mini-batch gradient descent loop.",
+        "Recognize data leakage and incorrect batch-processing practices."
+    ],
+    "sections": [
+        {
+            "id": "mini-batch-introduction",
+            "title": "1. Introduction to Mini-Batch Training",
+            "type": "concept",
+            "content": "Mini-batch training is a method in which a model processes a small subset of the training dataset before performing a parameter update.\n\nSuppose a training dataset contains 100,000 images. Processing every image in a single forward and backward pass may require too much memory and make each update expensive. Processing one image at a time may produce frequent but noisy updates and may not use modern accelerators efficiently.\n\nMini-batch training provides a practical compromise. A batch of examples is processed together, the average loss is calculated, gradients are computed, and the optimizer updates the model parameters.\n\nA common training loop follows these steps:\n\n1. Shuffle the training examples when appropriate.\n2. Divide the data into mini-batches.\n3. Run a forward pass for each batch.\n4. Calculate the batch loss.\n5. Compute gradients using backpropagation.\n6. Update the parameters.\n7. Repeat until the training dataset has been processed.\n\nOne complete pass through the training dataset is called an epoch. Multiple epochs are commonly required for effective learning."
+        },
+        {
+            "id": "batch-epoch-iteration",
+            "title": "2. Batch Size, Iterations, and Epochs",
+            "type": "concept",
+            "content": "These three terms describe different aspects of the training process.\n\nBatch size is the number of training examples processed in one mini-batch. For example, a batch size of 64 means that each batch normally contains 64 examples, except possibly the last batch.\n\nAn iteration is commonly one processing step for a mini-batch. In a standard training loop with one optimizer update per batch, one iteration corresponds to one optimizer update.\n\nAn epoch is one complete pass through all training examples. If a dataset contains 1,000 examples and the batch size is 100, there are 10 batches per epoch when all examples are included.\n\nThe approximate number of batches per epoch is:\n\nnumber_of_batches = ceil(number_of_examples / batch_size)\n\nThe ceiling function rounds up to the next integer. If there are 1,050 examples and the batch size is 100, the final batch contains 50 examples when incomplete batches are retained. This produces 11 batches per epoch.\n\nIf incomplete batches are discarded, the number of batches instead equals floor(number_of_examples / batch_size), and some training examples are omitted during that epoch. Framework settings determine which behavior is used."
+        },
+        {
+            "id": "batch-size-tradeoffs",
+            "title": "3. Choosing a Batch Size",
+            "type": "concept",
+            "content": "Batch size affects memory usage, computational efficiency, gradient variance, and the number of optimizer updates per epoch.\n\nSmall batches use less memory and perform more updates per epoch. Their gradient estimates tend to be noisier, which may affect training dynamics. They can be useful when memory is limited.\n\nLarge batches process more examples per update and may improve hardware utilization. However, they require more memory and result in fewer optimizer updates per epoch. Their gradient estimates are often less noisy, but a large batch is not automatically better.\n\nCommon batch sizes include 16, 32, 64, 128, and 256, but the best choice depends on the model, input size, hardware, optimization method, and dataset.\n\nFor example, training a large image model may require a smaller batch because each image consumes substantial memory. A small tabular dataset may support much larger batches.\n\nBatch size should be treated as a hyperparameter. Evaluate it using validation performance, training stability, runtime, and memory usage rather than choosing it solely because it is a popular value."
+        },
+        {
+            "id": "mini-batch-gradient-math",
+            "title": "4. Mathematical Formulation",
+            "type": "math",
+            "content": "Let B represent a mini-batch containing m examples. Let ℓi(θ) be the loss for example i.\n\nThe average mini-batch loss is:\n\nJ_B(θ) = (1/m) Σ(i in B) ℓi(θ)\n\nThe mini-batch gradient is:\n\n∇J_B(θ) = (1/m) Σ(i in B) ∇ℓi(θ)\n\nThe optimizer then performs an update such as:\n\nθ(new) = θ(old) - η∇J_B(θ(old))\n\nThis is the standard gradient descent update for a mini-batch. Other optimizers may transform or scale the gradient before updating the parameters.\n\nWorked example:\n\nSuppose a mini-batch contains four examples with individual losses 0.2, 0.4, 0.1, and 0.5.\n\nThe average batch loss is:\n\nJ_B = (0.2 + 0.4 + 0.1 + 0.5) / 4 = 0.3\n\nThe average loss summarizes the errors of the four examples. Backpropagation computes the gradient of this batch loss with respect to the model parameters.\n\nIf a framework returns a summed loss instead of an averaged loss, gradient magnitudes may differ. Always understand the loss reduction setting when comparing experiments."
+        },
+        {
+            "id": "shuffling",
+            "title": "5. Why Shuffle Training Data?",
+            "type": "concept",
+            "content": "Shuffling changes the order in which training examples are processed. It helps prevent the optimizer from repeatedly encountering batches with an unrepresentative order.\n\nImagine a dataset sorted by class: the first 1,000 examples belong to class A and the next 1,000 belong to class B. Without shuffling, some batches may contain only class A and others only class B. The resulting sequence of gradients may be less representative of the full dataset.\n\nShuffling before each epoch usually creates more diverse mini-batches. This is particularly useful for supervised learning when the training data has a meaningful original order.\n\nHowever, shuffling is not appropriate for every training setup. In time-series forecasting, randomly mixing observations across time can invalidate the temporal structure or create leakage. Sequence models may also require careful handling of contiguous sequences and state.\n\nA good practice is to shuffle training examples when the task permits it, keep validation and test evaluation separate, and use a reproducible random seed when deterministic experiments are needed."
+        },
+        {
+            "id": "numpy-mini-batches",
+            "title": "6. Creating Mini-Batches with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef make_batches(X, y, batch_size=32, shuffle=True, seed=None):\n    if len(X) != len(y):\n        raise ValueError(\"X and y must contain the same number of examples\")\n    if batch_size <= 0:\n        raise ValueError(\"batch_size must be positive\")\n\n    rng = np.random.default_rng(seed)\n    indices = np.arange(len(X))\n\n    if shuffle:\n        rng.shuffle(indices)\n\n    for start in range(0, len(X), batch_size):\n        batch_indices = indices[start:start + batch_size]\n        yield X[batch_indices], y[batch_indices]\n\n# Create a sample dataset\nX = np.arange(23).reshape(-1, 1)\ny = 2 * X[:, 0] + 1\n\nfor batch_number, (X_batch, y_batch) in enumerate(\n    make_batches(X, y, batch_size=8, shuffle=True, seed=42),\n    start=1\n):\n    print(\n        f\"Batch {batch_number}: \"\n        f\"X shape={X_batch.shape}, \"\n        f\"y shape={y_batch.shape}\"\n    )",
+            "explanation": "The function creates shuffled indices and slices them into batches. Because the range advances by batch_size, the final batch can be smaller than the requested batch size. The same seed makes the generated order reproducible. In real training, the feature and target arrays must remain aligned, so they are indexed using the same batch_indices."
+        },
+        {
+            "id": "mini-batch-training-loop",
+            "title": "7. Training a Linear Model with Mini-Batches",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nrng = np.random.default_rng(7)\nX = rng.normal(size=(1000, 2))\ntrue_w = np.array([2.0, -3.0])\ny = X @ true_w + 1.5 + rng.normal(0, 0.1, size=1000)\n\nw = np.zeros(2)\nb = 0.0\nlearning_rate = 0.05\nbatch_size = 64\nepochs = 30\n\nfor epoch in range(epochs):\n    indices = rng.permutation(len(X))\n    X_shuffled = X[indices]\n    y_shuffled = y[indices]\n\n    for start in range(0, len(X), batch_size):\n        X_batch = X_shuffled[start:start + batch_size]\n        y_batch = y_shuffled[start:start + batch_size]\n\n        predictions = X_batch @ w + b\n        errors = predictions - y_batch\n\n        dw = (2 / len(X_batch)) * (X_batch.T @ errors)\n        db = 2 * np.mean(errors)\n\n        w -= learning_rate * dw\n        b -= learning_rate * db\n\n    full_predictions = X @ w + b\n    full_loss = np.mean((full_predictions - y) ** 2)\n\n    if (epoch + 1) % 5 == 0:\n        print(\n            f\"Epoch {epoch + 1}: \"\n            f\"loss={full_loss:.4f}, \"\n            f\"weights={w}, bias={b:.3f}\"\n        )\n\nprint(\"True weights:\", true_w)\nprint(\"Learned weights:\", w)\nprint(\"True bias: 1.5\")\nprint(\"Learned bias:\", b)",
+            "explanation": "This example generates synthetic regression data and learns a linear model using mini-batch gradient descent. The examples are shuffled each epoch, and one optimizer update is performed for each batch. The final batch may contain fewer than 64 examples, so the gradients are averaged using the actual batch length. Because the target includes noise, the learned parameters should approximate the true values."
+        },
+        {
+            "id": "mini-batch-memory",
+            "title": "8. Memory and Computational Efficiency",
+            "type": "concept",
+            "content": "Neural network training stores intermediate activations and other information needed for backpropagation. Memory consumption therefore depends on the model architecture, batch size, input dimensions, precision, and training framework.\n\nIncreasing batch size usually increases activation memory because more examples are processed together. The relationship is not always perfectly linear because frameworks may use memory optimizations, but batch size is an important memory-control parameter.\n\nVectorization enables matrix operations to process many examples efficiently. For a linear layer, a batch of inputs can be multiplied by a weight matrix in a single operation rather than processing each example in a Python loop.\n\nIf memory is limited, reducing batch size is often the simplest first experiment. Other techniques include mixed-precision training when supported, activation checkpointing for suitable architectures, and gradient accumulation.\n\nGradient accumulation computes gradients across multiple smaller batches before performing an optimizer update. It can approximate the gradient from a larger batch, provided the loss scaling and model behavior are handled correctly. Some layers, including batch normalization, can behave differently because they use statistics from the individual micro-batches."
+        },
+        {
+            "id": "data-leakage",
+            "title": "9. Batch Processing and Data Leakage",
+            "type": "concept",
+            "content": "Mini-batch processing does not eliminate the need for a correct data-splitting strategy. Training, validation, and test datasets serve different purposes.\n\nThe training set is used to compute gradients and update parameters. The validation set helps select hyperparameters, monitor generalization, and make model-selection decisions. The test set is reserved for a final, relatively unbiased assessment of the selected model.\n\nA common mistake is fitting a feature scaler using the complete dataset before splitting it. This allows information from validation or test examples to influence the training procedure. Instead, fit preprocessing transformations on the training data and apply the fitted transformations to validation and test data.\n\nAnother mistake is mixing related observations across splits. For example, if many rows belong to the same patient or customer, splitting rows independently may put related examples in both training and test sets. Group-aware splitting may be needed.\n\nFor time-dependent data, chronological splits may be necessary. Batch shuffling should occur only within the training portion and should respect the task's temporal requirements."
+        },
+        {
+            "id": "batch-training-pitfalls",
+            "title": "10. Common Mistakes",
+            "type": "concept",
+            "content": "Mistake 1: Confusing an epoch with an iteration. One epoch may contain many mini-batch iterations.\n\nMistake 2: Accidentally shuffling features and targets independently. Use the same permutation for both.\n\nMistake 3: Ignoring the last partial batch. Decide whether to keep it or deliberately drop it.\n\nMistake 4: Averaging gradients using the configured batch size even when the final batch is smaller. Use the actual batch length when computing an average over the batch.\n\nMistake 5: Shuffling time-series data without considering temporal dependencies.\n\nMistake 6: Using the test set repeatedly to choose batch sizes or other hyperparameters. Use validation data for model selection.\n\nMistake 7: Assuming a larger batch always produces a better model. Batch size affects memory, optimization dynamics, and generalization.\n\nMistake 8: Forgetting to reset gradients in frameworks that accumulate gradients between backward passes. The appropriate reset operation depends on the framework and training loop."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mb-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A dataset has 1,200 examples and the batch size is 100. How many batches are there in one epoch if incomplete batches are retained?",
+            "correctAnswer": "12 batches.",
+            "solution": "Calculate ceil(1200 / 100) = 12. Each batch contains 100 examples."
+        },
+        {
+            "id": "mb-exercise-2",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A dataset has 1,050 examples and the batch size is 100. How many batches are required if the final incomplete batch is retained, and how many examples are in that final batch?",
+            "correctAnswer": "11 batches, with 50 examples in the final batch.",
+            "solution": "Ten full batches contain 1,000 examples. The remaining 50 examples form an eleventh batch."
+        },
+        {
+            "id": "mb-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can mini-batch training be more computationally practical than processing a very large dataset in one batch?",
+            "correctAnswer": "It limits the amount of data processed at once, reduces per-update memory requirements, and enables frequent parameter updates.",
+            "solution": "Processing the full dataset in one update can require substantial memory and computation. Mini-batches provide smaller gradient calculations and allow training on datasets that may not fit into memory as one batch."
+        },
+        {
+            "id": "mb-exercise-4",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "A programmer shuffles X and y independently before creating mini-batches. What is wrong with this procedure?",
+            "correctAnswer": "Features and labels may no longer correspond to the same examples.",
+            "solution": "Generate one permutation of example indices and apply it to both X and y. This preserves feature-label alignment."
+        },
+        {
+            "id": "mb-exercise-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Should a time-series forecasting dataset always be randomly shuffled before training?",
+            "correctAnswer": "No. Shuffling may violate temporal structure or create leakage, so it depends on the sequence and forecasting setup.",
+            "solution": "Time-series forecasting often requires chronological validation and test splits. Randomly mixing observations can allow future information to influence training or evaluation."
+        },
+        {
+            "id": "mb-exercise-6",
+            "type": "programming",
+            "difficulty": "advanced",
+            "question": "Modify the mini-batch generator to process 1,003 examples with batch_size=128. How many batches will it produce if the final incomplete batch is retained?",
+            "correctAnswer": "8 batches: seven batches of 128 and one batch of 107.",
+            "solution": "Seven full batches contain 7 × 128 = 896 examples. The remaining 1,003 - 896 = 107 examples form the eighth batch."
+        }
+    ],
+    "summary": "Mini-batch training processes a subset of examples per optimizer update. Batch size controls how many examples are processed together, iterations count processing or update steps, and an epoch represents one complete pass through the training dataset. Shuffling can improve batch diversity when appropriate, while careful data splitting prevents leakage. The best batch size balances memory, hardware efficiency, optimization behavior, and validation performance.",
+    "relatedTopics": [
+        "gradient-descent-sgd",
+        "backpropagation",
+        "loss-functions",
+        "weight-initialization",
+        "batch-normalization",
+        "optimizers-momentum-rmsprop-adam"
+    ]
+}

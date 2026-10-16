@@ -1,1 +1,298 @@
-{}
+{
+    "id": "calculus-chain-rule",
+    "title": "Chain Rule",
+    "slug": "chain-rule",
+    "description": "Master the chain rule for composite functions, multivariable functions, and computational graphs, with applications to neural networks and backpropagation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Functions",
+        "Derivatives",
+        "Partial Derivatives",
+        "Gradients",
+        "Jacobians"
+    ],
+    "learningObjectives": [
+        "Identify composite functions.",
+        "Apply the single-variable chain rule.",
+        "Calculate derivatives through multiple nested functions.",
+        "Apply the chain rule to multivariable functions.",
+        "Use Jacobians to express the multivariable chain rule.",
+        "Understand computational graphs and derivative propagation.",
+        "Explain how backpropagation uses the chain rule.",
+        "Implement derivative calculations using Python."
+    ],
+    "sections": [
+        {
+            "id": "chain-rule-introduction",
+            "title": "1. Introduction to the Chain Rule",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The chain rule is used to differentiate composite functions: functions formed by applying one function to the output of another. If y depends on u and u depends on x, then y depends on x through u."
+                },
+                {
+                    "type": "formula",
+                    "label": "Single-variable chain rule",
+                    "value": "If y = f(u) and u = g(x), then dy/dx = (dy/du)(du/dx)"
+                },
+                {
+                    "type": "text",
+                    "value": "The main idea is to multiply the rate of change of the outer function with respect to its input by the rate of change of that input with respect to the original variable."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: A Simple Composite Function",
+                    "problem": "Differentiate y = (3x + 2)².",
+                    "steps": [
+                        "Let u = 3x + 2 and y = u².",
+                        "Differentiate the outer function: dy/du = 2u.",
+                        "Differentiate the inner function: du/dx = 3.",
+                        "Multiply: dy/dx = 2u × 3.",
+                        "Substitute u = 3x + 2."
+                    ],
+                    "solution": "dy/dx = 6(3x + 2) = 18x + 12."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-multiple-functions",
+            "title": "2. Nested Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The chain rule can be applied repeatedly when a function contains multiple nested transformations. Each derivative contributes a factor to the final product."
+                },
+                {
+                    "type": "formula",
+                    "label": "Three nested functions",
+                    "value": "If y = f(u), u = g(v), and v = h(x), then dy/dx = (dy/du)(du/dv)(dv/dx)"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Three Nested Functions",
+                    "problem": "Differentiate y = (2x² + 1)³.",
+                    "steps": [
+                        "Let u = 2x² + 1, so y = u³.",
+                        "Differentiate the outer function: dy/du = 3u².",
+                        "Differentiate the inner function: du/dx = 4x.",
+                        "Multiply the derivatives: dy/dx = 3u² × 4x.",
+                        "Substitute u = 2x² + 1."
+                    ],
+                    "solution": "dy/dx = 12x(2x² + 1)²."
+                },
+                {
+                    "type": "text",
+                    "value": "The chain rule also applies to trigonometric, exponential, logarithmic, and other differentiable functions. For example, differentiating sin(x²) gives cos(x²) × 2x."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-multivariable",
+            "title": "3. Chain Rule for Multivariable Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "In multivariable calculus, a function may depend on several intermediate variables, each of which depends on the original variable. The total derivative accounts for every path through which the original variable affects the output."
+                },
+                {
+                    "type": "formula",
+                    "label": "Multivariable total derivative",
+                    "value": "If z = f(x, y), with x = x(t) and y = y(t), then dz/dt = (∂f/∂x)(dx/dt) + (∂f/∂y)(dy/dt)"
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Total Derivative",
+                    "problem": "Let z = x² + xy, where x = t and y = t². Find dz/dt.",
+                    "steps": [
+                        "Calculate partial derivatives: ∂z/∂x = 2x + y and ∂z/∂y = x.",
+                        "Differentiate the intermediate variables: dx/dt = 1 and dy/dt = 2t.",
+                        "Apply the total derivative: dz/dt = (2x + y)(1) + x(2t).",
+                        "Substitute x = t and y = t²."
+                    ],
+                    "solution": "dz/dt = 2t + t² + 2t² = 2t + 3t²."
+                },
+                {
+                    "type": "text",
+                    "value": "The same result can be verified by substituting x = t and y = t² into the original function: z = t² + t³, whose derivative is 2t + 3t²."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-computational-graphs",
+            "title": "4. Computational Graphs",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A computational graph represents a calculation as a sequence of operations. Each node represents an input, intermediate value, or operation. Edges indicate how values flow from one operation to another."
+                },
+                {
+                    "type": "text",
+                    "value": "For differentiation, a computational graph makes dependencies explicit. Starting from the output, the chain rule propagates derivative information backward through the graph."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: A Computational Graph",
+                    "problem": "Consider y = (x + 1)². Describe the graph and calculate dy/dx.",
+                    "steps": [
+                        "First node: u = x + 1.",
+                        "Second node: y = u².",
+                        "The local derivative at the second node is dy/du = 2u.",
+                        "The local derivative at the first node is du/dx = 1.",
+                        "Multiply the local derivatives: dy/dx = 2u × 1."
+                    ],
+                    "solution": "dy/dx = 2(x + 1)."
+                },
+                {
+                    "type": "text",
+                    "value": "For larger models, a computational graph may contain thousands of operations. Automatic differentiation applies the chain rule systematically without requiring every derivative to be manually derived."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-backpropagation",
+            "title": "5. The Chain Rule in Backpropagation",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Backpropagation calculates derivatives of a neural network's loss with respect to its parameters by applying the chain rule from the output layer toward earlier layers. The resulting gradients are used by an optimizer to update parameters."
+                },
+                {
+                    "type": "formula",
+                    "label": "A simple chain of derivatives",
+                    "value": "dL/dw = (dL/dy)(dy/du)(du/dw)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here w is a parameter, u is an intermediate value, y is a later activation or output, and L is the loss. Each factor describes a local dependency along the computational path."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Gradient Through a Simple Model",
+                    "problem": "Let u = wx, y = u², and L = y. Find dL/dw.",
+                    "steps": [
+                        "Since L = y, dL/dy = 1.",
+                        "Since y = u², dy/du = 2u.",
+                        "Since u = wx, du/dw = x.",
+                        "Apply the chain rule: dL/dw = 1 × 2u × x.",
+                        "Substitute u = wx."
+                    ],
+                    "solution": "dL/dw = 2wx²."
+                },
+                {
+                    "type": "text",
+                    "value": "For a neural network with multiple layers, the same principle is applied repeatedly. Efficient implementations reuse intermediate values and calculate vector-Jacobian products to avoid constructing unnecessarily large derivative matrices."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-python",
+            "title": "6. Chain Rule with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Symbolic Differentiation with SymPy",
+                    "value": "import sympy as sp\n\nx = sp.symbols('x')\ny = (3*x + 2)**2\n\ndy_dx = sp.diff(y, x)\nprint(dy_dx)\nprint(dy_dx.subs(x, 1))"
+                },
+                {
+                    "type": "text",
+                    "value": "SymPy returns 18*x + 12. At x = 1, the derivative equals 30."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Automatic Differentiation with PyTorch",
+                    "value": "import torch\n\nx = torch.tensor(2.0, requires_grad=True)\ny = (3*x + 2)**2\ny.backward()\n\nprint(x.grad.item())"
+                },
+                {
+                    "type": "text",
+                    "value": "At x = 2, the derivative is 18(2) + 12 = 48. PyTorch obtains this result through automatic differentiation."
+                }
+            ]
+        },
+        {
+            "id": "chain-rule-common-mistakes",
+            "title": "7. Common Mistakes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Differentiating only the outer function and forgetting the derivative of the inner function."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Applying the chain rule when the function is not a composition in the assumed form, or failing to identify the intermediate variable."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Omitting one or more dependency paths in a multivariable total derivative."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Multiplying Jacobians in the wrong order. Matrix dimensions and the order of function composition determine the correct product."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Confusing symbolic differentiation with numerical evaluation. A derivative expression may still depend on the input variable until a point is substituted."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "chain-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Differentiate y = (2x + 5)³.",
+            "correctAnswer": "dy/dx = 6(2x + 5)²",
+            "solution": "The outer derivative is 3(2x + 5)² and the inner derivative is 2. Their product is 6(2x + 5)²."
+        },
+        {
+            "id": "chain-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Differentiate y = sin(x²).",
+            "correctAnswer": "dy/dx = 2x cos(x²)",
+            "solution": "Differentiate the outer sine function to get cos(x²), then multiply by the inner derivative 2x."
+        },
+        {
+            "id": "chain-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Let z = x² + y², where x = t and y = 3t. Find dz/dt.",
+            "correctAnswer": "20t",
+            "solution": "Use dz/dt = 2x(dx/dt) + 2y(dy/dt). Substitute x = t, dx/dt = 1, y = 3t, and dy/dt = 3. The result is 2t + 18t = 20t."
+        },
+        {
+            "id": "chain-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Let u = wx and L = u². Find dL/dw.",
+            "correctAnswer": "2w x²",
+            "solution": "The chain rule gives dL/dw = (dL/du)(du/dw) = 2u × x. Substitute u = wx to obtain 2wx²."
+        },
+        {
+            "id": "chain-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is the chain rule central to neural network training?",
+            "correctAnswer": "It allows gradients of the loss to be propagated through composed layers to calculate derivatives with respect to earlier parameters.",
+            "solution": "A neural network is a composition of functions. The chain rule combines the local derivatives of these functions to obtain the loss derivative with respect to each parameter. Backpropagation implements this efficiently."
+        }
+    ],
+    "summary": [
+        "The chain rule differentiates composite functions by multiplying derivatives along a dependency path.",
+        "Nested functions require repeated application of the chain rule.",
+        "For multivariable functions, the total derivative includes every relevant dependency path.",
+        "The multivariable chain rule can be expressed as a product of Jacobian matrices.",
+        "Backpropagation applies the chain rule to compute neural network parameter gradients.",
+        "SymPy and PyTorch can calculate derivatives symbolically or through automatic differentiation."
+    ],
+    "relatedTopics": [
+        "derivatives",
+        "partial-derivatives",
+        "gradients",
+        "jacobians",
+        "optimization"
+    ]
+}

@@ -1,1 +1,342 @@
-{}
+{
+    "id": "calculus-derivatives",
+    "title": "Derivatives",
+    "slug": "derivatives",
+    "description": "Develop a rigorous understanding of derivatives, instantaneous rates of change, tangent slopes, first principles, and their role in machine learning optimization.",
+    "difficulty": "beginner",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "Functions",
+        "Limits"
+    ],
+    "learningObjectives": [
+        "Explain the meaning of a derivative geometrically and numerically.",
+        "Distinguish average and instantaneous rates of change.",
+        "Derive derivatives using first principles.",
+        "Interpret derivative values as slopes and rates of change.",
+        "Identify points where derivatives may not exist.",
+        "Connect derivatives to loss functions and machine learning."
+    ],
+    "sections": [
+        {
+            "id": "derivative-intuition",
+            "title": "Understanding Derivatives",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "What Is a Derivative?",
+                    "body": "A derivative measures how rapidly a function changes when its input changes. If a function describes distance over time, its derivative represents instantaneous velocity. If a function describes a machine learning loss, its derivative tells us how the loss changes when a model parameter changes."
+                },
+                {
+                    "type": "text",
+                    "title": "Geometric Interpretation",
+                    "body": "The derivative at a point represents the slope of the tangent line to the function's graph at that point, provided the derivative exists. A positive derivative indicates local increase, a negative derivative indicates local decrease, and a zero derivative indicates a horizontal tangent."
+                },
+                {
+                    "type": "formula",
+                    "title": "Common Derivative Notation",
+                    "body": "f'(x), dy/dx, d/dx[f(x)]",
+                    "explanation": "These notations represent the derivative of a function with respect to x."
+                },
+                {
+                    "type": "example",
+                    "title": "Interpreting a Derivative",
+                    "problem": "A car's position is described by s(t) = t^2, where position is measured in meters and time in seconds. What does the derivative represent?",
+                    "solution": [
+                        "The function describes position as time changes.",
+                        "Differentiate s(t) = t^2 to obtain s'(t) = 2t.",
+                        "The derivative gives instantaneous velocity.",
+                        "At t = 3 seconds, the velocity is 2(3) = 6 meters per second."
+                    ],
+                    "answer": "The velocity function is v(t) = 2t, and the velocity at t = 3 is 6 m/s."
+                }
+            ]
+        },
+        {
+            "id": "average-rate-of-change",
+            "title": "Average Rate of Change",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The average rate of change measures how much a function's output changes relative to its input over an interval. Geometrically, it is the slope of the secant line connecting two points on a graph."
+                },
+                {
+                    "type": "formula",
+                    "title": "Average Rate of Change",
+                    "body": "(f(b) - f(a)) / (b - a)",
+                    "explanation": "Here, a and b are distinct input values."
+                },
+                {
+                    "type": "example",
+                    "title": "Calculate an Average Rate",
+                    "problem": "Find the average rate of change of f(x) = x^2 between x = 1 and x = 4.",
+                    "solution": [
+                        "Calculate f(1) = 1.",
+                        "Calculate f(4) = 16.",
+                        "Substitute into the formula: (16 - 1) / (4 - 1).",
+                        "Simplify to obtain 15 / 3."
+                    ],
+                    "answer": "5"
+                }
+            ]
+        },
+        {
+            "id": "instantaneous-rate-of-change",
+            "title": "Instantaneous Rate of Change",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "From Average to Instantaneous Change",
+                    "body": "An instantaneous rate of change describes the behavior of a function at one particular input. It is obtained by allowing the interval between two inputs to approach zero."
+                },
+                {
+                    "type": "formula",
+                    "title": "Derivative as a Limit",
+                    "body": "f'(a) = lim(h -> 0) [f(a + h) - f(a)] / h"
+                },
+                {
+                    "type": "text",
+                    "title": "Why a Limit Is Necessary",
+                    "body": "Directly setting h equal to zero makes the difference quotient undefined. Taking a limit allows us to study what the quotient approaches as h gets arbitrarily close to zero."
+                },
+                {
+                    "type": "example",
+                    "title": "Instantaneous Rate for a Linear Function",
+                    "problem": "Find the instantaneous rate of change of f(x) = 3x + 2.",
+                    "solution": [
+                        "The slope of this linear function is constant.",
+                        "For any two distinct inputs, the output changes by 3 times the input change.",
+                        "Therefore, the derivative is constant at every input."
+                    ],
+                    "answer": "f'(x) = 3"
+                }
+            ]
+        },
+        {
+            "id": "first-principles",
+            "title": "Derivatives from First Principles",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "The First-Principles Method",
+                    "body": "First principles means finding a derivative directly from its limit definition rather than using memorized differentiation rules."
+                },
+                {
+                    "type": "formula",
+                    "title": "Definition",
+                    "body": "f'(x) = lim(h -> 0) [f(x + h) - f(x)] / h"
+                },
+                {
+                    "type": "example",
+                    "title": "Derive the Derivative of x Squared",
+                    "problem": "Find the derivative of f(x) = x^2 using first principles.",
+                    "solution": [
+                        "Start with f'(x) = lim(h -> 0) [(x + h)^2 - x^2] / h.",
+                        "Expand (x + h)^2 to obtain x^2 + 2xh + h^2.",
+                        "Subtract x^2 to obtain 2xh + h^2.",
+                        "Factor out h: h(2x + h).",
+                        "Cancel h for h not equal to zero.",
+                        "Take the limit of 2x + h as h approaches zero."
+                    ],
+                    "answer": "f'(x) = 2x"
+                },
+                {
+                    "type": "example",
+                    "title": "Derive the Derivative of a Constant",
+                    "problem": "Use first principles to differentiate f(x) = 7.",
+                    "solution": [
+                        "Write the difference quotient: [7 - 7] / h.",
+                        "The numerator is zero for every nonzero h.",
+                        "The quotient is zero.",
+                        "Its limit as h approaches zero is also zero."
+                    ],
+                    "answer": "f'(x) = 0"
+                }
+            ]
+        },
+        {
+            "id": "derivative-rules-preview",
+            "title": "Basic Derivative Patterns",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Recognizing Common Derivatives",
+                    "body": "This lesson focuses on understanding derivatives. The complete differentiation rules are covered in the relevant differentiation lesson. These basic patterns help build intuition."
+                },
+                {
+                    "type": "formula",
+                    "title": "Constant and Power Patterns",
+                    "body": "d/dx(c) = 0; d/dx(x^n) = n*x^(n-1)"
+                },
+                {
+                    "type": "example",
+                    "title": "Differentiate a Polynomial",
+                    "problem": "Find the derivative of f(x) = 4x^3 + 2x.",
+                    "solution": [
+                        "The derivative of 4x^3 is 12x^2.",
+                        "The derivative of 2x is 2.",
+                        "Add the results."
+                    ],
+                    "answer": "f'(x) = 12x^2 + 2"
+                }
+            ]
+        },
+        {
+            "id": "derivative-existence",
+            "title": "When Does a Derivative Exist?",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Differentiability",
+                    "body": "A function is differentiable at a point when its derivative exists there as a finite value. Differentiability implies continuity at that point, but continuity alone does not guarantee differentiability."
+                },
+                {
+                    "type": "text",
+                    "title": "Corners and Sharp Points",
+                    "body": "A graph may be continuous but have a sharp corner where its left-hand and right-hand slopes differ. At such a point, the ordinary derivative does not exist."
+                },
+                {
+                    "type": "example",
+                    "title": "Absolute Value",
+                    "problem": "Is f(x) = |x| differentiable at x = 0?",
+                    "solution": [
+                        "To the left of zero, the function has slope -1.",
+                        "To the right of zero, the function has slope 1.",
+                        "The one-sided derivatives are unequal."
+                    ],
+                    "answer": "The function is continuous at zero but is not differentiable there."
+                }
+            ]
+        },
+        {
+            "id": "derivatives-in-machine-learning",
+            "title": "Applications in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Loss Functions",
+                    "body": "A loss function measures how far a model's predictions are from the target values. Its derivative tells us how the loss changes when a parameter changes."
+                },
+                {
+                    "type": "text",
+                    "title": "Optimization Intuition",
+                    "body": "If a loss derivative with respect to a parameter is positive, a small increase in that parameter tends to increase the loss locally. If it is negative, a small increase tends to decrease the loss locally."
+                },
+                {
+                    "type": "formula",
+                    "title": "Gradient Descent in One Dimension",
+                    "body": "theta_new = theta_old - learning_rate * dL/dtheta",
+                    "explanation": "The parameter is updated in the direction opposite to the derivative. This is a local update rule and does not guarantee a global minimum."
+                },
+                {
+                    "type": "example",
+                    "title": "A Simple Optimization Step",
+                    "problem": "Let L(w) = (w - 3)^2. If w = 1 and the learning rate is 0.1, calculate one gradient descent update.",
+                    "solution": [
+                        "Differentiate: dL/dw = 2(w - 3).",
+                        "At w = 1, the derivative is 2(1 - 3) = -4.",
+                        "Update w using w_new = w - 0.1(-4).",
+                        "Simplify the result."
+                    ],
+                    "answer": "w_new = 1.4"
+                },
+                {
+                    "type": "code",
+                    "title": "Numerical Differentiation with Python",
+                    "language": "python",
+                    "body": "def f(x):\n    return x**2\n\ndef numerical_derivative(f, x, h=1e-5):\n    return (f(x + h) - f(x - h)) / (2 * h)\n\nx = 3\nprint(numerical_derivative(f, x))\nprint(2 * x)",
+                    "explanation": "The central difference approximation estimates the derivative using function values on both sides of x. The result should be close to the analytical derivative, which is 2x for this function."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "derivatives-ex-01",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "Find the average rate of change of f(x) = x^2 from x = 2 to x = 5.",
+            "correctAnswer": "7",
+            "solution": "Calculate (25 - 4) / (5 - 2) = 21 / 3 = 7.",
+            "hints": [
+                "Calculate the function value at both endpoints.",
+                "Use the difference quotient."
+            ]
+        },
+        {
+            "id": "derivatives-ex-02",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "Differentiate f(x) = x^4.",
+            "correctAnswer": "4x^3",
+            "solution": "Apply the power rule: multiply by 4 and reduce the exponent to 3.",
+            "hints": [
+                "Bring the exponent to the front.",
+                "Subtract one from the exponent."
+            ]
+        },
+        {
+            "id": "derivatives-ex-03",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "Find the derivative of f(x) = 3x^2 - 5x + 8.",
+            "correctAnswer": "6x - 5",
+            "solution": "Differentiate each term: 6x, -5, and 0.",
+            "hints": [
+                "Differentiate each term independently.",
+                "The derivative of a constant is zero."
+            ]
+        },
+        {
+            "id": "derivatives-ex-04",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "What does the derivative represent geometrically when it exists?",
+            "options": [
+                "The area under the graph",
+                "The slope of the tangent line",
+                "The y-intercept",
+                "The domain of the function"
+            ],
+            "correctAnswer": "The slope of the tangent line",
+            "solution": "The derivative at a point measures the instantaneous slope at that point."
+        },
+        {
+            "id": "derivatives-ex-05",
+            "type": "multiple-choice",
+            "difficulty": "intermediate",
+            "question": "Which statement is correct?",
+            "options": [
+                "Every continuous function is differentiable",
+                "Every differentiable function is continuous",
+                "Every function has a derivative",
+                "A derivative is always positive"
+            ],
+            "correctAnswer": "Every differentiable function is continuous",
+            "solution": "Differentiability implies continuity at the point, but continuity does not necessarily imply differentiability."
+        },
+        {
+            "id": "derivatives-ex-06",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "For L(w) = (w - 4)^2, calculate dL/dw at w = 2.",
+            "correctAnswer": "-4",
+            "solution": "The derivative is 2(w - 4). Substituting w = 2 gives 2(-2) = -4."
+        }
+    ],
+    "summary": [
+        "A derivative measures instantaneous change.",
+        "Geometrically, the derivative is the tangent slope when it exists.",
+        "First principles defines derivatives using limits.",
+        "Differentiability implies continuity, but continuity does not always imply differentiability.",
+        "Derivatives are fundamental to gradient-based optimization in machine learning."
+    ],
+    "relatedTopics": [
+        "Limits",
+        "Partial Derivatives",
+        "Gradients",
+        "Chain Rule",
+        "Optimization"
+    ]
+}

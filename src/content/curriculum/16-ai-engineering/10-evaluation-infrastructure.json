@@ -1,1 +1,164 @@
-{}
+{
+    "id": "module-16-ai-engineering-evaluation-infrastructure",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 10,
+    "title": "Evaluation Infrastructure & Benchmarking",
+    "slug": "evaluation-infrastructure",
+    "href": "/curriculum/16-ai-engineering/evaluation-infrastructure",
+    "filePath": "content/curriculum/16-ai-engineering/10-evaluation-infrastructure.json",
+    "description": "Build reliable evaluation systems for machine learning by designing test suites, measuring task quality and inference performance, preventing data leakage, and producing reproducible benchmark reports.",
+    "difficulty": "advanced",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "pytorch",
+        "experiment-tracking",
+        "model-serving",
+        "quantization-optimization"
+    ],
+    "learningObjectives": [
+        "Distinguish training, validation, test, and production evaluation.",
+        "Design evaluation datasets and metrics that reflect the intended task.",
+        "Implement reproducible model evaluation in PyTorch.",
+        "Measure latency, throughput, memory use, and model quality.",
+        "Understand confidence intervals, variation, and statistical uncertainty.",
+        "Prevent data leakage and benchmark contamination.",
+        "Design regression tests and model acceptance gates.",
+        "Create benchmark reports that support deployment decisions."
+    ],
+    "sections": [
+        {
+            "id": "evaluation-purpose",
+            "title": "1. Why Evaluation Infrastructure Matters",
+            "type": "concept",
+            "content": "A trained model is not ready for deployment simply because its training loss decreases. Evaluation measures how well the model performs on data and conditions relevant to its intended use. A reliable evaluation system makes comparisons repeatable, identifies regressions, measures operational constraints, and provides evidence for release decisions. The system should define the evaluation dataset, preprocessing, metric implementation, aggregation rules, runtime environment, and acceptance thresholds. Model quality and system performance are related but distinct: a model can be accurate yet too slow or expensive for its intended application.",
+            "example": "A deployment candidate may need to meet a minimum recall threshold, a maximum p95 latency, and a maximum memory budget before it can be released."
+        },
+        {
+            "id": "dataset-splits",
+            "title": "2. Training, Validation, and Test Sets",
+            "type": "concept",
+            "content": "Training data is used to optimize model parameters. Validation data supports model selection, hyperparameter tuning, and decisions such as early stopping. Test data is reserved for final evaluation after the main development choices have been made. Repeatedly choosing models based on test-set results leaks information from the test set into the development process. Dataset splits should reflect the deployment setting. Time-dependent data may require chronological splits, while data containing repeated users or related documents may require grouping to prevent near-duplicate examples from crossing split boundaries.",
+            "example": "For a time-series forecasting model, randomly mixing future and past observations can produce unrealistically optimistic results. A chronological split more closely matches the actual forecasting task."
+        },
+        {
+            "id": "metric-selection",
+            "title": "3. Choosing the Right Metrics",
+            "type": "concept",
+            "content": "Metric selection depends on the task, class distribution, error costs, and intended use. Classification can use accuracy, precision, recall, F1, ROC-AUC, or precision-recall AUC. Regression can use MAE, MSE, or RMSE. Ranking tasks may use NDCG or mean reciprocal rank. Generative tasks often require several complementary metrics and may also require structured human evaluation. A metric should be defined precisely, including threshold selection, averaging method, treatment of missing labels, and handling of class imbalance. Optimizing one aggregate score can hide serious failures in a particular subgroup or class.",
+            "formula": "Precision = TP / (TP + FP); Recall = TP / (TP + FN); F1 = 2 × Precision × Recall / (Precision + Recall).",
+            "example": "A classifier can have high accuracy on an imbalanced dataset while missing most positive cases. Recall and precision help expose this failure."
+        },
+        {
+            "id": "classification-evaluation",
+            "title": "4. Implementing Classification Metrics",
+            "type": "code",
+            "language": "python",
+            "content": "Evaluation should disable gradient tracking, switch the model into evaluation mode, and aggregate predictions across the complete evaluation dataset. This example calculates accuracy, precision, recall, and F1 for a multiclass classifier using scikit-learn. It assumes each target is a single class index and that the model returns logits.",
+            "code": "import torch\nfrom sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix\n\ndef evaluate_classifier(model, loader, device):\n    model.eval()\n    all_predictions, all_targets = [], []\n    with torch.inference_mode():\n        for inputs, targets in loader:\n            inputs, targets = inputs.to(device), targets.to(device)\n            logits = model(inputs)\n            predictions = logits.argmax(dim=-1)\n            all_predictions.extend(predictions.cpu().tolist())\n            all_targets.extend(targets.cpu().tolist())\n\n    accuracy = accuracy_score(all_targets, all_predictions)\n    precision, recall, f1, _ = precision_recall_fscore_support(all_targets, all_predictions, average=\"macro\", zero_division=0)\n    matrix = confusion_matrix(all_targets, all_predictions)\n    return {\"accuracy\": accuracy, \"macro_precision\": precision, \"macro_recall\": recall, \"macro_f1\": f1, \"confusion_matrix\": matrix.tolist()}",
+            "explanation": "Macro averaging gives each class equal weight, which can be useful for imbalanced classification. The confusion matrix helps inspect class-specific errors. The example assumes a non-empty loader and class-index targets. For multilabel tasks, probability-based metrics, or threshold-dependent decisions, use an evaluation function designed for those task definitions."
+        },
+        {
+            "id": "data-leakage",
+            "title": "5. Preventing Data Leakage",
+            "type": "concept",
+            "content": "Data leakage occurs when information unavailable at the intended prediction time influences training or evaluation. Examples include fitting normalization on the complete dataset before splitting, allowing records from the same person into training and test sets, using future information for forecasting, or tuning repeatedly against a held-out test set. Leakage can make a model appear much stronger than it will be in deployment. Build preprocessing pipelines so learned transformations are fitted on training data and then applied to validation and test data without refitting. Document split logic and run duplicate or overlap checks where appropriate.",
+            "example": "A feature computed using the final outcome of an event cannot be used to predict that outcome before it happens. Even if the feature is highly predictive, it is unavailable at inference time and creates leakage."
+        },
+        {
+            "id": "performance-benchmarking",
+            "title": "6. Benchmarking Inference Performance",
+            "type": "concept",
+            "content": "A serving benchmark should measure more than average inference time. Important metrics include cold-start latency, warmed latency, p50/p95/p99 latency, requests per second, memory use, and behavior under concurrency. Use representative inputs and batch sizes, warm up the runtime, synchronize asynchronous accelerator work when timing it, and repeat measurements. A microbenchmark measures a narrow operation, while an end-to-end benchmark includes preprocessing, model execution, postprocessing, and serialization. Both are useful, but only the end-to-end result captures the full request path.",
+            "example": "A model may execute in 8 milliseconds, but the complete API request may take 35 milliseconds after validation, tokenization, queueing, and response serialization."
+        },
+        {
+            "id": "latency-statistics",
+            "title": "7. Latency Distributions and Percentiles",
+            "type": "math",
+            "content": "Request latency varies because of scheduling, input size, concurrency, caching, and resource contention. The mean can hide a long tail of slow requests. Percentiles summarize the latency below which a given fraction of observations falls. p50 is the median; p95 means approximately 95% of measured requests completed at or below that latency. Tail latency matters for interactive applications and service-level objectives. Report the number of requests, workload mix, concurrency, warm-up procedure, and percentile calculation method alongside results.",
+            "formula": "p95 latency = the 95th percentile of the measured request-latency distribution.",
+            "example": "If p50 latency is 40 ms and p95 latency is 180 ms, the typical request is much faster than the slowest 5% of requests. The tail may indicate queueing, large inputs, or resource contention."
+        },
+        {
+            "id": "statistical-uncertainty",
+            "title": "8. Statistical Uncertainty and Confidence Intervals",
+            "type": "concept",
+            "content": "Measured model quality and performance can vary because of sample selection, random seeds, hardware scheduling, and other sources of uncertainty. Reporting only one score can make small differences appear more meaningful than they are. Confidence intervals quantify uncertainty under a specified statistical procedure and set of assumptions. For independent observations, a normal approximation may be useful for some metrics, while bootstrap methods can estimate intervals for more complex metrics. Ensure the sampling unit is appropriate: repeated measurements from the same user or sequence may not be independent. Statistical significance alone does not establish practical importance.",
+            "formula": "Approximate 95% confidence interval for a mean: sample mean ± 1.96 × (sample standard deviation / sqrt(n)), under suitable assumptions.",
+            "example": "When comparing two models with scores that differ by only 0.2 percentage points, evaluate the variability and uncertainty before concluding that the improvement is reliable."
+        },
+        {
+            "id": "robustness-and-slices",
+            "title": "9. Robustness and Subgroup Evaluation",
+            "type": "concept",
+            "content": "Aggregate metrics can conceal weaknesses on specific data subsets. Slice-based evaluation examines performance by relevant characteristics such as input length, language, class, source, device, or data quality. Robustness tests may include corrupted inputs, distribution shifts, missing features, and boundary cases. Subgroup analysis should be based on a meaningful evaluation plan and adequate sample sizes. When evaluation involves people or sensitive attributes, use appropriate governance and privacy safeguards. A model should not be approved solely because its aggregate metric passes if critical failure modes remain unresolved.",
+            "example": "A text classifier may achieve high overall accuracy while performing poorly on very short messages or a particular language. Separate slice metrics can reveal the issue."
+        },
+        {
+            "id": "regression-tests",
+            "title": "10. Evaluation as a Regression Test",
+            "type": "concept",
+            "content": "Evaluation infrastructure can run automatically whenever model code, data, dependencies, or configurations change. Small smoke tests verify that the model loads, produces finite outputs, and respects input and output shapes. Larger regression suites compare task metrics and performance against a known baseline. Acceptance thresholds should account for noise and expected variation rather than failing on every tiny difference. Test cases should include normal inputs, edge cases, malformed inputs, and known failure modes. Store benchmark configuration and baseline artifacts so that changes can be reviewed consistently.",
+            "example": "A release gate can reject a candidate if macro F1 drops beyond an approved tolerance, p95 latency exceeds the service target, or the model produces non-finite predictions."
+        },
+        {
+            "id": "benchmark-reports",
+            "title": "11. Producing Reproducible Benchmark Reports",
+            "type": "concept",
+            "content": "A benchmark report should allow another engineer to understand and reproduce the result. Include the model identifier, checkpoint hash, dataset version, evaluation code revision, preprocessing, metric definitions, hardware, software versions, batch size, concurrency, warm-up protocol, and measurement duration. Present both quality and operational metrics, and explain any limitations. Keep raw measurements or sufficient summaries so that percentiles and uncertainty can be re-examined. Avoid comparing numbers produced under materially different conditions without explicitly describing the differences.",
+            "example": "A report comparing FP32 and quantized inference should show task metrics, artifact size, peak memory, latency percentiles, throughput, hardware, and the exact evaluation dataset and software versions."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "evaluation-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between validation data and test data?",
+            "correctAnswer": "Validation data supports model selection and tuning; test data is reserved for final evaluation after development decisions are made.",
+            "solution": "Repeatedly using the test set to choose hyperparameters leaks information from that set into development and makes the final estimate less trustworthy."
+        },
+        {
+            "id": "evaluation-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A classifier has 80 true positives, 20 false positives, and 40 false negatives. Calculate precision, recall, and F1.",
+            "correctAnswer": "Precision = 0.80; recall ≈ 0.667; F1 ≈ 0.727.",
+            "solution": "Precision = 80 / (80 + 20) = 0.8. Recall = 80 / (80 + 40) = 0.667. F1 = 2 × 0.8 × 0.667 / (0.8 + 0.667) ≈ 0.727."
+        },
+        {
+            "id": "evaluation-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why should a benchmark report p95 latency instead of only average latency?",
+            "correctAnswer": "p95 reveals tail latency and the experience of slower requests that an average can hide.",
+            "solution": "A small fraction of very slow requests can substantially affect interactive service quality even when the mean appears acceptable. Percentiles help characterize that variation."
+        },
+        {
+            "id": "evaluation-ex-4",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A new model improves accuracy but doubles p95 latency and performs worse on one important data subgroup. How should the release decision be made?",
+            "correctAnswer": "Evaluate the predefined quality, subgroup, latency, and resource acceptance criteria before approving deployment.",
+            "solution": "The aggregate accuracy gain is not sufficient by itself. Investigate the subgroup regression, assess whether the latency target is violated, and compare trade-offs against the application's requirements. Consider mitigation or rejection if critical acceptance criteria are not met."
+        },
+        {
+            "id": "evaluation-ex-5",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "List the information needed to make an inference benchmark reproducible.",
+            "correctAnswer": "Model and checkpoint identity, dataset version, evaluation code, hardware and software versions, preprocessing, workload settings, and measurement protocol.",
+            "solution": "Also record batch size, concurrency, warm-up, number of requests, metric definitions, random seeds where applicable, and raw measurements or summary statistics."
+        }
+    ],
+    "summary": "Reliable evaluation infrastructure measures model quality, robustness, and operational performance using controlled and reproducible procedures. Correct dataset separation prevents leakage, task-appropriate metrics expose important failure modes, and latency percentiles characterize serving behavior. Automated regression tests and complete benchmark reports turn evaluation into a repeatable release decision rather than a one-time experiment.",
+    "relatedTopics": [
+        "pytorch",
+        "experiment-tracking",
+        "model-serving",
+        "quantization-optimization",
+        "mixed-precision",
+        "distributed-training"
+    ]
+}

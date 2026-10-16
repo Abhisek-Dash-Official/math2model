@@ -1,1 +1,359 @@
-{}
+{
+    "id": "module-13-computer-vision-object-detection",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 4,
+    "title": "Object Detection (YOLO, Faster R-CNN)",
+    "slug": "object-detection",
+    "href": "/curriculum/13-computer-vision/object-detection",
+    "filePath": "content/curriculum/13-computer-vision/04-object-detection.json",
+    "description": "Understand object detection as a joint localization and classification problem, from anchor-based detectors and region proposals to modern one-stage architectures such as YOLO.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "cnns",
+        "image-embeddings"
+    ],
+    "learningObjectives": [
+        "Distinguish image classification, localization, and object detection.",
+        "Represent bounding boxes using common coordinate conventions.",
+        "Understand intersection over union and its role in evaluating detections.",
+        "Explain anchor boxes, region proposals, and region-based detectors.",
+        "Compare one-stage and two-stage detection architectures.",
+        "Understand the major components of YOLO-style detectors.",
+        "Apply confidence filtering and non-maximum suppression.",
+        "Evaluate object detectors using precision, recall, average precision, and mean average precision.",
+        "Recognize class imbalance, localization errors, and small-object detection challenges.",
+        "Build a practical inference pipeline using a pretrained detector."
+    ],
+    "sections": [
+        {
+            "id": "detection-problem",
+            "title": "From Classification to Object Detection",
+            "type": "concept",
+            "content": "Image classification assigns labels to an entire image. Localization predicts where one principal object is located, while object detection identifies multiple objects and predicts a class and bounding box for each instance. An image containing two people, a bicycle, and a traffic light may therefore produce four detections. A detector must solve several related problems: determine whether an object exists, identify its category, estimate its position, and distinguish it from nearby instances. The output is a variable-length collection of predictions rather than a single fixed-size class vector. Detection is useful in autonomous systems, manufacturing inspection, wildlife monitoring, medical image analysis, robotics, and video understanding. The task is harder than classification because the model must reason about object identity and spatial extent simultaneously."
+        },
+        {
+            "id": "detection-output",
+            "title": "Structure of a Detection",
+            "type": "concept",
+            "content": "A detection commonly contains a bounding box, a class label, and a confidence score. The box describes the estimated extent of an object, the label identifies its category, and the score estimates how strongly the model supports the prediction. Some detectors output separate objectness and class probabilities; others produce class scores directly. A model may generate thousands of candidate boxes, even though an image contains only a few objects. Post-processing filters these candidates into a useful final set. Keep the distinction between a model's raw output and its final detections clear: confidence thresholding and non-maximum suppression can substantially change the results without changing the model weights."
+        },
+        {
+            "id": "box-representations",
+            "title": "Bounding-Box Representations",
+            "type": "concept",
+            "content": "The most common bounding-box representations are corner coordinates (x_min, y_min, x_max, y_max) and center coordinates with dimensions (x_center, y_center, width, height). Corner coordinates are convenient for cropping, intersection calculations, and visualization. Center-based coordinates are common in neural-network training targets and detector outputs. Coordinates may be expressed in pixels or normalized relative to image width and height. Pixel coordinates depend on image dimensions; normalized coordinates generally lie between zero and one when the box is inside the image. Dataset pipelines must use one convention consistently. Resizing, cropping, padding, and horizontal flipping all require corresponding transformations of bounding boxes. A model can predict plausible-looking boxes but still perform poorly if training targets use a different coordinate convention."
+        },
+        {
+            "id": "box-conversion",
+            "title": "Converting Bounding Boxes",
+            "type": "math",
+            "content": "For a box represented by corners (x1, y1, x2, y2), its width is x2 - x1 and its height is y2 - y1. Its center is ((x1 + x2) / 2, (y1 + y2) / 2). Conversely, given center (cx, cy), width w, and height h, the corners are (cx - w/2, cy - h/2, cx + w/2, cy + h/2). Valid boxes should have positive width and height. When boxes are normalized, divide horizontal coordinates and widths by image width and vertical coordinates and heights by image height. Be careful with the order of dimensions: image arrays often use height before width, while geometric coordinates use x before y.",
+            "formula": "cx = (x1 + x2) / 2; cy = (y1 + y2) / 2; w = x2 - x1; h = y2 - y1",
+            "example": "For corners (20, 10, 80, 50), the center is (50, 30), the width is 60, and the height is 40. For an image of width 100 and height 100, the normalized center is (0.5, 0.3) and normalized dimensions are (0.6, 0.4)."
+        },
+        {
+            "id": "box-geometry-code",
+            "title": "Bounding-Box Conversion in Python",
+            "type": "code",
+            "language": "python",
+            "content": "def xyxy_to_xywh(box):\n    x1, y1, x2, y2 = box\n    if x2 <= x1 or y2 <= y1:\n        raise ValueError(\"Bounding box must have positive area\")\n    return ((x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1)\n\ndef xywh_to_xyxy(box):\n    cx, cy, w, h = box\n    if w <= 0 or h <= 0:\n        raise ValueError(\"Width and height must be positive\")\n    return (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)\n\nbox = (20, 10, 80, 50)\ncenter_box = xyxy_to_xywh(box)\nassert xywh_to_xyxy(center_box) == box",
+            "explanation": "These helpers convert between corner and center-based representations. Real pipelines should also clip boxes to image boundaries where appropriate, track whether coordinates are normalized, and preserve floating-point precision until final visualization or export."
+        },
+        {
+            "id": "iou",
+            "title": "Intersection over Union",
+            "type": "math",
+            "content": "Intersection over Union (IoU) measures overlap between a predicted box and a ground-truth box. It is the area of their intersection divided by the area of their union. IoU equals one for identical boxes and zero for boxes that do not overlap. For partially overlapping boxes, the value lies between zero and one. IoU is used to measure localization quality, determine whether a detection matches a ground-truth object, and decide whether two predicted boxes are duplicates during non-maximum suppression. IoU does not directly measure classification correctness. A perfectly localized box with the wrong class is not a correct class-specific detection.",
+            "formula": "IoU = Area(B_pred ∩ B_true) / Area(B_pred ∪ B_true)",
+            "example": "Suppose the predicted box has area 100, the ground-truth box has area 80, and their intersection has area 60. Their union has area 100 + 80 - 60 = 120, so IoU = 60 / 120 = 0.5."
+        },
+        {
+            "id": "iou-code",
+            "title": "Computing IoU",
+            "type": "code",
+            "language": "python",
+            "content": "def box_area(box):\n    x1, y1, x2, y2 = box\n    return max(0.0, x2 - x1) * max(0.0, y2 - y1)\n\ndef iou(box_a, box_b):\n    ax1, ay1, ax2, ay2 = box_a\n    bx1, by1, bx2, by2 = box_b\n    ix1, iy1 = max(ax1, bx1), max(ay1, by1)\n    ix2, iy2 = min(ax2, bx2), min(ay2, by2)\n    intersection = box_area((ix1, iy1, ix2, iy2))\n    union = box_area(box_a) + box_area(box_b) - intersection\n    return intersection / union if union > 0 else 0.0\n\nassert abs(iou((0, 0, 10, 10), (5, 0, 15, 10)) - 1 / 3) < 1e-8",
+            "explanation": "The implementation calculates the intersection rectangle and divides its area by the union area. It handles non-overlapping boxes and degenerate inputs safely. Production evaluation should use the exact coordinate conventions and matching rules defined by the selected benchmark."
+        },
+        {
+            "id": "detector-families",
+            "title": "One-Stage and Two-Stage Detectors",
+            "type": "concept",
+            "content": "Two-stage detectors first generate candidate regions and then classify and refine them. Region-based CNN systems follow this general pattern. They often provide strong localization accuracy but can have more complex pipelines and higher inference latency. One-stage detectors predict object classes and box coordinates directly from dense feature maps. YOLO-style detectors are prominent examples. They are often selected when throughput and low latency matter, such as real-time video analysis. The distinction is architectural rather than an absolute ranking of quality: modern systems vary in accuracy, speed, memory use, and implementation complexity. Comparisons should use the same image resolution, hardware, preprocessing, and evaluation protocol."
+        },
+        {
+            "id": "r-cnn-history",
+            "title": "From R-CNN to Faster R-CNN",
+            "type": "concept",
+            "content": "The original R-CNN pipeline proposed candidate regions, extracted CNN features for each region, and classified them. It improved detection quality but required expensive repeated feature extraction. Fast R-CNN shared convolutional features across the image and used region-of-interest pooling to produce region features. Faster R-CNN introduced a Region Proposal Network (RPN) that shares backbone features and predicts candidate object regions. The proposals are refined and classified by a second-stage detection head. This integration made region proposal generation substantially more efficient. The architecture remains an important example of how candidate generation, feature sharing, and refinement can be combined in a detector."
+        },
+        {
+            "id": "region-proposals",
+            "title": "Region Proposal Networks and RoI Features",
+            "type": "concept",
+            "content": "A Region Proposal Network examines a convolutional feature map and predicts candidate boxes at spatial locations. Traditional anchor-based implementations evaluate predefined box shapes and scales at each location. The network predicts whether each anchor corresponds to an object and how its coordinates should change. High-quality proposals are passed to the detection head. Because proposals have different sizes, region-of-interest pooling or RoI Align converts each selected region into a fixed-size feature representation. RoI Align uses more precise spatial sampling than quantized pooling, which is important for accurate localization. Proposals are not final detections: the second stage still estimates class probabilities and refines boxes."
+        },
+        {
+            "id": "anchor-boxes",
+            "title": "Anchor Boxes and Box Regression",
+            "type": "concept",
+            "content": "Anchor boxes are predefined reference rectangles with different sizes and aspect ratios. A detector predicts offsets that transform these references into object boxes. Anchors can provide useful geometric priors, but they introduce design choices involving scales, aspect ratios, assignment thresholds, and the number of candidates. If anchors poorly match the objects in a dataset, training may become less efficient. Anchor-free detectors instead predict centers, distances to box boundaries, or other geometric representations without requiring the same predefined anchor set. Neither design is universally superior; performance depends on architecture, data, training, and implementation."
+        },
+        {
+            "id": "anchor-regression-math",
+            "title": "Bounding-Box Regression Targets",
+            "type": "math",
+            "content": "A common parameterization expresses the target box relative to an anchor. Let the anchor center and dimensions be (xa, ya, wa, ha), and the target box be (x, y, w, h). The center offsets are normalized by anchor dimensions, while scale offsets use logarithms. This parameterization makes coordinate changes relative to the reference box and allows positive and negative scale changes to be represented symmetrically. Implementations differ in normalization constants, clipping, and exact parameterization, so training targets must match the detector's decoding procedure.",
+            "formula": "tx = (x - xa) / wa; ty = (y - ya) / ha; tw = log(w / wa); th = log(h / ha)",
+            "example": "If an anchor has width 40 and the target has width 80, the width target is log(80/40) = log(2). Decoding exponentiates the predicted width offset and multiplies it by the anchor width."
+        },
+        {
+            "id": "yolo-overview",
+            "title": "YOLO-Style Object Detection",
+            "type": "concept",
+            "content": "YOLO stands for You Only Look Once and refers to a family of detectors designed to predict detections efficiently from image features in a unified forward pass. Across versions, the family has evolved in backbone design, feature pyramids, prediction heads, assignment strategies, losses, and post-processing. Many modern YOLO-style systems use a backbone to extract features, a neck to combine information across resolutions, and a detection head to predict boxes and classes. Some variants are anchor-based; others are anchor-free. The name alone does not specify the exact architecture or training recipe, so practical work should identify the implementation and version being used."
+        },
+        {
+            "id": "yolo-components",
+            "title": "Backbone, Neck, and Detection Head",
+            "type": "concept",
+            "content": "The backbone transforms pixels into feature maps. Early layers capture local edges and textures, while deeper layers represent increasingly abstract patterns. The neck combines features from different stages to improve detection across object sizes. Feature pyramid networks and path aggregation designs are examples of multiscale feature fusion. The detection head converts these features into box coordinates and class predictions. Some models predict at several spatial resolutions so small and large objects can be handled at appropriate scales. The backbone, neck, and head are useful conceptual components even when a specific implementation fuses or renames them."
+        },
+        {
+            "id": "multiscale",
+            "title": "Multiscale Detection",
+            "type": "concept",
+            "content": "Objects vary greatly in apparent size. A small pedestrian may occupy only a few pixels, while a nearby vehicle fills much of the image. Feature pyramids combine high-resolution maps that retain spatial detail with lower-resolution maps that contain richer semantic information. Higher-resolution feature maps provide more candidate locations but consume more memory and computation. Increasing input resolution can improve small-object detection, but it does not guarantee better results if the training data lacks appropriate examples or the architecture loses detail too early. Evaluate performance separately by object size when possible."
+        },
+        {
+            "id": "detection-losses",
+            "title": "Loss Functions for Detection",
+            "type": "concept",
+            "content": "Detection training combines several objectives. Classification loss encourages correct category predictions. Localization loss encourages predicted boxes to align with ground-truth boxes. Objectness or foreground-background loss may be present depending on the architecture. Common localization losses include smooth L1 and IoU-based losses such as generalized IoU, distance IoU, and complete IoU. IoU-based objectives directly reflect geometric overlap and can provide useful gradients when boxes are not identical. The total loss is a weighted combination of components, and its balance affects optimization. Loss names and weights are architecture-specific; avoid transferring settings between implementations without checking their definitions."
+        },
+        {
+            "id": "giou",
+            "title": "IoU-Based Localization Losses",
+            "type": "math",
+            "content": "Plain IoU can provide limited useful gradient information when predicted and target boxes do not overlap. Generalized IoU adds a penalty based on the smallest enclosing box. This encourages boxes to move toward each other even when their intersection is zero. Distance IoU additionally considers the distance between box centers, while Complete IoU also accounts for aspect-ratio consistency. These variants emphasize different geometric properties and should be evaluated in the context of the detector's training procedure.",
+            "formula": "GIoU = IoU - (|C| - |A ∪ B|) / |C|; L_GIoU = 1 - GIoU",
+            "example": "C is the smallest enclosing rectangle containing both boxes. If two boxes do not overlap, IoU is zero, but the enclosing-area penalty can still distinguish how far apart their geometry is."
+        },
+        {
+            "id": "nms",
+            "title": "Non-Maximum Suppression",
+            "type": "concept",
+            "content": "Dense detectors may predict multiple boxes around the same object. Non-maximum suppression (NMS) sorts candidate detections by confidence, keeps a high-confidence box, and suppresses lower-confidence boxes that overlap it too strongly. The process repeats until candidates are exhausted or a maximum number of detections is reached. Class-aware NMS performs suppression separately for each class; class-agnostic NMS compares boxes across classes. NMS reduces duplicate predictions, but aggressive thresholds can remove nearby distinct objects. Soft-NMS reduces scores instead of always deleting overlapping boxes. Some modern detectors use alternative assignment and post-processing methods."
+        },
+        {
+            "id": "nms-pseudocode",
+            "title": "Understanding NMS",
+            "type": "concept",
+            "content": "A simplified NMS procedure begins with all boxes above a confidence threshold. Select the highest-scoring remaining box and add it to the output. Compute IoU between that box and all remaining candidates. Suppress candidates whose overlap exceeds the chosen threshold, then repeat. A lower IoU threshold suppresses more overlapping boxes; a higher threshold retains more candidates. NMS depends on both geometry and confidence, so it should not be confused with the model's learned classification or localization stage. In crowded scenes, standard NMS can suppress legitimate detections when separate objects overlap."
+        },
+        {
+            "id": "nms-code",
+            "title": "A Simple NMS Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "def nms(boxes, scores, threshold=0.5):\n    order = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)\n    kept = []\n    while order:\n        best = order.pop(0)\n        kept.append(best)\n        order = [i for i in order if iou(boxes[best], boxes[i]) <= threshold]\n    return kept\n\nboxes = [(0, 0, 10, 10), (1, 1, 11, 11), (20, 20, 30, 30)]\nscores = [0.95, 0.80, 0.70]\nprint(nms(boxes, scores, threshold=0.5))",
+            "explanation": "This educational implementation demonstrates the selection procedure and uses the IoU function defined earlier. A production implementation should use vectorized operations, handle classes, confidence filtering, maximum output counts, and efficient tensor operations. It may also need to support batched images and device-specific execution."
+        },
+        {
+            "id": "confidence-threshold",
+            "title": "Confidence Thresholds and Calibration",
+            "type": "concept",
+            "content": "The confidence threshold controls which candidate detections are retained. A high threshold reduces false positives but may miss genuine objects. A low threshold increases recall but can produce more false positives and more work for NMS. The best threshold depends on the application's error costs and evaluation objective. Confidence scores are not automatically calibrated probabilities: a score of 0.8 does not necessarily mean that 80 percent of such predictions will be correct. Thresholds should be selected on validation data rather than tuned repeatedly on the test set. Applications with safety requirements may need class-specific thresholds and explicit monitoring."
+        },
+        {
+            "id": "matching",
+            "title": "Matching Predictions to Ground Truth",
+            "type": "concept",
+            "content": "For evaluation, predictions are usually sorted by confidence and matched to ground-truth boxes under a defined IoU threshold. A prediction is a true positive when it matches an eligible ground-truth instance of the correct class that has not already been claimed by another prediction. A duplicate prediction for the same object is generally a false positive. A prediction with the wrong class is also incorrect for class-specific evaluation. Unmatched ground-truth objects contribute to false negatives. Exact matching rules vary by benchmark, especially when multiple IoU thresholds or difficult examples are involved."
+        },
+        {
+            "id": "precision-recall",
+            "title": "Precision and Recall",
+            "type": "math",
+            "content": "Precision measures the fraction of predicted positives that are correct. Recall measures the fraction of ground-truth positives that are detected. Increasing the confidence threshold often raises precision and lowers recall, although the exact behavior depends on the score distribution. Neither metric alone fully describes a detector. A system that detects only one easy object can have high precision while missing many objects; a system that labels nearly every region as an object may have high recall but poor precision.",
+            "formula": "Precision = TP / (TP + FP); Recall = TP / (TP + FN)",
+            "example": "If a detector produces 40 true positives and 10 false positives, precision is 40/50 = 0.8. If there are 50 ground-truth objects and the detector finds 40, recall is 40/50 = 0.8."
+        },
+        {
+            "id": "average-precision",
+            "title": "Average Precision and mAP",
+            "type": "concept",
+            "content": "Average Precision (AP) summarizes the precision-recall relationship for a class as the confidence threshold varies. Implementations integrate or approximate the area under an interpolated precision-recall curve. Mean Average Precision (mAP) averages AP over classes and, in some benchmarks, over multiple IoU thresholds. For example, a metric named mAP at IoU 0.5 evaluates matching at a 0.5 overlap threshold, while COCO-style mAP commonly averages over IoU thresholds from 0.50 to 0.95. These metrics are not interchangeable. Always report the metric definition, dataset, input resolution, and evaluation protocol when comparing models."
+        },
+        {
+            "id": "class-imbalance",
+            "title": "Class Imbalance and Difficult Negatives",
+            "type": "concept",
+            "content": "Detection datasets often contain many background locations but relatively few positive object examples. Some object categories may also be rare. This imbalance can cause training to focus on easy background predictions while underlearning uncommon classes. Strategies include balanced sampling, class-aware augmentation, focal loss, carefully designed assignment rules, and collecting more representative data. Hard negatives are background examples that resemble objects and are frequently mistaken for them. Inspecting false positives by category and scene type can reveal whether a model is learning genuine object cues or exploiting accidental correlations."
+        },
+        {
+            "id": "data-augmentation",
+            "title": "Augmentation for Detection",
+            "type": "concept",
+            "content": "Detection augmentation changes images and their annotations together. Common transformations include horizontal flips, scaling, translation, cropping, color jitter, and mosaic-style combinations. Every geometric transformation must update the corresponding boxes. Cropping may remove an object completely or truncate it, requiring the annotation policy to decide whether to discard, clip, or retain the box. Excessive augmentation can create unrealistic scenes or distort the data distribution. Validation and test sets should reflect the intended deployment conditions and should not receive random training augmentations."
+        },
+        {
+            "id": "small-objects",
+            "title": "Small Objects and Occlusion",
+            "type": "concept",
+            "content": "Small objects occupy few pixels, making their appearance sensitive to resizing, compression, blur, and downsampling. Feature maps with coarse spatial resolution may lose their boundaries and texture. High-resolution input, multiscale features, suitable training examples, and tiled inference can help. Occlusion creates a different challenge: only part of an object may be visible. Labels must follow a consistent annotation policy for heavily occluded instances. Performance should be analyzed by object size, occlusion level, lighting, and scene density rather than relying exclusively on a single aggregate score."
+        },
+        {
+            "id": "pretrained-inference",
+            "title": "Running a Pretrained Detector",
+            "type": "code",
+            "language": "python",
+            "content": "from ultralytics import YOLO\n\nmodel = YOLO(\"yolo26n.pt\")\nresults = model.predict(source=\"image.jpg\", conf=0.25, iou=0.45, verbose=False)\n\nfor result in results:\n    for box in result.boxes:\n        class_id = int(box.cls.item())\n        confidence = float(box.conf.item())\n        x1, y1, x2, y2 = box.xyxy[0].tolist()\n        label = result.names[class_id]\n        print(label, round(confidence, 3), [round(v, 1) for v in (x1, y1, x2, y2)])",
+            "explanation": "This example illustrates inference with the Ultralytics interface. The named model weights must be available through the installed package or an authorized model source. Check the library's supported model versions, license, and deployment terms before using it commercially. The returned boxes use pixel coordinates for the processed original image in the typical prediction workflow."
+        },
+        {
+            "id": "fine-tuning",
+            "title": "Fine-Tuning on a Custom Dataset",
+            "type": "concept",
+            "content": "Fine-tuning adapts a pretrained detector to a target domain such as industrial defects, traffic scenes, or agricultural images. Prepare a dataset with consistent class identifiers and bounding-box annotations. Split data by the true independent unit: images from the same video, patient, production batch, or physical scene should not be distributed across train and test if that would create leakage. Configure image size, batch size, number of epochs, and augmentations according to available resources. Monitor validation AP and inspect visual predictions during training. A lower training loss does not guarantee improved detection quality. Preserve the best validation checkpoint and record dataset and model versions."
+        },
+        {
+            "id": "annotation-quality",
+            "title": "Annotation Quality and Dataset Leakage",
+            "type": "concept",
+            "content": "Detection models learn from the annotation policy as well as from the images. Inconsistent box tightness, missing objects, incorrect labels, and varying treatment of occlusion introduce contradictory supervision. Annotation review should include rare classes, crowded scenes, and difficult boundary cases. Dataset leakage occurs when near-duplicate images or frames from the same scene appear in both training and evaluation. This can inflate reported metrics while hiding poor generalization. Deduplication, group-based splitting, and a final evaluation on a representative held-out set help produce more reliable estimates."
+        },
+        {
+            "id": "error-analysis",
+            "title": "A Practical Error-Analysis Workflow",
+            "type": "concept",
+            "content": "Begin by reviewing a random sample of predictions, then inspect false positives, false negatives, and poorly localized boxes. Group errors by class, object size, image conditions, and confidence. Determine whether each issue comes from annotation errors, insufficient data, poor resolution, confusing categories, or model limitations. Compare predictions at different confidence thresholds. If false negatives cluster among small objects, test resolution and multiscale changes. If false positives cluster around a background texture, add representative negative examples. Change one or a small number of factors at a time so that improvements can be attributed to specific interventions."
+        },
+        {
+            "id": "deployment",
+            "title": "Latency, Throughput, and Deployment",
+            "type": "concept",
+            "content": "A detector's deployment cost includes image decoding, resizing, host-to-device transfer, model inference, NMS, and result serialization. Model-only latency may not represent end-to-end latency. Throughput measures the number of images processed per unit time, while latency measures the time required for an individual request. Batching can improve throughput but may increase per-request delay. Quantization, lower input resolution, optimized runtimes, and smaller architectures can reduce cost, sometimes at an accuracy penalty. Measure performance on target hardware with representative image sizes and concurrency. Also monitor failures caused by unexpected input dimensions, corrupted files, and distribution shifts."
+        },
+        {
+            "id": "safety-and-bias",
+            "title": "Responsible Use of Object Detection",
+            "type": "concept",
+            "content": "Object detectors can fail unevenly across lighting conditions, camera types, environments, and object appearances. A detector trained on one geographic region or production line may not generalize to another. Applications involving people, surveillance, healthcare, or safety-critical decisions require stronger validation, privacy controls, and human oversight. Evaluate errors by relevant subgroups and operating conditions when legally and ethically appropriate. Do not interpret a detection as proof of a person's identity, intent, or behavior. Define acceptable error rates and fallback behavior before deployment, and make the limitations of the system clear to downstream users."
+        },
+        {
+            "id": "detection-summary",
+            "title": "Putting the Detection Pipeline Together",
+            "type": "concept",
+            "content": "A typical detection workflow begins with annotated images, consistent box conventions, and group-aware train-validation-test splits. A detector transforms images into multiscale features and predicts candidate classes and boxes. Training combines classification and localization objectives, while evaluation matches predictions to ground truth and computes precision-recall-based metrics. Inference applies confidence filtering and duplicate suppression where required. Reliable systems also include qualitative error analysis, performance measurement, versioned datasets, and deployment monitoring. Choosing a detector is an engineering decision that balances accuracy, speed, memory, annotation cost, and the consequences of false predictions."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "obj-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What additional information does object detection predict beyond image classification?",
+            "correctAnswer": "It predicts the locations of object instances, usually with bounding boxes, as well as their classes.",
+            "solution": "Classification produces an image-level label or distribution. Detection identifies multiple instances and estimates each instance's location and category."
+        },
+        {
+            "id": "obj-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A box has corners (10, 20, 50, 60). Find its center, width, and height.",
+            "correctAnswer": "Center (30, 40), width 40, height 40.",
+            "solution": "The center is ((10+50)/2, (20+60)/2) = (30,40). Width is 50-10=40 and height is 60-20=40."
+        },
+        {
+            "id": "obj-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Two boxes have areas 120 and 100, with intersection area 60. Compute IoU.",
+            "correctAnswer": "60/160 = 0.375.",
+            "solution": "The union area is 120 + 100 - 60 = 160. IoU is 60/160 = 0.375."
+        },
+        {
+            "id": "obj-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might a two-stage detector be selected over a one-stage detector?",
+            "correctAnswer": "A two-stage detector may provide a favorable accuracy-localization trade-off for a task, although it often has a more complex pipeline.",
+            "solution": "Two-stage methods generate candidate regions and refine them in a second stage. The choice should be based on measured accuracy, latency, and deployment constraints rather than a universal claim that one family is always better."
+        },
+        {
+            "id": "obj-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What does non-maximum suppression accomplish?",
+            "correctAnswer": "It removes or downweights highly overlapping candidate detections so that one object is less likely to produce many duplicate boxes.",
+            "solution": "NMS selects high-scoring boxes and suppresses overlapping lower-scoring boxes according to an IoU threshold. Poor threshold selection can also suppress distinct nearby objects."
+        },
+        {
+            "id": "obj-ex-6",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A detector returns 72 true positives and 18 false positives. What is precision?",
+            "correctAnswer": "0.8, or 80%.",
+            "solution": "Precision = TP/(TP+FP) = 72/(72+18) = 72/90 = 0.8."
+        },
+        {
+            "id": "obj-ex-7",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "There are 80 ground-truth objects and a detector finds 60 of them correctly. Assuming these are all its true positives, what is recall?",
+            "correctAnswer": "0.75, or 75%.",
+            "solution": "Recall = TP/(TP+FN) = 60/80 = 0.75."
+        },
+        {
+            "id": "obj-ex-8",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is mean average precision not fully specified by the name mAP alone?",
+            "correctAnswer": "The IoU thresholds, class averaging, interpolation method, and benchmark matching rules may differ.",
+            "solution": "Different benchmarks define AP and mAP differently. Report the precise metric variant, dataset, and evaluation protocol when comparing results."
+        },
+        {
+            "id": "obj-ex-9",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "After horizontally flipping training images, a detector's labels become incorrect. What is the likely pipeline error?",
+            "correctAnswer": "The image was flipped without applying the corresponding horizontal transformation to each bounding box.",
+            "solution": "For image width W, the transformed corner coordinates must be updated consistently. A box from x1 to x2 typically becomes W-x2 to W-x1, subject to the dataset's pixel-coordinate convention."
+        },
+        {
+            "id": "obj-ex-10",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A detector performs well on large vehicles but misses small distant pedestrians. Suggest three experiments.",
+            "correctAnswer": "Evaluate higher input resolution, improve multiscale feature use or small-object training examples, and inspect annotation quality and data distribution.",
+            "solution": "Higher resolution can preserve small-object detail. Multiscale features can combine spatial and semantic information. Targeted data collection or augmentation may improve coverage. Evaluate each change on the same held-out set and report size-specific metrics."
+        },
+        {
+            "id": "obj-ex-11",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How would you prevent near-identical video frames from leaking between training and test sets?",
+            "correctAnswer": "Split by video or scene group before extracting or assigning frames to individual splits.",
+            "solution": "Frames from the same video are highly correlated. Group-based splitting keeps related frames together, giving a more realistic estimate of generalization to unseen videos or scenes."
+        },
+        {
+            "id": "obj-ex-12",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A real-time detector has good mAP but misses its latency target. Name useful optimization steps and explain their trade-offs.",
+            "correctAnswer": "Try a smaller model, optimized inference runtime, quantization, suitable batching, or lower input resolution, then remeasure accuracy and end-to-end latency.",
+            "solution": "Each technique may reduce computation or overhead but can affect accuracy, memory, or response time. Benchmark the entire pipeline on target hardware rather than assuming model inference time represents end-to-end performance."
+        }
+    ],
+    "summary": "Object detection combines object classification and localization. Bounding-box geometry and IoU provide the foundation for training and evaluation. Two-stage systems such as Faster R-CNN use region proposals and refinement, while YOLO-style systems predict detections efficiently from shared feature maps. Confidence filtering and NMS reduce duplicate predictions. Precision, recall, AP, and mAP quantify different aspects of detection quality, but their exact definitions matter. Reliable deployment requires correct annotations, leakage-resistant splits, error analysis, latency measurement, and attention to the risks of domain shift and uneven performance.",
+    "relatedTopics": [
+        "cnns",
+        "vision-transformers",
+        "image-embeddings",
+        "segmentation",
+        "multimodal-models"
+    ]
+}

@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-04-cnns",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 2,
+  "title": "Convolutional Neural Networks (CNNs)",
+  "slug": "cnns",
+  "href": "/curriculum/04-deep-learning/cnns",
+  "filePath": "content/curriculum/04-deep-learning/02-cnns.json",
+  "description": "Learn why convolutional networks work well for images and other grid-like data through local connectivity, shared filters, and hierarchical feature extraction.",
+  "difficulty": "beginner",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "MLPs",
+    "Forward Propagation",
+    "Activation Functions"
+  ],
+  "learningObjectives": [
+    "Explain local receptive fields and parameter sharing.",
+    "Interpret common CNN tensor dimensions.",
+    "Describe a basic convolutional architecture.",
+    "Build a small CNN in PyTorch."
+  ],
+  "sections": [
+    {
+      "id": "motivation",
+      "title": "Why CNNs?",
+      "type": "concept",
+      "content": "An image contains spatial structure: nearby pixels often relate to the same edge, texture, or object part. A fully connected network ignores this structure and can require enormous numbers of parameters. A convolutional neural network (CNN) uses local connections and shared filters to learn spatial patterns efficiently.\n\nEarly layers often respond to simple edges or color transitions. Deeper layers combine these responses into textures, parts, and object-level features. This hierarchy is learned from data rather than manually specified."
+    },
+    {
+      "id": "filters",
+      "title": "Filters, Feature Maps, and Receptive Fields",
+      "type": "concept",
+      "content": "A convolutional filter is a small learnable kernel that slides across an input. At each position it computes a weighted combination of a local patch, usually adding a bias. Applying one filter produces one feature map; multiple filters produce multiple output channels.\n\nThe receptive field is the region of the input that can influence a particular activation. Stacking layers increases the effective receptive field, enabling deeper activations to depend on larger image regions."
+    },
+    {
+      "id": "math",
+      "title": "Output Dimensions",
+      "type": "math",
+      "content": "For input width W, kernel size K, padding P, and stride S, the output width is floor((W + 2P - K)/S) + 1. Apply the same formula to height. With input 32×32, kernel 3, padding 1, and stride 1, output spatial dimensions remain 32×32. With kernel 3, padding 0, and stride 1, they become 30×30.\n\nIf input channels are C_in and a convolution has C_out filters of size K×K, the number of weights is C_out×C_in×K×K, plus usually C_out biases."
+    },
+    {
+      "id": "properties",
+      "title": "Parameter Sharing and Translation Equivariance",
+      "type": "concept",
+      "content": "The same filter weights are used at every spatial location. This parameter sharing dramatically reduces the parameter count compared with dense connections. A convolution is translation equivariant in the idealized sense: shifting the input shifts the feature map correspondingly, subject to boundaries, stride, and padding. Pooling and global aggregation can add some tolerance to small shifts."
+    },
+    {
+      "id": "code",
+      "title": "A Small CNN in PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nmodel = nn.Sequential(\n    nn.Conv2d(3, 16, kernel_size=3, padding=1),\n    nn.ReLU(),\n    nn.MaxPool2d(2),\n    nn.Conv2d(16, 32, kernel_size=3, padding=1),\n    nn.ReLU(),\n    nn.AdaptiveAvgPool2d((1, 1)),\n    nn.Flatten(),\n    nn.Linear(32, 10)\n)\n\nimages = torch.randn(8, 3, 64, 64)\nlogits = model(images)\nprint(logits.shape)  # [8, 10]",
+      "language": "python",
+      "explanation": "PyTorch Conv2d expects tensors shaped (batch, channels, height, width). Padding 1 preserves spatial dimensions for a 3×3 kernel at stride 1. MaxPool2d halves height and width. AdaptiveAvgPool2d produces one value per channel regardless of the incoming spatial size."
+    },
+    {
+      "id": "workflow",
+      "title": "Training Image CNNs",
+      "type": "concept",
+      "content": "Image pipelines usually resize or crop images, convert them to tensors, and normalize channels using statistics appropriate to the dataset or pretrained model. Training-time augmentation—such as random crops or horizontal flips—can improve robustness when the transformations preserve labels.\n\nUse a validation split to select architecture and training settings. Monitor class-wise metrics when classes are imbalanced, and inspect incorrect predictions to identify dataset problems or systematic failure modes."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "cnn-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "Name two structural ideas that make CNNs parameter-efficient for images.",
+      "correctAnswer": "Local connectivity and parameter sharing.",
+      "solution": "Each filter examines local patches and reuses the same weights across positions."
+    },
+    {
+      "id": "cnn-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "For a 28×28 input, kernel 5, stride 1, and no padding, what is the output spatial size?",
+      "correctAnswer": "24×24.",
+      "solution": "floor((28−5)/1)+1 = 24 in each dimension."
+    },
+    {
+      "id": "cnn-ex3",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "How many weights are in a Conv2d layer with 3 input channels, 16 output channels, and 3×3 kernels, excluding biases?",
+      "correctAnswer": "432.",
+      "solution": "16×3×3×3 = 432."
+    },
+    {
+      "id": "cnn-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "A Conv2d layer receives an image tensor shaped [8, 64, 64, 3]. What is wrong for standard PyTorch Conv2d?",
+      "correctAnswer": "The channel dimension is last; PyTorch expects [batch, channels, height, width].",
+      "solution": "Reorder the tensor to [8, 3, 64, 64], for example with permute(0, 3, 1, 2)."
+    }
+  ],
+  "summary": "CNNs exploit image structure using local receptive fields and shared filters. Understand NCHW tensor layout and convolution dimensions, and pair the architecture with careful preprocessing and validation.",
+  "relatedTopics": [
+    "convolution-mathematically",
+    "pooling",
+    "image-classification",
+    "transfer-learning"
+  ]
+}

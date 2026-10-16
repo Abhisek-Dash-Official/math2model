@@ -1,1 +1,420 @@
-{}
+{
+  "id": "data-structures-algorithms",
+  "title": "Data Structures & Algorithms",
+  "slug": "data-structures-algorithms",
+  "module": "Foundations",
+  "description": "Learn to represent information and solve problems efficiently. This lesson develops algorithm analysis, lists, stacks, queues, hash maps, searching, sorting, recursion, trees, and graph traversal with examples relevant to AI systems.",
+  "difficulty": "Beginner",
+  "estimatedHours": 12,
+  "prerequisites": [
+    "programming-fundamentals",
+    "python-for-ai"
+  ],
+  "learningObjectives": [
+    "Explain time complexity, space complexity, and asymptotic notation.",
+    "Choose between common data structures based on access and update patterns.",
+    "Implement and analyze searching and sorting algorithms.",
+    "Understand recursion and divide-and-conquer reasoning.",
+    "Traverse trees and graphs using BFS and DFS.",
+    "Recognize how algorithmic choices affect data processing and AI systems."
+  ],
+  "sections": [
+    {
+      "id": "algorithmic-thinking",
+      "title": "What Is an Algorithm?",
+      "content": [
+        {
+          "type": "text",
+          "value": "An algorithm is a finite, precise procedure for transforming inputs into outputs. A useful algorithm has a clear specification, handles defined edge cases, and terminates for valid inputs. Several algorithms may solve the same problem but differ greatly in speed, memory use, and simplicity."
+        },
+        {
+          "type": "text",
+          "value": "For example, to find the largest value in a list, one approach sorts the list and selects its last item. Another scans the list once while tracking the current maximum. The scan is usually more efficient because sorting performs work that the task does not require."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def find_maximum(values):\n    if not values:\n        raise ValueError(\"values must not be empty\")\n    current_max = values[0]\n    for value in values[1:]:\n        if value > current_max:\n            current_max = value\n    return current_max\n\nprint(find_maximum([4, 9, 2, 7]))"
+        },
+        {
+          "type": "text",
+          "value": "Correctness and efficiency are different concerns. First establish that an algorithm returns the right result; then analyze resource usage and optimize when the workload justifies it."
+        }
+      ],
+      "keyTakeaways": [
+        "Start with a clear specification.",
+        "Do not do extra work the problem does not require.",
+        "Correctness comes before optimization."
+      ]
+    },
+    {
+      "id": "complexity",
+      "title": "Time and Space Complexity",
+      "content": [
+        {
+          "type": "text",
+          "value": "Complexity describes how an algorithm's resource use grows as input size n increases. Big O notation is commonly used for an asymptotic upper bound. Big Theta describes a tight asymptotic bound when both upper and lower bounds match, while Big Omega describes an asymptotic lower bound."
+        },
+        {
+          "type": "text",
+          "value": "Common growth rates include O(1) constant time, O(log n) logarithmic time, O(n) linear time, O(n log n) common efficient comparison sorting, O(n²) quadratic time, and O(2^n) exponential time. These describe growth, not exact runtime in seconds."
+        },
+        {
+          "type": "math",
+          "value": "T(n)=3n+7 \\in O(n)"
+        },
+        {
+          "type": "text",
+          "value": "When analyzing code, count how the number of operations changes with input size. A single loop over n items is generally O(n). Two independent nested loops over n items are generally O(n²). Repeatedly halving a search interval gives O(log n)."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def contains_value(values, target):\n    for value in values:\n        if value == target:\n            return True\n    return False\n\n# Worst-case time: O(n)\n# Extra space: O(1)"
+        },
+        {
+          "type": "text",
+          "value": "Space complexity includes memory used by data structures and, depending on convention, auxiliary space beyond the input. An algorithm that creates a second list of n elements uses O(n) auxiliary space; one that updates a few scalar variables uses O(1) auxiliary space."
+        },
+        {
+          "type": "text",
+          "value": "Best-case, average-case, and worst-case behavior can differ. State which case you are analyzing and avoid treating Big O as a precise benchmark."
+        }
+      ],
+      "keyTakeaways": [
+        "Analyze growth rather than machine-specific seconds.",
+        "State whether complexity is best, average, or worst case.",
+        "Include memory use when it matters."
+      ]
+    },
+    {
+      "id": "arrays-lists",
+      "title": "Arrays and Dynamic Lists",
+      "content": [
+        {
+          "type": "text",
+          "value": "An array stores elements in indexed positions. A dynamic array, such as Python's list, maintains contiguous storage and may allocate extra capacity to make appending efficient. Index access is O(1), while inserting near the front usually requires shifting many elements."
+        },
+        {
+          "type": "text",
+          "value": "Appending to a Python list is amortized O(1): most appends are constant time, though occasional resizing is more expensive. Searching for an arbitrary value is O(n) unless additional structure is used."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "values = [10, 20, 30]\nvalues.append(40)       # amortized O(1)\nvalues.insert(0, 5)     # O(n) due to shifting\nprint(values[2])        # O(1) indexed access\nprint(30 in values)    # O(n) search in general"
+        },
+        {
+          "type": "text",
+          "value": "Lists are useful for ordered sequences and batches. For numerical work, NumPy arrays provide more efficient homogeneous numeric operations. Do not confuse Python lists of numbers with NumPy arrays: their operators and performance characteristics differ."
+        }
+      ],
+      "keyTakeaways": [
+        "Lists offer fast indexing and efficient appends.",
+        "Insertion at the beginning is linear time.",
+        "Use NumPy for numerical array operations."
+      ]
+    },
+    {
+      "id": "hash-maps-sets",
+      "title": "Hash Maps and Sets",
+      "content": [
+        {
+          "type": "text",
+          "value": "A hash map stores key-value pairs and uses a hash function to help locate values. Python dictionaries typically provide average-case O(1) lookup, insertion, and deletion, though worst-case behavior can be worse. A set stores unique values and is useful for membership checks and removing duplicates."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "labels = {0: \"cat\", 1: \"dog\", 2: \"bird\"}\nprint(labels.get(1))\nprint(labels.get(99, \"unknown\"))\n\nseen = set()\nfor item in [\"a\", \"b\", \"a\", \"c\"]:\n    seen.add(item)\nprint(seen)"
+        },
+        {
+          "type": "text",
+          "value": "Hashable keys must have a stable hash and equality behavior during their use as keys. Strings, numbers, and tuples of hashable values are common keys; lists are mutable and cannot be dictionary keys."
+        },
+        {
+          "type": "text",
+          "value": "Hash maps are useful for counting class labels, caching expensive computations, mapping paper slugs to records, and associating tokens with vocabulary indexes. Sets are useful for tracking visited graph nodes and removing duplicate identifiers."
+        }
+      ],
+      "keyTakeaways": [
+        "Dictionary operations are average-case O(1).",
+        "Use sets for membership and uniqueness.",
+        "Keys must be hashable."
+      ]
+    },
+    {
+      "id": "stacks-queues",
+      "title": "Stacks, Queues, and Deques",
+      "content": [
+        {
+          "type": "text",
+          "value": "A stack uses last-in, first-out order. A queue uses first-in, first-out order. Stacks support operations such as push and pop; queues support enqueue and dequeue. A deque can efficiently add or remove elements at both ends."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "from collections import deque\n\nstack = []\nstack.append(\"first\")\nstack.append(\"second\")\nprint(stack.pop())  # second\n\nqueue = deque([\"first\", \"second\"])\nqueue.append(\"third\")\nprint(queue.popleft())  # first"
+        },
+        {
+          "type": "text",
+          "value": "Stacks are useful for depth-first search, undo operations, and tracking nested structures. Queues are useful for breadth-first search, job scheduling, and processing work in arrival order. For a queue in Python, collections.deque is preferable to repeatedly removing index zero from a list."
+        },
+        {
+          "type": "text",
+          "value": "Choosing the right data structure often simplifies an algorithm. If a solution repeatedly removes the first item of a long list, consider whether a deque would avoid repeated shifting."
+        }
+      ],
+      "keyTakeaways": [
+        "Stack: last in, first out.",
+        "Queue: first in, first out.",
+        "Use deque for efficient operations at both ends."
+      ]
+    },
+    {
+      "id": "searching",
+      "title": "Linear Search and Binary Search",
+      "content": [
+        {
+          "type": "text",
+          "value": "Linear search examines elements one at a time until it finds the target or reaches the end. It works on unsorted data and has O(n) worst-case time."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def linear_search(values, target):\n    for index, value in enumerate(values):\n        if value == target:\n            return index\n    return -1"
+        },
+        {
+          "type": "text",
+          "value": "Binary search repeatedly halves the search interval and requires sorted data or another monotonic condition. At each step it compares the target with the middle element and discards half of the remaining candidates. Its time complexity is O(log n)."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def binary_search(values, target):\n    left, right = 0, len(values) - 1\n    while left <= right:\n        middle = (left + right) // 2\n        if values[middle] == target:\n            return middle\n        if values[middle] < target:\n            left = middle + 1\n        else:\n            right = middle - 1\n    return -1\n\nprint(binary_search([1, 3, 5, 7, 9], 7))"
+        },
+        {
+          "type": "text",
+          "value": "Binary search returns an index for one matching occurrence; if duplicates exist, it does not necessarily return the first or last occurrence. Variants can find insertion points or boundaries. In Python, bisect provides well-tested boundary-search tools."
+        },
+        {
+          "type": "text",
+          "value": "If data must be sorted before one search, sorting cost matters. Binary search is especially attractive when many searches reuse the same sorted data."
+        }
+      ],
+      "keyTakeaways": [
+        "Linear search works on unsorted collections.",
+        "Binary search needs a sorted or monotonic search space.",
+        "Account for preprocessing costs."
+      ]
+    },
+    {
+      "id": "sorting",
+      "title": "Sorting Algorithms",
+      "content": [
+        {
+          "type": "text",
+          "value": "Sorting arranges values according to an ordering. Bubble sort and insertion sort are useful for learning algorithm design but have O(n²) worst-case time. Merge sort has O(n log n) time and typically uses O(n) extra space for arrays. Quicksort has average O(n log n) time but can degrade to O(n²) in a poor pivot scenario."
+        },
+        {
+          "type": "text",
+          "value": "Python's built-in sorted and list.sort use Timsort, an adaptive stable sorting algorithm. In practical Python code, prefer these built-ins unless implementing a sorting algorithm is itself the learning goal."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "records = [\n    {\"name\": \"Ada\", \"score\": 92},\n    {\"name\": \"Lin\", \"score\": 85},\n    {\"name\": \"Sam\", \"score\": 92}\n]\n\nranked = sorted(records, key=lambda record: record[\"score\"], reverse=True)\nprint(ranked)"
+        },
+        {
+          "type": "text",
+          "value": "A stable sort preserves the relative order of elements that compare equal. Stability can be useful when sorting records by multiple keys in successive passes. Sorting by a key function also separates the ordering rule from the record itself."
+        },
+        {
+          "type": "text",
+          "value": "Sorting is common in data processing, ranking, nearest-neighbor pipelines, and preparing records for efficient searches. Still, do not sort data when the task can be solved with a single scan."
+        }
+      ],
+      "keyTakeaways": [
+        "Understand asymptotic behavior and extra memory.",
+        "Prefer built-in sorting for normal application code.",
+        "Stability matters when records share the same key."
+      ]
+    },
+    {
+      "id": "recursion-divide-conquer",
+      "title": "Recursion and Divide and Conquer",
+      "content": [
+        {
+          "type": "text",
+          "value": "A recursive function calls itself on a smaller instance of the same problem. Every valid recursive design needs a base case and a recursive step that moves toward the base case. Without progress toward the base case, recursion may not terminate."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def factorial(n):\n    if n < 0:\n        raise ValueError(\"n must be non-negative\")\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n\nprint(factorial(5))"
+        },
+        {
+          "type": "text",
+          "value": "Divide and conquer splits a problem into smaller subproblems, solves them, and combines the results. Merge sort is a classic example. Recursion can express such algorithms naturally, but recursive calls consume stack space and Python imposes a recursion limit."
+        },
+        {
+          "type": "text",
+          "value": "Some recursive algorithms repeat the same subproblems. Memoization caches results to avoid recomputation. Dynamic programming organizes overlapping subproblems into a table or cached function."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fibonacci(n):\n    if n < 0:\n        raise ValueError(\"n must be non-negative\")\n    if n < 2:\n        return n\n    return fibonacci(n - 1) + fibonacci(n - 2)\n\nprint(fibonacci(20))"
+        },
+        {
+          "type": "text",
+          "value": "The cached Fibonacci function has linear numbers of distinct subproblems, unlike the naive recursive version that repeats a large amount of work. Dynamic programming is useful in optimization, sequence algorithms, and some probabilistic inference problems."
+        }
+      ],
+      "keyTakeaways": [
+        "Every recursion needs a base case and progress.",
+        "Memoization avoids repeated subproblems.",
+        "Account for recursion stack space."
+      ]
+    },
+    {
+      "id": "trees",
+      "title": "Trees and Hierarchical Data",
+      "content": [
+        {
+          "type": "text",
+          "value": "A tree is a hierarchical structure consisting of nodes and edges. A rooted tree has a designated root, and nodes may have children. Binary trees have at most two children per node. Trees represent syntax, search spaces, taxonomies, and hierarchical data."
+        },
+        {
+          "type": "text",
+          "value": "A binary search tree maintains an ordering property that supports search, insertion, and deletion in O(h) time, where h is tree height. A balanced tree has height O(log n); an unbalanced tree can degrade to O(n)."
+        },
+        {
+          "type": "text",
+          "value": "Tree traversals visit nodes in a defined order. Preorder visits a node before its children; inorder visits the left subtree, node, then right subtree for a binary tree; postorder visits children before the node. Breadth-first traversal visits by depth."
+        },
+        {
+          "type": "text",
+          "value": "Decision trees are machine-learning models that partition feature space using a sequence of decisions. Their conceptual structure is related to trees, although model training and prediction have additional statistical considerations."
+        }
+      ],
+      "keyTakeaways": [
+        "Tree height determines many operation costs.",
+        "Balanced trees support efficient operations.",
+        "Traversal order depends on the task."
+      ]
+    },
+    {
+      "id": "graphs-bfs-dfs",
+      "title": "Graphs, BFS, and DFS",
+      "content": [
+        {
+          "type": "text",
+          "value": "A graph consists of vertices and edges. Graphs can be directed or undirected, weighted or unweighted. An adjacency list stores each vertex's neighbors and is often space-efficient for sparse graphs; an adjacency matrix uses a two-dimensional matrix and can make edge-existence checks fast at the cost of O(V²) storage."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "graph = {\n    \"A\": [\"B\", \"C\"],\n    \"B\": [\"D\"],\n    \"C\": [\"D\"],\n    \"D\": []\n}"
+        },
+        {
+          "type": "text",
+          "value": "Breadth-first search (BFS) explores a graph level by level using a queue. On an unweighted graph, BFS can find shortest paths measured by number of edges. Depth-first search (DFS) explores as far as possible along one branch before backtracking, using recursion or an explicit stack."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "from collections import deque\n\ndef bfs(graph, start):\n    visited = {start}\n    queue = deque([start])\n    order = []\n\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for neighbor in graph.get(node, []):\n            if neighbor not in visited:\n                visited.add(neighbor)\n                queue.append(neighbor)\n    return order\n\nprint(bfs(graph, \"A\"))"
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def dfs(graph, start):\n    visited = set()\n    order = []\n\n    def visit(node):\n        if node in visited:\n            return\n        visited.add(node)\n        order.append(node)\n        for neighbor in graph.get(node, []):\n            visit(neighbor)\n\n    visit(start)\n    return order\n\nprint(dfs(graph, \"A\"))"
+        },
+        {
+          "type": "text",
+          "value": "With an adjacency-list representation, BFS and DFS run in O(V + E) time over the reachable graph, where V is the number of vertices and E the number of edges. The visited set prevents infinite loops when cycles exist."
+        },
+        {
+          "type": "text",
+          "value": "Graphs appear in knowledge graphs, recommendation systems, dependency networks, social networks, and graph neural networks. Understanding graph representations is a foundation for more advanced AI topics."
+        }
+      ],
+      "keyTakeaways": [
+        "BFS uses a queue; DFS uses a stack or recursion.",
+        "Track visited nodes when cycles are possible.",
+        "For unweighted graphs, BFS finds shortest paths in edge count."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Choose an algorithm for repeated lookups",
+      "problem": "A collection of one million IDs is searched for many different IDs. Compare scanning the list each time with sorting once and using binary search.",
+      "solution": "A single linear search is O(n). Sorting costs O(n log n), and each binary search is O(log n). For many repeated lookups, sorting once can be much more efficient; for a mutable collection where ordering is not needed, a set may offer average-case O(1) membership checks.",
+      "explanation": "The best choice depends on how often the collection changes, whether original order matters, and whether duplicates must be preserved."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Complexity Analysis",
+      "difficulty": "Beginner",
+      "problem": "Give the time complexity of a single loop over n items, two nested loops over n items, and a loop that halves n each iteration.",
+      "hints": [
+        "Count how the remaining work changes after each iteration."
+      ]
+    },
+    {
+      "id": "exercise-2",
+      "title": "Frequency Counter",
+      "difficulty": "Beginner",
+      "problem": "Count the frequency of each item in a list using a dictionary. Explain the average-case complexity.",
+      "hints": [
+        "Each item updates one dictionary entry."
+      ]
+    },
+    {
+      "id": "exercise-3",
+      "title": "Binary Search Boundaries",
+      "difficulty": "Intermediate",
+      "problem": "Modify binary search to return the first index at which a target appears in a sorted list containing duplicates.",
+      "hints": [
+        "When you find the target, continue searching the left half."
+      ]
+    },
+    {
+      "id": "exercise-4",
+      "title": "Merge Two Sorted Lists",
+      "difficulty": "Intermediate",
+      "problem": "Given two sorted lists, merge them into one sorted list in O(n + m) time.",
+      "hints": [
+        "Use two pointers and append the smaller current item."
+      ]
+    },
+    {
+      "id": "exercise-5",
+      "title": "Graph Reachability",
+      "difficulty": "Intermediate",
+      "problem": "Use BFS to determine whether a path exists between two vertices in an adjacency-list graph.",
+      "hints": [
+        "Stop once the target is reached, or when the queue becomes empty."
+      ]
+    },
+    {
+      "id": "exercise-6",
+      "title": "Compare Data Structures",
+      "difficulty": "Intermediate",
+      "problem": "Choose a data structure for each task: preserving order, checking membership repeatedly, processing FIFO jobs, and retrieving a value by identifier.",
+      "hints": [
+        "Consider list, set, deque, and dictionary."
+      ]
+    }
+  ],
+  "relatedTopics": [
+    "programming-fundamentals",
+    "python-for-ai",
+    "computational-thinking",
+    "linear-algebra"
+  ]
+}

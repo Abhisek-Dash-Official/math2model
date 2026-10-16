@@ -1,1 +1,173 @@
-{}
+{
+    "id": "linear-regression",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 3,
+    "title": "Linear Regression",
+    "slug": "linear-regression",
+    "description": "Learn simple and multiple linear regression, least-squares estimation, matrix notation, assumptions, diagnostics, regularized extensions, and practical model development.",
+    "difficulty": "beginner",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Basic algebra",
+        "Functions and graphs",
+        "Mean and variance",
+        "Basic Python and NumPy"
+    ],
+    "learningObjectives": [
+        "Explain the intuition behind linear regression.",
+        "Distinguish simple and multiple linear regression.",
+        "Interpret coefficients, intercepts, and residuals.",
+        "Derive the ordinary least-squares objective.",
+        "Understand the normal equation and gradient-based optimization.",
+        "Calculate predictions, residuals, MSE, and RMSE.",
+        "Explain key regression assumptions and diagnostic methods.",
+        "Evaluate linear regression using a held-out dataset.",
+        "Recognize multicollinearity, influential observations, and extrapolation risks."
+    ],
+    "sections": [
+        {
+            "id": "intuition",
+            "title": "1. The Intuition Behind Linear Regression",
+            "type": "concept",
+            "content": "Linear regression models the relationship between input variables and a numerical target using a linear function of the model parameters. In the simplest case, one feature is used to predict one outcome, and the fitted relationship is a straight line. For example, a model may estimate a home's price from its area. The line balances prediction errors across the training observations according to a chosen loss function, commonly squared error. Linear regression is popular because it is relatively simple, computationally efficient, and often interpretable. Its simplicity is also a limitation: if the true relationship is strongly nonlinear, a plain linear model may underfit unless suitable transformations or additional features are introduced."
+        },
+        {
+            "id": "simple-equation",
+            "title": "2. Simple Linear Regression",
+            "type": "math",
+            "content": "The simple linear regression equation is y_hat = b0 + b1*x. Here x is the input feature, y_hat is the predicted target, b0 is the intercept, and b1 is the slope. The intercept is the prediction at x = 0, provided that interpretation is meaningful within the data domain. The slope describes the expected change in the prediction associated with a one-unit increase in x. For example, if predicted salary in thousands of dollars is y_hat = 30 + 4*x, then increasing experience by one year corresponds to a predicted increase of 4 thousand dollars. This is an association in the fitted model, not proof that an additional year of experience causally increases salary by that amount."
+        },
+        {
+            "id": "worked-example",
+            "title": "3. Worked Example: Fitting a Line",
+            "type": "math",
+            "content": "Suppose three observations are (1, 3), (2, 5), and (3, 7). The line y_hat = 1 + 2*x predicts 3, 5, and 7 respectively. The residual for observation i is e_i = y_i - y_hat_i, so all three residuals are zero in this illustrative dataset. Now suppose a model predicts 4 when the actual target is 5. Its residual is 1, and its squared error is 1. Residuals may be positive or negative, but squared errors are nonnegative. The fitted least-squares line minimizes the sum of squared residuals over the training examples. A zero training error is possible for some datasets, but it does not establish that the model will predict new observations accurately."
+        },
+        {
+            "id": "multiple-regression",
+            "title": "4. Multiple Linear Regression",
+            "type": "math",
+            "content": "With p input features, multiple linear regression can be written as y_hat = b0 + b1*x1 + b2*x2 + ... + bp*xp. Each coefficient represents the model's predicted change in the target associated with a one-unit change in that feature while holding the other included features fixed. This conditional interpretation depends on the model specification and data; it should not automatically be interpreted causally. Features may represent area, number of bedrooms, age, location indicators, or other variables. Categorical variables generally require an appropriate encoding. Interaction and polynomial terms can be added to model richer relationships while keeping the model linear in its fitted coefficients."
+        },
+        {
+            "id": "least-squares",
+            "title": "5. Ordinary Least Squares",
+            "type": "math",
+            "content": "Ordinary least squares estimates coefficients by minimizing the residual sum of squares: RSS(b) = sum_i (y_i - y_hat_i)^2. In matrix notation, let X be the design matrix, y the vector of targets, and beta the coefficient vector. Predictions are X beta and the objective is ||y - X beta||^2. Differentiating with respect to beta gives the gradient -2 X^T(y - X beta). Setting the gradient to zero yields X^T X beta = X^T y. If X^T X is invertible, beta_hat = (X^T X)^(-1) X^T y. In practical numerical computation, directly forming the inverse is usually not preferred. Stable linear algebra routines such as QR or singular-value decomposition are commonly used, and rank-deficient designs require special handling."
+        },
+        {
+            "id": "gradient-descent",
+            "title": "6. Linear Regression and Gradient Descent",
+            "type": "concept",
+            "content": "For large feature spaces or iterative optimization workflows, coefficients can be estimated by gradient descent. If the objective is J(beta) = (1/(2n)) * sum_i (y_hat_i - y_i)^2, then the gradient is X^T(X beta - y)/n when X includes the intercept column. The update is beta := beta - learning_rate * gradient. The learning rate controls the update size. A rate that is too small can make progress slow, while a rate that is too large may cause unstable updates. Feature scaling often improves optimization when features have very different numerical ranges. For ordinary least squares, a convex quadratic objective means there are no non-global local minima, although numerical conditioning can still affect optimization."
+        },
+        {
+            "id": "assumptions",
+            "title": "7. Regression Assumptions",
+            "type": "concept",
+            "content": "Several assumptions are relevant when using linear regression for statistical inference. Linearity means the conditional mean is appropriately represented by a linear combination of modeled features. Independent errors matter for conventional uncertainty estimates. Homoscedasticity means the error variance is approximately constant across the modeled range. Normality of errors is mainly relevant to exact small-sample inference under classical assumptions, not a requirement for calculating least-squares coefficients. Severe multicollinearity can make individual coefficient estimates unstable. Real datasets rarely satisfy every assumption perfectly; diagnostic analysis helps identify whether departures materially affect the intended use. Predictive performance and statistical inference are related but distinct goals."
+        },
+        {
+            "id": "evaluation",
+            "title": "8. Evaluating Regression Models",
+            "type": "concept",
+            "content": "Mean squared error is MSE = (1/n) * sum_i (y_i - y_hat_i)^2. Root mean squared error is RMSE = sqrt(MSE), which has the same units as the target. Mean absolute error is MAE = (1/n) * sum_i |y_i - y_hat_i| and is less sensitive to large individual errors than squared-error metrics. The coefficient of determination R-squared compares the model's residual sum of squares with the total variation around the target mean, conventionally computed as 1 - RSS/TSS when TSS is positive. On a held-out set, R-squared can be negative if the model performs worse than predicting the evaluation-set mean. Metrics should be interpreted in context and compared with a relevant baseline."
+        },
+        {
+            "id": "diagnostics",
+            "title": "9. Residual Diagnostics and Influential Points",
+            "type": "concept",
+            "content": "Residual plots can reveal patterns that suggest the model is missing nonlinear structure or that error variance changes across predictions. A curved residual pattern may indicate a nonlinear relationship. A funnel-shaped pattern may indicate heteroscedasticity. A few observations with unusual feature values or large residuals can strongly affect the fitted coefficients. Such observations should be investigated for data errors, unusual but valid cases, or a mismatch between the model and the data. Automatically deleting outliers is not a sound general rule: unusual observations may be the most important cases to predict. Robust methods, transformations, or a different model family may be appropriate depending on the objective."
+        },
+        {
+            "id": "multicollinearity",
+            "title": "10. Multicollinearity, Extrapolation, and Feature Design",
+            "type": "concept",
+            "content": "Multicollinearity occurs when input features contain strongly overlapping information. It can make individual coefficient estimates unstable even when predictions remain reasonably accurate. Correlation matrices, variance inflation factors, and coefficient stability analysis can help diagnose the problem. Extrapolation is predicting beyond the range of observed training data. A linear trend fitted to historical data may produce implausible estimates far outside that range. Polynomial terms and interactions can increase flexibility but may also increase variance and overfitting. Feature engineering should be guided by domain knowledge, validation performance, and the range in which predictions will actually be used."
+        },
+        {
+            "id": "python-from-scratch",
+            "title": "11. Linear Regression from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nX = np.array([1.0, 2.0, 3.0, 4.0])\ny = np.array([3.0, 5.0, 7.0, 9.0])\n\nX_design = np.column_stack([np.ones_like(X), X])\nbeta = np.linalg.lstsq(X_design, y, rcond=None)[0]\npredictions = X_design @ beta\nresiduals = y - predictions\nmse = np.mean(residuals ** 2)\n\nprint('Intercept:', beta[0])\nprint('Slope:', beta[1])\nprint('Predictions:', predictions)\nprint('MSE:', mse)",
+            "explanation": "The design matrix includes a column of ones for the intercept. numpy.linalg.lstsq solves the least-squares problem using a numerically appropriate method rather than explicitly calculating the inverse of X transpose X."
+        },
+        {
+            "id": "sklearn",
+            "title": "12. Linear Regression with Scikit-Learn",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import fetch_california_housing\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score\nimport numpy as np\n\nX, y = fetch_california_housing(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42\n)\n\nmodel = make_pipeline(StandardScaler(), LinearRegression())\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\n\nprint('MAE:', mean_absolute_error(y_test, predictions))\nprint('RMSE:', np.sqrt(mean_squared_error(y_test, predictions)))\nprint('R2:', r2_score(y_test, predictions))",
+            "explanation": "This example evaluates a regression model on held-out observations. Standardization is not necessary for ordinary least squares to be defined, but the pipeline demonstrates leakage-safe preprocessing and is useful when experimenting with other estimators."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "q1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A fitted model is y_hat = 5 + 3x. Predict y when x = 4.",
+            "correctAnswer": 17,
+            "solution": "Substitute x = 4: y_hat = 5 + 3(4) = 17."
+        },
+        {
+            "id": "q2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Actual values are [2, 4] and predictions are [3, 2]. Calculate MSE.",
+            "correctAnswer": 2.5,
+            "solution": "Errors are -1 and 2. Squared errors are 1 and 4. Their mean is (1 + 4)/2 = 2.5."
+        },
+        {
+            "id": "q3",
+            "type": "short-answer",
+            "difficulty": "medium",
+            "question": "What does a slope of -2 mean in a fitted linear regression model?",
+            "correctAnswer": "For a one-unit increase in that feature, the model prediction decreases by 2 units, holding other included features fixed in a multiple regression.",
+            "solution": "This is the conditional interpretation of the coefficient. It is an association in the model and does not by itself establish causation."
+        },
+        {
+            "id": "q4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For actual targets [3, 5, 7] and predictions [2, 5, 9], calculate MAE.",
+            "correctAnswer": 1.3333333333,
+            "solution": "Absolute errors are 1, 0, and 2. MAE = (1 + 0 + 2)/3 = 1."
+        },
+        {
+            "id": "q5",
+            "type": "short-answer",
+            "difficulty": "hard",
+            "question": "Why might individual coefficients be unstable when two features are strongly correlated?",
+            "correctAnswer": "The features contain overlapping information, so many combinations of their coefficients can produce similar predictions.",
+            "solution": "Strong multicollinearity makes X transpose X poorly conditioned. Small data changes can produce large coefficient changes, even when the model's predictions change relatively little."
+        },
+        {
+            "id": "q6",
+            "type": "scenario",
+            "difficulty": "hard",
+            "question": "A regression model has high training R-squared but poor test performance. Give three possible causes.",
+            "correctAnswer": "Overfitting, train-test distribution differences, leakage or evaluation mistakes, unstable features, or an overly flexible feature design.",
+            "solution": "Inspect train and test distributions, compare against a baseline, review the split procedure, check leakage, inspect residuals, and consider regularization or simpler feature representations."
+        }
+    ],
+    "summary": [
+        "Linear regression predicts numerical targets using a linear function of its coefficients.",
+        "Ordinary least squares minimizes the sum of squared residuals.",
+        "The normal equation provides a closed-form solution when the design matrix has suitable rank, while numerical solvers are preferred in practice.",
+        "MSE, RMSE, MAE, and R-squared provide complementary views of performance.",
+        "Residual diagnostics help reveal nonlinear structure, changing variance, and influential observations.",
+        "Multicollinearity can destabilize coefficients, and extrapolation can be unreliable.",
+        "Held-out evaluation is necessary to assess generalization."
+    ],
+    "relatedTopics": [
+        "loss-functions",
+        "gradient-descent",
+        "regularization",
+        "evaluation-metrics",
+        "bias-variance",
+        "overfitting-underfitting"
+    ]
+}

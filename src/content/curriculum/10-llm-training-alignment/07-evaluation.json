@@ -1,1 +1,189 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-evaluation",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 7,
+    "title": "LLM Evaluation Frameworks",
+    "slug": "evaluation",
+    "href": "/curriculum/10-llm-training-alignment/evaluation",
+    "filePath": "content/curriculum/10-llm-training-alignment/07-evaluation.json",
+    "description": "Learn how to evaluate language models using benchmarks, task-specific metrics, human preferences, robustness tests, safety evaluations, and reproducible experiment frameworks.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-reward-models"
+    ],
+    "learningObjectives": [
+        "Explain why LLM evaluation requires multiple complementary methods.",
+        "Distinguish automatic metrics, benchmark tests, and human evaluations.",
+        "Understand accuracy, precision, recall, F1, and preference win rate.",
+        "Identify data leakage and benchmark contamination.",
+        "Design reproducible model comparisons.",
+        "Evaluate factuality, robustness, and safety."
+    ],
+    "sections": [
+        {
+            "id": "evaluation-introduction",
+            "title": "Why Evaluate Language Models?",
+            "type": "concept",
+            "content": "LLM evaluation measures whether a model performs its intended tasks reliably and safely. A model may produce fluent text while making factual errors, ignoring instructions, or failing on unfamiliar prompts. Evaluation helps compare checkpoints, identify regressions, guide dataset improvements, and establish release criteria. No single benchmark captures every relevant capability. A strong evaluation program combines task-specific measurements, representative prompts, human judgments, robustness tests, and safety assessments."
+        },
+        {
+            "id": "evaluation-dimensions",
+            "title": "Dimensions of LLM Quality",
+            "type": "concept",
+            "content": "Common dimensions include correctness, instruction adherence, relevance, completeness, clarity, reasoning quality, calibration, robustness, efficiency, and safety. Different applications assign different priorities to these dimensions. A coding assistant may need executable correctness and security, while a summarization system may prioritize factual consistency and coverage. Define the intended use case before selecting metrics so that evaluation reflects real requirements rather than only what is easy to measure."
+        },
+        {
+            "id": "evaluation-levels",
+            "title": "Levels of Evaluation",
+            "type": "concept",
+            "content": "Evaluation can occur at several levels. Token-level metrics measure prediction quality; task-level tests assess outputs against references or executable checks; pairwise evaluation compares responses; human studies assess usefulness and acceptability; system-level tests measure latency, reliability, and cost. These levels answer different questions. A low token-level loss does not necessarily imply superior user-facing behavior, and a strong task benchmark does not establish safety in every deployment context."
+        },
+        {
+            "id": "automatic-metrics",
+            "title": "Automatic Evaluation Metrics",
+            "type": "concept",
+            "content": "Automatic metrics provide repeatable and relatively inexpensive measurements. Examples include exact match, accuracy, precision, recall, F1, BLEU, ROUGE, perplexity, and executable unit-test success. Each metric has limitations. Lexical overlap metrics can penalize valid paraphrases, while exact match can fail to recognize semantically correct alternatives. Metrics should be selected according to the task and validated against human judgments where possible."
+        },
+        {
+            "id": "classification-metrics",
+            "title": "Accuracy, Precision, Recall, and F1",
+            "type": "math",
+            "content": "For classification-style evaluations, accuracy measures the fraction of correct predictions. Precision measures how many predicted positives are truly positive, while recall measures how many actual positives are found. F1 is the harmonic mean of precision and recall. These metrics are useful for suitable structured tasks but should not be treated as universal measures of open-ended response quality.",
+            "formula": "Accuracy = (TP + TN) / (TP + TN + FP + FN); Precision = TP / (TP + FP); Recall = TP / (TP + FN); F1 = 2 × Precision × Recall / (Precision + Recall)",
+            "example": "If TP = 40, FP = 10, FN = 5, and TN = 45, accuracy is 85/100 = 0.85, precision is 40/50 = 0.80, recall is 40/45 ≈ 0.889, and F1 ≈ 0.842."
+        },
+        {
+            "id": "perplexity",
+            "title": "Perplexity",
+            "type": "math",
+            "content": "Perplexity is derived from average token-level negative log-likelihood and reflects how well a language model predicts a token sequence. Lower perplexity indicates better predictive fit under the evaluated distribution and tokenization. It does not directly measure factual correctness, helpfulness, or alignment. Comparisons require compatible tokenization, datasets, and evaluation conventions.",
+            "formula": "PPL = exp(-1/N × Σᵢ log Pθ(xᵢ | x₍₁:ᵢ₋₁₎))",
+            "example": "If the average negative log-likelihood per token is 2 nats, perplexity is exp(2) ≈ 7.39."
+        },
+        {
+            "id": "benchmark-design",
+            "title": "Designing a Benchmark",
+            "type": "concept",
+            "content": "A benchmark should define tasks, data sources, input formatting, expected outputs, scoring rules, and inclusion criteria. Its examples should represent the intended use case and cover meaningful difficulty levels. Keep benchmark construction separate from model tuning when possible. Record dataset versions and document known limitations. A benchmark with ambiguous labels or narrow coverage can produce misleading conclusions even if scoring is perfectly reproducible."
+        },
+        {
+            "id": "human-evaluation",
+            "title": "Human Evaluation",
+            "type": "concept",
+            "content": "Human evaluation is useful when response quality cannot be reduced to a simple reference answer. Reviewers can judge correctness, helpfulness, clarity, completeness, and adherence to a rubric. Good studies define evaluation criteria, train reviewers, randomize presentation order, hide irrelevant model identities, and record disagreement. Human judgments can be costly and subjective, so sampling plans and quality controls are essential."
+        },
+        {
+            "id": "pairwise-win-rate",
+            "title": "Pairwise Preference Win Rate",
+            "type": "math",
+            "content": "Pairwise evaluation presents two model responses to the same prompt and asks a reviewer or validated judge to select the better response, with ties recorded separately. Win rate summarizes how often a model is preferred. Reports should state how ties are handled and provide uncertainty estimates. A high win rate on one prompt distribution does not imply universal superiority.",
+            "formula": "Win rate = Wins / (Wins + Losses + Ties) when ties are included in the denominator",
+            "example": "If a model wins 60 comparisons, loses 30, and ties 10, its win rate under this convention is 60/100 = 60%. Some studies exclude ties from the denominator, so the convention must be stated."
+        },
+        {
+            "id": "llm-as-judge",
+            "title": "LLM-as-a-Judge",
+            "type": "concept",
+            "content": "An LLM judge uses another model to score or compare candidate responses according to a rubric. It can scale evaluation and provide structured feedback, but may inherit position bias, verbosity bias, style preferences, or weaknesses in its own factual knowledge. Calibrate the judge against human ratings, randomize answer order, use explicit criteria, and audit difficult examples. Judge scores should not automatically be treated as ground truth."
+        },
+        {
+            "id": "contamination",
+            "title": "Benchmark Contamination and Leakage",
+            "type": "concept",
+            "content": "Benchmark contamination occurs when test examples or their answers are included in training data or otherwise influence model development. A model may then appear to generalize when it has memorized benchmark content. Deduplicate known evaluation material where possible, inspect data provenance, use private or newly created tests, and evaluate generalization to paraphrased or structurally different tasks. Repeatedly tuning on a test set also weakens its independence."
+        },
+        {
+            "id": "robustness",
+            "title": "Robustness Evaluation",
+            "type": "concept",
+            "content": "Robustness evaluation checks whether performance remains stable under reasonable variations in input wording, context length, formatting, and task conditions. For example, a question can be paraphrased without changing its meaning. A model that succeeds only on a familiar template may be overfitting to surface patterns. Robustness suites should include realistic variation as well as adversarial cases relevant to the application."
+        },
+        {
+            "id": "factuality-evaluation",
+            "title": "Factuality and Groundedness",
+            "type": "concept",
+            "content": "Factuality evaluation checks whether claims are supported by reliable evidence. Groundedness evaluates whether an answer follows from provided context or retrieved sources. Methods include claim extraction, evidence matching, reference verification, domain-expert review, and citation checking. Automated judges can help triage examples but may themselves hallucinate. High-stakes use cases require stronger verification and explicit handling of uncertainty."
+        },
+        {
+            "id": "safety-evaluation",
+            "title": "Safety Evaluation",
+            "type": "concept",
+            "content": "Safety evaluation tests whether a model responds appropriately to harmful requests, privacy-sensitive prompts, manipulation attempts, and other policy-relevant scenarios. It should assess both under-refusal and over-refusal: a model should not provide harmful assistance, but should still answer benign questions. Use diverse test cases, document policy definitions, and evaluate failure severity rather than only counting refusals."
+        },
+        {
+            "id": "statistical-significance",
+            "title": "Uncertainty and Statistical Significance",
+            "type": "concept",
+            "content": "Evaluation results vary because of prompt sampling, model randomness, annotator disagreement, and finite test-set size. Report sample counts and uncertainty intervals when possible. For paired model comparisons, use methods that preserve the pairing between responses to the same prompt. Small differences may not be meaningful when uncertainty is large. Statistical significance also does not establish practical importance."
+        },
+        {
+            "id": "reproducibility",
+            "title": "Reproducible Evaluation",
+            "type": "concept",
+            "content": "Reproducible evaluations record model checkpoints, prompt templates, datasets, decoding parameters, software versions, scoring rules, and random seeds when applicable. Store raw outputs and evaluation logs so unexpected results can be investigated. If a judge model is used, record its version and rubric. Reproducibility helps distinguish real model improvements from changes in prompts, sampling, or scoring infrastructure."
+        },
+        {
+            "id": "evaluation-harness",
+            "title": "A Minimal Evaluation Harness",
+            "type": "code",
+            "language": "python",
+            "content": "def exact_match(predictions, references):\n    if len(predictions) != len(references) or not references:\n        raise ValueError(\"Inputs must have equal, non-zero lengths\")\n    matches = sum(p.strip() == r.strip() for p, r in zip(predictions, references))\n    return matches / len(references)\n\npredictions = [\"Paris\", \"4\", \"blue\"]\nreferences = [\"Paris\", \"4\", \"green\"]\nprint(f\"Exact match: {exact_match(predictions, references):.1%}\")",
+            "explanation": "This minimal example calculates exact-match accuracy for a structured task. Real evaluation frameworks should also support versioned datasets, task-specific metrics, retries, output parsing, failure logging, and uncertainty estimation."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "eval-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why is no single metric sufficient to evaluate every aspect of an LLM?",
+            "correctAnswer": "Different metrics measure different properties and each has limitations; factuality, helpfulness, safety, and robustness require complementary tests.",
+            "solution": "For example, perplexity measures token prediction, while human evaluation can assess usefulness. Neither alone establishes complete model quality."
+        },
+        {
+            "id": "eval-ex-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A classifier has TP = 30, FP = 10, FN = 10, and TN = 50. Calculate accuracy, precision, and recall.",
+            "correctAnswer": "Accuracy = 0.80, precision = 0.75, recall = 0.75.",
+            "solution": "Accuracy = (30 + 50)/100 = 0.80. Precision = 30/(30 + 10) = 0.75. Recall = 30/(30 + 10) = 0.75."
+        },
+        {
+            "id": "eval-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is benchmark contamination?",
+            "correctAnswer": "When benchmark test material or its answers enter training or model-development processes, undermining an independent evaluation.",
+            "solution": "A contaminated model may memorize examples, making measured performance overstate generalization."
+        },
+        {
+            "id": "eval-ex-4",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "An LLM judge consistently prefers the longer of two equivalent responses. How would you investigate?",
+            "correctAnswer": "Run controlled length comparisons, randomize candidate order, refine the rubric, compare against human ratings, and audit judge behavior.",
+            "solution": "Controlled experiments help isolate verbosity bias from real quality differences."
+        },
+        {
+            "id": "eval-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design an evaluation suite for a customer-support LLM.",
+            "correctAnswer": "Include task correctness, policy adherence, factuality, groundedness, safety, privacy, robustness to paraphrases, refusal quality, latency, and human review.",
+            "solution": "Use representative and edge-case prompts, held-out data, reproducible settings, and category-level metrics. Include tests for both unsafe compliance and unnecessary refusal."
+        }
+    ],
+    "summary": "LLM evaluation combines automatic metrics, task benchmarks, human preference studies, robustness tests, factuality checks, and safety assessments. Good evaluation requires representative data, clear rubrics, leakage prevention, reproducibility, and uncertainty reporting. Scores should be interpreted according to what they measure rather than as a universal measure of model quality.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-reward-models",
+        "module-10-llm-training-alignment-dpo",
+        "module-10-llm-training-alignment-hallucination",
+        "module-10-llm-training-alignment-safety-alignment"
+    ]
+}

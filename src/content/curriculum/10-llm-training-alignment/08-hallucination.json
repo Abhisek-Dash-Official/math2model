@@ -1,1 +1,196 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-hallucination",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 8,
+    "title": "Hallucination Mitigation",
+    "slug": "hallucination",
+    "href": "/curriculum/10-llm-training-alignment/hallucination",
+    "filePath": "content/curriculum/10-llm-training-alignment/08-hallucination.json",
+    "description": "Understand why language models hallucinate and learn practical mitigation methods using retrieval, grounding, verification, uncertainty estimation, and evaluation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-10-llm-training-alignment-evaluation",
+        "module-09-large-language-models-pretraining",
+        "module-10-llm-training-alignment-supervised-fine-tuning"
+    ],
+    "learningObjectives": [
+        "Define hallucination and distinguish its major forms.",
+        "Explain why next-token prediction can produce unsupported claims.",
+        "Understand retrieval-augmented generation and grounded responses.",
+        "Use verification and citation checks to reduce factual errors.",
+        "Explain uncertainty-aware answering and abstention.",
+        "Design a hallucination evaluation and monitoring strategy."
+    ],
+    "sections": [
+        {
+            "id": "hallucination-introduction",
+            "title": "What Is an LLM Hallucination?",
+            "type": "concept",
+            "content": "An LLM hallucination is an output that contains fabricated, unsupported, or materially incorrect information presented as though it were valid. Examples include invented citations, nonexistent APIs, incorrect historical details, and unsupported claims about a document. The term is used broadly, so evaluations should define the type of error being measured. Not every creative or hypothetical response is a hallucination; the issue is whether the output violates the factual or evidential expectations of the task."
+        },
+        {
+            "id": "hallucination-types",
+            "title": "Types of Hallucinations",
+            "type": "concept",
+            "content": "Hallucinations can include factual errors, fabricated entities or references, contradictions of supplied context, unsupported inferences, and claims that exceed available evidence. In grounded question answering, a model may contradict the retrieved document or introduce information that the document never states. In code generation, it may invent a library function. Different error types need different checks, so a useful evaluation taxonomy separates factual correctness, groundedness, consistency, and source validity."
+        },
+        {
+            "id": "why-models-hallucinate",
+            "title": "Why Hallucinations Occur",
+            "type": "concept",
+            "content": "A language model learns statistical patterns for predicting tokens; it is not automatically a database that verifies every generated claim. Training data may be incomplete, noisy, outdated, or contradictory. Prompts can also request information that is unavailable to the model. The model may still produce a plausible continuation because fluent text is often rewarded by the training objective. Sampling, weak grounding, ambiguous instructions, and pressure to provide an answer can increase the likelihood of unsupported claims."
+        },
+        {
+            "id": "knowledge-vs-confidence",
+            "title": "Fluency Is Not Evidence",
+            "type": "concept",
+            "content": "Language models can generate confident and coherent text even when the underlying claim is false. Fluency, length, and rhetorical confidence are not reliable indicators of factual accuracy. Confidence expressed in natural language also does not necessarily correspond to calibrated probability. Systems should evaluate claims against evidence rather than assuming that a polished response is correct."
+        },
+        {
+            "id": "closed-book-vs-grounded",
+            "title": "Closed-Book and Grounded Answering",
+            "type": "concept",
+            "content": "Closed-book answering relies primarily on information encoded in the model's parameters and the conversation context. Grounded answering provides supporting material, such as retrieved documents, database records, or verified tool results. Grounding can reduce dependence on model memory for current or domain-specific facts, but it does not eliminate errors. The model can misread evidence, cite an irrelevant passage, or draw an unsupported conclusion."
+        },
+        {
+            "id": "rag-overview",
+            "title": "Retrieval-Augmented Generation",
+            "type": "concept",
+            "content": "Retrieval-augmented generation (RAG) retrieves relevant documents and supplies them to the model as context for answering. A typical pipeline converts documents into searchable chunks, indexes them, retrieves candidates for a query, optionally reranks them, and generates a response grounded in the selected context. RAG can improve access to current or specialized information without retraining the model. Its effectiveness depends on document quality, retrieval recall, chunking, ranking, context construction, and answer generation."
+        },
+        {
+            "id": "rag-pipeline",
+            "title": "The RAG Pipeline",
+            "type": "concept",
+            "content": "The main stages are document ingestion, normalization, chunking, indexing, query processing, retrieval, reranking, context assembly, generation, and evaluation. Poor chunking can separate a fact from its qualifications. Weak retrieval can miss the required evidence, while excessive context can distract the model. A good pipeline records source metadata and preserves document boundaries so that generated claims can be traced back to evidence."
+        },
+        {
+            "id": "grounded-prompting",
+            "title": "Prompting for Grounded Responses",
+            "type": "concept",
+            "content": "A grounding prompt should explicitly instruct the model to use the supplied evidence, distinguish supported claims from inference, and state when the evidence is insufficient. It should not imply that the provided context must always contain an answer. A simple policy is to answer only when the context supports the claim, cite the relevant source where available, and abstain or request clarification when critical information is missing. Prompting alone is not a guarantee and should be combined with evaluation."
+        },
+        {
+            "id": "grounded-prompt-example",
+            "title": "Example of a Grounded Prompt",
+            "type": "code",
+            "language": "text",
+            "content": "Answer the question using only the evidence provided below.\nIf the evidence does not support an answer, say that the information is unavailable.\nDo not invent citations or facts.\nCite the source passage for each important factual claim.\n\nEvidence:\n[Insert retrieved passages and source identifiers]\n\nQuestion:\n[Insert the user's question]",
+            "explanation": "This prompt establishes an evidence policy. It still requires retrieval-quality checks, citation validation, and independent evaluation because a model can ignore instructions or misinterpret the supplied evidence."
+        },
+        {
+            "id": "citation-grounding",
+            "title": "Citations and Evidence Grounding",
+            "type": "concept",
+            "content": "Citations are useful only when they point to real sources that support the associated claims. A model can fabricate source titles, point to an irrelevant passage, or cite a real document that does not justify its conclusion. Citation validation should check source existence, passage relevance, and whether the claim is entailed by the evidence. For high-stakes workflows, source retrieval and claim verification should be implemented as explicit pipeline stages."
+        },
+        {
+            "id": "claim-decomposition",
+            "title": "Claim Decomposition and Verification",
+            "type": "concept",
+            "content": "Long answers often contain multiple factual claims. A verification pipeline can split a response into atomic claims, identify supporting evidence for each claim, and label claims as supported, contradicted, or unverified. This makes it easier to find isolated errors hidden inside an otherwise correct response. Automated claim checking can help prioritize review, but ambiguous claims and important decisions may require expert or human verification."
+        },
+        {
+            "id": "uncertainty",
+            "title": "Uncertainty-Aware Answering",
+            "type": "concept",
+            "content": "A reliable assistant should distinguish what it knows from what the available evidence supports. It can express uncertainty, state assumptions, request missing context, or abstain when the risk of a wrong answer is high. However, asking a model to state confidence does not automatically produce calibrated probabilities. Confidence estimates should be evaluated against observed correctness, and abstention thresholds should reflect the consequences of errors in the application."
+        },
+        {
+            "id": "abstention",
+            "title": "Selective Prediction and Abstention",
+            "type": "concept",
+            "content": "Selective prediction allows a model to answer only when a confidence or evidence criterion is satisfied. Otherwise, it abstains, asks a clarifying question, or routes the case to a human. This can improve reliability by reducing unsupported answers, but excessive abstention harms usefulness. Evaluate both answer accuracy and coverage, where coverage is the fraction of examples on which the system provides an answer."
+        },
+        {
+            "id": "coverage-risk",
+            "title": "Coverage and Selective Risk",
+            "type": "math",
+            "content": "Coverage measures how often a system chooses to answer. Selective risk measures the error rate among answered examples. Raising the abstention threshold may reduce risk but also lower coverage. The appropriate trade-off depends on the application: medical, legal, and financial workflows may prioritize reducing severe errors, while low-risk creative tasks may favor broader coverage.",
+            "formula": "Coverage = Number answered / Total examples; Selective risk = Errors among answered / Number answered",
+            "example": "If a system answers 80 of 100 questions and makes 4 errors among those answers, coverage is 0.80 and selective risk is 4/80 = 0.05."
+        },
+        {
+            "id": "tools-and-verification",
+            "title": "Using Tools to Verify Claims",
+            "type": "concept",
+            "content": "Tools can provide stronger evidence than unsupported generation. Depending on the task, a system may query a trusted database, run code, search an approved document collection, check a citation, or use a deterministic calculator. Tool outputs must still be validated: a database can be stale, code can contain bugs, and a search result can be irrelevant. A robust system tracks the source of each result and distinguishes verified tool output from model-generated interpretation."
+        },
+        {
+            "id": "hallucination-evaluation",
+            "title": "Evaluating Hallucinations",
+            "type": "concept",
+            "content": "A hallucination evaluation set should contain questions with known answers, insufficient-evidence cases, conflicting documents, outdated facts, ambiguous prompts, and requests for citations. Measure factual accuracy, evidence support, citation validity, contradiction rate, and appropriate abstention. Include both answerable and unanswerable questions so a system cannot achieve low hallucination rates merely by refusing everything. Evaluate by domain and severity as well as aggregate score."
+        },
+        {
+            "id": "rag-failure-modes",
+            "title": "Common RAG Failure Modes",
+            "type": "concept",
+            "content": "RAG systems can fail when the index is outdated, chunks omit important context, retrieval misses the correct passage, ranking prioritizes irrelevant text, or the generator invents details beyond the evidence. Conflicting sources can also create ambiguous answers. Debug retrieval and generation separately by inspecting retrieved passages, measuring retrieval recall, checking source freshness, and testing whether generated claims are supported by the actual context."
+        },
+        {
+            "id": "mitigation-strategy",
+            "title": "A Layered Hallucination-Mitigation Strategy",
+            "type": "concept",
+            "content": "Use multiple defenses instead of relying on one prompt or model. Curate high-quality training data, retrieve reliable evidence, provide explicit grounding instructions, verify citations, decompose and check factual claims, calibrate abstention behavior, and monitor real-world failures. Add domain experts or human review for high-impact decisions. Each layer has limitations, but independent checks can reduce the chance that one failure produces an unchecked incorrect answer."
+        },
+        {
+            "id": "monitoring",
+            "title": "Monitoring in Production",
+            "type": "concept",
+            "content": "Production monitoring can track user reports, citation failures, unsupported claims, retrieval misses, abstention rates, and domain-specific error patterns. Use privacy-conscious logging and retain only the information necessary for investigation. Periodically sample conversations for quality review, refresh outdated indexes, and update evaluation sets when new failure patterns appear. Changes to prompts, models, retrieval systems, or data sources should trigger regression tests."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "hallucination-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why can a fluent LLM response still be factually incorrect?",
+            "correctAnswer": "Fluency reflects learned language patterns and does not guarantee that claims have been verified against reliable evidence.",
+            "solution": "A model can generate plausible continuations even when its training information is incomplete or the prompt lacks the needed facts."
+        },
+        {
+            "id": "hallucination-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "How can RAG reduce hallucinations, and why does it not eliminate them?",
+            "correctAnswer": "RAG provides retrieved evidence for generation, but retrieval can fail and the model can misinterpret or exceed the evidence.",
+            "solution": "Grounding improves access to relevant information, but retrieval quality and generation faithfulness must both be evaluated."
+        },
+        {
+            "id": "hallucination-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A system answers 90 of 120 questions and makes 9 errors among answered questions. Calculate coverage and selective risk.",
+            "correctAnswer": "Coverage = 75%; selective risk = 10%.",
+            "solution": "Coverage = 90/120 = 0.75. Selective risk = 9/90 = 0.10."
+        },
+        {
+            "id": "hallucination-ex-4",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "A RAG assistant cites a real document, but the document does not support the claim. What checks should be added?",
+            "correctAnswer": "Validate citation relevance, verify claim-to-passage support, decompose answers into factual claims, and flag unsupported claims.",
+            "solution": "Source existence alone is insufficient. The cited passage must provide evidence for the specific claim."
+        },
+        {
+            "id": "hallucination-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design an evaluation set for a system that must answer from a document collection.",
+            "correctAnswer": "Include answerable questions, insufficient-evidence questions, conflicting documents, paraphrased queries, stale sources, and citation checks.",
+            "solution": "Measure answer correctness, groundedness, citation validity, appropriate abstention, and coverage. This prevents the system from appearing reliable by either guessing or refusing every difficult question."
+        }
+    ],
+    "summary": "Hallucinations occur when a model generates unsupported or incorrect claims. Mitigation requires a layered approach combining reliable retrieval, grounded prompting, claim verification, citation checking, uncertainty-aware responses, selective abstention, and ongoing evaluation. RAG can improve factual grounding, but retrieval and generation must both be tested, especially in high-impact applications.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-evaluation",
+        "module-10-llm-training-alignment-safety-alignment",
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature"
+    ]
+}

@@ -1,1 +1,187 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-supervised-fine-tuning",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 2,
+    "title": "Supervised Fine-Tuning (SFT)",
+    "slug": "supervised-fine-tuning",
+    "href": "/curriculum/10-llm-training-alignment/supervised-fine-tuning",
+    "filePath": "content/curriculum/10-llm-training-alignment/02-supervised-fine-tuning.json",
+    "description": "Learn the supervised fine-tuning objective, training pipeline, optimization choices, parameter-efficient methods, and practical evaluation of language models.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-gradient-computation-optimizers"
+    ],
+    "learningObjectives": [
+        "Explain supervised fine-tuning and its relationship to instruction tuning.",
+        "Derive the response-token cross-entropy objective.",
+        "Understand tokenization, batching, padding, and loss masking.",
+        "Describe full fine-tuning and parameter-efficient fine-tuning.",
+        "Identify important SFT hyperparameters.",
+        "Design an evaluation and regression-testing workflow."
+    ],
+    "sections": [
+        {
+            "id": "sft-definition",
+            "title": "What Is Supervised Fine-Tuning?",
+            "type": "concept",
+            "content": "Supervised fine-tuning (SFT) continues training a pretrained model on a smaller, curated dataset with explicit target outputs. In conversational AI, those targets often contain assistant responses to user instructions. SFT adjusts model parameters so that desired responses become more probable. It is a common stage in assistant training, but the exact dataset may contain demonstrations, tool-use traces, structured outputs, or domain-specific answers. SFT is broader than instruction tuning because supervised targets can represent many behaviors beyond simple instruction following."
+        },
+        {
+            "id": "sft-pipeline",
+            "title": "The SFT Pipeline",
+            "type": "concept",
+            "content": "A typical pipeline includes selecting a base model, preparing and validating examples, applying the correct conversation template, tokenizing text, constructing batches, calculating the target-token loss, updating parameters, saving checkpoints, and evaluating results. Each stage can introduce errors. For example, a mismatched template may confuse role boundaries, while an incorrect attention mask may allow padded tokens to affect computation. Dataset preprocessing and training configuration should therefore be tested on small samples before a full run."
+        },
+        {
+            "id": "sft-objective",
+            "title": "Supervised Fine-Tuning Objective",
+            "type": "math",
+            "content": "SFT commonly minimizes negative log-likelihood over target tokens. The model conditions on the prompt and earlier response tokens and learns to assign higher probability to the demonstrated continuation. When training a conversational model, a mask can restrict the loss to assistant response tokens. Normalization may be performed per target token or per sequence, so implementations should specify their convention.",
+            "formula": "L_SFT(θ) = -Σᵢ mᵢ log Pθ(yᵢ | x, y₍₁:ᵢ₋₁₎) / Σᵢ mᵢ",
+            "example": "If the target response is 'A vector has magnitude and direction', the model predicts each response token conditioned on the instruction and previously observed target tokens. The loss penalizes low probability assigned to the demonstrated tokens."
+        },
+        {
+            "id": "cross-entropy-intuition",
+            "title": "Cross-Entropy Intuition",
+            "type": "concept",
+            "content": "Cross-entropy penalizes the model when it assigns low probability to the correct next token. If the target token receives probability 0.8, its negative log-likelihood is approximately 0.223. If it receives probability 0.1, the loss is approximately 2.303. The model's gradients update parameters to increase the probability of target tokens across the training examples. A low training loss does not automatically imply helpful responses, because the target data may be narrow or incorrect."
+        },
+        {
+            "id": "tokenization-and-labels",
+            "title": "Tokenization and Target Labels",
+            "type": "concept",
+            "content": "Text is converted into token IDs before entering the model. For causal language modeling, labels are typically aligned with token IDs and shifted so that each position predicts the next token. Many frameworks handle this shift internally. Training code must avoid shifting labels twice. Padding positions are generally excluded from the loss, and conversational pipelines may additionally exclude user or system tokens. Verify the model's expected label convention before implementing custom training."
+        },
+        {
+            "id": "attention-mask-vs-loss-mask",
+            "title": "Attention Masks and Loss Masks",
+            "type": "concept",
+            "content": "An attention mask controls which positions can participate in attention, particularly distinguishing real tokens from padding. A loss mask determines which target positions contribute to the objective. They serve different purposes. For example, a user prompt may be visible to the model through attention while being excluded from the supervised loss. Confusing these masks can lead to incorrect training behavior, wasted computation, or unintended target leakage."
+        },
+        {
+            "id": "batching",
+            "title": "Batching and Padding",
+            "type": "concept",
+            "content": "Training batches combine multiple examples into a tensor. Since examples have different lengths, pipelines may pad sequences to a common length, group examples of similar lengths, or use packed sequences where supported. Padding can waste computation and must be handled correctly. Length-based bucketing reduces padding overhead. Packing can improve throughput, but boundaries between examples must be handled carefully so that tokens from one example do not incorrectly condition on another."
+        },
+        {
+            "id": "full-fine-tuning",
+            "title": "Full Fine-Tuning",
+            "type": "concept",
+            "content": "Full fine-tuning updates all or nearly all trainable parameters of the base model. It offers substantial flexibility but can require significant GPU memory for parameters, gradients, optimizer states, and activations. It can also overfit a small dataset or cause forgetting of previously learned capabilities. Learning-rate selection, training duration, data quality, and evaluation are especially important. Full fine-tuning is often appropriate when resources and training control are sufficient."
+        },
+        {
+            "id": "parameter-efficient-fine-tuning",
+            "title": "Parameter-Efficient Fine-Tuning",
+            "type": "concept",
+            "content": "Parameter-efficient fine-tuning (PEFT) adapts a model while training only a relatively small subset of parameters or adding compact trainable modules. LoRA, or Low-Rank Adaptation, introduces trainable low-rank matrices into selected linear transformations while freezing the original weights. This can reduce trainable parameter count and optimizer memory. PEFT does not eliminate every memory cost, and the best method depends on model architecture, target modules, sequence length, hardware, and quality requirements."
+        },
+        {
+            "id": "lora-math",
+            "title": "LoRA Mathematical View",
+            "type": "math",
+            "content": "LoRA represents a weight update as a low-rank product. Instead of directly training the entire original weight matrix W, the method freezes W and learns matrices A and B. If W has dimensions d_out by d_in, A and B can use a much smaller rank r. The scaling factor controls the magnitude of the update.",
+            "formula": "W' = W + ΔW, where ΔW = (α / r)BA",
+            "example": "For d_in = 4096, d_out = 4096, and rank r = 8, the original matrix contains 16,777,216 parameters, while the two LoRA matrices contain 8 × 4096 + 4096 × 8 = 65,536 trainable parameters for that transformation."
+        },
+        {
+            "id": "sft-hyperparameters",
+            "title": "Important SFT Hyperparameters",
+            "type": "concept",
+            "content": "Important choices include learning rate, batch size, gradient accumulation, number of epochs, maximum sequence length, warmup, weight decay, optimizer, gradient clipping, and precision. Larger learning rates may adapt quickly but destabilize training or damage pretrained behavior. More epochs can improve fit but increase overfitting risk. Effective batch size is the per-device batch size multiplied by the number of devices and gradient-accumulation steps, assuming all contribute equally."
+        },
+        {
+            "id": "effective-batch-size",
+            "title": "Effective Batch Size",
+            "type": "math",
+            "content": "Gradient accumulation allows several smaller microbatches to contribute to one optimizer update. This can approximate a larger batch without holding all examples in memory simultaneously. The approximation depends on loss normalization, distributed-training details, and whether batch-dependent operations are present.",
+            "formula": "Effective batch size = microbatch size × accumulation steps × number of data-parallel workers",
+            "example": "With a microbatch size of 2, accumulation over 8 steps, and 4 data-parallel workers, the effective batch size is 2 × 8 × 4 = 64 examples per optimizer update."
+        },
+        {
+            "id": "training-loop",
+            "title": "A Minimal SFT Training Loop",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\nmodel.train()\nfor batch in train_dataloader:\n    batch = {k: v.to(device) for k, v in batch.items()}\n    outputs = model(**batch)\n    loss = outputs.loss\n    loss.backward()\n    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)\n    optimizer.step()\n    scheduler.step()\n    optimizer.zero_grad(set_to_none=True)",
+            "explanation": "This illustrates the core optimization loop when the model and batch are already configured to compute the intended supervised loss. Real implementations must handle label masking, gradient accumulation, mixed precision, distributed execution, logging, checkpointing, and scheduler step semantics correctly."
+        },
+        {
+            "id": "monitoring-training",
+            "title": "Monitoring SFT Training",
+            "type": "concept",
+            "content": "Track training loss, validation loss, learning rate, gradient norms, token throughput, GPU memory, and training duration. Also evaluate actual responses on representative tasks. A decreasing loss can coexist with worsening generalization, repetitive outputs, or loss of base-model capabilities. Compare checkpoints against a fixed baseline and use held-out data that was not used to construct the training examples."
+        },
+        {
+            "id": "catastrophic-forgetting",
+            "title": "Overfitting and Catastrophic Forgetting",
+            "type": "concept",
+            "content": "Fine-tuning can over-specialize a model on the new dataset and reduce performance on tasks it previously handled well. This is often described as catastrophic forgetting. Mitigations include using a conservative learning rate, reducing training duration, improving data diversity, mixing selected general-purpose examples into training, and evaluating old capabilities. Parameter-efficient methods can reduce the number of updated parameters but do not guarantee that forgetting or regressions cannot occur."
+        },
+        {
+            "id": "data-leakage",
+            "title": "Data Leakage and Contamination",
+            "type": "concept",
+            "content": "Leakage occurs when evaluation information enters the training process, directly or indirectly. Near-duplicate prompts, answers included in synthetic generation contexts, and repeated benchmark examples can make performance look better than it really is. Deduplicate across training and evaluation sets, document dataset origins, and avoid tuning repeatedly against a supposedly untouched final test set."
+        },
+        {
+            "id": "sft-evaluation",
+            "title": "Evaluating an SFT Model",
+            "type": "concept",
+            "content": "Evaluate task accuracy, instruction adherence, response quality, structured-output validity, robustness, safety, and retention of general capabilities. Use exact-match or programmatic metrics for suitable tasks and human assessment for open-ended tasks. Compare multiple checkpoints under consistent prompts and decoding settings. Report both aggregate results and category-level weaknesses so that a strong average does not hide important failures."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "sft-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does supervised fine-tuning optimize?",
+            "correctAnswer": "It generally minimizes the negative log-likelihood of target tokens in supervised examples.",
+            "solution": "The model is trained to assign higher probability to demonstrated target responses conditioned on their context."
+        },
+        {
+            "id": "sft-ex-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A training setup uses a microbatch size of 4, 4 accumulation steps, and 2 data-parallel workers. What is its effective batch size?",
+            "correctAnswer": "32 examples per optimizer update.",
+            "solution": "Effective batch size = 4 × 4 × 2 = 32."
+        },
+        {
+            "id": "sft-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For a 2048 by 2048 weight matrix, calculate the number of trainable parameters in a rank-4 LoRA update, ignoring biases.",
+            "correctAnswer": "16,384 parameters.",
+            "solution": "The two low-rank matrices contain 2048 × 4 + 4 × 2048 = 16,384 parameters."
+        },
+        {
+            "id": "sft-ex-4",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Why should a pipeline distinguish attention masks from loss masks?",
+            "correctAnswer": "Attention masks control attention participation, while loss masks control which target positions contribute to training loss.",
+            "solution": "A prompt can remain visible as context while its tokens are excluded from the supervised objective."
+        },
+        {
+            "id": "sft-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Training loss decreases, but validation performance and general reasoning quality decline. Suggest a debugging plan.",
+            "correctAnswer": "Check for overfitting, reduce learning rate or training duration, improve dataset diversity, audit masking and templates, and evaluate checkpoints against a baseline.",
+            "solution": "Inspect data quality and leakage, compare validation loss and task-level metrics, and test whether the model is losing general capabilities. Select checkpoints based on held-out performance rather than training loss alone."
+        }
+    ],
+    "summary": "SFT adapts a pretrained model using supervised target outputs, commonly through next-token cross-entropy. Successful training requires correct tokenization, label shifting, attention and loss masks, batching, optimization, and evaluation. Full fine-tuning updates most model parameters, while PEFT methods such as LoRA reduce the trainable parameter count. Monitoring generalization and capability retention is essential.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-10-llm-training-alignment-preference-datasets",
+        "module-10-llm-training-alignment-reward-models",
+        "module-10-llm-training-alignment-dpo"
+    ]
+}

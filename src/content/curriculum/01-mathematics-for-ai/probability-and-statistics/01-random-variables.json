@@ -1,1 +1,274 @@
-{}
+{
+    "id": "probability-random-variables",
+    "title": "Random Variables",
+    "slug": "random-variables",
+    "description": "Understand random variables, sample spaces, discrete and continuous variables, probability mass functions, probability density functions, and cumulative distribution functions.",
+    "difficulty": "beginner",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Basic Algebra",
+        "Basic Probability",
+        "Functions"
+    ],
+    "learningObjectives": [
+        "Explain experiments, outcomes, and sample spaces.",
+        "Define random variables and distinguish them from ordinary variables.",
+        "Differentiate discrete and continuous random variables.",
+        "Understand probability mass and density functions.",
+        "Calculate cumulative probabilities.",
+        "Connect random variables to uncertainty in machine learning."
+    ],
+    "sections": [
+        {
+            "id": "random-experiments",
+            "title": "Random Experiments and Sample Spaces",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Random Experiment",
+                    "body": "A random experiment is a process whose exact outcome is uncertain before it occurs. Examples include tossing a coin, rolling a die, or randomly selecting a data point."
+                },
+                {
+                    "type": "text",
+                    "title": "Sample Space",
+                    "body": "The sample space is the set of all possible outcomes of a random experiment."
+                },
+                {
+                    "type": "example",
+                    "title": "Rolling a Die",
+                    "problem": "What is the sample space when rolling a fair six-sided die?",
+                    "solution": [
+                        "A standard die has six possible outcomes.",
+                        "Each outcome is an integer from 1 to 6."
+                    ],
+                    "answer": "{1, 2, 3, 4, 5, 6}"
+                }
+            ]
+        },
+        {
+            "id": "random-variable-definition",
+            "title": "What Is a Random Variable?",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "A random variable is a function that assigns a numerical value to each outcome in a random experiment. It allows uncertain outcomes to be studied using mathematics."
+                },
+                {
+                    "type": "text",
+                    "title": "Why Random Variables Matter",
+                    "body": "Random variables provide a mathematical way to describe uncertain quantities such as customer purchases, measurement errors, image classifications, and model predictions."
+                },
+                {
+                    "type": "example",
+                    "title": "Number of Heads",
+                    "problem": "A fair coin is tossed twice. Let X be the number of heads. What values can X take?",
+                    "solution": [
+                        "The possible outcomes are HH, HT, TH, and TT.",
+                        "HH contains two heads.",
+                        "HT and TH each contain one head.",
+                        "TT contains zero heads."
+                    ],
+                    "answer": "X can take the values 0, 1, and 2."
+                }
+            ]
+        },
+        {
+            "id": "discrete-random-variables",
+            "title": "Discrete Random Variables",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "A discrete random variable takes values from a finite or countably infinite set. Examples include the number of customers arriving in an hour and the number of defective products in a batch."
+                },
+                {
+                    "type": "text",
+                    "title": "Probability Mass Function",
+                    "body": "A probability mass function, or PMF, assigns a probability to each possible value of a discrete random variable."
+                },
+                {
+                    "type": "formula",
+                    "title": "PMF Conditions",
+                    "body": "p(x) >= 0; sum_x p(x) = 1"
+                },
+                {
+                    "type": "example",
+                    "title": "A Discrete Probability Distribution",
+                    "problem": "A random variable X takes values 0, 1, and 2 with probabilities 0.2, 0.5, and 0.3. Is this a valid PMF?",
+                    "solution": [
+                        "All probabilities are nonnegative.",
+                        "Add the probabilities: 0.2 + 0.5 + 0.3 = 1."
+                    ],
+                    "answer": "Yes, it is a valid PMF."
+                }
+            ]
+        },
+        {
+            "id": "continuous-random-variables",
+            "title": "Continuous Random Variables",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "A continuous random variable can take values over a continuum, such as a range of real numbers. Examples include time, height, temperature, and measurement errors."
+                },
+                {
+                    "type": "text",
+                    "title": "Probability Density Function",
+                    "body": "A probability density function, or PDF, describes the density of probability across possible values. Probabilities over intervals are found by integrating the density."
+                },
+                {
+                    "type": "formula",
+                    "title": "PDF Conditions",
+                    "body": "f(x) >= 0; integral over all x of f(x) dx = 1"
+                },
+                {
+                    "type": "text",
+                    "title": "Probability at One Exact Value",
+                    "body": "For a continuous random variable with a density, the probability of taking any one exact value is zero. Probabilities are calculated over intervals."
+                },
+                {
+                    "type": "example",
+                    "title": "Uniform Distribution",
+                    "problem": "Let X be uniformly distributed on the interval [0, 1]. What is P(0.2 <= X <= 0.5)?",
+                    "solution": [
+                        "The uniform density on [0, 1] is 1.",
+                        "The probability equals the interval length multiplied by the density.",
+                        "Calculate 0.5 - 0.2."
+                    ],
+                    "answer": "0.3"
+                }
+            ]
+        },
+        {
+            "id": "cumulative-distribution-function",
+            "title": "Cumulative Distribution Function",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Definition",
+                    "body": "The cumulative distribution function, or CDF, gives the probability that a random variable is less than or equal to a specified value."
+                },
+                {
+                    "type": "formula",
+                    "title": "CDF",
+                    "body": "F(x) = P(X <= x)"
+                },
+                {
+                    "type": "text",
+                    "title": "Important Properties",
+                    "body": "A CDF is nondecreasing, approaches zero toward negative infinity, and approaches one toward positive infinity. It is right-continuous."
+                },
+                {
+                    "type": "example",
+                    "title": "Calculate a Cumulative Probability",
+                    "problem": "Suppose X takes values 1, 2, and 3 with probabilities 0.2, 0.5, and 0.3. Find F(2).",
+                    "solution": [
+                        "F(2) = P(X <= 2).",
+                        "Add P(X = 1) and P(X = 2).",
+                        "Calculate 0.2 + 0.5."
+                    ],
+                    "answer": "F(2) = 0.7"
+                }
+            ]
+        },
+        {
+            "id": "random-variables-in-ai",
+            "title": "Random Variables in AI and Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Modeling Uncertainty",
+                    "body": "Random variables are used to describe uncertain observations, model outputs, labels, sampling processes, and measurement errors."
+                },
+                {
+                    "type": "text",
+                    "title": "Classification Example",
+                    "body": "A binary classification label can be represented by a random variable Y that takes values 0 and 1. A probabilistic classifier may estimate P(Y = 1 given an input X)."
+                },
+                {
+                    "type": "code",
+                    "title": "Simulating a Random Variable with Python",
+                    "language": "python",
+                    "body": "import numpy as np\n\nrng = np.random.default_rng(42)\n\n# Simulate 10,000 fair coin tosses.\ntosses = rng.binomial(n=1, p=0.5, size=10000)\n\n# Let X be the number of heads in two tosses.\npairs = tosses[:10000 - 1].reshape(-1)  # Individual toss outcomes\n\nprint('Estimated probability of heads:', tosses.mean())",
+                    "explanation": "A Bernoulli random variable represents a single trial with outcomes 0 and 1. The sample mean estimates the probability of obtaining 1. The random seed makes the simulation reproducible."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "random-variables-ex-01",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "What is a random variable?",
+            "options": [
+                "A function that assigns numerical values to outcomes",
+                "A number that never changes",
+                "A probability that must equal zero",
+                "A function that always returns one"
+            ],
+            "correctAnswer": "A function that assigns numerical values to outcomes",
+            "solution": "A random variable maps outcomes of a random experiment to numerical values."
+        },
+        {
+            "id": "random-variables-ex-02",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "Which is an example of a discrete random variable?",
+            "options": [
+                "The exact height of a randomly selected person",
+                "The time taken to finish a task",
+                "The number of defective items in a batch",
+                "The temperature at a particular moment"
+            ],
+            "correctAnswer": "The number of defective items in a batch",
+            "solution": "The number of defective items is countable and takes integer values."
+        },
+        {
+            "id": "random-variables-ex-03",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "A random variable takes values 0 and 1 with probabilities 0.4 and 0.6. What is the probability that it equals 1?",
+            "correctAnswer": "0.6",
+            "solution": "The PMF directly gives P(X = 1) = 0.6."
+        },
+        {
+            "id": "random-variables-ex-04",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "A random variable takes values 1, 2, and 3 with probabilities 0.1, 0.6, and 0.3. Calculate P(X <= 2).",
+            "correctAnswer": "0.7",
+            "solution": "P(X <= 2) = P(X = 1) + P(X = 2) = 0.1 + 0.6 = 0.7."
+        },
+        {
+            "id": "random-variables-ex-05",
+            "type": "multiple-choice",
+            "difficulty": "intermediate",
+            "question": "For a continuous random variable with a probability density, what is P(X = a) for a single exact value a?",
+            "options": [
+                "Always 1",
+                "Always 0",
+                "Always 0.5",
+                "It must be greater than 1"
+            ],
+            "correctAnswer": "Always 0",
+            "solution": "A single point has zero probability under a continuous distribution with a density."
+        }
+    ],
+    "summary": [
+        "A random variable assigns numerical values to random outcomes.",
+        "Discrete random variables use probability mass functions.",
+        "Continuous random variables use probability density functions.",
+        "The CDF gives P(X <= x).",
+        "Random variables provide the foundation for probabilistic modeling in AI."
+    ],
+    "relatedTopics": [
+        "Probability Distributions",
+        "Expectation and Variance",
+        "Conditional Probability",
+        "Bayes Theorem",
+        "Maximum Likelihood Estimation"
+    ]
+}

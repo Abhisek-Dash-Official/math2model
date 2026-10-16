@@ -1,1 +1,216 @@
-{}
+{
+    "id": "module-07-transformers-build-tiny-transformer-from-scratch",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 11,
+    "title": "Build a Tiny Transformer from Scratch",
+    "slug": "build-tiny-transformer-from-scratch",
+    "href": "/curriculum/07-transformers/build-tiny-transformer-from-scratch",
+    "filePath": "content/curriculum/07-transformers/11-build-tiny-transformer-from-scratch.json",
+    "description": "Build an educational decoder-only Transformer from fundamental components, including token embeddings, positional embeddings, causal self-attention, multi-head attention, feed-forward networks, residual connections, training, and autoregressive generation.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-06-attention-query-key-value",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-masked-attention",
+        "module-06-attention-multi-head-attention",
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-decoder",
+        "module-07-transformers-decoder-only-models"
+    ],
+    "learningObjectives": [
+        "Build a tiny character-level language model.",
+        "Create training sequences and next-character targets.",
+        "Implement token and position embeddings.",
+        "Implement scaled dot-product self-attention with a causal mask.",
+        "Combine multiple attention heads.",
+        "Implement feed-forward, residual, and normalization layers.",
+        "Train the model with cross-entropy and backpropagation.",
+        "Generate new text autoregressively and diagnose training problems."
+    ],
+    "sections": [
+        {
+            "id": "tiny-transformer-goal",
+            "title": "1. Project Goal and Scope",
+            "type": "concept",
+            "content": "This project builds a small decoder-only Transformer for character-level next-token prediction. It is intended to make the architecture understandable, not to compete with a pretrained language model. The model learns from a small text corpus, predicts the next character, and generates a continuation from a starting prompt. The implementation includes token embeddings, learned positional embeddings, causal multi-head self-attention, feed-forward layers, residual connections, layer normalization, and a vocabulary projection. A small model and dataset keep the experiment manageable on a CPU."
+        },
+        {
+            "id": "tiny-transformer-dataset",
+            "title": "2. Prepare a Character-Level Dataset",
+            "type": "concept",
+            "content": "Character-level modeling uses individual characters as tokens. First, collect a text corpus and construct a vocabulary containing each distinct character. Map each character to an integer ID and define the reverse mapping for decoding. Training examples are fixed-length windows. For a sequence such as 'hello', the input 'hell' can have targets 'ello': the model predicts e after h, l after he, l after hel, and o after hell. Character-level models avoid complex tokenizers but usually require longer sequences than subword models for the same text."
+        },
+        {
+            "id": "tiny-transformer-data-code",
+            "title": "3. Build Training Batches",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ntext = \"transformers learn patterns from sequences. \" * 200\nvocab = sorted(set(text))\nstoi = {ch: i for i, ch in enumerate(vocab)}\nitos = {i: ch for ch, i in stoi.items()}\ndata = torch.tensor([stoi[ch] for ch in text], dtype=torch.long)\n\ntrain_fraction = 0.9\nsplit = int(len(data) * train_fraction)\ntrain_data = data[:split]\nval_data = data[split:]\n\nblock_size = 32\nbatch_size = 16\n\ndef get_batch(split_name, device=\"cpu\"):\n    source = train_data if split_name == \"train\" else val_data\n    if len(source) <= block_size:\n        raise ValueError(\"Dataset segment must be longer than block_size\")\n    starts = torch.randint(0, len(source) - block_size, (batch_size,))\n    x = torch.stack([source[i:i + block_size] for i in starts])\n    y = torch.stack([source[i + 1:i + block_size + 1] for i in starts])\n    return x.to(device), y.to(device)\n\nx, y = get_batch(\"train\")\nprint(\"Vocabulary size:\", len(vocab))\nprint(\"Input batch:\", x.shape)\nprint(\"Target batch:\", y.shape)",
+            "explanation": "The dataset is split chronologically into training and validation segments before random windows are sampled within each segment. Every input position is paired with the next character as its label. The repeated example text is only a demonstration; meaningful language modeling requires a sufficiently large and representative corpus."
+        },
+        {
+            "id": "tiny-transformer-attention",
+            "title": "4. Implement Scaled Dot-Product Attention",
+            "type": "math",
+            "content": "Given queries Q, keys K, and values V, scaled dot-product attention is Attention(Q,K,V) = softmax(QK^T / sqrt(d_k) + M)V, where M is a causal mask. For a single sequence of length L and one head dimension d_k, Q, K, and V have shape (B, L, d_k), and scores have shape (B, L, L). The square-root scaling controls score magnitude as the key dimension grows. The causal mask assigns negative infinity or a sufficiently negative number to future positions before softmax. This ensures that position i cannot retrieve information from a future position j greater than i."
+        },
+        {
+            "id": "tiny-transformer-head-code",
+            "title": "5. Implement One Causal Attention Head",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\nimport torch.nn.functional as F\n\nclass CausalSelfAttentionHead(nn.Module):\n    def __init__(self, d_model, head_dim, block_size, dropout=0.1):\n        super().__init__()\n        self.key = nn.Linear(d_model, head_dim, bias=False)\n        self.query = nn.Linear(d_model, head_dim, bias=False)\n        self.value = nn.Linear(d_model, head_dim, bias=False)\n        self.dropout = nn.Dropout(dropout)\n        self.register_buffer(\n            \"causal_mask\",\n            torch.tril(torch.ones(block_size, block_size, dtype=torch.bool))\n        )\n\n    def forward(self, x):\n        batch, length, _ = x.shape\n        q = self.query(x)\n        k = self.key(x)\n        v = self.value(x)\n        scores = q @ k.transpose(-2, -1)\n        scores = scores / (k.shape[-1] ** 0.5)\n        allowed = self.causal_mask[:length, :length]\n        scores = scores.masked_fill(~allowed, float(\"-inf\"))\n        weights = F.softmax(scores, dim=-1)\n        weights = self.dropout(weights)\n        output = weights @ v\n        return output\n\nhead = CausalSelfAttentionHead(d_model=64, head_dim=16, block_size=32)\nexample = torch.randn(2, 12, 64)\nprint(\"Head output:\", head(example).shape)",
+            "explanation": "This head independently projects input features into keys, queries, and values. The registered lower-triangular mask is automatically moved with the module and is sliced to the current sequence length. Softmax is applied across source positions. Dropout is applied to attention weights during training; evaluation mode disables it. The output dimension is the chosen head dimension."
+        },
+        {
+            "id": "tiny-transformer-multihead",
+            "title": "6. Combine Multiple Attention Heads",
+            "type": "concept",
+            "content": "A single attention head learns one attention transformation. Multi-head attention runs several heads in parallel, concatenates their output features, and projects the concatenation back to d_model. If there are H heads and each has dimension d_head, the concatenated dimension is H times d_head. A common design sets d_head = d_model / H. Each head has its own query, key, and value projections, allowing different learned relationships. The heads are not guaranteed to specialize in cleanly separated semantic categories, but parallel projections increase representational flexibility."
+        },
+        {
+            "id": "tiny-transformer-multihead-code",
+            "title": "7. Multi-Head Attention Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "class MultiHeadCausalAttention(nn.Module):\n    def __init__(self, d_model, num_heads, block_size, dropout=0.1):\n        super().__init__()\n        if d_model % num_heads != 0:\n            raise ValueError(\"d_model must be divisible by num_heads\")\n        head_dim = d_model // num_heads\n        self.heads = nn.ModuleList([\n            CausalSelfAttentionHead(d_model, head_dim, block_size, dropout)\n            for _ in range(num_heads)\n        ])\n        self.projection = nn.Linear(d_model, d_model)\n        self.dropout = nn.Dropout(dropout)\n\n    def forward(self, x):\n        combined = torch.cat([head(x) for head in self.heads], dim=-1)\n        return self.dropout(self.projection(combined))\n\nmultihead = MultiHeadCausalAttention(\n    d_model=64,\n    num_heads=4,\n    block_size=32\n)\nprint(\"Multi-head output:\", multihead(torch.randn(2, 12, 64)).shape)",
+            "explanation": "The module creates several independent causal attention heads. Their outputs are concatenated along the feature dimension and projected back to the model dimension. This educational implementation makes each head explicit; optimized Transformer implementations typically combine projections into larger matrix operations for efficiency."
+        },
+        {
+            "id": "tiny-transformer-ffn",
+            "title": "8. Build the Feed-Forward Network",
+            "type": "concept",
+            "content": "Attention gathers information from other positions, but each token also needs nonlinear feature processing. A feed-forward network expands the feature dimension, applies an activation, and projects back to d_model. A common form is FFN(x) = W2 GELU(W1x + b1) + b2. If d_model is 64 and the hidden dimension is 256, the network expands each token vector fourfold before reducing it to 64 features. The same feed-forward network is applied independently at every sequence position, sharing parameters across positions."
+        },
+        {
+            "id": "tiny-transformer-block",
+            "title": "9. Assemble a Transformer Block",
+            "type": "code",
+            "language": "python",
+            "content": "class TransformerBlock(nn.Module):\n    def __init__(self, d_model, num_heads, block_size, dropout=0.1):\n        super().__init__()\n        self.norm1 = nn.LayerNorm(d_model)\n        self.norm2 = nn.LayerNorm(d_model)\n        self.attention = MultiHeadCausalAttention(\n            d_model, num_heads, block_size, dropout\n        )\n        self.ffn = nn.Sequential(\n            nn.Linear(d_model, 4 * d_model),\n            nn.GELU(),\n            nn.Linear(4 * d_model, d_model),\n            nn.Dropout(dropout)\n        )\n\n    def forward(self, x):\n        # Pre-normalization with residual connections.\n        x = x + self.attention(self.norm1(x))\n        x = x + self.ffn(self.norm2(x))\n        return x\n\nblock = TransformerBlock(d_model=64, num_heads=4, block_size=32)\nprint(\"Block output:\", block(torch.randn(2, 12, 64)).shape)",
+            "explanation": "The block uses pre-normalization: each sublayer receives a normalized representation, and its output is added to the residual stream. Both sublayers preserve the overall model dimension. Stacking multiple blocks allows the model to refine contextual representations repeatedly."
+        },
+        {
+            "id": "tiny-transformer-full-model",
+            "title": "10. Build the Full Tiny Language Model",
+            "type": "code",
+            "language": "python",
+            "content": "class TinyTransformerLanguageModel(nn.Module):\n    def __init__(self, vocab_size, d_model=64, num_heads=4,\n                 num_layers=2, block_size=32, dropout=0.1):\n        super().__init__()\n        self.block_size = block_size\n        self.token_embedding = nn.Embedding(vocab_size, d_model)\n        self.position_embedding = nn.Embedding(block_size, d_model)\n        self.blocks = nn.Sequential(*[\n            TransformerBlock(d_model, num_heads, block_size, dropout)\n            for _ in range(num_layers)\n        ])\n        self.final_norm = nn.LayerNorm(d_model)\n        self.lm_head = nn.Linear(d_model, vocab_size)\n\n    def forward(self, token_ids, targets=None):\n        batch, length = token_ids.shape\n        if length > self.block_size:\n            raise ValueError(\"Input exceeds block_size\")\n        positions = torch.arange(length, device=token_ids.device)\n        x = self.token_embedding(token_ids)\n        x = x + self.position_embedding(positions)[None, :, :]\n        hidden = self.final_norm(self.blocks(x))\n        logits = self.lm_head(hidden)\n        loss = None\n        if targets is not None:\n            loss = F.cross_entropy(\n                logits.reshape(-1, logits.shape[-1]),\n                targets.reshape(-1)\n            )\n        return logits, loss\n\nmodel = TinyTransformerLanguageModel(\n    vocab_size=len(vocab),\n    d_model=64,\n    num_heads=4,\n    num_layers=2,\n    block_size=32\n)\nx, y = get_batch(\"train\")\nlogits, loss = model(x, y)\nprint(\"Logits:\", logits.shape)\nprint(\"Loss:\", loss.item())",
+            "explanation": "The full model combines token embeddings, learned absolute position embeddings, stacked Transformer blocks, final normalization, and a vocabulary projection. Since each input position is trained to predict the next character, the targets supplied by get_batch are already shifted by one position. The vocabulary dimension of the logits equals the number of unique characters in the training corpus."
+        },
+        {
+            "id": "tiny-transformer-training",
+            "title": "11. Train the Model",
+            "type": "code",
+            "language": "python",
+            "content": "import math\n\n# Assumes model, get_batch, and val_data have been defined above.\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\nmodel = model.to(device)\noptimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)\n\n@torch.no_grad()\ndef estimate_loss(eval_batches=20):\n    model.eval()\n    result = {}\n    for split_name in [\"train\", \"val\"]:\n        losses = []\n        for _ in range(eval_batches):\n            xb, yb = get_batch(split_name, device=device)\n            _, batch_loss = model(xb, yb)\n            losses.append(batch_loss.item())\n        result[split_name] = sum(losses) / len(losses)\n    model.train()\n    return result\n\nmax_steps = 500\nfor step in range(max_steps):\n    model.train()\n    xb, yb = get_batch(\"train\", device=device)\n    _, loss = model(xb, yb)\n    optimizer.zero_grad(set_to_none=True)\n    loss.backward()\n    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\n    optimizer.step()\n\n    if step % 100 == 0:\n        metrics = estimate_loss()\n        print(step, metrics)\n\nprint(\"Final estimated losses:\", estimate_loss())",
+            "explanation": "This loop uses AdamW, gradient clipping, and periodic train/validation loss estimates. The number of steps is illustrative and may need adjustment. The validation data is kept separate from training windows. A real experiment should set random seeds, save checkpoints, monitor overfitting, and compare against a simple baseline."
+        },
+        {
+            "id": "tiny-transformer-generation",
+            "title": "12. Generate Text Autoregressively",
+            "type": "code",
+            "language": "python",
+            "content": "@torch.no_grad()\ndef generate(model, start_text, max_new_tokens=100, temperature=1.0):\n    if temperature <= 0:\n        raise ValueError(\"temperature must be positive\")\n    model.eval()\n    unknown = [ch for ch in start_text if ch not in stoi]\n    if unknown:\n        raise ValueError(f\"Prompt contains characters outside the vocabulary: {unknown}\")\n\n    context = torch.tensor(\n        [[stoi[ch] for ch in start_text]],\n        dtype=torch.long,\n        device=next(model.parameters()).device\n    )\n    for _ in range(max_new_tokens):\n        context_window = context[:, -model.block_size:]\n        logits, _ = model(context_window)\n        next_logits = logits[:, -1, :] / temperature\n        probabilities = F.softmax(next_logits, dim=-1)\n        next_id = torch.multinomial(probabilities, num_samples=1)\n        context = torch.cat([context, next_id], dim=1)\n\n    return \"\".join(itos[i] for i in context[0].tolist())\n\nprint(generate(model, \"transform\", max_new_tokens=100, temperature=0.8))",
+            "explanation": "The generator repeatedly uses the final-position logits to sample the next character and appends that character to the context. When the sequence grows beyond the configured block size, only the most recent block is supplied to the model. This simple implementation recomputes the context each step and does not use a key-value cache. Output quality depends on the corpus, model capacity, training duration, and sampling temperature."
+        },
+        {
+            "id": "tiny-transformer-loss-analysis",
+            "title": "13. Understand the Training Loss",
+            "type": "math",
+            "content": "Cross-entropy measures the negative log-probability assigned to the correct next character. If the model assigns probability 0.5 to the correct character, the loss for that position is approximately 0.693 using natural logarithms. If it assigns probability 0.1, the loss is approximately 2.303. Lower loss indicates better prediction on the evaluated data, but does not guarantee that generated text is meaningful. Compare training and validation loss over time. If training loss decreases while validation loss rises, the model may be overfitting the training corpus."
+        },
+        {
+            "id": "tiny-transformer-debugging",
+            "title": "14. Debugging the Implementation",
+            "type": "concept",
+            "content": "Start by checking shapes at each stage: token IDs should be (B, L), embeddings should be (B, L, D), each head should return (B, L, d_head), the concatenated heads should return (B, L, D), and vocabulary logits should be (B, L, V). Verify that the causal mask blocks only future positions. Check that input and target batches have the same shape and are shifted by exactly one character. If loss becomes NaN, inspect learning rate, mask values, input IDs, and gradients. Small reproducible examples make debugging much easier."
+        },
+        {
+            "id": "tiny-transformer-overfitting",
+            "title": "15. Overfitting and Generalization",
+            "type": "concept",
+            "content": "A small model can memorize repeated training patterns without learning robust language structure. Training and validation loss help distinguish memorization from generalization. To reduce overfitting, collect more diverse text, reduce model capacity, adjust training duration, or use suitable regularization. Repeatedly tuning against the validation set can also overfit model selection to that split. Keep a separate test set for final evaluation. For tiny corpora, generated text is especially sensitive to the source material and may reproduce its repetition or biases."
+        },
+        {
+            "id": "tiny-transformer-efficiency",
+            "title": "16. Performance and Scaling",
+            "type": "concept",
+            "content": "The educational implementation computes attention independently in each head, which is easy to understand but not the most efficient approach. Optimized libraries combine projections, use specialized matrix multiplication kernels, and may use memory-efficient attention. Standard full attention scales quadratically with context length in its attention matrix. Increasing layers, model dimension, vocabulary size, or sequence length increases compute and memory requirements. For larger projects, use established training infrastructure and profile the model before optimizing the wrong component."
+        },
+        {
+            "id": "tiny-transformer-extensions",
+            "title": "17. Suggested Extensions",
+            "type": "concept",
+            "content": "After the basic model works, try changing the context length, number of heads, number of layers, model dimension, dropout, and learning rate. Compare learned absolute position embeddings with sinusoidal positional encoding. Add top-k sampling or temperature controls. Try a larger text corpus and compare character-level modeling with a subword tokenizer. Another extension is to build a separate encoder and decoder with cross-attention. Change one factor at a time and record validation loss and generated samples so the effect of each change can be understood."
+        },
+        {
+            "id": "tiny-transformer-project-checklist",
+            "title": "18. Project Completion Checklist",
+            "type": "concept",
+            "content": "A completed educational implementation should include a reproducible dataset split, a vocabulary and reverse vocabulary, a batch generator, causal attention, multi-head attention, feed-forward layers, residual connections, normalization, a language-modeling head, and a training loop. It should report training and validation loss and generate text from a valid prompt. Document the model dimensions, context length, training steps, and limitations. Before trusting results, verify that no future-token leakage occurs and that evaluation data is not used to update the model."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "tiny-transformer-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why do we shift the target sequence by one character?",
+            "correctAnswer": "So the model learns to predict the next character at each input position.",
+            "solution": "For input 'hell', the aligned target is 'ello'. The representation after seeing h predicts e, after seeing he predicts l, and so on."
+        },
+        {
+            "id": "tiny-transformer-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A model uses d_model = 96 and 6 attention heads. What is the dimension of each head?",
+            "correctAnswer": "16",
+            "solution": "The head dimension is 96 / 6 = 16."
+        },
+        {
+            "id": "tiny-transformer-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What does the causal mask prevent?",
+            "correctAnswer": "It prevents a token position from attending to future positions.",
+            "solution": "The mask sets future attention scores to negative infinity or a sufficiently negative value before softmax, making their attention probabilities zero or approximately zero."
+        },
+        {
+            "id": "tiny-transformer-ex-4",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "What shape should the final vocabulary logits have for a batch of 16 sequences, each of length 32, with vocabulary size 80?",
+            "correctAnswer": "(16, 32, 80)",
+            "solution": "The vocabulary projection preserves batch size and sequence length while mapping the final feature dimension to the vocabulary size."
+        },
+        {
+            "id": "tiny-transformer-ex-5",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "Training loss falls continuously, but validation loss rises. What is one likely explanation and one possible response?",
+            "correctAnswer": "The model may be overfitting; use more representative data, regularization, reduced capacity, or earlier stopping.",
+            "solution": "The widening difference between training and validation performance suggests the model is learning training-specific patterns that do not generalize. Compare model capacity, dataset size, training duration, and regularization."
+        },
+        {
+            "id": "tiny-transformer-ex-6",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Suggest two meaningful extensions to the tiny Transformer and explain what each teaches.",
+            "correctAnswer": "For example, compare positional encoding methods to study sequence order, and vary the context length to study long-range dependencies and computational cost.",
+            "solution": "A controlled experiment should change one factor at a time and compare validation loss, runtime, memory use, and generated samples. Record the settings to make results reproducible."
+        }
+    ],
+    "summary": "Building a tiny Transformer connects the architecture's equations to executable code. The project creates next-character training pairs, learns token and position embeddings, computes masked multi-head self-attention, applies feed-forward transformations and residual connections, and trains a vocabulary prediction head with cross-entropy. Autoregressive generation repeatedly samples from the final-position distribution. Correct masks, target shifting, tensor shapes, validation, and reproducibility are essential.",
+    "relatedTopics": [
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention",
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-decoder",
+        "module-07-transformers-decoder-only-models"
+    ]
+}

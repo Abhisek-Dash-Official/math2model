@@ -1,1 +1,148 @@
-{}
+{
+    "id": "evaluation-metrics",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 14,
+    "title": "Evaluation Metrics",
+    "slug": "evaluation-metrics",
+    "description": "Learn how to evaluate regression and classification models using confusion matrices, precision, recall, F1-score, ROC-AUC, PR-AUC, MAE, MSE, RMSE, and R-squared.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5.5,
+    "prerequisites": [
+        "Linear Regression",
+        "Logistic Regression",
+        "Loss Functions",
+        "Training, Validation, and Test Sets",
+        "Basic Probability"
+    ],
+    "learningObjectives": [
+        "Explain why model evaluation must reflect the task and its real-world costs.",
+        "Distinguish training loss from evaluation metrics.",
+        "Calculate and interpret confusion-matrix values.",
+        "Calculate accuracy, precision, recall, specificity, and F1-score.",
+        "Understand threshold-dependent and threshold-independent classification metrics.",
+        "Interpret ROC curves, ROC-AUC, precision-recall curves, and PR-AUC.",
+        "Evaluate regression models using MAE, MSE, RMSE, and R-squared.",
+        "Recognize the limitations of individual metrics on imbalanced datasets.",
+        "Choose suitable metrics for different business and scientific scenarios.",
+        "Implement common evaluation metrics using scikit-learn."
+    ],
+    "sections": [
+        {
+            "id": "why-evaluation-matters",
+            "title": "1. Why Model Evaluation Matters",
+            "type": "concept",
+            "content": "# A Model Needs More Than a Good Training Score\n\nA model can perform very well on the data used to fit it and still perform poorly on new observations. Evaluation measures how useful a model is for the intended task and helps compare alternative models.\n\nNo single metric is best for every problem. A metric should reflect the type of prediction, the consequences of different errors, and the needs of the people using the model.\n\nFor example:\n\n- A house-price model may be evaluated by the typical size of its numerical prediction errors.\n- A spam filter may need high precision so that important messages are not incorrectly marked as spam.\n- A medical screening model may prioritize recall to reduce missed positive cases, while also considering false positives and the follow-up testing burden.\n- A fraud-detection system may need to identify rare events while operating under a limited investigation budget.\n\n## Evaluation, Loss, and Decisions\n\nTraining loss is the objective used to fit model parameters. An evaluation metric summarizes performance according to a particular rule. A decision policy determines what action to take based on predictions.\n\nThese are related but distinct.\n\nFor instance, a classifier can output a probability of fraud. The probability model can be evaluated using cross-entropy or ranking metrics. A separate threshold or resource-allocation policy decides which transactions should be investigated.\n\n## Generalization\n\nA reliable evaluation estimates how a model will perform on data not used to fit its parameters or tune its hyperparameters. A proper workflow separates training data from validation and final test data.\n\nIf a test set is repeatedly used to choose models, features, or thresholds, it gradually becomes part of the model-selection process. The reported test score can then become optimistically biased.\n\n## Metric Selection Checklist\n\n1. Is the target continuous or categorical?\n2. Which types of errors are most costly?\n3. Is the dataset imbalanced?\n4. Does the application need calibrated probabilities or only ranking?\n5. Will the final decision use a threshold or a limited resource budget?\n6. Does the metric match the intended deployment population?\n\nA technically correct metric can still be a poor choice if it does not reflect the real objective."
+        },
+        {
+            "id": "confusion-matrix",
+            "title": "2. Confusion Matrix and Classification Basics",
+            "type": "math",
+            "content": "# The Confusion Matrix\n\nFor binary classification, predictions can be divided into four groups.\n\n- True Positive (TP): the actual class is positive and the model predicts positive.\n- True Negative (TN): the actual class is negative and the model predicts negative.\n- False Positive (FP): the actual class is negative but the model predicts positive.\n- False Negative (FN): the actual class is positive but the model predicts negative.\n\nThese counts form a confusion matrix. Always check whether the library places true labels on rows and predicted labels on columns, or uses the opposite convention.\n\n## Example\n\nSuppose a fraud detector evaluates 1,000 transactions:\n\n- TP = 40\n- TN = 900\n- FP = 30\n- FN = 30\n\nThere are 70 actual positive cases because TP + FN = 70. The model identifies 40 of them and misses 30.\n\n## Accuracy\n\nAccuracy = (TP + TN) / (TP + TN + FP + FN)\n\nFor this example:\n\nAccuracy = (40 + 900) / 1000 = 94%\n\nAccuracy is intuitive, but it can hide poor performance on a minority class.\n\n## Precision\n\nPrecision = TP / (TP + FP)\n\nPrecision answers: among examples predicted positive, what fraction are actually positive?\n\nHere:\n\nPrecision = 40 / (40 + 30) = 57.14%\n\n## Recall or Sensitivity\n\nRecall = TP / (TP + FN)\n\nRecall answers: among actual positive examples, what fraction did the model identify?\n\nHere:\n\nRecall = 40 / (40 + 30) = 57.14%\n\n## Specificity\n\nSpecificity = TN / (TN + FP)\n\nSpecificity measures the fraction of actual negative examples correctly identified.\n\nHere:\n\nSpecificity = 900 / (900 + 30) = 96.77%\n\n## F1-Score\n\nF1 = 2 * Precision * Recall / (Precision + Recall)\n\nFor the example, precision and recall are equal, so F1 is approximately 57.14%.\n\nF1 is the harmonic mean of precision and recall. It becomes low when either precision or recall is low. Standard binary F1 does not directly incorporate true negatives.\n\n## Zero Denominators\n\nIf a model predicts no positive cases, precision's denominator can be zero. If there are no actual positive cases, recall's denominator can be zero. Libraries offer conventions for handling these cases; always inspect the chosen setting and dataset."
+        },
+        {
+            "id": "threshold-metrics",
+            "title": "3. Thresholds, ROC-AUC, and Precision-Recall Curves",
+            "type": "math",
+            "content": "# Probability Scores and Decision Thresholds\n\nMany classifiers produce a probability or score rather than a final class label. A threshold converts the score into a decision.\n\nFor predicted probability p and threshold t:\n\nPredict positive if p >= t.\n\nA threshold of 0.5 is common, but it is not universally optimal. Lowering the threshold generally increases or preserves recall and can also increase false positives. Raising the threshold generally increases or preserves precision in many practical settings, although exact changes depend on the dataset and score distribution.\n\n## ROC Curve\n\nThe Receiver Operating Characteristic curve plots:\n\nTrue Positive Rate = TP / (TP + FN)\n\nagainst:\n\nFalse Positive Rate = FP / (FP + TN)\n\nacross different thresholds.\n\nThe true positive rate is recall. The false positive rate is one minus specificity.\n\n## ROC-AUC\n\nThe Area Under the ROC Curve summarizes the ranking performance across thresholds. Under the usual interpretation, ROC-AUC is the probability that a randomly selected positive example receives a higher score than a randomly selected negative example, with ties handled appropriately.\n\nA value near 0.5 indicates chance-level ranking in the standard binary setting. A value of 1 indicates perfect ranking. ROC-AUC does not specify a single operating threshold and does not guarantee well-calibrated probabilities.\n\n## Precision-Recall Curve\n\nA precision-recall curve plots precision against recall at different thresholds.\n\nIt is particularly informative when the positive class is rare because it focuses on performance among positive predictions and actual positives. Precision depends on class prevalence, so the baseline behavior of a precision-recall curve changes with the positive-class proportion.\n\n## PR-AUC and Average Precision\n\nDifferent libraries may use different definitions or numerical approximations for the area under a precision-recall curve. Average precision is a common summary that weights precision across recall increments. It should not be assumed to be numerically identical to every trapezoidal PR-area calculation.\n\n## When to Use Which Metric\n\n- Accuracy: when classes are reasonably balanced and error types have comparable costs.\n- Precision: when false positives are expensive.\n- Recall: when false negatives are expensive.\n- F1-score: when a balance between precision and recall is desired.\n- ROC-AUC: when ranking quality across thresholds matters.\n- PR-AUC or average precision: when positive cases are rare and positive-class retrieval is central.\n\nMetric selection should also consider the decision threshold, class prevalence, and available operational resources."
+        },
+        {
+            "id": "multiclass-evaluation",
+            "title": "4. Multiclass Classification Metrics",
+            "type": "concept",
+            "content": "# Evaluating More Than Two Classes\n\nIn multiclass classification, a model predicts one label from several possible classes. Metrics such as precision, recall, and F1 can be calculated for each class by treating that class as positive and the remaining classes as negative.\n\n## Macro Average\n\nMacro averaging calculates the metric separately for each class and then takes the unweighted average.\n\nEach class contributes equally, regardless of how many examples it contains. Macro metrics can reveal poor performance on rare classes that would be hidden by a majority class.\n\n## Weighted Average\n\nWeighted averaging averages the class-specific metric values using each class's support, meaning the number of true examples belonging to that class.\n\nLarge classes therefore contribute more to the result. Weighted F1 is not generally equal to the harmonic mean of weighted precision and weighted recall.\n\n## Micro Average\n\nMicro averaging aggregates the underlying counts across classes before calculating the metric. It emphasizes overall example-level performance. In standard single-label multiclass classification, micro precision, micro recall, micro F1, and accuracy coincide when computed over the complete set of classes.\n\n## Example\n\nSuppose a three-class classifier performs very well on common classes A and B but poorly on rare class C.\n\n- Weighted F1 may remain high because A and B dominate the dataset.\n- Macro F1 can be much lower because class C contributes equally.\n- The class-specific recall for C directly reveals how many C examples are missed.\n\n## Confusion Matrix for Multiple Classes\n\nA multiclass confusion matrix shows the counts for every true-label and predicted-label combination. It helps identify which classes are frequently confused with one another.\n\nFor example, a model may distinguish cats from cars easily but frequently confuse wolves with dogs. A single accuracy score cannot show this structure.\n\n## Multilabel Classification\n\nMultilabel classification allows an observation to have several labels simultaneously. Its evaluation requires care because exact-match accuracy, per-label metrics, micro metrics, and macro metrics answer different questions. Do not automatically apply single-label multiclass interpretations to multilabel tasks."
+        },
+        {
+            "id": "regression-metrics",
+            "title": "5. Regression Evaluation Metrics",
+            "type": "math",
+            "content": "# Measuring Numerical Prediction Errors\n\nFor regression, let y_i be the true value and y_hat_i the prediction. Define residual r_i = y_i - y_hat_i.\n\n## Mean Absolute Error\n\nMAE = (1/n) * sum |y_i - y_hat_i|\n\nMAE measures the average absolute prediction error in the same units as the target. It is relatively less sensitive to extreme errors than MSE.\n\n## Mean Squared Error\n\nMSE = (1/n) * sum (y_i - y_hat_i)^2\n\nMSE penalizes large errors quadratically and has squared target units.\n\n## Root Mean Squared Error\n\nRMSE = sqrt(MSE)\n\nRMSE returns the error scale to the target's units. It remains more sensitive to large residuals than MAE.\n\n## Worked Example\n\nActual values: [3, 5, 7]\n\nPredictions: [2, 5, 10]\n\nResiduals: [1, 0, -3]\n\nAbsolute residuals: [1, 0, 3]\n\nMAE = 4/3, approximately 1.333\n\nSquared residuals: [1, 0, 9]\n\nMSE = 10/3, approximately 3.333\n\nRMSE = sqrt(10/3), approximately 1.826\n\n## R-Squared\n\nR-squared is commonly defined as:\n\nR2 = 1 - SS_res / SS_tot\n\nwhere:\n\nSS_res = sum (y_i - y_hat_i)^2\n\nSS_tot = sum (y_i - mean(y))^2\n\nR-squared compares model residual error with the error from predicting the observed target mean, under the same evaluation data and standard definition.\n\nAn R-squared of 1 indicates perfect predictions. An R-squared of 0 means the model's residual sum of squares equals the mean-baseline sum of squares. R-squared can be negative on held-out data if the model performs worse than the mean baseline.\n\n## MAPE\n\nMean Absolute Percentage Error is often calculated as:\n\nMAPE = (100/n) * sum |(y_i - y_hat_i) / y_i|\n\nMAPE can be difficult to use when true targets are zero or close to zero. It can also behave asymmetrically and overweight some errors. Alternatives include MAE, RMSE, or specialized percentage-based metrics designed for the data.\n\n## Choosing Regression Metrics\n\n- MAE: interpretable typical absolute error and reduced sensitivity to large residuals.\n- RMSE: greater emphasis on large errors and error interpretation in target units.\n- R-squared: comparison with a mean baseline under its standard definition.\n- Percentage-based metrics: useful only when their denominator and interpretation make sense for the target domain.\n\nAlways inspect residuals and important subgroups. A good average metric can hide systematic underprediction or poor performance in a particular region."
+        },
+        {
+            "id": "calibration-and-cost",
+            "title": "6. Calibration, Business Costs, and Metric Trade-Offs",
+            "type": "concept",
+            "content": "# Ranking Is Not the Same as Calibration\n\nA classifier may rank positive examples above negative examples well but produce probabilities that are systematically too high or too low.\n\nCalibration asks whether predicted probabilities correspond to observed frequencies. For example, among cases assigned probabilities near 0.8, roughly 80% should be positive for the predictions to be well calibrated in that region.\n\nROC-AUC measures ranking rather than calibration. A model can have strong ROC-AUC and poor probability calibration.\n\n## Why Calibration Matters\n\nSuppose a business uses predicted probabilities to estimate expected financial losses or decide whether to offer a service. Poorly calibrated probabilities can lead to bad decisions even if ranking quality is good.\n\nCalibration can be examined using reliability diagrams and summary measures such as the Brier score, which measures squared probability error for binary outcomes. Calibration procedures must be fitted using suitable validation data rather than the final test set.\n\n## Cost-Sensitive Evaluation\n\nDifferent mistakes may have different consequences. Let C_FP be the cost of a false positive and C_FN the cost of a false negative. A simplified expected error cost is:\n\nExpected cost = C_FP * FP + C_FN * FN\n\nThis expression can be extended to include true-positive benefits, true-negative costs, investigation capacity, and other operational constraints.\n\nWhen costs differ, maximizing accuracy may not produce the best decision policy.\n\n## Example: Fraud Detection\n\nA fraud model may identify many genuine fraud cases but also flag numerous legitimate transactions. If investigations are expensive, precision at the available investigation capacity may matter more than raw recall alone.\n\nThe correct choice depends on the operational process: how many investigations are possible, how costly a missed fraud case is, and what action follows a flag.\n\n## Threshold Selection\n\nChoose a threshold using validation data and a clearly defined objective, such as minimizing expected cost or achieving a target recall while respecting a precision requirement. Freeze the policy before final test evaluation.\n\n## Fairness and Subgroup Evaluation\n\nOverall metrics may hide uneven performance across groups or environments. When relevant and legally appropriate, evaluate performance across meaningful subgroups, examine error distributions, and consider the consequences of different errors. A single aggregate score is not a complete assessment of model quality."
+        },
+        {
+            "id": "evaluation-python",
+            "title": "7. Implementing Evaluation Metrics with scikit-learn",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\nfrom sklearn.datasets import load_breast_cancer, fetch_california_housing\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.linear_model import LogisticRegression, LinearRegression\nfrom sklearn.metrics import (\n    confusion_matrix, accuracy_score, precision_score,\n    recall_score, f1_score, roc_auc_score,\n    average_precision_score, classification_report,\n    mean_absolute_error, mean_squared_error, r2_score\n)\n\n# Classification\nX, y = load_breast_cancer(return_X_y=True)\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, stratify=y, random_state=42\n)\n\nclassifier = LogisticRegression(max_iter=5000)\nclassifier.fit(X_train, y_train)\n\npredicted_labels = classifier.predict(X_test)\npositive_probabilities = classifier.predict_proba(X_test)[:, 1]\n\nprint('Confusion matrix:\\n', confusion_matrix(y_test, predicted_labels))\nprint('Accuracy:', accuracy_score(y_test, predicted_labels))\nprint('Precision:', precision_score(y_test, predicted_labels, zero_division=0))\nprint('Recall:', recall_score(y_test, predicted_labels, zero_division=0))\nprint('F1:', f1_score(y_test, predicted_labels, zero_division=0))\nprint('ROC-AUC:', roc_auc_score(y_test, positive_probabilities))\nprint('Average precision:', average_precision_score(y_test, positive_probabilities))\nprint(classification_report(y_test, predicted_labels, zero_division=0))\n\n# Regression\nXr, yr = fetch_california_housing(return_X_y=True)\nXr_train, Xr_test, yr_train, yr_test = train_test_split(\n    Xr, yr, test_size=0.2, random_state=42\n)\n\nregressor = LinearRegression()\nregressor.fit(Xr_train, yr_train)\nreg_predictions = regressor.predict(Xr_test)\n\nmse = mean_squared_error(yr_test, reg_predictions)\nprint('MAE:', mean_absolute_error(yr_test, reg_predictions))\nprint('MSE:', mse)\nprint('RMSE:', np.sqrt(mse))\nprint('R-squared:', r2_score(yr_test, reg_predictions))",
+            "explanation": "For classification, predict() returns class labels while predict_proba() returns estimated class probabilities. ROC-AUC and average precision should normally receive continuous scores rather than hard class labels. Precision, recall, and F1 depend on the predicted labels and therefore on the chosen decision threshold. Regression metrics compare numerical predictions with targets. The California housing dataset may require an internet connection the first time it is fetched, depending on the environment."
+        },
+        {
+            "id": "evaluation-workflow",
+            "title": "8. Building a Trustworthy Evaluation Workflow",
+            "type": "concept",
+            "content": "# Step-by-Step Evaluation\n\n1. Define the prediction task and deployment decision.\n2. Select metrics that reflect the cost and type of errors.\n3. Create a representative training, validation, and test split.\n4. Prevent preprocessing and target leakage.\n5. Establish a simple baseline.\n6. Train candidate models and tune hyperparameters using training data and validation or cross-validation.\n7. Select the decision threshold using validation data when required.\n8. Inspect class-specific metrics, residuals, calibration, and relevant subgroups.\n9. Freeze the final pipeline and evaluate it on held-out test data.\n10. Monitor performance after deployment because data distributions and operational conditions can change.\n\n## Baselines\n\nA classification baseline might predict the majority class or use a simple probabilistic model. A regression baseline might predict the training-set mean or median. Baselines reveal whether a complex model delivers meaningful improvement.\n\n## Confidence and Variability\n\nA single metric from one random split can be unstable, particularly with small datasets or rare events. Cross-validation and uncertainty estimates can help characterize variability. The evaluation design must still match the intended deployment setting, such as temporal prediction or grouped observations.\n\n## Final Principle\n\nModel evaluation is not a competition to maximize the largest number. It is a process for estimating how well a model will serve a defined purpose on future data."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "eval-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A binary classifier has TP = 80, TN = 850, FP = 50, and FN = 20. Calculate accuracy, precision, and recall.",
+            "correctAnswer": "Accuracy = 93%, precision approximately 61.54%, and recall = 80%.",
+            "solution": "Total examples = 80 + 850 + 50 + 20 = 1000. Accuracy = (80 + 850)/1000 = 93%. Precision = 80/(80 + 50) = 80/130, approximately 61.54%. Recall = 80/(80 + 20) = 80%."
+        },
+        {
+            "id": "eval-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why can accuracy be misleading when positive examples are very rare?",
+            "correctAnswer": "A model can predict the negative class for almost every example and still achieve high accuracy while missing most positive cases.",
+            "solution": "If only 1% of examples are positive, always predicting negative achieves 99% accuracy but zero recall for the positive class. Precision, recall, F1, confusion-matrix counts, and suitable ranking metrics provide additional information."
+        },
+        {
+            "id": "eval-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A model has precision = 0.8 and recall = 0.5. Calculate its F1-score.",
+            "correctAnswer": "Approximately 0.6154.",
+            "solution": "F1 = 2*precision*recall/(precision + recall) = 2*0.8*0.5/(0.8 + 0.5) = 0.8/1.3, approximately 0.6154."
+        },
+        {
+            "id": "eval-ex-4",
+            "type": "comparison",
+            "difficulty": "medium",
+            "question": "Explain the difference between ROC-AUC and accuracy.",
+            "correctAnswer": "Accuracy measures correct predictions at a particular threshold, while ROC-AUC summarizes ranking performance across thresholds.",
+            "solution": "Accuracy depends on the predicted labels and therefore the decision threshold. ROC-AUC evaluates how well positive examples are ranked above negative examples across thresholds. ROC-AUC does not directly choose a threshold and does not guarantee calibrated probabilities."
+        },
+        {
+            "id": "eval-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Actual regression values are [2, 4, 6] and predictions are [3, 4, 4]. Calculate MAE, MSE, and RMSE.",
+            "correctAnswer": "MAE = 1, MSE = 5/3, and RMSE approximately 1.291.",
+            "solution": "Residual magnitudes are [1, 0, 2]. MAE = (1 + 0 + 2)/3 = 1. Squared residuals are [1, 0, 4], so MSE = 5/3. RMSE = sqrt(5/3), approximately 1.291."
+        },
+        {
+            "id": "eval-ex-6",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A screening model must minimize missed positive cases, but too many false positives would overwhelm the follow-up team. How should its evaluation be designed?",
+            "correctAnswer": "Evaluate recall and precision across thresholds, examine the precision-recall curve, and select a threshold using validation data subject to operational constraints.",
+            "solution": "First estimate class prevalence and the cost of missed cases and unnecessary follow-ups. Evaluate recall, precision, and workload across thresholds. Select a threshold that satisfies the recall target while keeping the false-positive burden manageable, then report performance on an untouched test set. Also evaluate calibration and subgroup behavior when relevant."
+        }
+    ],
+    "summary": [
+        "Evaluation metrics must reflect the task and consequences of errors.",
+        "Confusion matrices provide the counts needed to calculate common classification metrics.",
+        "Precision focuses on predicted positives, while recall focuses on actual positives.",
+        "ROC-AUC evaluates ranking across thresholds; precision-recall analysis is especially useful for rare positive classes.",
+        "Macro, micro, and weighted averaging provide different views of multiclass performance.",
+        "MAE, MSE, RMSE, and R-squared describe different aspects of regression performance.",
+        "Calibration, threshold selection, data leakage prevention, and subgroup analysis are important parts of trustworthy evaluation."
+    ],
+    "relatedTopics": [
+        "loss-functions",
+        "logistic-regression",
+        "pca",
+        "bias-variance",
+        "overfitting-underfitting"
+    ]
+}

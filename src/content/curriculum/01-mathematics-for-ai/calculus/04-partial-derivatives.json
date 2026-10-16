@@ -1,1 +1,270 @@
-{}
+{
+    "id": "calculus-partial-derivatives",
+    "title": "Partial Derivatives",
+    "slug": "partial-derivatives",
+    "description": "Learn to differentiate multivariable functions with respect to individual variables while holding other variables constant.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Functions",
+        "Limits",
+        "Derivatives"
+    ],
+    "learningObjectives": [
+        "Understand functions with multiple input variables.",
+        "Calculate first-order partial derivatives.",
+        "Calculate second-order and mixed partial derivatives.",
+        "Interpret partial derivatives geometrically.",
+        "Understand how partial derivatives describe sensitivity.",
+        "Apply partial derivatives to machine learning loss functions."
+    ],
+    "sections": [
+        {
+            "id": "multivariable-functions",
+            "title": "Functions of Multiple Variables",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "What Is a Multivariable Function?",
+                    "body": "A multivariable function takes two or more input variables and produces an output. For example, f(x, y) = x^2 + y^2 produces one numerical output from the two inputs x and y."
+                },
+                {
+                    "type": "formula",
+                    "title": "General Form",
+                    "body": "z = f(x, y)"
+                },
+                {
+                    "type": "example",
+                    "title": "Evaluate a Function",
+                    "problem": "Evaluate f(x, y) = x^2 + 3y at x = 2 and y = 4.",
+                    "solution": [
+                        "Substitute x = 2 and y = 4.",
+                        "Calculate 2^2 + 3(4).",
+                        "Simplify 4 + 12."
+                    ],
+                    "answer": "16"
+                }
+            ]
+        },
+        {
+            "id": "partial-derivative-definition",
+            "title": "What Is a Partial Derivative?",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Core Idea",
+                    "body": "A partial derivative measures how a multivariable function changes when one input variable changes while all other input variables are held constant."
+                },
+                {
+                    "type": "formula",
+                    "title": "Notation",
+                    "body": "∂f/∂x, ∂f/∂y"
+                },
+                {
+                    "type": "text",
+                    "title": "Difference from an Ordinary Derivative",
+                    "body": "An ordinary derivative typically describes change with respect to one independent variable. A partial derivative focuses on one variable of a function that has multiple independent variables."
+                }
+            ]
+        },
+        {
+            "id": "partial-derivative-calculation",
+            "title": "Calculating Partial Derivatives",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Differentiate with Respect to x",
+                    "body": "When differentiating with respect to x, treat y as a constant. Differentiate only the dependence on x."
+                },
+                {
+                    "type": "example",
+                    "title": "Partial Derivative with Respect to x",
+                    "problem": "Find ∂f/∂x for f(x, y) = x^2 + 3xy + y^2.",
+                    "solution": [
+                        "Differentiate x^2 with respect to x to obtain 2x.",
+                        "Differentiate 3xy with respect to x to obtain 3y because y is held constant.",
+                        "Differentiate y^2 with respect to x to obtain zero."
+                    ],
+                    "answer": "∂f/∂x = 2x + 3y"
+                },
+                {
+                    "type": "example",
+                    "title": "Partial Derivative with Respect to y",
+                    "problem": "Find ∂f/∂y for f(x, y) = x^2 + 3xy + y^2.",
+                    "solution": [
+                        "Differentiate x^2 with respect to y to obtain zero.",
+                        "Differentiate 3xy with respect to y to obtain 3x.",
+                        "Differentiate y^2 with respect to y to obtain 2y."
+                    ],
+                    "answer": "∂f/∂y = 3x + 2y"
+                },
+                {
+                    "type": "example",
+                    "title": "Evaluate a Partial Derivative",
+                    "problem": "For f(x, y) = x^2 + 3xy + y^2, calculate ∂f/∂x at (2, 1).",
+                    "solution": [
+                        "The partial derivative is 2x + 3y.",
+                        "Substitute x = 2 and y = 1.",
+                        "Calculate 2(2) + 3(1)."
+                    ],
+                    "answer": "7"
+                }
+            ]
+        },
+        {
+            "id": "higher-order-partials",
+            "title": "Second-Order and Mixed Partial Derivatives",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Second-Order Partial Derivatives",
+                    "body": "A second-order partial derivative is obtained by differentiating a first-order partial derivative again."
+                },
+                {
+                    "type": "formula",
+                    "title": "Second-Order Notation",
+                    "body": "∂²f/∂x², ∂²f/∂y²"
+                },
+                {
+                    "type": "text",
+                    "title": "Mixed Partial Derivatives",
+                    "body": "Mixed partial derivatives differentiate with respect to different variables in sequence. For sufficiently smooth functions, the order of differentiation gives the same result."
+                },
+                {
+                    "type": "formula",
+                    "title": "Mixed Partial Notation",
+                    "body": "∂²f/∂y∂x"
+                },
+                {
+                    "type": "example",
+                    "title": "Find Second-Order Partials",
+                    "problem": "For f(x, y) = x^2*y + 3y^2, find ∂²f/∂x² and ∂²f/∂y∂x.",
+                    "solution": [
+                        "First calculate ∂f/∂x = 2xy.",
+                        "Differentiate 2xy with respect to x to get ∂²f/∂x² = 2y.",
+                        "Differentiate 2xy with respect to y to get ∂²f/∂y∂x = 2x."
+                    ],
+                    "answer": "∂²f/∂x² = 2y; ∂²f/∂y∂x = 2x"
+                }
+            ]
+        },
+        {
+            "id": "geometric-interpretation",
+            "title": "Geometric Interpretation",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "A Surface Instead of a Curve",
+                    "body": "A function of two variables can be represented as a surface in three-dimensional space. A partial derivative describes the slope of the surface in the direction of one coordinate axis while the other variable is held fixed."
+                },
+                {
+                    "type": "text",
+                    "title": "Sensitivity",
+                    "body": "The magnitude of a partial derivative indicates local sensitivity to a variable. A large absolute value means a small change in that variable can cause a relatively large output change locally."
+                },
+                {
+                    "type": "example",
+                    "title": "Interpreting Sensitivity",
+                    "problem": "Suppose ∂f/∂x = 10 at a particular point. What does this mean locally?",
+                    "solution": [
+                        "The output changes at a rate of approximately 10 units per unit change in x.",
+                        "This interpretation assumes other inputs remain fixed and the change is sufficiently small."
+                    ],
+                    "answer": "The function is locally sensitive to changes in x, with a partial derivative of 10."
+                }
+            ]
+        },
+        {
+            "id": "partial-derivatives-in-ai",
+            "title": "Partial Derivatives in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "title": "Loss Functions with Multiple Parameters",
+                    "body": "Machine learning models often have many parameters. A loss function depends on these parameters, and partial derivatives measure how the loss changes when one parameter changes while the others remain fixed."
+                },
+                {
+                    "type": "example",
+                    "title": "A Two-Parameter Loss Function",
+                    "problem": "Let L(w1, w2) = w1^2 + 3w1w2 + 2w2^2. Find both first-order partial derivatives.",
+                    "solution": [
+                        "Differentiate with respect to w1 while holding w2 constant.",
+                        "Obtain ∂L/∂w1 = 2w1 + 3w2.",
+                        "Differentiate with respect to w2 while holding w1 constant.",
+                        "Obtain ∂L/∂w2 = 3w1 + 4w2."
+                    ],
+                    "answer": "∂L/∂w1 = 2w1 + 3w2; ∂L/∂w2 = 3w1 + 4w2"
+                },
+                {
+                    "type": "code",
+                    "title": "Calculate Partial Derivatives with SymPy",
+                    "language": "python",
+                    "body": "import sympy as sp\n\nw1, w2 = sp.symbols('w1 w2')\nloss = w1**2 + 3*w1*w2 + 2*w2**2\n\ndw1 = sp.diff(loss, w1)\ndw2 = sp.diff(loss, w2)\n\nprint('dL/dw1 =', dw1)\nprint('dL/dw2 =', dw2)",
+                    "explanation": "SymPy symbolically differentiates the loss function with respect to each parameter."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "partial-derivatives-ex-01",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "If f(x, y) = x^2 + 5y, find ∂f/∂x.",
+            "correctAnswer": "2x",
+            "solution": "Treat y as a constant. The derivative of x^2 is 2x and the derivative of 5y with respect to x is zero."
+        },
+        {
+            "id": "partial-derivatives-ex-02",
+            "type": "numerical",
+            "difficulty": "beginner",
+            "question": "If f(x, y) = 3x + y^2, find ∂f/∂y.",
+            "correctAnswer": "2y",
+            "solution": "Treat x as a constant and differentiate y^2."
+        },
+        {
+            "id": "partial-derivatives-ex-03",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "For f(x, y) = x^2y + xy, find ∂f/∂x.",
+            "correctAnswer": "2xy + y",
+            "solution": "Differentiate x^2y to obtain 2xy and xy to obtain y."
+        },
+        {
+            "id": "partial-derivatives-ex-04",
+            "type": "numerical",
+            "difficulty": "intermediate",
+            "question": "For f(x, y) = x^2 + 4xy + y^2, find ∂f/∂y.",
+            "correctAnswer": "4x + 2y",
+            "solution": "Differentiate each term with respect to y while holding x constant."
+        },
+        {
+            "id": "partial-derivatives-ex-05",
+            "type": "multiple-choice",
+            "difficulty": "beginner",
+            "question": "When calculating ∂f/∂x, what happens to the other independent variables?",
+            "options": [
+                "They are treated as constants",
+                "They are always set to zero",
+                "They must be differentiated first",
+                "They are removed from the function"
+            ],
+            "correctAnswer": "They are treated as constants",
+            "solution": "A partial derivative differentiates with respect to one variable while holding the others fixed."
+        }
+    ],
+    "summary": [
+        "Partial derivatives measure change with respect to one variable.",
+        "Other independent variables are held constant during differentiation.",
+        "Second-order derivatives describe how first-order partial derivatives change.",
+        "Partial derivatives measure the local sensitivity of multivariable functions.",
+        "They are essential for computing gradients and optimizing machine learning models."
+    ],
+    "relatedTopics": [
+        "Derivatives",
+        "Gradients",
+        "Jacobians",
+        "Chain Rule",
+        "Optimization"
+    ]
+}

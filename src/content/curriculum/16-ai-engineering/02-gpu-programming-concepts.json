@@ -1,1 +1,173 @@
-{}
+{
+    "id": "module-16-ai-engineering-gpu-programming-concepts",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 2,
+    "title": "GPU Programming Concepts",
+    "slug": "gpu-programming-concepts",
+    "href": "/curriculum/16-ai-engineering/gpu-programming-concepts",
+    "filePath": "content/curriculum/16-ai-engineering/02-gpu-programming-concepts.json",
+    "description": "Understand GPU execution, parallelism, memory hierarchy, tensor layouts, occupancy, and the performance trade-offs behind accelerated AI workloads.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tensor operations",
+        "Basic computer architecture",
+        "Basic neural network operations"
+    ],
+    "learningObjectives": [
+        "Explain why GPUs are effective for data-parallel workloads.",
+        "Understand threads, blocks, and groups of GPU threads.",
+        "Distinguish registers, shared memory, caches, and global memory.",
+        "Recognize memory-bound and compute-bound workloads.",
+        "Explain arithmetic intensity and the roofline performance model.",
+        "Understand tensor layouts, memory coalescing, and data-transfer overhead.",
+        "Benchmark GPU workloads using reliable timing methods."
+    ],
+    "sections": [
+        {
+            "id": "why-gpus",
+            "title": "Why GPUs Accelerate AI",
+            "type": "concept",
+            "content": "A GPU contains many execution lanes designed to perform large numbers of similar operations concurrently. Neural networks expose parallelism across batch elements, output features, channels, and matrix tiles. CPUs generally have fewer powerful cores optimized for low-latency sequential work and complex control flow. GPUs are not automatically faster for every task. Small operations, branch-heavy workloads, and transfer-dominated pipelines may not expose enough useful parallel work to overcome launch and setup overhead."
+        },
+        {
+            "id": "cpu-vs-gpu",
+            "title": "CPU and GPU Workload Characteristics",
+            "type": "concept",
+            "content": "A CPU is often effective when a workload contains sequential dependencies, irregular control flow, or frequent low-latency decisions. A GPU is often effective when many independent operations can execute in parallel. AI workloads frequently involve matrix multiplication, convolutions, reductions, and elementwise operations. Their performance depends on data size, arithmetic intensity, available parallelism, memory access patterns, and accelerator support. Real applications often use both processors: the CPU prepares data and schedules work while the GPU executes computationally intensive operations."
+        },
+        {
+            "id": "execution-model",
+            "title": "Threads, Blocks, and Grids",
+            "type": "concept",
+            "content": "GPU programming models commonly organize work into threads grouped into blocks, with blocks arranged into a grid. Threads within a block can cooperate using shared memory and supported synchronization mechanisms. Hardware executes threads in groups such as warps or wavefronts, depending on the architecture. If threads in the same execution group follow different branches, execution efficiency may decrease. The exact scheduling and execution details depend on the GPU vendor and programming model."
+        },
+        {
+            "id": "parallel-example",
+            "title": "Mapping Work to Parallel Threads",
+            "type": "concept",
+            "content": "Consider adding two vectors with one million elements. Each output element can be computed independently, so different GPU threads can calculate different positions. This is an example of data parallelism. The challenge is not only assigning work to threads but also ensuring memory accesses are efficient and the workload is large enough to use the hardware effectively. For very small vectors, launching a GPU kernel may cost more than performing the operation on a CPU."
+        },
+        {
+            "id": "memory-hierarchy",
+            "title": "The GPU Memory Hierarchy",
+            "type": "concept",
+            "content": "Registers are fast and private to individual threads but limited in capacity. Shared memory is a small on-chip resource that threads in a block can use cooperatively. Caches can reduce repeated global-memory accesses. Global device memory is much larger but typically has higher latency than on-chip storage. Efficient kernels attempt to reuse loaded values before they are evicted. Excessive register or shared-memory usage can reduce the number of blocks that execute concurrently."
+        },
+        {
+            "id": "memory-reuse",
+            "title": "Why Data Reuse Matters",
+            "type": "concept",
+            "content": "Suppose multiple output values depend on the same input values. Reloading those inputs repeatedly from global memory wastes bandwidth. Tiling techniques load a working region into faster storage and reuse it across several calculations. Matrix multiplication is a classic example: blocks of matrices can be loaded and reused to compute many output elements. However, tiles must fit within hardware resource limits. Larger tiles can improve reuse but may increase register pressure, shared-memory demand, and synchronization overhead."
+        },
+        {
+            "id": "compute-vs-memory",
+            "title": "Compute-Bound and Memory-Bound Operations",
+            "type": "concept",
+            "content": "A compute-bound workload is limited mainly by the rate at which arithmetic operations can execute. A memory-bound workload is limited mainly by moving data between memory and the processing units. Many AI workloads contain both types of operations. Matrix multiplication may perform substantial arithmetic per byte loaded, while simple elementwise operations often move relatively large amounts of data for very few arithmetic operations. Correctly identifying the bottleneck helps determine which optimization is likely to be useful."
+        },
+        {
+            "id": "arithmetic-intensity",
+            "title": "Arithmetic Intensity and the Roofline Model",
+            "type": "math",
+            "content": "Arithmetic intensity measures how many arithmetic operations are performed per byte transferred from memory. The roofline model estimates an upper bound on performance using peak compute throughput and memory bandwidth. It helps explain why improving arithmetic throughput has limited benefit for a workload that is already constrained by memory bandwidth.",
+            "formula": "Arithmetic intensity = floating-point operations / bytes transferred; attainable performance <= min(peak compute throughput, peak memory bandwidth × arithmetic intensity)",
+            "example": "A kernel performs 200 floating-point operations while moving 100 bytes. Its arithmetic intensity is 200 / 100 = 2 FLOP per byte. If the hardware's compute-to-bandwidth balance point is much higher, improving data reuse may be more valuable than trying to increase arithmetic throughput."
+        },
+        {
+            "id": "tensor-layout",
+            "title": "Tensor Layout and Strides",
+            "type": "concept",
+            "content": "A tensor's shape describes its logical dimensions, but its strides describe how memory addresses change when indexing those dimensions. A transpose may create a non-contiguous view without physically rearranging the underlying data. Some operations handle such layouts efficiently, while others may become slower or require a copy. Calling contiguous() can help when a downstream operation benefits from contiguous storage, but it can also introduce additional memory traffic. Measure before adding copies."
+        },
+        {
+            "id": "coalescing",
+            "title": "Memory Coalescing",
+            "type": "concept",
+            "content": "Memory coalescing describes how memory requests from nearby threads can be combined into efficient transactions. When adjacent threads access adjacent addresses, memory bandwidth is generally used more effectively. Strided or scattered access patterns may require more transactions and transfer unnecessary data. The best layout depends on how threads map to tensor elements and on the target hardware. Memory coalescing is an important reason that two mathematically equivalent kernels can have different performance."
+        },
+        {
+            "id": "parallelism-strategies",
+            "title": "Data, Model, and Pipeline Parallelism",
+            "type": "concept",
+            "content": "Data parallelism replicates a model and processes different examples on different devices. Model parallelism partitions parameters or operations across devices. Pipeline parallelism divides a model into sequential stages and schedules microbatches through them. These strategies address different constraints. Data parallelism is useful when the model fits on each device and the batch can be divided. Model parallelism can help when the model is too large for one device. Pipeline parallelism attempts to keep multiple stages busy but can suffer from pipeline bubbles and communication overhead."
+        },
+        {
+            "id": "host-device-transfers",
+            "title": "Host-to-Device Data Transfers",
+            "type": "concept",
+            "content": "Moving data between host memory and GPU memory can dominate small workloads. Transferring many tiny tensors often incurs more overhead than transferring larger batches. Pinned host memory can improve transfer behavior and can support asynchronous copies when the execution conditions are appropriate. However, pinned memory consumes a limited system resource, and asynchronous transfer does not automatically guarantee useful overlap with computation. Measure the complete data path."
+        },
+        {
+            "id": "asynchronous-execution",
+            "title": "Asynchronous GPU Execution",
+            "type": "concept",
+            "content": "GPU frameworks typically enqueue operations and return control to the CPU before all device work has completed. This behavior allows the CPU to prepare later work while the GPU executes earlier operations. It also means naive timing can be misleading. Operations that request a CPU-visible scalar, copy results to the host, or explicitly synchronize can force the CPU to wait. Understanding synchronization is essential for interpreting performance measurements."
+        },
+        {
+            "id": "benchmarking",
+            "title": "Benchmarking GPU Workloads",
+            "type": "code",
+            "content": "A basic benchmark should warm up the workload, synchronize before timing, execute repeated iterations, and synchronize after timing. Use identical input shapes and settings when comparing implementations. This example illustrates a controlled microbenchmark rather than a complete end-to-end performance evaluation.",
+            "language": "python",
+            "code": "import time\nimport torch\n\nfor _ in range(10):\n    y = model(x)\ntorch.cuda.synchronize()\nstart = time.perf_counter()\nfor _ in range(100):\n    y = model(x)\ntorch.cuda.synchronize()\nelapsed = time.perf_counter() - start\nprint(f\"Mean latency: {elapsed * 1000 / 100:.3f} ms\")",
+            "explanation": "The example assumes that model and x are already on CUDA. For robust measurements, repeat trials and consider a GPU profiler. The measured region excludes preprocessing, data loading, and other work outside the loop."
+        },
+        {
+            "id": "optimization-order",
+            "title": "A Practical GPU Optimization Workflow",
+            "type": "concept",
+            "content": "First verify correctness and establish a representative baseline. Measure end-to-end latency, throughput, and memory use. Determine whether the bottleneck is input loading, data transfer, kernel launches, memory bandwidth, compute, or synchronization. Try low-risk improvements first, such as eliminating redundant copies or feeding larger useful batches. Consider graph compilation, operator fusion, or custom kernels only when profiling shows a meaningful opportunity. Re-run correctness and performance tests after each change."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-01",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why might a GPU be slower than a CPU for a tiny tensor operation?",
+            "correctAnswer": "Kernel launch and setup overhead can exceed the useful computation, and the workload may expose too little parallelism.",
+            "solution": "GPUs are designed to execute large amounts of parallel work efficiently. Small tasks may not provide enough computation to amortize the overhead of launching GPU operations."
+        },
+        {
+            "id": "exercise-02",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "A kernel has high arithmetic intensity but low measured throughput. Name several possible causes.",
+            "correctAnswer": "Possible causes include low occupancy, dependency chains, instruction inefficiency, branch divergence, insufficient parallel work, or launch overhead.",
+            "solution": "Arithmetic intensity only helps determine whether a workload is likely to be compute- or memory-bound. It does not guarantee efficient execution. A profiler can reveal whether the kernel is limited by scheduling, dependencies, instructions, or other factors."
+        },
+        {
+            "id": "exercise-03",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "A tensor transpose is fast by itself, but a later operation becomes slower. What should you inspect?",
+            "correctAnswer": "Inspect tensor strides, contiguity, and whether the later operation handles the resulting layout efficiently or introduces a copy.",
+            "solution": "A transpose can create a non-contiguous view. The following operation may need to handle strided memory or materialize a contiguous tensor. Profile the complete operation sequence to determine which behavior occurs."
+        },
+        {
+            "id": "exercise-04",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the difference between data parallelism and model parallelism?",
+            "correctAnswer": "Data parallelism replicates the model across devices and divides examples, while model parallelism divides model parameters or computations across devices.",
+            "solution": "Data parallelism primarily increases aggregate processing capacity for examples. Model parallelism distributes a model that may be too large for one device or benefits from partitioned computation."
+        },
+        {
+            "id": "exercise-05",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Why should GPU performance be measured after warm-up?",
+            "correctAnswer": "Warm-up can trigger initialization, memory allocation, kernel selection, compilation, or cache effects that do not represent steady-state execution.",
+            "solution": "A steady-state benchmark should distinguish first-use costs from repeated execution costs. Report cold-start behavior separately when startup latency matters to the application."
+        }
+    ],
+    "summary": "GPU performance depends on parallel work, memory movement, execution efficiency, and synchronization. Understand the memory hierarchy and arithmetic intensity, inspect tensor layouts, and use representative profiling rather than guessing which optimization will help.",
+    "relatedTopics": [
+        "CUDA Fundamentals for AI",
+        "Mixed Precision Training (FP16 / BF16)",
+        "Distributed Training Engineering",
+        "Model Optimization & Kernel Fusion"
+    ]
+}

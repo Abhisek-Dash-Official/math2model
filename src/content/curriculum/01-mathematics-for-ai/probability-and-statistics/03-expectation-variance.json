@@ -1,1 +1,330 @@
-{}
+{
+    "id": "probability-expectation-variance",
+    "title": "Expectation & Variance",
+    "slug": "expectation-variance",
+    "description": "Understand expected values, variance, standard deviation, covariance, and their applications in statistics and machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Random Variables",
+        "Probability Distributions"
+    ],
+    "learningObjectives": [
+        "Define expected value for discrete and continuous random variables.",
+        "Calculate expectation using probability mass functions and probability density functions.",
+        "Apply linearity of expectation.",
+        "Calculate variance and standard deviation.",
+        "Use computational formulas for variance.",
+        "Understand covariance and correlation.",
+        "Interpret expectation and variance in machine learning."
+    ],
+    "sections": [
+        {
+            "id": "expectation-introduction",
+            "title": "1. Expected Value",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The expected value of a random variable is its probability-weighted average over possible outcomes. It describes the long-run average outcome of repeated experiments under the same probability model. It does not necessarily represent an outcome that can occur in a single experiment."
+                },
+                {
+                    "type": "formula",
+                    "label": "Expected value of a discrete random variable",
+                    "value": "E[X] = Σₓ x P(X = x)"
+                },
+                {
+                    "type": "formula",
+                    "label": "Expected value of a continuous random variable",
+                    "value": "E[X] = ∫₋∞^∞ x f_X(x) dx"
+                },
+                {
+                    "type": "text",
+                    "value": "For a discrete variable, multiply every possible value by its probability and add the results. For a continuous variable, integrate the value multiplied by the probability density over the variable's domain, assuming the expectation exists."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Expected Value of a Die Roll",
+                    "problem": "A fair six-sided die has outcomes 1 through 6. Calculate its expected value.",
+                    "steps": [
+                        "Each outcome has probability 1/6.",
+                        "Use E[X] = Σₓ xP(X = x).",
+                        "Substitute the six outcomes: E[X] = (1 + 2 + 3 + 4 + 5 + 6)/6.",
+                        "Add the outcomes and divide by six."
+                    ],
+                    "solution": "E[X] = 21/6 = 3.5."
+                },
+                {
+                    "type": "text",
+                    "value": "A die cannot show 3.5 in one roll, but its average outcome approaches 3.5 over many independent rolls."
+                }
+            ]
+        },
+        {
+            "id": "linearity-expectation",
+            "title": "2. Properties of Expectation",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Linearity of expectation",
+                    "value": "E[aX + bY + c] = aE[X] + bE[Y] + c"
+                },
+                {
+                    "type": "text",
+                    "value": "Expectation is linear. This property holds whether or not X and Y are independent, provided the relevant expectations exist."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Linear Transformation",
+                    "problem": "If E[X] = 4, calculate E[3X + 2].",
+                    "steps": [
+                        "Apply linearity: E[3X + 2] = 3E[X] + 2.",
+                        "Substitute E[X] = 4.",
+                        "Calculate 3(4) + 2."
+                    ],
+                    "solution": "E[3X + 2] = 14."
+                },
+                {
+                    "type": "text",
+                    "value": "For independent random variables, expectations of products factorize when the relevant expectations exist: E[XY] = E[X]E[Y]. Independence is sufficient for this property, but the equality can also hold for some dependent variables."
+                }
+            ]
+        },
+        {
+            "id": "variance-introduction",
+            "title": "3. Variance",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Variance measures how spread out a random variable is around its expected value. A small variance indicates that values tend to remain close to the mean, while a large variance indicates greater dispersion."
+                },
+                {
+                    "type": "formula",
+                    "label": "Definition of variance",
+                    "value": "Var(X) = E[(X − E[X])²]"
+                },
+                {
+                    "type": "formula",
+                    "label": "Computational formula",
+                    "value": "Var(X) = E[X²] − (E[X])²"
+                },
+                {
+                    "type": "text",
+                    "value": "Variance is always nonnegative when it exists. It is zero precisely when the random variable equals a constant with probability one. Variance is measured in squared units, which motivates using standard deviation for a measure in the original units."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Variance of a Fair Die",
+                    "problem": "Calculate the variance of a fair six-sided die roll.",
+                    "steps": [
+                        "The mean is E[X] = 3.5.",
+                        "Calculate E[X²] = (1² + 2² + 3² + 4² + 5² + 6²)/6.",
+                        "The sum of the squares is 91, so E[X²] = 91/6.",
+                        "Apply Var(X) = E[X²] − (E[X])².",
+                        "Calculate 91/6 − 3.5²."
+                    ],
+                    "solution": "Var(X) = 35/12 ≈ 2.9167."
+                }
+            ]
+        },
+        {
+            "id": "standard-deviation",
+            "title": "4. Standard Deviation",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Standard deviation",
+                    "value": "σ = √Var(X)"
+                },
+                {
+                    "type": "text",
+                    "value": "Standard deviation is the square root of variance. Unlike variance, it uses the same units as the original variable and is often easier to interpret when describing dispersion."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Standard Deviation",
+                    "problem": "If Var(X) = 25, find the standard deviation.",
+                    "steps": [
+                        "Use σ = √Var(X).",
+                        "Substitute the variance: σ = √25."
+                    ],
+                    "solution": "σ = 5."
+                },
+                {
+                    "type": "text",
+                    "value": "For normally distributed data, approximately 68% of values lie within one standard deviation of the mean, 95% within two, and 99.7% within three. These are approximate properties of the normal distribution, not universal rules for all distributions."
+                }
+            ]
+        },
+        {
+            "id": "variance-transformation",
+            "title": "5. Variance Properties",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Variance under scaling and translation",
+                    "value": "Var(aX + b) = a² Var(X)"
+                },
+                {
+                    "type": "text",
+                    "value": "Adding a constant shifts every value but does not change the spread. Multiplying by a constant scales the standard deviation by its absolute value and the variance by its square."
+                },
+                {
+                    "type": "formula",
+                    "label": "Variance of a sum",
+                    "value": "Var(X + Y) = Var(X) + Var(Y) + 2Cov(X, Y)"
+                },
+                {
+                    "type": "text",
+                    "value": "If X and Y are independent and have finite variances, their covariance is zero, so Var(X + Y) = Var(X) + Var(Y). For dependent variables, the covariance term must be considered."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Scaling Variance",
+                    "problem": "If Var(X) = 4, calculate Var(3X + 5).",
+                    "steps": [
+                        "Use Var(aX + b) = a²Var(X).",
+                        "Here a = 3 and Var(X) = 4.",
+                        "Calculate 3² × 4."
+                    ],
+                    "solution": "Var(3X + 5) = 36."
+                }
+            ]
+        },
+        {
+            "id": "covariance-correlation",
+            "title": "6. Covariance and Correlation",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "Covariance",
+                    "value": "Cov(X, Y) = E[(X − E[X])(Y − E[Y])]"
+                },
+                {
+                    "type": "formula",
+                    "label": "Correlation",
+                    "value": "Corr(X, Y) = Cov(X, Y)/(σ_X σ_Y)"
+                },
+                {
+                    "type": "text",
+                    "value": "Covariance describes how two random variables vary together. Positive covariance indicates a tendency for the variables to be above or below their means together. Negative covariance indicates an opposing tendency. Zero covariance means no linear covariance, but it does not generally imply independence."
+                },
+                {
+                    "type": "text",
+                    "value": "Correlation standardizes covariance to a dimensionless value between −1 and 1 when both standard deviations are positive. A correlation near 1 indicates a strong positive linear relationship, while a correlation near −1 indicates a strong negative linear relationship."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Covariance of Independent Variables",
+                    "problem": "Suppose X and Y are independent and have finite second moments. What is Cov(X, Y)?",
+                    "steps": [
+                        "Use Cov(X, Y) = E[XY] − E[X]E[Y].",
+                        "Independence gives E[XY] = E[X]E[Y].",
+                        "Substitute into the covariance formula."
+                    ],
+                    "solution": "Cov(X, Y) = 0."
+                }
+            ]
+        },
+        {
+            "id": "expectation-variance-ml",
+            "title": "7. Applications in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Expectation and variance help describe model uncertainty, data distributions, and the behavior of learning algorithms. For example, the expected loss measures average performance under a probability model, while variance can describe how much an estimator changes across samples."
+                },
+                {
+                    "type": "text",
+                    "value": "In probabilistic modeling, the mean describes a central tendency and the variance describes dispersion. In ensemble learning, variation among model predictions can provide information about model uncertainty."
+                },
+                {
+                    "type": "text",
+                    "value": "The bias-variance trade-off is a framework for understanding prediction error. In common decompositions, expected prediction error can be separated into contributions from bias, variance, and irreducible noise, under particular assumptions and loss functions."
+                },
+                {
+                    "type": "text",
+                    "value": "Feature standardization often subtracts a feature's mean and divides by its standard deviation. This changes its scale and can improve numerical conditioning for some optimization methods, although standardization is not universally required for every model."
+                }
+            ]
+        },
+        {
+            "id": "expectation-variance-python",
+            "title": "8. Computing Expectation and Variance with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Calculate Mean and Variance",
+                    "value": "import numpy as np\n\nvalues = np.array([1, 2, 3, 4, 5, 6], dtype=float)\n\nmean = np.mean(values)\nvariance = np.var(values)  # Population variance, ddof=0\nstd_dev = np.std(values)  # Population standard deviation\n\nprint('Mean:', mean)\nprint('Variance:', variance)\nprint('Standard deviation:', std_dev)"
+                },
+                {
+                    "type": "text",
+                    "value": "NumPy uses population variance by default, dividing by n. For estimating population variance from an independent sample under standard assumptions, np.var(data, ddof=1) computes the unbiased sample variance using n − 1 in the denominator."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Expectation from a Discrete Probability Distribution",
+                    "value": "import numpy as np\n\nvalues = np.array([1, 2, 3, 4, 5, 6], dtype=float)\nprobabilities = np.full(6, 1 / 6)\n\nexpected_value = np.sum(values * probabilities)\nexpected_square = np.sum(values**2 * probabilities)\nvariance = expected_square - expected_value**2\n\nprint('Expected value:', expected_value)\nprint('Variance:', variance)"
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ev-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A random variable takes values 0, 1, and 2 with probabilities 0.2, 0.5, and 0.3. Find E[X].",
+            "correctAnswer": "1.1",
+            "solution": "E[X] = 0(0.2) + 1(0.5) + 2(0.3) = 0 + 0.5 + 0.6 = 1.1."
+        },
+        {
+            "id": "ev-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For the distribution in the previous question, calculate Var(X).",
+            "correctAnswer": "0.49",
+            "solution": "E[X²] = 0²(0.2) + 1²(0.5) + 2²(0.3) = 1.7. Var(X) = E[X²] − E[X]² = 1.7 − 1.1² = 0.49."
+        },
+        {
+            "id": "ev-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If E[X] = 7, find E[2X − 3].",
+            "correctAnswer": "11",
+            "solution": "By linearity, E[2X − 3] = 2E[X] − 3 = 14 − 3 = 11."
+        },
+        {
+            "id": "ev-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If Var(X) = 9, calculate Var(−2X + 5).",
+            "correctAnswer": "36",
+            "solution": "Var(aX + b) = a²Var(X). Therefore, Var(−2X + 5) = 4 × 9 = 36."
+        },
+        {
+            "id": "ev-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Does zero covariance always imply independence?",
+            "correctAnswer": "No.",
+            "solution": "Zero covariance means that the variables have no linear covariance. Dependent variables can still have zero covariance. Independence implies zero covariance when the relevant expectations exist, but the converse does not generally hold."
+        }
+    ],
+    "summary": [
+        "Expectation is the probability-weighted average of a random variable.",
+        "Linearity of expectation does not require independence.",
+        "Variance measures dispersion around the mean.",
+        "Standard deviation is the square root of variance.",
+        "Covariance describes joint variation, while correlation standardizes covariance.",
+        "Expectation and variance are useful for uncertainty analysis, statistical estimation, and machine learning."
+    ],
+    "relatedTopics": [
+        "random-variables",
+        "probability-distributions",
+        "conditional-probability",
+        "maximum-likelihood",
+        "entropy"
+    ]
+}

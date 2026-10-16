@@ -1,1 +1,258 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-ppo",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 8,
+    "title": "Proximal Policy Optimization (PPO)",
+    "slug": "ppo",
+    "href": "/curriculum/15-reinforcement-learning/ppo",
+    "filePath": "content/curriculum/15-reinforcement-learning/08-ppo.json",
+    "description": "Study PPO's clipped policy objective, probability ratios, advantage estimation, rollout collection, and practical training techniques for stable policy optimization.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Markov decision processes",
+        "Value functions and Bellman equations",
+        "Policy gradients",
+        "Actor-critic architectures",
+        "Gradient descent and neural networks"
+    ],
+    "learningObjectives": [
+        "Explain why policy updates need to be controlled.",
+        "Calculate the probability ratio used by PPO.",
+        "Derive and interpret the clipped surrogate objective.",
+        "Explain how PPO uses advantages and a value-function critic.",
+        "Describe rollout collection, minibatches, and multiple optimization epochs.",
+        "Understand GAE, entropy bonuses, value losses, and gradient clipping.",
+        "Implement a simplified PPO objective in PyTorch.",
+        "Recognize PPO implementation pitfalls and evaluation requirements."
+    ],
+    "sections": [
+        {
+            "id": "ppo-motivation",
+            "title": "Why Proximal Policy Optimization?",
+            "type": "concept",
+            "content": "A policy gradient update can improve expected return locally, but a large update may move the policy far from the behavior that generated the training data. Such a change can invalidate the quality of the sampled learning signal and cause performance to collapse. Proximal Policy Optimization, or PPO, is designed to make policy updates more conservative while remaining relatively simple to implement. It uses a surrogate objective based on the ratio between the current policy's action probability and the behavior policy's action probability. The clipped version limits the incentive for this ratio to move too far in a direction that would improve the surrogate objective. PPO is widely used because it balances practical stability, implementation simplicity, and good performance across many continuous-control and simulated decision tasks."
+        },
+        {
+            "id": "ppo-actor-critic",
+            "title": "PPO as an Actor-Critic Algorithm",
+            "type": "concept",
+            "content": "PPO commonly uses an actor-critic architecture. The actor represents the policy, and the critic estimates the value of a state. During data collection, the current behavior policy interacts with the environment and stores observations, actions, rewards, termination information, old action log probabilities, and value estimates. After collecting a rollout, the algorithm calculates return targets and advantages. It then performs several optimization epochs over the collected data. The old policy probabilities are held fixed during these epochs so that the probability ratio measures how the updated policy differs from the behavior policy."
+        },
+        {
+            "id": "ppo-probability-ratio",
+            "title": "The Probability Ratio",
+            "type": "math",
+            "content": "For a sampled state-action pair, PPO defines a ratio between the current policy's probability of the sampled action and the probability assigned by the behavior policy. The ratio equals one when the two policies assign the same probability to that action. A ratio greater than one means the new policy assigns greater probability, while a ratio below one means it assigns less. For numerical stability, implementations often calculate the ratio by exponentiating the difference between new and old log probabilities.",
+            "formula": "r_t(theta) = pi_theta(a_t|s_t) / pi_theta_old(a_t|s_t) = exp(log_pi_new - log_pi_old)",
+            "example": "If the old policy assigns probability 0.2 to an action and the new policy assigns 0.3, the ratio is 0.3 / 0.2 = 1.5. The new policy assigns the sampled action 50 percent more probability than the behavior policy did."
+        },
+        {
+            "id": "ppo-surrogate-objective",
+            "title": "The Surrogate Objective",
+            "type": "math",
+            "content": "The unclipped surrogate objective multiplies the probability ratio by the estimated advantage. If the advantage is positive, increasing the probability ratio can improve the objective. If the advantage is negative, decreasing the ratio can improve it. This objective is useful for reusing a collected rollout over several optimization epochs, but without constraints it can encourage overly large policy changes. PPO's clipped objective modifies the ratio term to reduce the incentive for changes beyond a chosen range.",
+            "formula": "L^CLIP(theta) = E_t[min(r_t(theta) * A_t, clip(r_t(theta), 1-epsilon, 1+epsilon) * A_t)]",
+            "example": "Suppose epsilon is 0.2, the ratio is 1.5, and the advantage is 2. The unclipped term is 3. The clipped ratio is 1.2, producing 2.4. Taking the minimum gives 2.4, limiting the objective's incentive to increase the probability further for this positive-advantage sample."
+        },
+        {
+            "id": "ppo-clipping-interpretation",
+            "title": "How Clipping Works",
+            "type": "concept",
+            "content": "Clipping is applied to the probability ratio in the surrogate objective, not directly to the policy parameters. For a positive advantage, ratios above 1 + epsilon no longer gain additional surrogate-objective benefit from increasing the ratio. For a negative advantage, ratios below 1 - epsilon no longer gain additional benefit from decreasing the ratio. The minimum operation selects the more conservative of the unclipped and clipped objective terms. This does not strictly guarantee that every action probability or the overall policy distribution remains within a fixed distance of the old policy. PPO clipping is a practical safeguard rather than a formal hard constraint."
+        },
+        {
+            "id": "ppo-clip-examples",
+            "title": "Positive and Negative Advantage Examples",
+            "type": "math",
+            "content": "The direction of the advantage determines which side of the clipped objective limits further improvement. For a positive advantage, the algorithm wants to increase the probability of the action, but limits the surrogate gain when the ratio rises above the upper clipping boundary. For a negative advantage, the algorithm wants to reduce the probability of the action, but limits the surrogate gain when the ratio falls below the lower boundary.",
+            "formula": "r_clipped = clip(r, 1-epsilon, 1+epsilon)",
+            "example": "Let epsilon = 0.2. If r = 1.4 and A = 3, the unclipped term is 4.2 and the clipped term is 3.6, so the minimum is 3.6. If r = 0.6 and A = -2, the unclipped term is -1.2 and the clipped term is -1.6, so the minimum is -1.6. The clipped objective limits further improvement from pushing the ratio farther in the favorable direction."
+        },
+        {
+            "id": "ppo-advantage-estimation",
+            "title": "Advantage Estimation with GAE",
+            "type": "concept",
+            "content": "PPO usually needs an estimate of how much better or worse each sampled action was than expected. Generalized Advantage Estimation combines temporal-difference errors across time, using gamma and lambda to control discounting and the horizon of the estimate. A critic provides state-value estimates, while observed rewards provide immediate feedback. Advantages are commonly normalized across a rollout or minibatch to improve optimization conditioning. The normalization convention should be consistent, and advantage estimates must respect episode boundaries."
+        },
+        {
+            "id": "ppo-gae-formula",
+            "title": "GAE for PPO",
+            "type": "math",
+            "content": "The TD residual is reward plus discounted next-state value minus current-state value. GAE sums these residuals using powers of gamma times lambda. At true termination, the next-state bootstrap is zero. At truncation, the implementation may bootstrap from the final observation when the underlying process has not truly ended. Confusing termination with truncation can bias advantage and return calculations.",
+            "formula": "delta_t = r_{t+1} + gamma * (1 - terminated_t) * V(s_{t+1}) - V(s_t); A_t = sum_{l=0}^{T-t-1} (gamma * lambda)^l * delta_{t+l}",
+            "example": "When gamma = 0.99 and lambda = 0.95, the combined weight for a TD residual one step later is 0.9405. Residuals farther in the future contribute progressively smaller weights. This lets PPO use information beyond a single reward while still relying on the critic."
+        },
+        {
+            "id": "ppo-value-loss",
+            "title": "The Value-Function Loss",
+            "type": "concept",
+            "content": "The critic is trained to predict returns or bootstrapped return targets. A common value loss is the mean squared difference between the predicted state value and the target return. PPO may use value-function clipping or other stabilization methods, but details differ between implementations. The value coefficient controls the contribution of the critic loss to the total optimization objective. If the critic loss dominates, shared network features may be optimized primarily for value prediction; if the coefficient is too small, the critic may remain inaccurate."
+        },
+        {
+            "id": "ppo-value-formula",
+            "title": "Value Loss Formula",
+            "type": "math",
+            "content": "Let V_phi(s_t) be the predicted state value and R_t the return target. The squared-error objective penalizes large differences between the prediction and target. Some implementations use a factor of one half, while others do not; this changes gradient scale and can be compensated for by the coefficient.",
+            "formula": "L_V(phi) = E_t[(V_phi(s_t) - R_t)^2]",
+            "example": "If the critic predicts 7 and the target is 10, the squared error is 9. A factor of one half would produce 4.5. The precise convention matters less than keeping the coefficient and implementation consistent."
+        },
+        {
+            "id": "ppo-entropy-bonus",
+            "title": "Entropy Bonus",
+            "type": "concept",
+            "content": "Entropy regularization can encourage the policy to keep exploring. In a minimization loss, an entropy bonus is commonly subtracted from the total loss because higher entropy is desirable up to an appropriate degree. The entropy coefficient determines how strongly the algorithm rewards stochastic action selection. A high coefficient may keep the policy too random, while a very low coefficient may allow premature collapse. Entropy is particularly relevant early in training or when multiple actions may produce similarly good returns."
+        },
+        {
+            "id": "ppo-total-loss",
+            "title": "Combining PPO Loss Terms",
+            "type": "math",
+            "content": "A common PPO minimization objective combines the negative clipped policy surrogate, a weighted value loss, and a negative entropy bonus. The policy term is negated because optimizers typically minimize losses while the PPO surrogate is written as a maximization objective. The value and entropy coefficients are hyperparameters that affect the relative influence of each component. Implementations vary in value-loss details, normalization, and whether policy and value networks share parameters.",
+            "formula": "L_total = -L_CLIP + c_v * L_V - c_e * H",
+            "example": "If the policy loss is 0.2, the value loss is 0.5, the mean entropy is 0.8, c_v = 0.5, and c_e = 0.01, then the combined loss is 0.2 + 0.25 - 0.008 = 0.442. This illustrates the combination of terms, not a universal numerical scale."
+        },
+        {
+            "id": "ppo-rollout-collection",
+            "title": "Collecting Rollouts",
+            "type": "concept",
+            "content": "A rollout is a batch of transitions collected by running the behavior policy in one or more environments. Each transition commonly stores the observation, action, reward, old log probability, value estimate, next observation, and termination or truncation flags. The batch is used to calculate advantages and return targets before optimization begins. PPO is generally on-policy: the collected data should come from the recent behavior policy, and old log probabilities are needed to calculate ratios. Reusing a rollout for several epochs is useful, but repeatedly reusing it after large policy changes can reduce the reliability of the surrogate objective."
+        },
+        {
+            "id": "ppo-minibatches-epochs",
+            "title": "Minibatches and Optimization Epochs",
+            "type": "concept",
+            "content": "After collecting a rollout, PPO often shuffles the data and divides it into minibatches. Each minibatch contributes a gradient update, and the process is repeated for a configured number of epochs. More epochs can improve data efficiency but can also move the policy too far from the behavior policy that generated the data. Minibatch size affects gradient noise and computational efficiency. The number of rollout steps, number of parallel environments, epoch count, and learning rate interact, so tuning them together is often necessary."
+        },
+        {
+            "id": "ppo-training-pipeline",
+            "title": "The PPO Training Pipeline",
+            "type": "concept",
+            "content": "A typical PPO training iteration follows a repeated cycle. First, collect a fixed amount of experience with the current policy. Second, calculate critic values, returns, and advantages. Third, run several minibatch optimization epochs using the clipped policy objective, critic loss, and entropy bonus. Fourth, discard the rollout and collect fresh experience with the updated policy. During training, monitor episodic return, policy entropy, value loss, approximate KL divergence, clip fraction, and gradient norms. No single metric proves that training is healthy, but together they can reveal policy collapse, value instability, or overly aggressive updates."
+        },
+        {
+            "id": "ppo-objective-code",
+            "title": "Implementing the Clipped Objective",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef ppo_policy_loss(new_log_probs, old_log_probs, advantages, clip_epsilon=0.2):\n    ratios = torch.exp(new_log_probs - old_log_probs)\n    unclipped = ratios * advantages\n    clipped = torch.clamp(ratios, 1.0 - clip_epsilon, 1.0 + clip_epsilon) * advantages\n    return -torch.minimum(unclipped, clipped).mean()\n\nnew_log_probs = torch.tensor([-0.8, -1.1, -0.4])\nold_log_probs = torch.tensor([-1.0, -1.0, -0.5])\nadvantages = torch.tensor([1.0, -0.5, 0.7])\nloss = ppo_policy_loss(new_log_probs, old_log_probs, advantages)\nprint(loss.item())",
+            "explanation": "The ratio is calculated by exponentiating the difference between new and old log probabilities. The advantage is multiplied by both the original and clipped ratios, and the smaller objective term is selected for each sample. The negative sign converts the maximization objective into a minimization loss. In a full implementation, old log probabilities and advantages should be treated as fixed rollout data, and the tensor shapes must align."
+        },
+        {
+            "id": "ppo-value-and-entropy-code",
+            "title": "Combining Policy, Value, and Entropy Losses",
+            "type": "code",
+            "language": "python",
+            "content": "def ppo_total_loss(policy_loss, values, returns, entropy, value_coef=0.5, entropy_coef=0.01):\n    value_loss = 0.5 * (values - returns).pow(2).mean()\n    entropy_bonus = entropy.mean()\n    total_loss = policy_loss + value_coef * value_loss - entropy_coef * entropy_bonus\n    return total_loss, value_loss, entropy_bonus\n\nvalues = torch.tensor([1.2, 0.7, 1.5])\nreturns = torch.tensor([1.0, 1.0, 2.0])\nentropy = torch.tensor([0.6, 0.7, 0.5])\npolicy_loss = torch.tensor(0.15)\ntotal, value_loss, entropy_bonus = ppo_total_loss(policy_loss, values, returns, entropy)\nprint(total.item(), value_loss.item(), entropy_bonus.item())",
+            "explanation": "This example combines three common components of a PPO objective. The value loss fits the critic to return targets, and the entropy bonus rewards a more stochastic policy. The policy loss is expected to be calculated from the clipped surrogate. A complete training implementation must also calculate advantages and returns correctly, update the policy over minibatches, and manage rollout boundaries."
+        },
+        {
+            "id": "ppo-hyperparameters",
+            "title": "Important PPO Hyperparameters",
+            "type": "concept",
+            "content": "Important PPO settings include the learning rate, discount factor gamma, GAE lambda, clipping epsilon, rollout length, minibatch size, optimization epochs, entropy coefficient, value coefficient, and gradient norm limit. A smaller clipping range usually makes the surrogate more conservative, though its effect depends on the data and advantage distribution. A larger rollout can improve the diversity of training data but requires more collection before each update. More epochs improve reuse of samples but increase the risk of moving away from the behavior policy. Hyperparameters should be selected through controlled experiments rather than copied blindly from another environment."
+        },
+        {
+            "id": "ppo-common-bugs",
+            "title": "Common Implementation Mistakes",
+            "type": "concept",
+            "content": "A frequent mistake is recomputing old log probabilities after the policy has already changed, which destroys the intended comparison with the behavior policy. Another is calculating probability ratios incorrectly, especially for batched distributions or continuous actions. Incorrect handling of termination and truncation can corrupt returns and advantages. Advantages must align with the correct time steps, and the critic target should be detached when appropriate. For continuous Gaussian policies, log probabilities should account for the complete action vector and any action transformation. Incorrectly applying clipping to probabilities rather than the ratio or clipping the policy parameters is also a common misunderstanding."
+        },
+        {
+            "id": "ppo-evaluation",
+            "title": "Evaluation and Reproducibility",
+            "type": "concept",
+            "content": "PPO training is stochastic, so a single successful run does not establish reliable performance. Use separate evaluation episodes and report a mean return alongside a measure of variation. When feasible, repeat experiments with multiple random seeds. Evaluation should not accidentally update the policy or contribute data to training. For stochastic policies, specify whether evaluation samples actions or uses a deterministic choice derived from the policy. Record environment versions, observation and reward preprocessing, hyperparameters, training steps, and checkpoint-selection criteria so that results can be reproduced."
+        },
+        {
+            "id": "ppo-limitations",
+            "title": "Limitations of PPO",
+            "type": "concept",
+            "content": "PPO is not guaranteed to find a globally optimal policy. It can be sample intensive, sensitive to reward design and hyperparameters, and vulnerable to poor exploration in sparse-reward environments. Clipping does not create a strict trust-region constraint, and nonlinear function approximation can still produce unstable learning. In very expensive environments, the number of interactions required may be a major limitation. Alternative methods may be preferable for some problems, including off-policy actor-critic algorithms for continuous control or specialized algorithms for large discrete action spaces."
+        },
+        {
+            "id": "ppo-llm-connection",
+            "title": "PPO and Language Model Alignment",
+            "type": "concept",
+            "content": "PPO has also been used in reinforcement learning from human feedback for language models. In a simplified setup, a language model generates a response, a reward model scores it, and PPO updates the policy to increase rewarded behavior while controlling policy changes. Practical language-model alignment systems also use additional mechanisms, such as a reference policy and a divergence penalty, to discourage excessive deviation from the reference model. Language-model training has important differences from ordinary control tasks, including long sequences, token-level action distributions, expensive rollouts, and reward-model limitations. PPO is one historical and continuing component of this area, but not the only approach to alignment."
+        },
+        {
+            "id": "ppo-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "PPO is an actor-critic algorithm that optimizes a clipped surrogate objective based on the ratio of current and behavior policy probabilities. Advantages estimate whether sampled actions were better or worse than expected, while the critic learns state values. Rollouts are collected using the current policy, and multiple minibatch epochs update the model using policy, value, and entropy objectives. Correct log-probability storage, terminal handling, advantage calculation, and evaluation are essential. Clipping encourages conservative updates but does not guarantee a strict bound on policy change or global convergence."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ppo-exercise-1",
+            "type": "math",
+            "difficulty": "easy",
+            "question": "The old policy assigns an action probability of 0.25 and the new policy assigns 0.30. Calculate the PPO probability ratio.",
+            "correctAnswer": "1.2.",
+            "solution": "r = 0.30 / 0.25 = 1.2. The new policy assigns the sampled action 20 percent more probability than the old policy."
+        },
+        {
+            "id": "ppo-exercise-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Let epsilon = 0.2, ratio = 1.5, and advantage = 2. Calculate the clipped surrogate term.",
+            "correctAnswer": "2.4.",
+            "solution": "The clipped ratio is 1.2. The unclipped term is 1.5 * 2 = 3. The clipped term is 1.2 * 2 = 2.4. The objective takes the minimum, giving 2.4."
+        },
+        {
+            "id": "ppo-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Let epsilon = 0.2, ratio = 0.6, and advantage = -2. What value does the clipped surrogate objective select?",
+            "correctAnswer": "-1.6.",
+            "solution": "The clipped ratio is 0.8. The unclipped term is 0.6 * -2 = -1.2, while the clipped term is 0.8 * -2 = -1.6. The minimum is -1.6."
+        },
+        {
+            "id": "ppo-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does PPO store old action log probabilities during rollout collection?",
+            "correctAnswer": "They provide the fixed behavior-policy probabilities needed to calculate ratios between the updated policy and the policy that generated the rollout.",
+            "solution": "PPO uses r = exp(new_log_prob - old_log_prob). If the old log probability is recomputed using the updated policy, the comparison no longer represents the behavior policy that generated the data."
+        },
+        {
+            "id": "ppo-exercise-5",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Does PPO clipping guarantee that the overall policy distribution cannot change by more than epsilon?",
+            "correctAnswer": "No. It clips the surrogate objective's probability ratio term and does not impose a strict global constraint on the policy distribution.",
+            "solution": "Clipping limits the incentive to improve selected surrogate terms beyond certain ratios. It does not directly constrain every action probability or guarantee a fixed divergence between the full old and new distributions."
+        },
+        {
+            "id": "ppo-exercise-6",
+            "type": "code",
+            "difficulty": "intermediate",
+            "question": "Write a PyTorch expression for a PPO ratio using new and old log probabilities.",
+            "correctAnswer": "ratios = torch.exp(new_log_probs - old_log_probs)",
+            "solution": "The difference between log probabilities equals the logarithm of their probability ratio. Exponentiating the difference recovers the ratio: exp(log pi_new - log pi_old) = pi_new / pi_old."
+        },
+        {
+            "id": "ppo-exercise-7",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "What is the trade-off when increasing the number of PPO optimization epochs for each rollout?",
+            "correctAnswer": "More epochs can improve sample reuse, but can also move the policy too far from the behavior policy that generated the data and reduce the reliability of the surrogate objective.",
+            "solution": "PPO reuses on-policy data for several optimization passes. As the policy changes, the data become less representative of the current policy. Clipping reduces some incentives for excessive change but does not eliminate this issue."
+        },
+        {
+            "id": "ppo-exercise-8",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why must true termination be distinguished from time-limit truncation when calculating PPO returns?",
+            "correctAnswer": "True termination ends the task and normally removes the bootstrap value, while a time-limit truncation may require bootstrapping from the final observation.",
+            "solution": "If a task truly terminates, there is no future return beyond the terminal state. If the episode stops only because of an external time limit while the underlying task continues, the final observation can still have future value. Treating both cases identically can bias targets."
+        }
+    ],
+    "summary": "PPO improves policy optimization by using a probability ratio and clipped surrogate objective to limit the incentive for overly large policy updates. It typically combines an actor, a value critic, GAE advantages, minibatch optimization, and an entropy bonus. Training involves collecting rollouts, calculating targets, and running multiple optimization epochs. Clipping is a practical stabilization mechanism rather than a strict trust-region guarantee. Correct rollout bookkeeping and evaluation are essential for reliable results.",
+    "relatedTopics": [
+        "module-15-reinforcement-learning-policy-gradients",
+        "module-15-reinforcement-learning-actor-critic",
+        "module-15-reinforcement-learning-rlhf-connection"
+    ]
+}

@@ -1,1 +1,124 @@
-{}
+{
+    "id": "module-16-ai-engineering-mixed-precision",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 4,
+    "title": "Mixed Precision Training (FP16 / BF16)",
+    "slug": "mixed-precision",
+    "href": "/curriculum/16-ai-engineering/mixed-precision",
+    "filePath": "content/curriculum/16-ai-engineering/04-mixed-precision.json",
+    "description": "Understand floating-point formats and use automatic mixed precision to improve deep learning training throughput and memory efficiency while maintaining numerical stability.",
+    "difficulty": "advanced",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "cuda-basics"
+    ],
+    "learningObjectives": [
+        "Explain FP32, FP16, BF16, and their numerical trade-offs.",
+        "Understand floating-point range, precision, underflow, and overflow.",
+        "Use PyTorch automatic mixed precision with autocast.",
+        "Apply gradient scaling when training with FP16.",
+        "Diagnose numerical instability and validate mixed-precision results.",
+        "Benchmark throughput and memory usage against full-precision training."
+    ],
+    "sections": [
+        {
+            "id": "floating-point-formats",
+            "title": "1. Floating-Point Formats",
+            "type": "concept",
+            "content": "Neural networks perform large numbers of matrix multiplications, convolutions, reductions, and element-wise operations. Floating-point formats determine how these operations represent values and how much memory they consume. FP32 uses 32 bits per value and is a common baseline for training. FP16 uses 16 bits, reducing storage and memory traffic but offering a narrower exponent range. BF16 also uses 16 bits but retains an exponent width similar to FP32, giving it a much larger dynamic range than FP16. Modern accelerators can execute suitable lower-precision operations at substantially higher throughput, although actual speedups depend on hardware, tensor shapes, memory bandwidth, and kernel implementation.",
+            "formula": "FP32: 1 sign bit + 8 exponent bits + 23 fraction bits; FP16: 1 + 5 + 10; BF16: 1 + 8 + 7.",
+            "example": "FP16 has more fraction bits than BF16, so it can represent values more finely within its range. BF16 has a wider exponent range, making it useful when activations or gradients span large magnitudes."
+        },
+        {
+            "id": "range-and-precision",
+            "title": "2. Dynamic Range, Precision, and Numerical Stability",
+            "type": "concept",
+            "content": "Dynamic range describes the range of magnitudes a format can represent. Precision describes how finely it distinguishes values within that range. FP16 can overflow when a value exceeds its representable maximum and can underflow when a small value becomes zero or loses useful precision. BF16 is less vulnerable to range-related overflow and underflow, but its shorter fraction means individual values are represented less precisely. Rounding error can accumulate during long computations. Neural network training also depends on small gradient values, so a format that works for forward inference may still be problematic for backward propagation. Mixed precision therefore uses different formats for different operations rather than blindly converting every tensor to a lower precision.",
+            "formula": "x_stored = round_to_format(x); error = x_stored - x.",
+            "example": "If a small gradient becomes zero after conversion, its contribution to the parameter update disappears. A wider exponent range or gradient scaling can help preserve useful gradient information."
+        },
+        {
+            "id": "automatic-mixed-precision",
+            "title": "3. Automatic Mixed Precision in PyTorch",
+            "type": "concept",
+            "content": "Automatic mixed precision (AMP) lets PyTorch select suitable execution dtypes for supported operations. Operations such as matrix multiplication and convolution may run in a lower precision, while numerically sensitive operations can use FP32 where appropriate. The autocast context manager controls this behavior for a specific region of code. Model parameters are commonly kept in FP32 during ordinary AMP training; autocast selects lower precision for eligible operations without requiring every parameter and input tensor to be manually converted. This reduces the risk of indiscriminate dtype conversion and makes AMP easier to adopt in existing training loops.",
+            "example": "For CUDA training, use torch.autocast(device_type=\"cuda\", dtype=torch.float16) or choose torch.bfloat16 when supported by the GPU and appropriate for the workload."
+        },
+        {
+            "id": "fp16-gradient-scaling",
+            "title": "4. FP16 Gradient Scaling",
+            "type": "concept",
+            "content": "Gradient scaling multiplies the loss by a scale factor before backpropagation. This makes small gradients larger during their representation in FP16. Before the optimizer updates parameters, gradients are unscaled. If the gradients contain infinities or NaNs, the scaler can skip the update and adjust the scale. Scaling does not fix every numerical problem, and BF16 commonly needs less help from gradient scaling because its exponent range is wider. Use the scaler API supported by your installed PyTorch version and test the actual training workload.",
+            "formula": "L_scaled = S × L; g_scaled = S × ∇θL; g = g_scaled / S.",
+            "example": "If a gradient is too small to be represented reliably in FP16, multiplying the loss by a suitable scale can make the scaled gradient representable before it is unscaled for the optimizer."
+        },
+        {
+            "id": "amp-training-loop",
+            "title": "5. Implementing an AMP Training Loop",
+            "type": "code",
+            "language": "python",
+            "content": "This example uses CUDA automatic mixed precision with FP16 and gradient scaling. The model parameters remain in their normal dtype, while autocast selects operation dtypes. For BF16, change the autocast dtype and verify hardware support; gradient scaling is often unnecessary for BF16.",
+            "code": "import torch\nimport torch.nn as nn\nfrom torch.utils.data import DataLoader, TensorDataset\n\ndevice = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\nmodel = nn.Sequential(nn.Linear(128, 256), nn.GELU(), nn.Linear(256, 10)).to(device)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\ncriterion = nn.CrossEntropyLoss()\n\nx = torch.randn(2048, 128)\ny = torch.randint(0, 10, (2048,))\nloader = DataLoader(TensorDataset(x, y), batch_size=64, shuffle=True)\nuse_amp = device.type == \"cuda\"\nscaler = torch.amp.GradScaler(\"cuda\", enabled=use_amp)\n\nfor epoch in range(3):\n    model.train()\n    total_loss = 0.0\n    for inputs, targets in loader:\n        inputs, targets = inputs.to(device), targets.to(device)\n        optimizer.zero_grad(set_to_none=True)\n        with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_amp):\n            logits = model(inputs)\n            loss = criterion(logits, targets)\n        scaler.scale(loss).backward()\n        scaler.step(optimizer)\n        scaler.update()\n        total_loss += loss.detach().item()\n    print(f\"Epoch {epoch + 1}: loss={total_loss / len(loader):.4f}\")",
+            "explanation": "The autocast context selects supported lower-precision operations on CUDA. GradScaler scales the loss, performs backward propagation, unscales gradients as part of the optimizer step, and skips unsafe updates when non-finite gradients are detected. The CPU path disables CUDA AMP and runs in ordinary precision. For production training, use a real dataset, validate the loss and metrics, and save the scaler state when checkpointing."
+        },
+        {
+            "id": "bf16-training",
+            "title": "6. Choosing BF16 or FP16",
+            "type": "concept",
+            "content": "BF16 is often a strong default on hardware that supports efficient BF16 operations because its wider exponent range can make training more stable. FP16 may offer excellent performance but is more sensitive to very small or very large intermediate values. FP32 remains useful as a baseline and may be needed for sensitive operations. The correct choice should be determined through controlled experiments: compare convergence, validation metrics, memory use, examples per second, and stability. Hardware support varies, and a requested dtype does not guarantee that every operation executes in that dtype.",
+            "example": "For BF16 on a supported CUDA GPU, use torch.autocast(device_type=\"cuda\", dtype=torch.bfloat16). You can usually omit GradScaler for BF16, but monitor training behavior."
+        },
+        {
+            "id": "benchmarking-amp",
+            "title": "7. Benchmarking Mixed Precision",
+            "type": "concept",
+            "content": "A useful benchmark compares the same model, data, batch size, optimizer, and training steps under the same hardware conditions. Warm up the model before measuring. Synchronize CUDA before starting and stopping timers because GPU execution is asynchronous. Measure peak allocated memory, throughput, and validation quality. Avoid reporting a speedup from a single noisy batch. Also check whether the workload is compute-bound or memory-bound: mixed precision can reduce memory traffic, but the speedup may be limited if data loading or another pipeline stage is the bottleneck.",
+            "code": "import time\nimport torch\n\ndef benchmark_step(step_fn, warmup=10, iterations=50):\n    for _ in range(warmup):\n        step_fn()\n    if torch.cuda.is_available():\n        torch.cuda.synchronize()\n        torch.cuda.reset_peak_memory_stats()\n    start = time.perf_counter()\n    for _ in range(iterations):\n        step_fn()\n    if torch.cuda.is_available():\n        torch.cuda.synchronize()\n    elapsed = time.perf_counter() - start\n    result = {\"seconds_per_step\": elapsed / iterations, \"steps_per_second\": iterations / elapsed}\n    if torch.cuda.is_available():\n        result[\"peak_allocated_mb\"] = torch.cuda.max_memory_allocated() / (1024 ** 2)\n    return result",
+            "explanation": "Pass an equivalent training-step function for each precision mode. Use identical workloads and warm-up behavior. This helper measures elapsed time and peak allocated CUDA memory, but it does not assess model quality; compare validation metrics separately."
+        },
+        {
+            "id": "debugging-precision",
+            "title": "8. Debugging Numerical Problems",
+            "type": "concept",
+            "content": "If loss suddenly becomes NaN or diverges after enabling AMP, compare with an FP32 baseline and inspect intermediate tensors for non-finite values. Check learning rate, loss scaling, unusually large activations, reduction operations, and custom kernels. Try BF16 when available, reduce the learning rate if the baseline also diverges, or keep particularly sensitive computations in FP32. Do not silently replace NaN values and continue training without understanding the source. Record the precision mode in experiment metadata so that results remain reproducible.",
+            "example": "Use torch.isfinite(loss) to detect non-finite losses. For deeper debugging, inspect gradients after backward propagation and identify which layer first produces invalid values."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mixed-precision-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the primary numerical difference between FP16 and BF16?",
+            "correctAnswer": "BF16 has a wider exponent range, while FP16 has more fraction bits.",
+            "solution": "BF16 uses eight exponent bits and seven fraction bits; FP16 uses five exponent bits and ten fraction bits. BF16 therefore handles a wider range of magnitudes, while FP16 can represent values more finely within its narrower range."
+        },
+        {
+            "id": "mixed-precision-ex-2",
+            "type": "practical",
+            "difficulty": "intermediate",
+            "question": "Why is autocast preferable to manually converting every model parameter to FP16?",
+            "correctAnswer": "Autocast chooses suitable dtypes for supported operations and helps preserve numerical stability.",
+            "solution": "Some operations benefit from lower precision, while others require more precision. Autocast applies operation-specific policies and lets the model parameters remain in their normal dtype."
+        },
+        {
+            "id": "mixed-precision-ex-3",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "A model trains stably in FP32 but produces NaN losses in FP16. Give three steps to investigate.",
+            "correctAnswer": "Check the loss and gradients for non-finite values, enable or inspect gradient scaling, and test BF16 or keep sensitive operations in FP32.",
+            "solution": "First reproduce the problem and locate the first invalid value. Then verify GradScaler behavior and learning-rate settings. Finally, compare BF16 where supported and isolate sensitive computations. Validate that the modified run converges rather than assuming the NaNs are fixed."
+        }
+    ],
+    "summary": "Mixed precision can improve training throughput and reduce memory usage by using lower-precision arithmetic where suitable. FP16 offers more fraction precision but a narrower range; BF16 offers a wider range. PyTorch autocast manages operation dtypes, while GradScaler can help prevent FP16 gradient underflow. Always benchmark speed, memory, convergence, and validation quality against a controlled baseline.",
+    "relatedTopics": [
+        "pytorch",
+        "gpu-programming-concepts",
+        "cuda-basics",
+        "distributed-training",
+        "quantization-optimization"
+    ]
+}

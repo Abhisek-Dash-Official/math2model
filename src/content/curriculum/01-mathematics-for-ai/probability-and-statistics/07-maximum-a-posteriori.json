@@ -1,1 +1,297 @@
-{}
+{
+    "id": "probability-maximum-a-posteriori",
+    "title": "Maximum A Posteriori (MAP)",
+    "slug": "maximum-a-posteriori",
+    "description": "Understand Bayesian parameter estimation, posterior maximization, prior distributions, regularization, and the relationship between MAP and maximum likelihood estimation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Probability Distributions",
+        "Bayes Theorem",
+        "Maximum Likelihood Estimation (MLE)",
+        "Optimization"
+    ],
+    "learningObjectives": [
+        "Define maximum a posteriori estimation.",
+        "Derive MAP estimation from Bayes' theorem.",
+        "Distinguish MLE and MAP estimates.",
+        "Calculate MAP estimates for simple probability models.",
+        "Explain the role of prior distributions.",
+        "Understand how MAP estimation connects to regularization.",
+        "Implement a simple MAP estimator in Python."
+    ],
+    "sections": [
+        {
+            "id": "map-introduction",
+            "title": "1. What Is MAP Estimation?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Maximum a posteriori estimation selects the parameter value with the highest posterior probability density or mass after observing data. Unlike MLE, MAP explicitly incorporates a prior distribution over parameters."
+                },
+                {
+                    "type": "formula",
+                    "label": "MAP estimator",
+                    "value": "θ_MAP = argmax_θ p(θ | D)"
+                },
+                {
+                    "type": "formula",
+                    "label": "Posterior using Bayes' theorem",
+                    "value": "p(θ | D) ∝ p(D | θ)p(θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "Here p(θ) is the prior, p(D | θ) is the likelihood, and p(θ | D) is the posterior. Since the evidence p(D) does not depend on θ, it can be omitted when maximizing the posterior over θ."
+                },
+                {
+                    "type": "text",
+                    "value": "For continuous parameters, MAP maximizes posterior density. The resulting estimate can depend on the parameterization because probability density changes under nonlinear transformations, so MAP should not automatically be interpreted as a parameterization-invariant summary."
+                }
+            ]
+        },
+        {
+            "id": "map-mle-comparison",
+            "title": "2. MAP Versus MLE",
+            "content": [
+                {
+                    "type": "formula",
+                    "label": "MLE",
+                    "value": "θ_MLE = argmax_θ p(D | θ)"
+                },
+                {
+                    "type": "formula",
+                    "label": "MAP",
+                    "value": "θ_MAP = argmax_θ p(D | θ)p(θ)"
+                },
+                {
+                    "type": "text",
+                    "value": "MLE chooses parameters based on the likelihood alone. MAP chooses parameters based on both the likelihood and the prior. If the prior is uniform over the allowed parameter space, MAP and MLE agree when the same maximizer exists and the prior is constant over that space."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: MAP with a Discrete Parameter",
+                    "problem": "A parameter can be either A or B. The prior probabilities are P(A) = 0.7 and P(B) = 0.3. The observed data have likelihoods P(D | A) = 0.4 and P(D | B) = 0.8. Which parameter is selected by MAP?",
+                    "steps": [
+                        "Calculate the unnormalized posterior score for A: 0.7 × 0.4 = 0.28.",
+                        "Calculate the unnormalized posterior score for B: 0.3 × 0.8 = 0.24.",
+                        "Compare the scores."
+                    ],
+                    "solution": "MAP selects A because 0.28 > 0.24. Normalizing both scores would not change which one is larger."
+                }
+            ]
+        },
+        {
+            "id": "map-bernoulli-beta",
+            "title": "3. MAP for a Bernoulli Model",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Suppose observations are independent Bernoulli trials with unknown success probability θ. A Beta distribution is a convenient prior because it is conjugate to the Bernoulli and Binomial likelihoods."
+                },
+                {
+                    "type": "formula",
+                    "label": "Beta prior",
+                    "value": "p(θ) ∝ θ^(α−1)(1−θ)^(β−1), for 0 < θ < 1"
+                },
+                {
+                    "type": "formula",
+                    "label": "Posterior after s successes in n trials",
+                    "value": "θ | D ~ Beta(α + s, β + n − s)"
+                },
+                {
+                    "type": "text",
+                    "value": "When the posterior Beta parameters are both greater than 1, its interior mode is (α + s − 1)/(α + β + n − 2). If a posterior parameter is at or below 1, the mode may occur at a boundary or may not be unique; the formula must not be applied blindly in those cases."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Beta-Bernoulli MAP",
+                    "problem": "A coin is tossed 10 times and lands heads 7 times. Use a Beta(2, 2) prior to calculate the MAP estimate.",
+                    "steps": [
+                        "The prior parameters are α = 2 and β = 2.",
+                        "The data contain s = 7 successes and n − s = 3 failures.",
+                        "The posterior is Beta(2 + 7, 2 + 3) = Beta(9, 5).",
+                        "Both posterior parameters exceed 1, so the interior mode formula applies.",
+                        "Calculate (9 − 1)/(9 + 5 − 2) = 8/12."
+                    ],
+                    "solution": "θ_MAP = 2/3 ≈ 0.6667. For comparison, the MLE is 7/10 = 0.7."
+                }
+            ]
+        },
+        {
+            "id": "map-priors-regularization",
+            "title": "4. Priors and Regularization",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A prior distribution expresses information or assumptions about plausible parameter values before observing the current dataset. Priors may be informed by earlier evidence, domain knowledge, or a deliberate preference for certain parameter values."
+                },
+                {
+                    "type": "text",
+                    "value": "Maximizing the posterior is equivalent to maximizing the log-likelihood plus the log-prior. Equivalently, it is often written as minimizing negative log-likelihood plus a penalty derived from the prior."
+                },
+                {
+                    "type": "formula",
+                    "label": "Negative log-posterior objective",
+                    "value": "J(θ) = −log p(D | θ) − log p(θ) + constant"
+                },
+                {
+                    "type": "text",
+                    "value": "A Gaussian prior centered at zero leads to a squared-parameter penalty, commonly associated with L2 regularization. A Laplace prior centered at zero leads to an absolute-value penalty, commonly associated with L1 regularization. The precise coefficient depends on the prior scale and likelihood convention."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Gaussian Prior and L2 Penalty",
+                    "problem": "Suppose the likelihood is proportional to exp(−(y − θ)²/(2σ²)) and the prior is θ ~ Normal(0, τ²). Write the negative log-posterior objective up to an additive constant.",
+                    "steps": [
+                        "The negative log-likelihood contributes (y − θ)²/(2σ²).",
+                        "The negative log-prior contributes θ²/(2τ²).",
+                        "Add the two terms."
+                    ],
+                    "solution": "J(θ) = (y − θ)²/(2σ²) + θ²/(2τ²) + constant."
+                }
+            ]
+        },
+        {
+            "id": "map-example-gaussian",
+            "title": "5. MAP for a Gaussian Observation Model",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider one observation y modeled as Normal(θ, σ²), where σ² is known, and a prior θ ~ Normal(μ₀, τ²). The posterior is Gaussian, and its mean and mode are equal."
+                },
+                {
+                    "type": "formula",
+                    "label": "Posterior mean and MAP estimate",
+                    "value": "θ_MAP = (y/σ² + μ₀/τ²) / (1/σ² + 1/τ²)"
+                },
+                {
+                    "type": "text",
+                    "value": "The estimate is a precision-weighted average of the observation and the prior mean. Precision is the reciprocal of variance. A smaller variance means greater precision and therefore greater influence in the weighted average."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Shrinking Toward the Prior",
+                    "problem": "Suppose y = 10, σ² = 4, μ₀ = 8, and τ² = 1. Calculate the MAP estimate.",
+                    "steps": [
+                        "Observation precision is 1/4.",
+                        "Prior precision is 1.",
+                        "Calculate the numerator: 10/4 + 8/1 = 2.5 + 8 = 10.5.",
+                        "Calculate the denominator: 1/4 + 1 = 1.25.",
+                        "Divide: 10.5/1.25."
+                    ],
+                    "solution": "θ_MAP = 8.4. The estimate lies between the observation 10 and prior mean 8, closer to the prior mean because the prior has greater precision."
+                }
+            ]
+        },
+        {
+            "id": "map-machine-learning",
+            "title": "6. MAP in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "MAP estimation offers a probabilistic interpretation of regularized machine learning. Instead of selecting parameters solely to fit the observed data, it balances data fit against a prior preference for parameter values."
+                },
+                {
+                    "type": "text",
+                    "value": "For example, a zero-centered Gaussian prior over neural network weights discourages very large weights. In a common setup, maximizing the posterior corresponds to minimizing the training negative log-likelihood plus an L2 penalty."
+                },
+                {
+                    "type": "text",
+                    "value": "MAP produces a single parameter estimate. Full Bayesian inference instead represents uncertainty over parameters with the entire posterior distribution, often using methods such as sampling or variational inference."
+                }
+            ]
+        },
+        {
+            "id": "map-python",
+            "title": "7. MAP with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Beta-Bernoulli MAP Estimate",
+                    "value": "successes = 7\ntrials = 10\nalpha = 2\nbeta = 2\n\nposterior_alpha = alpha + successes\nposterior_beta = beta + trials - successes\n\nif posterior_alpha > 1 and posterior_beta > 1:\n    theta_map = (\n        (posterior_alpha - 1)\n        / (posterior_alpha + posterior_beta - 2)\n    )\n    print('MAP estimate:', theta_map)\nelse:\n    print('Check posterior boundary modes')"
+                },
+                {
+                    "type": "text",
+                    "value": "For this example, the code returns approximately 0.6667. The conditional check avoids applying the interior Beta-mode formula when its parameter conditions are not satisfied."
+                }
+            ]
+        },
+        {
+            "id": "map-limitations",
+            "title": "8. Limitations and Interpretation",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "MAP estimates depend on the chosen prior. A prior that is poorly aligned with the problem can influence estimates in undesirable ways, especially when data are limited."
+                },
+                {
+                    "type": "text",
+                    "value": "A MAP estimate is a point estimate and does not fully describe posterior uncertainty. Two models can have similar MAP estimates but very different posterior distributions."
+                },
+                {
+                    "type": "text",
+                    "value": "For continuous parameters, a posterior density mode can change under a nonlinear reparameterization because densities include a change-of-variables factor. Interpret MAP estimates in the parameterization in which they are defined."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "map-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A discrete parameter has two candidates. Their prior probabilities are 0.6 and 0.4, and their likelihoods are 0.5 and 0.8. Which candidate is selected by MAP?",
+            "correctAnswer": "The first candidate",
+            "solution": "The unnormalized posterior scores are 0.6 × 0.5 = 0.30 and 0.4 × 0.8 = 0.32. Therefore, the second candidate has the larger posterior score and is selected by MAP."
+        },
+        {
+            "id": "map-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For a Beta(2, 2) prior and 8 successes in 12 Bernoulli trials, find the MAP estimate.",
+            "correctAnswer": "9/14 ≈ 0.6429",
+            "solution": "The posterior is Beta(10, 6). Its mode is (10 − 1)/(10 + 6 − 2) = 9/14 ≈ 0.6429."
+        },
+        {
+            "id": "map-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For y = 6 with observation variance σ² = 2 and prior θ ~ Normal(4, 2), find the MAP estimate.",
+            "correctAnswer": "5",
+            "solution": "The posterior mean and mode are (y/σ² + μ₀/τ²)/(1/σ² + 1/τ²) = (6/2 + 4/2)/(1/2 + 1/2) = 5."
+        },
+        {
+            "id": "map-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the main difference between MLE and MAP?",
+            "correctAnswer": "MLE uses the likelihood; MAP uses the likelihood multiplied by the prior.",
+            "solution": "MLE selects the parameter that maximizes the likelihood of the observed data. MAP maximizes the posterior and therefore incorporates both data evidence and the prior distribution."
+        },
+        {
+            "id": "map-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "How can MAP estimation lead to L2 regularization?",
+            "correctAnswer": "A zero-centered Gaussian prior contributes a squared-parameter penalty to the negative log-posterior objective.",
+            "solution": "The negative logarithm of a Gaussian prior is proportional to the squared distance from its mean. For a zero-centered prior, this yields a term proportional to the sum of squared parameters."
+        }
+    ],
+    "summary": [
+        "MAP estimates maximize the posterior distribution over parameters.",
+        "The posterior is proportional to likelihood multiplied by prior.",
+        "MLE uses the likelihood alone, whereas MAP incorporates a prior.",
+        "A Beta prior is conjugate to Bernoulli and Binomial likelihoods.",
+        "Gaussian and Laplace priors correspond to L2 and L1-style penalties in common MAP formulations.",
+        "MAP gives a point estimate rather than a complete description of posterior uncertainty."
+    ],
+    "relatedTopics": [
+        "bayes-theorem",
+        "maximum-likelihood",
+        "probability-distributions",
+        "expectation-variance",
+        "optimization",
+        "entropy"
+    ]
+}

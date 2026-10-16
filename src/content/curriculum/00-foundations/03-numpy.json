@@ -1,1 +1,421 @@
-{}
+{
+  "id": "numpy",
+  "title": "NumPy",
+  "slug": "numpy",
+  "module": "Foundations",
+  "description": "Learn numerical arrays, shape reasoning, indexing, vectorization, broadcasting, linear algebra, reductions, random sampling, and numerical stability—the core array skills behind many AI implementations.",
+  "difficulty": "Beginner",
+  "estimatedHours": 10,
+  "prerequisites": [
+    "programming-fundamentals",
+    "python-for-ai"
+  ],
+  "learningObjectives": [
+    "Create arrays and reason about dimensions, shape, dtype, and memory layout.",
+    "Index, slice, reshape, concatenate, and split arrays safely.",
+    "Use vectorized operations instead of unnecessary Python loops.",
+    "Apply broadcasting and understand its shape compatibility rules.",
+    "Perform dot products, matrix multiplication, and basic linear algebra.",
+    "Compute reductions and statistics along selected axes.",
+    "Generate reproducible random data and understand numerical stability."
+  ],
+  "sections": [
+    {
+      "id": "why-numpy",
+      "title": "Why NumPy Matters",
+      "content": [
+        {
+          "type": "text",
+          "value": "NumPy is the standard foundation for numerical array computing in Python. Its ndarray represents a multidimensional grid of values, usually stored in a homogeneous numeric type. Many scientific and machine-learning libraries build on similar array concepts."
+        },
+        {
+          "type": "text",
+          "value": "A scalar has zero dimensions, a vector commonly has shape (n,), a matrix has shape (m, n), and a batch of images might have shape (batch, height, width, channels) or a channel-first alternative. The meaning of each axis is part of the data contract."
+        },
+        {
+          "type": "text",
+          "value": "Array operations can run in optimized compiled loops, avoiding the overhead of Python-level iteration for every element. Vectorization often improves both performance and readability, although very large intermediate arrays can still consume significant memory."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nscalar = np.array(3.0)\nvector = np.array([1.0, 2.0, 3.0])\nmatrix = np.array([[1.0, 2.0], [3.0, 4.0]])\n\nfor name, array in [(\"scalar\", scalar), (\"vector\", vector), (\"matrix\", matrix)]:\n    print(name, \"shape:\", array.shape, \"ndim:\", array.ndim, \"dtype:\", array.dtype)"
+        }
+      ],
+      "keyTakeaways": [
+        "Shape communicates structure.",
+        "Axis meaning matters as much as axis length.",
+        "Vectorization is powerful but does not eliminate memory costs."
+      ]
+    },
+    {
+      "id": "creation-dtypes",
+      "title": "Array Creation and Data Types",
+      "content": [
+        {
+          "type": "text",
+          "value": "Arrays can be created from Python sequences or constructors such as zeros, ones, arange, linspace, and eye. The dtype controls how elements are represented. Integer, floating-point, boolean, and complex arrays support different operations and precision ranges."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nzeros = np.zeros((2, 3))\nones = np.ones(4, dtype=np.float32)\nsequence = np.arange(0, 10, 2)\ngrid = np.linspace(0.0, 1.0, 5)\nidentity = np.eye(3)\n\nprint(zeros)\nprint(ones, ones.dtype)\nprint(sequence)\nprint(grid)\nprint(identity)"
+        },
+        {
+          "type": "text",
+          "value": "dtype affects memory use, precision, and supported operations. float32 uses less memory than float64 but has lower precision. Integer division can produce floating-point results, while explicit casts can truncate or overflow if used carelessly."
+        },
+        {
+          "type": "text",
+          "value": "Do not choose low precision only because it saves memory; consider the numerical requirements and downstream library behavior. Also be aware that np.asarray may return a view of an existing array rather than a copy."
+        }
+      ],
+      "keyTakeaways": [
+        "Select dtypes deliberately.",
+        "Know the difference between arange and linspace.",
+        "Understand when conversion copies or reuses storage."
+      ]
+    },
+    {
+      "id": "indexing-slicing",
+      "title": "Indexing, Slicing, and Boolean Masks",
+      "content": [
+        {
+          "type": "text",
+          "value": "Indexing selects elements, and slicing selects ranges along axes. For a two-dimensional array, X[row, column] selects one element, X[:, 0] selects the first column, and X[1, :] selects the second row."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.arange(1, 13).reshape(3, 4)\nprint(X)\nprint(X[1, 2])\nprint(X[:, 0])\nprint(X[0:2, 1:3])"
+        },
+        {
+          "type": "text",
+          "value": "Basic slicing generally creates a view into the original array, so modifying a slice may modify the original data. Advanced indexing, such as using integer index arrays or boolean masks, generally creates a copy. Knowing this distinction prevents surprising mutations."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.array([10, 20, 30, 40])\nview = X[1:3]\nview[0] = 99\nprint(X)  # the original array changes\n\nmask = X > 25\nprint(X[mask])"
+        },
+        {
+          "type": "text",
+          "value": "Boolean masks select values satisfying a condition. Use parentheses around each condition when combining comparisons with bitwise operators such as & and |; Python's and and or are not elementwise array operators."
+        }
+      ],
+      "keyTakeaways": [
+        "Remember that slice stops are exclusive.",
+        "A view may share memory with its source.",
+        "Use masks for concise filtering and parenthesize combined conditions."
+      ]
+    },
+    {
+      "id": "shape-reshape",
+      "title": "Shape, Reshaping, and Axis Semantics",
+      "content": [
+        {
+          "type": "text",
+          "value": "Shape errors are among the most common problems in numerical programming. Reshape changes the arrangement of elements without changing their total count. For example, twelve values can be reshaped to (3, 4) or (2, 6), but not (5, 3)."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nvalues = np.arange(12)\nmatrix = values.reshape(3, 4)\ncolumn = values.reshape(-1, 1)\nrow = values.reshape(1, -1)\n\nprint(matrix.shape)\nprint(column.shape)\nprint(row.shape)"
+        },
+        {
+          "type": "text",
+          "value": "The value -1 lets NumPy infer one dimension from the total element count. Use it only when the inferred dimension is unambiguous. np.newaxis or None can add a length-one dimension for broadcasting."
+        },
+        {
+          "type": "text",
+          "value": "Axis semantics must be explicit. For an array shaped (batch, features), axis=0 usually refers to the batch dimension and axis=1 to the feature dimension. Reducing across axis=0 produces one value per feature; reducing across axis=1 produces one value per example."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.array([[1, 10], [3, 30], [5, 50]])\nprint(np.mean(X, axis=0))  # mean of each feature\nprint(np.mean(X, axis=1))  # mean of each row/example"
+        }
+      ],
+      "keyTakeaways": [
+        "Check shapes at important boundaries.",
+        "Name the meaning of each axis.",
+        "Reshape changes structure, not the number of elements."
+      ]
+    },
+    {
+      "id": "vectorization",
+      "title": "Vectorized Arithmetic and Universal Functions",
+      "content": [
+        {
+          "type": "text",
+          "value": "Elementwise arithmetic applies an operation to corresponding elements. NumPy universal functions, or ufuncs, apply mathematical operations such as exp, log, sqrt, and sin efficiently across arrays."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nx = np.array([1.0, 2.0, 3.0])\ny = np.array([4.0, 5.0, 6.0])\n\nprint(x + y)\nprint(x * y)\nprint(x ** 2)\nprint(np.sqrt(x))\nprint(np.exp(x))"
+        },
+        {
+          "type": "text",
+          "value": "Elementwise multiplication is not matrix multiplication. For vectors x and y, x * y multiplies corresponding elements. The expression x @ y computes a dot product when both are one-dimensional and compatible."
+        },
+        {
+          "type": "text",
+          "value": "Vectorization can replace loops for simple numerical transformations. However, a clear loop may be easier to understand for complicated branching or stateful algorithms. Prefer the clearest correct implementation, then measure performance if it matters."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nscores = np.array([0.2, 0.7, 0.4])\nthreshold = 0.5\npredictions = scores >= threshold\nprint(predictions)"
+        }
+      ],
+      "keyTakeaways": [
+        "Elementwise operations are not matrix products.",
+        "Use ufuncs for common numerical transformations.",
+        "Balance vectorization with readability."
+      ]
+    },
+    {
+      "id": "broadcasting",
+      "title": "Broadcasting Rules",
+      "content": [
+        {
+          "type": "text",
+          "value": "Broadcasting lets arrays of compatible shapes participate in elementwise operations without manually repeating data. Compare dimensions from right to left: two dimensions are compatible when they are equal or one of them is 1. Missing leading dimensions are treated as 1."
+        },
+        {
+          "type": "math",
+          "value": "(3, 1) + (1, 4) \\;\\longrightarrow\\; (3, 4)"
+        },
+        {
+          "type": "text",
+          "value": "A column vector with shape (3, 1) and a row vector with shape (1, 4) produce a (3, 4) result. This is useful for pairwise combinations and adding a bias vector to every row of a batch."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\ncolumn = np.array([[1], [2], [3]])  # (3, 1)\nrow = np.array([[10, 20, 30, 40]])  # (1, 4)\ngrid = column + row\n\nprint(grid)\nprint(grid.shape)  # (3, 4)"
+        },
+        {
+          "type": "text",
+          "value": "Broadcasting does not necessarily allocate copies of the broadcasted input, but the output array is real and can be large. A pairwise distance calculation between many samples may create an enormous intermediate matrix. Check output shapes and memory requirements before scaling up."
+        },
+        {
+          "type": "text",
+          "value": "When broadcasting fails, print the shapes and align them from the right. Do not immediately reshape arrays until you can explain the intended semantic relationship between the dimensions."
+        }
+      ],
+      "keyTakeaways": [
+        "Compare dimensions from right to left.",
+        "Use length-one axes to express intended alignment.",
+        "A valid broadcast can still create an impractically large output."
+      ]
+    },
+    {
+      "id": "linear-algebra",
+      "title": "Dot Products and Matrix Multiplication",
+      "content": [
+        {
+          "type": "text",
+          "value": "Linear algebra is central to machine learning. A dot product multiplies corresponding vector entries and sums the results. Matrix multiplication combines rows of the left matrix with columns of the right matrix."
+        },
+        {
+          "type": "math",
+          "value": "x^T w = \\sum_{j=1}^{n}x_jw_j"
+        },
+        {
+          "type": "math",
+          "value": "X\\in\\mathbb{R}^{m\\times n},\\;W\\in\\mathbb{R}^{n\\times p}\\;\\Rightarrow\\;XW\\in\\mathbb{R}^{m\\times p}"
+        },
+        {
+          "type": "text",
+          "value": "If X contains m examples with n features each and W maps n input features to p output features, X @ W produces m examples with p output values. This is the basic shape pattern behind a fully connected linear layer."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.array([[1.0, 2.0], [3.0, 4.0]])   # (2, 2)\nW = np.array([[0.5, 1.0, 1.5], [2.0, 2.5, 3.0]])  # (2, 3)\nb = np.array([0.1, 0.2, 0.3])  # (3,)\n\nY = X @ W + b\nprint(Y)\nprint(Y.shape)  # (2, 3)"
+        },
+        {
+          "type": "text",
+          "value": "The bias b is broadcast across the batch dimension. If shapes do not align, inspect the dimensions and decide which mathematical operation you intended. Transposing a matrix with .T swaps axes for a two-dimensional array; for higher-dimensional arrays, use explicit axis manipulation when needed."
+        }
+      ],
+      "keyTakeaways": [
+        "Write down shapes before multiplying matrices.",
+        "The inner dimensions must match for matrix multiplication.",
+        "A bias vector often broadcasts over the batch dimension."
+      ]
+    },
+    {
+      "id": "reductions-statistics",
+      "title": "Reductions and Summary Statistics",
+      "content": [
+        {
+          "type": "text",
+          "value": "A reduction aggregates values into a smaller result. Sum, mean, minimum, maximum, variance, and standard deviation are common reductions. The axis parameter determines which dimension is reduced."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nX = np.array([[1.0, 10.0], [3.0, 30.0], [5.0, 50.0]])\n\nprint(np.sum(X))\nprint(np.sum(X, axis=0))\nprint(np.mean(X, axis=1))\nprint(np.std(X, axis=0))"
+        },
+        {
+          "type": "text",
+          "value": "NumPy's standard deviation defaults to population standard deviation (ddof=0). Sample standard deviation often uses ddof=1. The correct choice depends on whether you are describing the observed dataset as a population or estimating population variability from a sample."
+        },
+        {
+          "type": "text",
+          "value": "Normalization transforms features to comparable scales. Min-max scaling maps values using the observed minimum and maximum, but it is sensitive to outliers. Standardization subtracts a mean and divides by a standard deviation, with parameters learned from training data only in a machine-learning pipeline."
+        },
+        {
+          "type": "math",
+          "value": "z = \\frac{x-\\mu}{\\sigma}"
+        },
+        {
+          "type": "text",
+          "value": "If a feature has zero variance, standardization would divide by zero. Robust implementations explicitly handle constant features and missing values."
+        }
+      ],
+      "keyTakeaways": [
+        "Understand which axis is reduced.",
+        "Know whether a statistic uses population or sample conventions.",
+        "Fit scaling parameters on training data only."
+      ]
+    },
+    {
+      "id": "random-sampling",
+      "title": "Random Number Generation and Sampling",
+      "content": [
+        {
+          "type": "text",
+          "value": "Randomness supports initialization, simulation, sampling, and randomized algorithms. NumPy recommends creating a Generator with default_rng rather than relying on global random state."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nrng = np.random.default_rng(42)\nuniform = rng.uniform(0.0, 1.0, size=5)\nnormal = rng.normal(loc=0.0, scale=1.0, size=(2, 3))\nindices = rng.integers(0, 100, size=8)\n\nprint(uniform)\nprint(normal)\nprint(indices)"
+        },
+        {
+          "type": "text",
+          "value": "A seed initializes the random-number generator state so a sequence can be reproduced in a compatible environment. Separate Generator objects can help isolate random streams used for data splitting, initialization, and augmentation."
+        },
+        {
+          "type": "text",
+          "value": "Sampling with replacement allows the same item to appear more than once; sampling without replacement selects distinct items. This distinction affects bootstrap procedures, minibatch sampling, and dataset splits."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nrng = np.random.default_rng(7)\npopulation = np.arange(10)\nwith_replacement = rng.choice(population, size=6, replace=True)\nwithout_replacement = rng.choice(population, size=6, replace=False)\n\nprint(with_replacement)\nprint(without_replacement)"
+        }
+      ],
+      "keyTakeaways": [
+        "Use Generator objects for random operations.",
+        "Record seeds and sampling policies.",
+        "Random seeds do not guarantee cross-platform determinism for every operation."
+      ]
+    },
+    {
+      "id": "numerical-stability",
+      "title": "Numerical Stability and Common Pitfalls",
+      "content": [
+        {
+          "type": "text",
+          "value": "Numerical stability concerns how finite-precision arithmetic affects a computation. Overflow occurs when a value exceeds the representable range; underflow occurs when a tiny value is rounded toward zero. Cancellation can occur when nearly equal numbers are subtracted."
+        },
+        {
+          "type": "text",
+          "value": "A classic example is softmax. Directly computing exp(logits) can overflow for large logits. Subtracting the maximum logit leaves the mathematical result unchanged while keeping the largest exponent equal to one."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\ndef softmax(logits):\n    logits = np.asarray(logits, dtype=np.float64)\n    if logits.ndim != 1 or logits.size == 0:\n        raise ValueError(\"logits must be a non-empty vector\")\n    shifted = logits - np.max(logits)\n    exps = np.exp(shifted)\n    return exps / np.sum(exps)\n\nprobabilities = softmax([1000.0, 1001.0, 999.0])\nprint(probabilities)\nprint(probabilities.sum())"
+        },
+        {
+          "type": "text",
+          "value": "Other common issues include dividing by zero, taking logarithms of non-positive values, accidentally mixing units, silently converting dtypes, and relying on exact equality for floating-point results. Use np.isfinite, tolerances, shape checks, and explicit dtype decisions where appropriate."
+        },
+        {
+          "type": "text",
+          "value": "For production machine-learning systems, use numerically stable library implementations of functions such as log-softmax and cross-entropy when available. A mathematically equivalent formula may behave differently in finite precision."
+        }
+      ],
+      "keyTakeaways": [
+        "Finite-precision arithmetic is not exact real arithmetic.",
+        "Stabilize exponentials by shifting logits.",
+        "Prefer tested numerical primitives for complex operations."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "A batch linear layer from scratch",
+      "problem": "Given a batch X, weight matrix W, and bias vector b, compute predictions and verify the shape.",
+      "solution": "import numpy as np\n\nX = np.array([[1.0, 2.0], [0.5, -1.0], [3.0, 1.0]])\nW = np.array([[0.2, 0.8], [-0.4, 0.1]])\nb = np.array([0.05, -0.05])\n\nY = X @ W + b\nassert Y.shape == (3, 2)\nprint(Y)",
+      "explanation": "X has shape (3, 2), W has shape (2, 2), and b has shape (2,). Matrix multiplication produces shape (3, 2), and broadcasting adds the bias to every example."
+    },
+    {
+      "title": "Feature standardization",
+      "problem": "Standardize each feature column of a two-dimensional training matrix.",
+      "solution": "import numpy as np\n\nX_train = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])\nmean = X_train.mean(axis=0)\nstd = X_train.std(axis=0)\nstd_safe = np.where(std == 0, 1.0, std)\nX_scaled = (X_train - mean) / std_safe\nprint(X_scaled)",
+      "explanation": "The mean and standard deviation are computed per feature, using axis=0. In a real pipeline, store these training statistics and reuse them to transform validation and test examples."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Shape Prediction",
+      "difficulty": "Beginner",
+      "problem": "Without running code, predict the output shapes of A @ B when A has shape (8, 5) and B has shape (5, 3). Then give an example of incompatible shapes.",
+      "hints": [
+        "The inner dimensions must match."
+      ],
+      "solution": "The output shape is (8, 3). For an incompatible example, A with shape (8, 5) cannot be multiplied by B with shape (4, 3), because the inner dimensions 5 and 4 do not match."
+    },
+    {
+      "id": "exercise-2",
+      "title": "Broadcasting Table",
+      "difficulty": "Beginner",
+      "problem": "Determine whether shapes (4, 1) and (1, 6) can be added, and state the output shape.",
+      "hints": [
+        "Compare dimensions from the right."
+      ],
+      "solution": "Yes. The output shape is (4, 6)."
+    },
+    {
+      "id": "exercise-3",
+      "title": "Pairwise Differences",
+      "difficulty": "Intermediate",
+      "problem": "Given x with shape (n, 1) and y with shape (1, m), create a matrix of all pairwise differences x - y.",
+      "hints": [
+        "The singleton dimensions allow broadcasting."
+      ]
+    },
+    {
+      "id": "exercise-4",
+      "title": "Stable Softmax",
+      "difficulty": "Intermediate",
+      "problem": "Implement numerically stable softmax for a vector of logits. Test very large positive logits and verify that the output sums to approximately one.",
+      "hints": [
+        "Subtract the maximum before exponentiating."
+      ]
+    },
+    {
+      "id": "exercise-5",
+      "title": "Batch Linear Layer",
+      "difficulty": "Intermediate",
+      "problem": "Implement Y = XW + b and add checks that X and W have compatible dimensions.",
+      "hints": [
+        "Check X.ndim, W.ndim, X.shape[1], and W.shape[0]."
+      ]
+    }
+  ],
+  "relatedTopics": [
+    "python-for-ai",
+    "linear-algebra",
+    "calculus",
+    "neural-networks"
+  ]
+}

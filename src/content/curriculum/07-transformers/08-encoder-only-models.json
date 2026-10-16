@@ -1,1 +1,178 @@
-{}
+{
+    "id": "module-07-transformers-encoder-only-models",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 8,
+    "title": "Encoder-Only Models (BERT)",
+    "slug": "encoder-only-models",
+    "href": "/curriculum/07-transformers/encoder-only-models",
+    "filePath": "content/curriculum/07-transformers/08-encoder-only-models.json",
+    "description": "Understand encoder-only Transformer architectures, the design of BERT, bidirectional contextual representations, masked language modeling, sentence-pair objectives, fine-tuning, and practical NLP applications.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-06-attention-self-attention",
+        "module-06-attention-multi-head-attention"
+    ],
+    "learningObjectives": [
+        "Explain what an encoder-only Transformer is.",
+        "Describe BERT's architecture and bidirectional attention.",
+        "Understand token, position, and segment embeddings.",
+        "Explain masked language modeling and its limitations.",
+        "Understand special tokens such as CLS, SEP, and MASK.",
+        "Compare pretraining with downstream fine-tuning.",
+        "Build a text-classification model using a pretrained encoder.",
+        "Evaluate encoder-based NLP systems and identify common implementation mistakes."
+    ],
+    "sections": [
+        {
+            "id": "encoder-only-introduction",
+            "title": "1. What Is an Encoder-Only Transformer?",
+            "type": "concept",
+            "content": "An encoder-only Transformer uses an encoder stack to transform an input sequence into contextual representations. Unlike a conventional autoregressive decoder, it does not require a causal mask for ordinary bidirectional language-understanding tasks. Each valid token can use information from both earlier and later tokens. These representations can be used for sentiment classification, document categorization, named-entity recognition, semantic similarity, and information extraction. Encoder-only models are particularly useful when the goal is to understand an existing input rather than generate a long continuation one token at a time."
+        },
+        {
+            "id": "bert-introduction",
+            "title": "2. Introducing BERT",
+            "type": "concept",
+            "content": "BERT stands for Bidirectional Encoder Representations from Transformers. It popularized pretrained bidirectional Transformer encoders for language understanding. Instead of training only to predict the next token, the original BERT training approach included masked language modeling, in which selected tokens were hidden and the model learned to predict them using surrounding context. The original training recipe also included a sentence-pair objective called next sentence prediction. BERT is a model family and training approach, not a synonym for every encoder-only Transformer. Later models changed objectives, tokenization, architecture details, and training procedures."
+        },
+        {
+            "id": "bert-bidirectionality",
+            "title": "3. Why Bidirectional Context Matters",
+            "type": "concept",
+            "content": "Consider the sentence 'She deposited money at the bank near the river.' The meaning of bank depends on surrounding words. A bidirectional encoder can use information from both the left and right context when constructing the representation of bank. This differs from a strictly causal model, which cannot use future tokens at a given position. Bidirectional context is helpful for many classification and token-understanding tasks. It is not automatically superior for every task: generation systems that must predict unseen future text need an information-flow design that prevents access to future targets."
+        },
+        {
+            "id": "bert-input-representation",
+            "title": "4. BERT Input Representations",
+            "type": "concept",
+            "content": "A traditional BERT input representation combines token embeddings, positional embeddings, and token-type or segment embeddings. Token embeddings identify vocabulary items. Position embeddings represent where tokens occur in the input. Segment embeddings can distinguish two text segments in sentence-pair tasks. Special tokens provide structural markers: CLS is commonly placed at the start of an input, SEP separates segments or marks a sequence boundary, and MASK is used when a token is hidden for masked-language-modeling training. Exact input conventions depend on the checkpoint and tokenizer."
+        },
+        {
+            "id": "bert-special-tokens",
+            "title": "5. Understanding Special Tokens",
+            "type": "concept",
+            "content": "Special tokens are vocabulary entries with defined structural or training roles. CLS is often used as a sequence-level representation for classification in traditional BERT workflows. SEP marks sequence boundaries and can separate paired sentences. MASK indicates a position whose original token is hidden in masked language modeling. Padding tokens make batched examples rectangular, while an attention mask distinguishes valid tokens from padding. Special tokens should be introduced through the model's tokenizer rather than manually guessing their integer IDs. Tokenizer and checkpoint compatibility is important because different model families can use different conventions."
+        },
+        {
+            "id": "bert-masked-language-modeling",
+            "title": "6. Masked Language Modeling",
+            "type": "math",
+            "content": "Masked language modeling selects a subset of input token positions and trains the model to predict the original token at those positions. If x is the corrupted input and y_i is the original token at selected position i, the objective is L_MLM = -sum over selected positions i of log P(y_i | x). Only the selected prediction positions contribute to the standard masked-token loss. Because the encoder can use left and right context, it can infer a hidden word from surrounding information. The exact corruption policy is implementation-specific; the original BERT recipe used a mixture of replacement strategies rather than replacing every selected token with MASK."
+        },
+        {
+            "id": "bert-mlm-example",
+            "title": "7. A Masked Language Modeling Example",
+            "type": "concept",
+            "content": "Suppose the original sentence is 'The cat sleeps on the sofa.' A corrupted input might replace cat with MASK: 'The MASK sleeps on the sofa.' The model receives the entire corrupted sequence and predicts a probability distribution for the masked position. If cat receives the highest probability, the prediction is correct for this example. During training, the model processes many examples and updates its parameters to increase the probability of original masked tokens. The model does not simply memorize a blank-filling rule; it learns contextual representations from a large corpus."
+        },
+        {
+            "id": "bert-next-sentence",
+            "title": "8. Sentence-Pair Pretraining",
+            "type": "concept",
+            "content": "The original BERT training setup included next sentence prediction, or NSP. The model received a pair of text segments and predicted whether the second segment followed the first in the original text under the training construction. This encouraged the model to learn signals about relationships between segments. Later research found that alternative pretraining objectives can work well without NSP, so it should be understood as a component of the original BERT recipe rather than a requirement for all encoder models. Sentence-pair classification can also be trained directly for downstream tasks."
+        },
+        {
+            "id": "bert-pretraining-finetuning",
+            "title": "9. Pretraining Versus Fine-Tuning",
+            "type": "concept",
+            "content": "Pretraining exposes a model to a large general-purpose corpus and optimizes a self-supervised objective. Fine-tuning then adapts the pretrained parameters to a specific task using labeled or task-specific data. For sentiment analysis, a classification head may be attached to the encoder and trained with sentiment labels. For named-entity recognition, a token-level head predicts a label for each token. Fine-tuning can require much less data and computation than training a large encoder from random initialization, but its success still depends on data quality, task similarity, hyperparameters, and evaluation."
+        },
+        {
+            "id": "bert-classification",
+            "title": "10. Text Classification with an Encoder",
+            "type": "concept",
+            "content": "A common classification workflow tokenizes each input, passes token IDs and an attention mask to a pretrained encoder, extracts a sequence-level representation, and applies a classification head. Traditional BERT classifiers often use the final hidden state corresponding to CLS, although pooling strategies vary. The classifier maps a vector to class logits. Cross-entropy loss compares the logits with the correct class. During evaluation, use held-out examples and appropriate metrics. For imbalanced datasets, accuracy alone can be misleading, so consider precision, recall, and F1."
+        },
+        {
+            "id": "bert-python-example",
+            "title": "11. Fine-Tune a Pretrained Encoder",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom transformers import AutoTokenizer, AutoModelForSequenceClassification\n\nmodel_name = \"bert-base-uncased\"\ntokenizer = AutoTokenizer.from_pretrained(model_name)\nmodel = AutoModelForSequenceClassification.from_pretrained(\n    model_name,\n    num_labels=2\n)\n\ntexts = [\n    \"The product works exactly as expected.\",\n    \"The experience was frustrating and disappointing.\"\n]\nlabels = torch.tensor([1, 0])\n\nbatch = tokenizer(\n    texts,\n    padding=True,\n    truncation=True,\n    max_length=128,\n    return_tensors=\"pt\"\n)\n\nmodel.train()\noptimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)\noptimizer.zero_grad()\noutputs = model(**batch, labels=labels)\nloss = outputs.loss\nloss.backward()\noptimizer.step()\n\nprint(\"Training loss:\", loss.item())\n\nmodel.eval()\nwith torch.no_grad():\n    prediction = model(**batch).logits.argmax(dim=-1)\nprint(\"Predictions:\", prediction.tolist())",
+            "explanation": "This example demonstrates one optimization step for binary sequence classification. The example labels are illustrative, not a real training dataset. A complete project needs train-validation-test splits, repeated batches, multiple epochs, metric tracking, checkpoint selection, and careful handling of class balance. The pretrained weights and tokenizer are downloaded by the Transformers library if they are not already cached."
+        },
+        {
+            "id": "bert-token-classification",
+            "title": "12. Token-Level Tasks",
+            "type": "concept",
+            "content": "Encoder-only models can also predict a label for each token. Named-entity recognition identifies spans such as people, organizations, and locations. Part-of-speech tagging assigns grammatical categories. The encoder returns hidden states of shape (B, L, D), and a token-level classification head maps each hidden state to label logits. Subword tokenization creates an alignment challenge because a single original word may become several tokens. Training and evaluation must define how labels are assigned to subwords and how token predictions are mapped back to original words."
+        },
+        {
+            "id": "bert-sentence-similarity",
+            "title": "13. Semantic Similarity and Retrieval",
+            "type": "concept",
+            "content": "Encoder representations can be used to compare text, but ordinary pooled BERT outputs are not automatically optimal sentence embeddings. Semantic retrieval systems often use encoders specifically trained with contrastive or ranking objectives. Texts are mapped to vectors, and a similarity measure such as cosine similarity ranks candidates. For search, an encoder may generate query and document embeddings that can be compared efficiently. Model choice and training objective matter: two sentences with similar meanings should be close in the embedding space if that behavior was encouraged during training."
+        },
+        {
+            "id": "bert-limitations",
+            "title": "14. Limitations of Encoder-Only Models",
+            "type": "concept",
+            "content": "Encoder-only models are not naturally designed for unrestricted autoregressive text generation. Their input length is limited by the architecture and checkpoint configuration, and long inputs may require truncation or chunking. Performance can degrade when the task differs substantially from pretraining data. Models may also encode social biases, fail on domain-specific terminology, or produce overconfident predictions. Fine-tuning requires attention to privacy, data leakage, class imbalance, and evaluation methodology. A strong benchmark score does not guarantee reliable performance in every deployment environment."
+        },
+        {
+            "id": "bert-debugging",
+            "title": "15. Common Implementation Mistakes",
+            "type": "concept",
+            "content": "Common mistakes include pairing a tokenizer with the wrong checkpoint, omitting the attention mask, exceeding the model's maximum input length, and assuming label IDs have a particular semantic meaning without checking the dataset mapping. During training, forgetting optimizer updates or gradient resets can lead to confusing behavior. During evaluation, leaving the model in training mode can activate dropout and make predictions inconsistent. Token-level tasks require careful subword alignment. Finally, do not use test-set performance repeatedly to tune the model because this leaks information from the final evaluation set into development."
+        },
+        {
+            "id": "bert-experiment",
+            "title": "16. Experiment: Inspect Tokenization",
+            "type": "concept",
+            "content": "Choose several sentences containing punctuation, rare words, numbers, and contractions. Tokenize them with a BERT tokenizer and inspect token IDs, token strings, and attention masks. Compare the outputs for short and long examples. Next, run a pretrained classification model and inspect its logits. Repeat with an attention mask and padding configuration that matches the input. The experiment demonstrates that preprocessing is part of the model system: the same raw text can produce different model behavior if tokenization or special-token handling changes."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "bert-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is BERT described as bidirectional?",
+            "correctAnswer": "Its encoder can use both left and right context when constructing a token representation.",
+            "solution": "Standard BERT attention is not restricted to earlier tokens by a causal mask. A token can attend to valid tokens on both sides, allowing context from the entire input to contribute."
+        },
+        {
+            "id": "bert-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is masked language modeling?",
+            "correctAnswer": "A self-supervised objective that trains a model to predict original tokens at selected corrupted input positions.",
+            "solution": "Some input tokens are selected and corrupted. The model predicts their original identities using the surrounding context, and the loss is calculated over the selected prediction positions."
+        },
+        {
+            "id": "bert-ex-3",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "Would a BERT-style encoder generally be a natural starting point for sentiment classification or unrestricted next-token generation?",
+            "correctAnswer": "Sentiment classification.",
+            "solution": "BERT produces bidirectional contextual representations suited to understanding an input. Unrestricted autoregressive generation typically requires a decoder-only or another explicitly generative architecture."
+        },
+        {
+            "id": "bert-ex-4",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "An encoder produces hidden states with shape (16, 100, 768). What do the three dimensions represent?",
+            "correctAnswer": "Batch size 16, sequence length 100, and hidden dimension 768.",
+            "solution": "The first dimension counts examples, the second counts token positions including any padding, and the third contains the contextual feature vector for each position."
+        },
+        {
+            "id": "bert-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a basic workflow for classifying customer feedback using a pretrained encoder.",
+            "correctAnswer": "Prepare labeled data, split it into training, validation, and test sets, tokenize with the matching tokenizer, fine-tune a classification model, select settings using validation data, and evaluate once on the test set.",
+            "solution": "The training split updates parameters, the validation split supports model selection, and the test split estimates final generalization. Use metrics appropriate to class balance and inspect errors before deployment."
+        }
+    ],
+    "summary": "Encoder-only Transformers such as BERT create contextual representations using bidirectional self-attention. The original BERT approach used masked language modeling and next sentence prediction during pretraining. A pretrained encoder can be fine-tuned for classification, token labeling, and other language-understanding tasks. Successful applications require appropriate tokenization, masking, label alignment, validation, and task-specific evaluation.",
+    "relatedTopics": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-encoder",
+        "module-07-transformers-decoder-only-models",
+        "module-07-transformers-encoder-decoder-models"
+    ]
+}

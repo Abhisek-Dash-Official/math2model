@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-gru",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 6,
+  "title": "Gated Recurrent Unit (GRU)",
+  "slug": "gru",
+  "href": "/curriculum/05-sequence-models/gru",
+  "filePath": "content/curriculum/05-sequence-models/06-gru.json",
+  "description": "Learn the GRU's update and reset gates, its simplified state update, and practical differences from LSTMs.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "RNN",
+    "LSTM",
+    "Backpropagation Through Time"
+  ],
+  "learningObjectives": [
+    "Explain the update and reset gates.",
+    "Describe a common GRU update formulation.",
+    "Compare GRU and LSTM state structures.",
+    "Implement a GRU layer in PyTorch."
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "title": "What Is a GRU?",
+      "type": "concept",
+      "content": "A Gated Recurrent Unit is a gated recurrent architecture designed to regulate information flow with fewer gate structures than an LSTM. A GRU combines memory and exposed representation into one hidden state rather than maintaining separate hidden and cell states.\n\nGRUs can perform well on many sequence tasks and may be faster or smaller than a comparable LSTM, but the result depends on hidden size, implementation, data, and optimization. It is best to compare both empirically."
+    },
+    {
+      "id": "gates",
+      "title": "Update and Reset Gates",
+      "type": "concept",
+      "content": "The update gate controls how much of the previous hidden state is carried forward versus replaced with new candidate information. The reset gate controls how much of the previous state contributes when computing the candidate state. Their sigmoid values are learned from the current input and previous hidden state.\n\nIntuitively, the update gate helps determine how quickly the state changes, while the reset gate can reduce the influence of older context when forming new content. Exact conventions vary slightly between implementations and equation presentations."
+    },
+    {
+      "id": "equations",
+      "title": "A Common GRU Formulation",
+      "type": "math",
+      "content": "One common convention uses z_t=σ(W_z x_t+U_z h_(t−1)+b_z) for the update gate and r_t=σ(W_r x_t+U_r h_(t−1)+b_r) for the reset gate. The candidate is h~_t=tanh(W_h x_t+U_h(r_t⊙h_(t−1))+b_h). The state update is h_t=(1−z_t)⊙h_(t−1)+z_t⊙h~_t.\n\nSome references reverse the meaning of z_t in the final interpolation, so always check the convention being used. The essential idea is a learned mixture of previous state and candidate state."
+    },
+    {
+      "id": "compare",
+      "title": "GRU vs LSTM",
+      "type": "concept",
+      "content": "A GRU typically has update and reset gates and one hidden state; an LSTM has forget, input, and output gates plus a separate cell state. GRUs often have fewer parameters for similar hidden dimensions. LSTMs offer a more explicit memory pathway that may help in some tasks.\n\nNeither architecture is universally best. Compare validation metrics and resource use under similar training budgets, and tune hidden size and regularization fairly."
+    },
+    {
+      "id": "code",
+      "title": "GRU in PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\ngru = nn.GRU(input_size=8, hidden_size=24, num_layers=1, batch_first=True)\nx = torch.randn(16, 30, 8)\noutput, h_n = gru(x)\nprint(output.shape)  # [16, 30, 24]\nprint(h_n.shape)     # [1, 16, 24]",
+      "language": "python",
+      "explanation": "The output includes a hidden representation for every time step. h_n contains the final hidden state for each recurrent layer and direction. Unlike nn.LSTM, nn.GRU returns a single state tensor rather than an (h_n, c_n) tuple."
+    },
+    {
+      "id": "selection",
+      "title": "Choosing a Recurrent Cell",
+      "type": "concept",
+      "content": "Start with the simplest model that meets the latency and quality requirements. A GRU can be attractive for resource-constrained settings; an LSTM may help when its memory structure improves validation performance. Sequence length, dataset size, target horizon, and hardware all affect the decision.\n\nFor streaming, consider state management and how hidden states are reset across sessions. For padded variable-length batches, use packed sequences or masks so the recurrent state is not updated as if padding were real observations."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "gru-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What are the two main gates in a GRU?",
+      "correctAnswer": "The update gate and reset gate.",
+      "solution": "They regulate how much previous state is carried forward and how it contributes to candidate-state computation."
+    },
+    {
+      "id": "gru-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What is one structural difference between GRU and LSTM?",
+      "correctAnswer": "A GRU uses one hidden state, while an LSTM maintains both hidden and cell states.",
+      "solution": "The GRU combines state control into a simpler gated update."
+    },
+    {
+      "id": "gru-ex3",
+      "type": "math",
+      "difficulty": "medium",
+      "question": "Under the stated convention, if z=0.25, previous state=4, and candidate=0, what is h=(1−z)h_prev+z h_candidate?",
+      "correctAnswer": "3.",
+      "solution": "h = 0.75×4 + 0.25×0 = 3."
+    },
+    {
+      "id": "gru-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "What state objects does PyTorch nn.GRU return?",
+      "correctAnswer": "An output sequence and a final hidden-state tensor.",
+      "solution": "Unlike nn.LSTM, a GRU does not return a separate cell-state tensor."
+    }
+  ],
+  "summary": "GRUs use update and reset gates to control a single recurrent hidden state. They can be efficient alternatives to LSTMs, but architecture selection should be based on measured quality and resource use.",
+  "relatedTopics": [
+    "rnn",
+    "lstm",
+    "backpropagation-through-time",
+    "vanishing-exploding-gradients"
+  ]
+}

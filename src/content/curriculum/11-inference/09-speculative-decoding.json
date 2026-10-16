@@ -1,1 +1,239 @@
-{}
+{
+    "id": "module-11-inference-speculative-decoding",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 9,
+    "title": "Speculative Decoding",
+    "slug": "speculative-decoding",
+    "href": "/curriculum/11-inference/speculative-decoding",
+    "filePath": "content/curriculum/11-inference/09-speculative-decoding.json",
+    "description": "Learn how speculative decoding accelerates autoregressive language model inference using a lightweight draft model, parallel verification by a target model, and mathematically grounded token acceptance.",
+    "difficulty": "advanced",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-06-attention",
+        "module-09-large-language-models",
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-kv-cache",
+        "module-11-inference-quantization",
+        "module-11-inference-batching"
+    ],
+    "learningObjectives": [
+        "Explain why autoregressive generation can be limited by sequential model execution.",
+        "Describe the draft-and-verify workflow used by speculative decoding.",
+        "Understand how a target model verifies several proposed tokens in parallel.",
+        "Explain rejection sampling and residual distributions at a conceptual level.",
+        "Distinguish exact speculative sampling from approximate heuristic implementations.",
+        "Implement a simplified educational speculative decoding algorithm.",
+        "Identify the factors that determine whether speculation improves latency.",
+        "Evaluate speculative decoding using throughput, latency, and acceptance-rate metrics."
+    ],
+    "sections": [
+        {
+            "id": "speculative-introduction",
+            "title": "1. What Is Speculative Decoding?",
+            "type": "concept",
+            "content": "Speculative decoding is an inference optimization that attempts to generate multiple tokens with less sequential work from a large target language model. A smaller draft model proposes several future tokens, and the target model evaluates those proposals. Compatible proposals can be accepted, while rejected proposals are corrected using a sampling procedure. The central idea is to use inexpensive draft computations to reduce the number of times the expensive target model must be called sequentially. When implemented with the appropriate acceptance and correction rules, speculative sampling can preserve the target model's output distribution."
+        },
+        {
+            "id": "speculative-autoregressive-bottleneck",
+            "title": "2. Why Autoregressive Generation Can Be Slow",
+            "type": "concept",
+            "content": "In ordinary autoregressive decoding, the next token depends on the tokens already generated. The model predicts one token, incorporates it into the sequence, and then predicts the next token. This creates a sequence of dependent decoding steps. Although operations within each model invocation can be highly parallel, the generation process itself advances token by token. Large models can spend substantial time repeatedly executing their decoding computation, particularly when generating short responses for interactive applications."
+        },
+        {
+            "id": "speculative-basic-idea",
+            "title": "3. The Draft-and-Verify Idea",
+            "type": "concept",
+            "content": "Speculative decoding introduces two roles. The draft model is relatively inexpensive and proposes a short continuation. The target model is the model whose output distribution the system intends to preserve. The target evaluates the proposed continuation using its own conditional probabilities. Since causal Transformer implementations can evaluate multiple positions from a known candidate continuation in one forward pass, several proposed tokens can be checked together. The target model remains responsible for deciding which proposals are accepted and how a rejection is corrected."
+        },
+        {
+            "id": "speculative-workflow",
+            "title": "4. Step-by-Step Workflow",
+            "type": "concept",
+            "content": "A typical cycle begins with the current prefix. The draft model proposes a sequence of tokens, often using its own cached key-value states. The target model then evaluates the prefix and proposed tokens, producing the target conditional distributions needed for verification. A sampling algorithm examines proposals in order. Accepted tokens extend the output. If a proposal is rejected, the algorithm samples a replacement from a correction distribution and ends that verification cycle. Depending on the implementation, the process may also emit an additional token from the target model after all draft proposals are accepted. The next cycle continues from the resulting prefix."
+        },
+        {
+            "id": "speculative-model-roles",
+            "title": "5. Draft Model and Target Model",
+            "type": "concept",
+            "content": "The draft model is optimized for inexpensive proposal generation, while the target model provides the desired output distribution. The draft may be a smaller language model, a smaller compatible checkpoint, or another supported prediction mechanism. A draft model does not need to make perfect predictions to be useful, but better proposals generally increase acceptance. The target model must be able to score the proposed continuation under the intended decoding configuration. Differences in tokenization, model architecture, or supported sampling behavior can complicate implementation."
+        },
+        {
+            "id": "speculative-parallel-verification",
+            "title": "6. Parallel Verification",
+            "type": "concept",
+            "content": "Suppose the draft proposes four tokens. A causal target model can process the known prefix and candidate continuation so that the relevant next-token distributions are calculated for the proposed positions. These distributions can be computed in parallel across positions within the target forward pass, subject to the causal attention mask. Verification then determines which proposed tokens are accepted in sequence. This does not mean the target model can freely generate an arbitrary number of dependent tokens in parallel: the proposed continuation supplies the candidate tokens that make parallel verification possible."
+        },
+        {
+            "id": "speculative-probability-notation",
+            "title": "7. Target and Draft Distributions",
+            "type": "math",
+            "content": "Let q(x) denote the draft model's probability of proposing token x for the current prefix, and let p(x) denote the target model's probability for the same token and prefix. Exact speculative sampling compares these probabilities to decide whether a proposal can be accepted without changing the target distribution. If the proposal is rejected, a residual distribution supplies a replacement. The distributions must correspond to the same prefix and compatible decoding semantics.",
+            "formula": "p(x) = P_target(x | prefix);  q(x) = P_draft(x | prefix)",
+            "example": "Suppose the draft assigns a token probability of 0.6 and the target assigns it probability 0.9. The proposal is likely to be accepted under the standard acceptance rule. If the draft assigns probability 0.8 while the target assigns 0.2, the proposal is accepted with probability 0.2 / 0.8 = 0.25."
+        },
+        {
+            "id": "speculative-acceptance",
+            "title": "8. The Token Acceptance Rule",
+            "type": "math",
+            "content": "For a token x sampled from the draft distribution q, standard speculative sampling accepts the proposal with probability min(1, p(x) / q(x)), provided q(x) is positive. If p(x) is at least q(x), the token is always accepted. Otherwise, acceptance occurs with probability p(x) / q(x). This randomized rule is important: always accepting a token merely because it appears plausible can change the target model's output distribution.",
+            "formula": "α(x) = min(1, p(x) / q(x))",
+            "example": "If p(x) = 0.3 and q(x) = 0.6, the acceptance probability is min(1, 0.3 / 0.6) = 0.5. A random value drawn uniformly from [0, 1) below 0.5 accepts the proposal; a value of 0.7 rejects it."
+        },
+        {
+            "id": "speculative-residual",
+            "title": "9. Correcting a Rejected Proposal",
+            "type": "math",
+            "content": "When a proposal is rejected, the algorithm needs a correction distribution that accounts for probability mass the target assigns beyond what the draft proposed. For discrete distributions, the residual probability for token x is proportional to max(0, p(x) - q(x)). Normalizing these nonnegative values produces the replacement distribution. This correction is what allows standard speculative sampling to preserve the target distribution instead of simply restarting with an arbitrary token.",
+            "formula": "r(x) = max(0, p(x) - q(x)) / Σ_y max(0, p(y) - q(y))",
+            "example": "Suppose the target distribution is p = [0.5, 0.3, 0.2] and the draft distribution is q = [0.6, 0.1, 0.3]. The positive residual values are [0, 0.2, 0]. After normalization, the correction distribution assigns probability 1 to the second token. This is a deliberately small example; real vocabularies contain many more tokens."
+        },
+        {
+            "id": "speculative-example",
+            "title": "10. Worked Example",
+            "type": "concept",
+            "content": "Imagine that a draft model proposes the tokens 'the', 'model', and 'learns'. The target model evaluates each proposal under the appropriate prefix. If the first two tokens pass the acceptance tests but the third fails, the output retains the first two accepted tokens and samples a correction for the third position from the residual distribution. The next speculative cycle begins from the corrected prefix. The exact number of tokens emitted in each cycle varies because the acceptance sequence is random and depends on the target and draft distributions."
+        },
+        {
+            "id": "speculative-expected-acceptance",
+            "title": "11. Expected Acceptance Rate",
+            "type": "math",
+            "content": "The acceptance rate measures the fraction of draft proposals accepted by the target verification process. For a fixed prefix and proposal distribution q, the expected acceptance probability under standard speculative sampling is the sum across vocabulary tokens of min(p(x), q(x)). This quantity is high when the target and draft distributions overlap strongly. In a real sequence, the distributions change as accepted tokens extend the prefix, so an empirical acceptance rate averages over many different positions and requests.",
+            "formula": "Expected acceptance probability = Σ_x min(p(x), q(x))",
+            "example": "For p = [0.5, 0.3, 0.2] and q = [0.4, 0.4, 0.2], the expected acceptance probability is min(0.5, 0.4) + min(0.3, 0.4) + min(0.2, 0.2) = 0.4 + 0.3 + 0.2 = 0.9."
+        },
+        {
+            "id": "speculative-python",
+            "title": "12. Educational Single-Token Speculative Sampling",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef speculative_sample_token(p, q, rng=None):\n    rng = rng or np.random.default_rng()\n    p, q = np.asarray(p, dtype=float), np.asarray(q, dtype=float)\n    if p.ndim != 1 or q.shape != p.shape or np.any(p < 0) or np.any(q < 0):\n        raise ValueError(\"p and q must be same-shaped nonnegative vectors\")\n    if not np.isclose(p.sum(), 1) or not np.isclose(q.sum(), 1):\n        raise ValueError(\"p and q must each sum to 1\")\n    proposal = rng.choice(len(q), p=q)\n    if q[proposal] > 0 and rng.random() < min(1.0, p[proposal] / q[proposal]):\n        return proposal\n    residual = np.maximum(p - q, 0)\n    if residual.sum() <= 0:\n        return rng.choice(len(p), p=p)\n    residual /= residual.sum()\n    return rng.choice(len(p), p=residual)",
+            "explanation": "This function demonstrates the single-token acceptance and residual-correction rule for normalized discrete distributions. It returns a token index rather than text. The fallback for a zero residual handles a degenerate numerical case; if p and q are identical, all proposals are accepted with probability one in exact arithmetic. A complete speculative decoder additionally manages draft and target model calls, token sequences, KV caches, stopping conditions, and multi-token verification."
+        },
+        {
+            "id": "speculative-multi-token",
+            "title": "13. Multi-Token Verification",
+            "type": "concept",
+            "content": "In a full speculative decoder, the draft model proposes multiple tokens sequentially using its own conditional distributions. The target model evaluates the proposed sequence and produces conditional probabilities at each position. Proposals are checked from left to right because the probability for each position depends on the preceding prefix. Accepted tokens extend the sequence until a rejection occurs or all proposals are accepted. If every proposal is accepted, the algorithm may sample an additional token from the target distribution, depending on the specific algorithm. Correct handling of conditional distributions and cache positions is essential."
+        },
+        {
+            "id": "speculative-speedup",
+            "title": "14. When Does Speculative Decoding Help?",
+            "type": "concept",
+            "content": "Speculative decoding is most attractive when the target model is expensive per decoding step, the draft model is much cheaper, and proposed tokens are accepted frequently. It may be less beneficial when the draft model is relatively expensive, acceptance is low, or target verification has high overhead. Hardware utilization and batch size matter: a target model may already be efficient at processing many requests together, reducing the relative benefit of speculation. Performance must be measured on the actual deployment workload."
+        },
+        {
+            "id": "speculative-speedup-formula",
+            "title": "15. A Simplified Speedup Model",
+            "type": "math",
+            "content": "A rough intuition for speculative decoding is that speedup depends on how many tokens are accepted per verification cycle and the cost of the draft and target operations. Let k be the number of draft proposals per cycle, C_d the cost of producing those proposals, and C_v the cost of target verification. If the cycle emits an expected E tokens, a simplified estimate compares ordinary target cost per token with speculative cost per emitted token. Real implementations have additional overhead and hardware-dependent effects, so no universal speedup formula predicts all deployments.",
+            "formula": "Approximate speculative cost per emitted token ≈ (C_d + C_v) / E",
+            "example": "Suppose a speculative cycle costs 1.5 relative time units and emits an average of 3 tokens. The estimated cost is 1.5 / 3 = 0.5 units per emitted token. If ordinary decoding costs 1 unit per token under the same workload, the simplified estimate suggests a 2× improvement. Actual speedup must be benchmarked because these costs may not scale linearly."
+        },
+        {
+            "id": "speculative-draft-length",
+            "title": "16. Choosing Draft Length",
+            "type": "concept",
+            "content": "Longer draft sequences can reduce how frequently the target model must be invoked, but they also require more draft computation and can lead to more wasted work when early proposals are rejected. Shorter sequences reduce proposal overhead but may provide fewer opportunities to amortize target verification. Some systems adapt the draft length based on observed acceptance rates and latency. The best draft length depends on model compatibility, context length, request concurrency, and hardware."
+        },
+        {
+            "id": "speculative-alternatives",
+            "title": "17. Related Speculation Techniques",
+            "type": "concept",
+            "content": "Several related methods use model predictions to reduce decoding latency. Multi-token prediction heads can propose several tokens from a shared model. Self-speculative decoding uses different computational paths or model components to produce drafts, where supported. Tree-based speculation evaluates multiple possible continuations rather than only one linear draft. These techniques differ in proposal construction, verification cost, memory requirements, and implementation complexity. Their correctness guarantees depend on the specific algorithm."
+        },
+        {
+            "id": "speculative-exactness",
+            "title": "18. Exactness and Sampling Configuration",
+            "type": "concept",
+            "content": "Exact speculative sampling aims to produce the same output distribution as ordinary sampling from the target model under the same decoding configuration. This is a distributional guarantee, not a promise that every generated sequence will match a separate run with an independently drawn random seed. Temperature, top-k, top-p, repetition penalties, and other decoding transformations must be handled consistently in the distributions used for proposal acceptance and correction. A heuristic system that simply accepts matching tokens or uses an ad hoc rejection rule may not preserve the target distribution."
+        },
+        {
+            "id": "speculative-evaluation",
+            "title": "19. Evaluation Metrics",
+            "type": "concept",
+            "content": "Evaluate speculative decoding using time to first token, inter-token latency, end-to-end latency, generated tokens per second, target-model calls per emitted token, draft acceptance rate, peak memory, and throughput under concurrency. Compare against ordinary decoding using the same target model, prompt distribution, output settings, and hardware. Include short and long contexts, different response lengths, and realistic traffic patterns. A high acceptance rate alone does not prove that the system is faster; draft and verification costs still matter."
+        },
+        {
+            "id": "speculative-cache-management",
+            "title": "20. KV Cache Management",
+            "type": "concept",
+            "content": "Draft and target models may maintain separate KV caches because they have different weights and potentially different architectures. When proposals are accepted, cache positions must be advanced consistently. When proposals are rejected, state corresponding to unaccepted tokens must not be treated as part of the accepted prefix. Efficient implementations may use temporary cache regions, cache rollback, or other model-specific mechanisms. Cache management can be a major source of complexity in production speculative decoding."
+        },
+        {
+            "id": "speculative-limitations",
+            "title": "21. Limitations and Common Pitfalls",
+            "type": "concept",
+            "content": "Speculative decoding does not guarantee a speedup for every model or workload. A weak draft may have a low acceptance rate, and a costly draft may consume the time saved by reducing target-model calls. Mismatched tokenizers or incompatible model interfaces can make implementation difficult. Incorrect rejection handling, inconsistent sampling transformations, or cache-state bugs can break distributional correctness. Always verify the algorithm's guarantees and benchmark the complete system rather than only the target-model forward pass."
+        },
+        {
+            "id": "speculative-production",
+            "title": "22. Production Deployment Checklist",
+            "type": "concept",
+            "content": "Before deployment, confirm that the draft and target models use compatible tokenization and supported interfaces. Verify that acceptance and correction follow the intended sampling algorithm. Test cache updates and rejection handling across long sequences and end-of-sequence conditions. Benchmark against a non-speculative baseline using representative prompts, concurrency, and decoding settings. Monitor latency percentiles, acceptance rates, GPU memory, errors, and output quality. Retain a reliable fallback to ordinary decoding if speculative execution becomes unsupported or inefficient."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "speculative-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the two main model roles in conventional speculative decoding?",
+            "correctAnswer": "A draft model proposes tokens, and a target model verifies them.",
+            "solution": "The draft model cheaply proposes a continuation. The target model evaluates proposals and determines which tokens can be accepted or how a rejection should be corrected."
+        },
+        {
+            "id": "speculative-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A draft proposes token x with q(x) = 0.4, while the target assigns p(x) = 0.2. What is the standard acceptance probability?",
+            "correctAnswer": "0.5.",
+            "solution": "The acceptance probability is min(1, p(x) / q(x)) = min(1, 0.2 / 0.4) = 0.5."
+        },
+        {
+            "id": "speculative-ex-3",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "For p = [0.6, 0.3, 0.1] and q = [0.4, 0.4, 0.2], calculate the expected single-token acceptance probability.",
+            "correctAnswer": "0.8.",
+            "solution": "Sum the minimum probabilities: min(0.6, 0.4) + min(0.3, 0.4) + min(0.1, 0.2) = 0.4 + 0.3 + 0.1 = 0.8."
+        },
+        {
+            "id": "speculative-ex-4",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is accepting every draft token that looks plausible not equivalent to exact speculative sampling?",
+            "correctAnswer": "Because the acceptance and correction rules must preserve the target distribution, not merely produce plausible tokens.",
+            "solution": "Exact speculative sampling uses a probability-based acceptance rule and a residual correction distribution. Arbitrary acceptance rules can change the output distribution."
+        },
+        {
+            "id": "speculative-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A system has a high draft acceptance rate but no measurable speed improvement. Give three possible explanations.",
+            "correctAnswer": "Draft generation may be too expensive, target verification may have significant overhead, or the workload and hardware may already process ordinary decoding efficiently.",
+            "solution": "Acceptance rate measures proposal quality but not total cost. Benchmark draft latency, verification latency, cache overhead, batch size, and end-to-end inter-token latency to find the bottleneck."
+        },
+        {
+            "id": "speculative-ex-6",
+            "type": "analysis",
+            "difficulty": "medium",
+            "question": "Does exact speculative sampling guarantee that two runs with different random seeds generate identical text?",
+            "correctAnswer": "No.",
+            "solution": "The guarantee concerns the output probability distribution, not identical token sequences across independent random draws. Different random seeds can produce different sequences while both runs follow the same target distribution."
+        }
+    ],
+    "summary": "Speculative decoding accelerates autoregressive generation by letting a lightweight draft model propose multiple tokens and a target model verify them together. Standard speculative sampling uses probability-based acceptance and residual correction to preserve the target model's output distribution. Its effectiveness depends on draft quality, proposal length, verification cost, cache management, hardware, and workload. Evaluate end-to-end latency and throughput rather than relying on acceptance rate alone.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-k",
+        "module-11-inference-top-p",
+        "module-11-inference-kv-cache",
+        "module-11-inference-quantization",
+        "module-11-inference-batching",
+        "module-09-large-language-models"
+    ]
+}

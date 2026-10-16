@@ -1,1 +1,222 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-actor-critic",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 7,
+    "title": "Actor-Critic Architectures",
+    "slug": "actor-critic",
+    "href": "/curriculum/15-reinforcement-learning/actor-critic",
+    "filePath": "content/curriculum/15-reinforcement-learning/07-actor-critic.json",
+    "description": "Understand how actor-critic methods combine policy optimization with value estimation, using temporal-difference learning and advantage estimates for more efficient reinforcement learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Markov decision processes",
+        "Value functions and Bellman equations",
+        "Q-learning",
+        "Policy gradients",
+        "Neural networks and gradient descent"
+    ],
+    "learningObjectives": [
+        "Explain the roles of the actor and critic in an actor-critic system.",
+        "Derive one-step temporal-difference targets and errors.",
+        "Use a critic to estimate state values and guide policy updates.",
+        "Explain advantage estimation and generalized advantage estimation.",
+        "Implement a basic actor-critic update in PyTorch.",
+        "Compare synchronous and asynchronous actor-critic methods.",
+        "Identify sources of instability and bias in actor-critic training.",
+        "Explain how actor-critic methods provide a foundation for PPO."
+    ],
+    "sections": [
+        {
+            "id": "actor-critic-introduction",
+            "title": "What Is Actor-Critic?",
+            "type": "concept",
+            "content": "Actor-critic is a family of reinforcement learning algorithms that combines policy-based learning with value-based learning. The actor represents the policy and decides how actions are selected. The critic estimates how good states or state-action pairs are, providing a learning signal that helps the actor improve. The actor learns which behavior to prefer, while the critic learns to predict future return. This division can make learning more efficient than using high-variance Monte Carlo returns alone. However, the critic is an approximation, so inaccurate value estimates can introduce bias into the actor's update."
+        },
+        {
+            "id": "actor-role",
+            "title": "The Actor",
+            "type": "concept",
+            "content": "The actor represents a policy pi_theta(a|s). For discrete actions, a neural network often outputs logits that define a categorical distribution. For continuous actions, the actor may output distribution parameters or a deterministic action. During training, the actor receives a signal indicating whether the selected action was better or worse than expected. The actor then adjusts its parameters to increase the probability of advantageous actions and decrease the probability of disadvantageous actions. The actor's objective is tied to long-term return rather than merely predicting the next reward."
+        },
+        {
+            "id": "critic-role",
+            "title": "The Critic",
+            "type": "concept",
+            "content": "The critic estimates a value function. A state-value critic approximates V_phi(s), the expected return from state s under the current policy. An action-value critic approximates Q_phi(s,a). The parameters phi are trained using a value prediction objective, often based on temporal-difference targets. A critic can evaluate the observed outcome relative to its prediction and provide a low-variance learning signal to the actor. The critic does not necessarily choose actions; it evaluates the consequences of the actor's behavior. In practice, actor and critic networks may have separate parameters or share an initial feature-extraction network."
+        },
+        {
+            "id": "actor-critic-objectives",
+            "title": "Two Learning Objectives",
+            "type": "concept",
+            "content": "An actor-critic system typically optimizes two related but distinct objectives. The actor objective encourages policy improvement using action log probabilities weighted by an advantage estimate. The critic objective reduces the difference between its predicted value and a target return. An entropy term may be added to the actor objective to encourage exploration. These losses can be optimized jointly or with separate optimizers and learning rates. Balancing the actor and critic updates is important: a critic that learns too slowly can provide poor advantages, while a critic that changes too aggressively can create unstable targets."
+        },
+        {
+            "id": "td-learning",
+            "title": "Temporal-Difference Learning",
+            "type": "concept",
+            "content": "Temporal-difference learning updates value estimates using a target that combines an observed reward with the critic's estimate of the next state's value. This is called bootstrapping because the update uses an existing estimate rather than waiting for the complete episode return. TD learning can update after every transition, making it useful for long or continuing tasks. The trade-off is that the target inherits errors from the critic's next-state estimate. TD methods therefore combine information from actual rewards with model-free predictions of future value."
+        },
+        {
+            "id": "td-target-math",
+            "title": "One-Step TD Target and Error",
+            "type": "math",
+            "content": "For a nonterminal next state, the one-step target for a state-value critic is the immediate reward plus the discounted estimated value of the next state. The TD error is the difference between this target and the current value estimate. If the transition truly terminates the task, the bootstrap term should be zero. A time-limit truncation may require a different treatment: if the underlying task continues beyond the time limit, the value of the final observation can still be used in the target.",
+            "formula": "y_t = r_{t+1} + gamma * (1 - terminated_t) * V_phi(s_{t+1}); delta_t = y_t - V_phi(s_t)",
+            "example": "Suppose reward is 2, gamma is 0.9, and the next state's estimated value is 5. The target is 2 + 0.9(5) = 6.5. If the current value estimate is 4, the TD error is 6.5 - 4 = 2.5. The critic should increase its estimate for the current state."
+        },
+        {
+            "id": "critic-value-loss",
+            "title": "Training the Critic",
+            "type": "math",
+            "content": "The critic is commonly trained by minimizing a squared error between its prediction and a target. In a simple one-step TD setup, the target includes reward and a bootstrapped next-state value. During the update, the target is usually treated as a fixed quantity for that step so that gradients update the current value prediction rather than differentiating through the target. More advanced implementations use target networks, separate target calculations, or other stabilization methods.",
+            "formula": "L_critic(phi) = 0.5 * (V_phi(s_t) - y_t)^2",
+            "example": "If the critic predicts 4 while the target is 6.5, the prediction error is -2.5. The squared error is 6.25, and the factor 0.5 makes the derivative with respect to the predicted value equal to the prediction minus the target."
+        },
+        {
+            "id": "actor-advantage",
+            "title": "Updating the Actor with Advantage",
+            "type": "math",
+            "content": "The actor can use the TD error as a one-step estimate of advantage. When the TD error is positive, the observed transition was better than the critic predicted, so the actor is encouraged to increase the probability of the sampled action. When it is negative, the action is discouraged. This update is a practical approximation of a policy gradient update. The critic's accuracy matters because an incorrect value prediction can change the sign or magnitude of the actor's learning signal.",
+            "formula": "L_actor(theta) = -log pi_theta(a_t|s_t) * stop_gradient(A_t)",
+            "example": "If the estimated advantage is 1.2, the negative log-probability loss encourages the actor to assign greater probability to the selected action. If the advantage is -0.8, minimizing the loss tends to reduce the probability of that action in the observed state."
+        },
+        {
+            "id": "advantage-estimation",
+            "title": "Estimating Advantages",
+            "type": "concept",
+            "content": "The true advantage function is usually unknown. It can be estimated from observed returns and a learned state-value function. A Monte Carlo estimate subtracts the baseline value from a sampled return. A one-step TD estimate uses the TD error. Multi-step estimates combine several rewards with a value estimate at a later state. These choices trade bias against variance. Longer return horizons use more observed rewards but can have higher variance; shorter bootstrapped horizons depend more heavily on the critic and can introduce more bias."
+        },
+        {
+            "id": "gae-introduction",
+            "title": "Generalized Advantage Estimation",
+            "type": "concept",
+            "content": "Generalized Advantage Estimation, commonly abbreviated GAE, combines TD errors across multiple time steps with exponentially decreasing weights. It provides a tunable balance between short-horizon bootstrapping and long-horizon return estimates. The parameter lambda controls the weighting of future TD errors. When lambda is zero, the estimate reduces to a one-step TD error. When lambda approaches one, it incorporates longer sequences of TD errors, subject to episode boundaries and discounting. GAE is widely used in actor-critic methods and PPO because it often produces useful advantage estimates with manageable variance."
+        },
+        {
+            "id": "gae-formula",
+            "title": "GAE Formula",
+            "type": "math",
+            "content": "GAE sums discounted TD errors beginning at the current time step. The product gamma times lambda controls how quickly future TD errors lose influence. The calculation must respect episode boundaries and distinguish true termination from time-limit truncation. At a true terminal state, the bootstrap value is zero. For a truncated trajectory whose underlying task continues, the final observation may still have a nonzero value estimate.",
+            "formula": "A_t^GAE(lambda) = sum_{l=0}^{T-t-1} (gamma * lambda)^l * delta_{t+l}",
+            "example": "Suppose the TD errors are 1, 0.5, and -0.2, with gamma = 0.9 and lambda = 0.8. Ignoring boundary complications, the first advantage is approximately 1 + 0.72(0.5) + 0.72^2(-0.2) = 1.25632. Future errors influence the estimate, but their weights shrink with distance."
+        },
+        {
+            "id": "entropy-actor-critic",
+            "title": "Entropy Regularization",
+            "type": "concept",
+            "content": "An actor may become nearly deterministic before it has explored enough alternatives. An entropy bonus rewards policies that maintain a broader action distribution. A common total loss contains the policy loss, a weighted value loss, and a negative entropy contribution when expressed as a minimization objective. The entropy coefficient controls how strongly the learner values stochasticity. It may be fixed or adjusted during training. Entropy should not be maximized without limit, because the goal remains to learn a high-return policy."
+        },
+        {
+            "id": "actor-critic-code",
+            "title": "Implementing Actor and Critic Networks",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\nfrom torch.distributions import Categorical\n\nclass ActorCritic(nn.Module):\n    def __init__(self, state_dim, action_dim):\n        super().__init__()\n        self.shared = nn.Sequential(nn.Linear(state_dim, 128), nn.Tanh())\n        self.actor = nn.Linear(128, action_dim)\n        self.critic = nn.Linear(128, 1)\n\n    def forward(self, state):\n        features = self.shared(state)\n        return self.actor(features), self.critic(features).squeeze(-1)\n\n    def act(self, state):\n        logits, value = self(state)\n        dist = Categorical(logits=logits)\n        action = dist.sample()\n        return action, dist.log_prob(action), dist.entropy(), value\n\nmodel = ActorCritic(state_dim=4, action_dim=2)\noptimizer = torch.optim.Adam(model.parameters(), lr=3e-4)\nstate = torch.zeros(4)\naction, log_prob, entropy, value = model.act(state)\nprint(action.item(), value.item(), entropy.item())",
+            "explanation": "The shared network extracts features from the state. The actor head produces action logits, and the critic head produces a scalar state-value estimate. The action is sampled from a categorical distribution. Sharing features can reduce computation, although separate actor and critic networks are also common when their learning needs differ."
+        },
+        {
+            "id": "actor-critic-update-code",
+            "title": "A Single-Step Actor-Critic Update",
+            "type": "code",
+            "language": "python",
+            "content": "def actor_critic_update(model, optimizer, state, action, reward, next_state, terminated, gamma=0.99, value_coef=0.5, entropy_coef=0.01):\n    logits, value = model(state)\n    dist = Categorical(logits=logits)\n    log_prob = dist.log_prob(action)\n    entropy = dist.entropy()\n    with torch.no_grad():\n        _, next_value = model(next_state)\n        target = reward + gamma * (1.0 - float(terminated)) * next_value\n    advantage = target - value\n    actor_loss = -log_prob * advantage.detach()\n    critic_loss = 0.5 * advantage.pow(2)\n    loss = actor_loss + value_coef * critic_loss - entropy_coef * entropy\n    optimizer.zero_grad()\n    loss.backward()\n    torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)\n    optimizer.step()\n    return actor_loss.item(), critic_loss.item()",
+            "explanation": "This simplified update calculates a one-step TD target and uses the TD error as the actor's advantage estimate. The target is calculated without gradient tracking, and the advantage is detached for the actor loss so the actor's policy gradient does not backpropagate through the critic's learning signal. The critic loss still updates the value prediction. In production, tensor shapes, batched observations, termination and truncation flags, and environment-specific action handling must be checked carefully."
+        },
+        {
+            "id": "a2c-and-a3c",
+            "title": "A2C and A3C",
+            "type": "concept",
+            "content": "Advantage Actor-Critic, or A2C, is a synchronous actor-critic approach that commonly collects experience from multiple environment instances, combines the resulting data, and performs a coordinated update. Asynchronous Advantage Actor-Critic, or A3C, uses multiple workers that interact with environments and update shared or coordinated model parameters asynchronously. Parallel environments can improve data diversity and throughput. Asynchronous updates may introduce stale gradients, while synchronous batches can be easier to reason about and reproduce. The best choice depends on the compute setup, environment cost, and implementation."
+        },
+        {
+            "id": "actor-critic-stability",
+            "title": "Stability and Failure Modes",
+            "type": "concept",
+            "content": "Actor-critic methods can become unstable when the critic's estimates are inaccurate, value targets shift rapidly, or the actor changes its behavior too aggressively. High learning rates, poorly scaled rewards, incorrect terminal masks, and mismatched tensor dimensions can all cause problems. A value loss that dominates the total objective may interfere with policy learning, while an undertrained critic may provide noisy advantages. Common mitigations include gradient clipping, careful learning-rate selection, normalized advantages, multiple environment instances, and controlled policy updates. These techniques improve practical robustness but do not guarantee convergence for arbitrary nonlinear function approximation."
+        },
+        {
+            "id": "actor-critic-versus-reinforce",
+            "title": "Actor-Critic Compared with REINFORCE",
+            "type": "concept",
+            "content": "REINFORCE estimates policy gradients using sampled returns and does not require a learned critic. Actor-critic methods use a value function to estimate the expected future outcome and form advantages or TD errors. This often enables more frequent updates and lower-variance learning signals. The trade-off is that the critic introduces additional parameters, a second objective, and possible bias from imperfect value estimates. Both methods rely on suitable exploration and enough informative experience."
+        },
+        {
+            "id": "actor-critic-and-ppo",
+            "title": "How Actor-Critic Leads to PPO",
+            "type": "concept",
+            "content": "PPO commonly uses an actor to represent the policy and a critic to estimate state values. It builds on the actor-critic structure but adds an objective designed to limit excessively large policy changes relative to the behavior policy that generated the data. Advantage estimates, often computed with GAE, help measure the relative quality of sampled actions. PPO typically collects a batch of on-policy experience and performs multiple optimization epochs over that batch. The next topic develops the probability ratio, clipped objective, and practical PPO training procedure in detail."
+        },
+        {
+            "id": "actor-critic-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Actor-critic methods combine direct policy optimization with learned value estimation. The actor selects actions, while the critic estimates future return. Temporal-difference errors provide a bootstrapped learning signal, and advantage estimates help the actor compare an action with expected behavior in the same state. GAE combines TD errors across time to balance bias and variance. Entropy regularization supports exploration, while careful loss balancing and correct terminal handling are important for stability. PPO extends this foundation with more controlled policy updates."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ac-exercise-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What are the main responsibilities of the actor and critic?",
+            "correctAnswer": "The actor selects actions according to a policy, and the critic estimates value to evaluate expected outcomes.",
+            "solution": "The actor represents pi_theta(a|s). The critic estimates V(s) or Q(s,a), supplying a learning signal such as an advantage or TD error to improve the actor."
+        },
+        {
+            "id": "ac-exercise-2",
+            "type": "math",
+            "difficulty": "easy",
+            "question": "Calculate the TD target and TD error when reward = 3, gamma = 0.9, next-state value = 4, and current value = 5. Assume the transition is nonterminal.",
+            "correctAnswer": "The target is 6.6 and the TD error is 1.6.",
+            "solution": "Target = 3 + 0.9(4) = 6.6. TD error = 6.6 - 5 = 1.6. The positive error indicates that the observed transition was better than the critic's current prediction."
+        },
+        {
+            "id": "ac-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A critic estimates V(s) = 7, while the sampled action has estimated Q(s,a) = 4. What is the advantage?",
+            "correctAnswer": "-3.",
+            "solution": "A(s,a) = Q(s,a) - V(s) = 4 - 7 = -3. The action is estimated to be worse than the policy's expected outcome in that state."
+        },
+        {
+            "id": "ac-exercise-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does actor-critic training often use stop-gradient or detach operations on the advantage used in the actor loss?",
+            "correctAnswer": "To prevent the policy loss from unintentionally backpropagating through the critic's value estimate when computing the actor's policy-gradient update.",
+            "solution": "The actor loss should use the advantage as a learning signal. Detaching the advantage separates the actor's gradient from the critic's value computation for that loss. The critic is trained through its own value objective."
+        },
+        {
+            "id": "ac-exercise-5",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "How does GAE balance bias and variance?",
+            "correctAnswer": "It combines multiple TD errors using gamma-lambda weights; smaller lambda emphasizes short-horizon bootstrapping, while larger lambda incorporates longer sequences of rewards and TD errors.",
+            "solution": "A small lambda depends heavily on the critic's next-state values, which can introduce bias but often reduce variance. A larger lambda uses longer-horizon information and approaches Monte Carlo-like estimates under suitable conditions, generally increasing variance."
+        },
+        {
+            "id": "ac-exercise-6",
+            "type": "code",
+            "difficulty": "intermediate",
+            "question": "What should happen to the bootstrap term when a transition reaches a true terminal state?",
+            "correctAnswer": "The bootstrap term should be zero.",
+            "solution": "A target can be written as reward + gamma * (1 - terminated) * next_value. If terminated is true, the multiplier becomes zero. A time-limit truncation is not always equivalent to true termination and may require bootstrapping from the final observation."
+        },
+        {
+            "id": "ac-exercise-7",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why can an inaccurate critic harm actor learning?",
+            "correctAnswer": "The critic supplies the estimated advantages or TD errors that determine the direction and magnitude of policy updates, so inaccurate estimates can encourage the wrong actions.",
+            "solution": "If the critic overestimates or underestimates outcomes, the resulting advantage may be misleading. This can cause the actor to reinforce poor behavior or suppress useful behavior. Better value targets, careful optimization, and suitable advantage estimation can reduce the problem."
+        }
+    ],
+    "summary": "Actor-critic methods use an actor to select actions and a critic to estimate values. One-step TD errors provide bootstrapped feedback, while advantages compare action outcomes against state values. Generalized Advantage Estimation combines TD errors across time to balance bias and variance. Entropy regularization supports exploration, and practical stability depends on correct terminal handling, well-scaled objectives, and controlled optimization. PPO builds on this architecture with a clipped policy objective.",
+    "relatedTopics": [
+        "module-15-reinforcement-learning-policy-gradients",
+        "module-15-reinforcement-learning-ppo",
+        "module-15-reinforcement-learning-value-functions"
+    ]
+}

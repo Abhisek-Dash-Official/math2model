@@ -1,1 +1,345 @@
-{}
+{
+    "id": "module-13-computer-vision-vision-transformers",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 2,
+    "title": "Vision Transformers (ViT)",
+    "slug": "vision-transformers",
+    "href": "/curriculum/13-computer-vision/vision-transformers",
+    "filePath": "content/curriculum/13-computer-vision/02-vision-transformers.json",
+    "description": "Understand Vision Transformers, image patch tokenization, positional embeddings, self-attention, Transformer encoder blocks, classification tokens, pretrained vision models, and efficient training and inference.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Linear algebra",
+        "Neural networks and backpropagation",
+        "CNNs in Modern Vision",
+        "Transformer architecture and self-attention"
+    ],
+    "learningObjectives": [
+        "Explain how Vision Transformers represent images as token sequences.",
+        "Calculate the number of patches produced from an image.",
+        "Understand patch projection and positional embeddings.",
+        "Derive the scaled dot-product self-attention operation.",
+        "Explain multi-head attention, residual connections, and normalization.",
+        "Understand the roles of classification tokens and global pooling.",
+        "Compare Vision Transformers with CNNs.",
+        "Explain the influence of data scale, augmentation, and pretraining.",
+        "Implement a simplified ViT in PyTorch.",
+        "Evaluate and deploy pretrained vision Transformer models responsibly."
+    ],
+    "sections": [
+        {
+            "id": "vit-introduction",
+            "title": "From Convolutions to Transformers",
+            "type": "concept",
+            "content": "Vision Transformers adapt the Transformer architecture to image understanding. Instead of repeatedly applying local convolutional filters, a standard ViT divides an image into patches, projects each patch into a vector, adds positional information, and processes the sequence with Transformer encoder blocks. Self-attention allows each token to exchange information with other tokens. This creates a flexible mechanism for modeling long-range relationships, such as the relationship between an object and a distant region of the image. CNNs have a stronger built-in local spatial bias, while standard ViTs rely more heavily on data and learned attention patterns to discover visual relationships."
+        },
+        {
+            "id": "vit-image-tokenization",
+            "title": "Images as Token Sequences",
+            "type": "concept",
+            "content": "Text Transformers receive sequences of token embeddings, while a Vision Transformer creates a sequence from image patches. For an image of height H and width W divided into non-overlapping patches of side P, the sequence contains (H/P)(W/P) patch tokens when the dimensions are divisible by P. Each patch contains pixel values from all image channels. A learned projection maps the flattened patch into a fixed-dimensional embedding. Some architectures add a classification token or other special tokens, so the final sequence can contain more tokens than the number of patches."
+        },
+        {
+            "id": "vit-patch-count",
+            "title": "Calculating Patch Count",
+            "type": "math",
+            "content": "For an image with height H, width W, and square patch side P, the patch count is the number of patches along each dimension multiplied together. This calculation assumes non-overlapping patches and dimensions divisible by P.",
+            "formula": "N = (H / P) * (W / P)",
+            "example": "A 224 by 224 image with 16 by 16 patches produces 14 patches per side, for 196 patch tokens. Adding one classification token produces a sequence length of 197."
+        },
+        {
+            "id": "vit-patch-projection",
+            "title": "Patch Embeddings",
+            "type": "concept",
+            "content": "A patch of size P by P with C channels contains P squared times C scalar values. A linear projection maps these values into a vector of dimension D. This can be implemented as a linear layer over flattened patches or as a convolution with kernel size P and stride P. The projection is learned, allowing the model to construct useful features from raw pixel patches. Patch size creates a tradeoff: smaller patches preserve finer detail but increase the sequence length and attention cost."
+        },
+        {
+            "id": "vit-patch-projection-math",
+            "title": "Patch Projection Mathematics",
+            "type": "math",
+            "content": "Let x_i be the flattened pixel vector for patch i. A learned matrix E maps it into a D-dimensional token representation, with an optional bias. The output dimension D is usually fixed across the Transformer encoder.",
+            "formula": "z_i = x_i E + b",
+            "example": "If a patch contains 16 * 16 * 3 = 768 pixel values and the embedding dimension is 768, the projection maps a 768-dimensional input to a 768-dimensional representation. The input and output dimensions happen to match in this example, but they do not need to be equal."
+        },
+        {
+            "id": "vit-positional-embeddings",
+            "title": "Why Positional Information Matters",
+            "type": "concept",
+            "content": "Self-attention compares token content but does not inherently encode the original spatial order of an image's patches. Positional embeddings provide information about where each patch came from. Learned positional embeddings assign trainable vectors to positions, while other approaches use fixed or relative positional representations. Without positional information or another mechanism for spatial structure, a model has difficulty distinguishing different arrangements of the same patch content. Position representations also affect how well a pretrained model transfers to a different image resolution or patch grid."
+        },
+        {
+            "id": "vit-positional-math",
+            "title": "Combining Patch and Position Embeddings",
+            "type": "math",
+            "content": "A standard ViT adds a positional vector to each patch embedding. A special classification token, when used, also receives its own position representation. The sum preserves the embedding dimension while incorporating spatial information.",
+            "formula": "z_i^(0) = x_i E + e_i^(pos)",
+            "example": "If a patch embedding is [0.2, 0.7] and its positional embedding is [0.1, -0.2], their sum is [0.3, 0.5]. Real models use much larger learned vectors."
+        },
+        {
+            "id": "vit-self-attention",
+            "title": "Self-Attention in Vision",
+            "type": "concept",
+            "content": "Self-attention allows every token to construct a weighted combination of information from other tokens in the same sequence. For an image, a token representing a patch on an object can attend to patches elsewhere that provide context. Each token is transformed into a query, key, and value vector. Similarity between a query and the keys determines attention weights. The weighted sum of values forms the output. Attention weights are input-dependent, so the information exchange can change from image to image."
+        },
+        {
+            "id": "vit-qkv",
+            "title": "Queries, Keys, and Values",
+            "type": "concept",
+            "content": "Queries describe the information a token is seeking, keys describe features against which queries are compared, and values contain the information aggregated by attention. These are learned projections of the input representations. The terminology is an analogy for the mathematical operation, not a claim that a token has human-like intent. The same input sequence generates Q, K, and V in self-attention, whereas cross-attention can obtain queries from one sequence and keys and values from another."
+        },
+        {
+            "id": "vit-attention-math",
+            "title": "Scaled Dot-Product Attention",
+            "type": "math",
+            "content": "Scaled dot-product attention computes query-key compatibility scores, scales them by the square root of the key dimension, applies softmax across keys, and uses the normalized weights to combine value vectors. Scaling helps control score magnitudes when the key dimension is large.",
+            "formula": "Attention(Q, K, V) = softmax(Q K^T / sqrt(d_k)) V",
+            "example": "If one query assigns normalized weights 0.8 and 0.2 to two value vectors v_1 and v_2, its output is 0.8v_1 + 0.2v_2. The weights depend on the query-key similarity scores."
+        },
+        {
+            "id": "vit-attention-complexity",
+            "title": "Attention Complexity",
+            "type": "math",
+            "content": "Full self-attention computes pairwise interactions between tokens. The number of attention scores per head is proportional to N squared, where N is the sequence length. Because image token count grows with image area for a fixed patch size, higher-resolution inputs can substantially increase computation and memory use.",
+            "formula": "Attention score count per head = N^2",
+            "example": "A sequence of 196 patch tokens requires 196 squared = 38,416 pairwise scores per head. A sequence of 784 tokens requires 614,656 scores, which is sixteen times as many because the token count is four times larger."
+        },
+        {
+            "id": "vit-multihead-attention",
+            "title": "Multi-Head Attention",
+            "type": "concept",
+            "content": "Multi-head attention runs several attention operations in parallel using different learned projections. Each head can capture different relationships or feature combinations. The outputs are concatenated and projected back into the model dimension. Multiple heads increase representational flexibility, but their existence does not guarantee that each head learns a clean or interpretable concept. Head count, embedding dimension, and compute requirements must be selected together."
+        },
+        {
+            "id": "vit-feedforward",
+            "title": "The Feed-Forward Network",
+            "type": "concept",
+            "content": "A Transformer encoder block usually includes a position-wise feed-forward network in addition to attention. This network applies learned transformations and nonlinear activation functions independently to each token position, sharing the same parameters across positions. Attention mixes information across tokens, while the feed-forward network transforms each token's representation. Together they provide both cross-token communication and per-token nonlinear processing."
+        },
+        {
+            "id": "vit-residual-normalization",
+            "title": "Residual Connections and Normalization",
+            "type": "concept",
+            "content": "Transformer blocks use residual connections to preserve a direct path from the input to the output of a sublayer. Layer normalization stabilizes activation scales and supports optimization. Many ViT implementations use pre-normalization, where normalization is applied before attention or the feed-forward network, while other designs use different arrangements. Details such as normalization placement, activation function, and initialization can significantly affect training stability."
+        },
+        {
+            "id": "vit-encoder-block",
+            "title": "A Transformer Encoder Block",
+            "type": "concept",
+            "content": "A simplified pre-normalized encoder block first normalizes the input and applies multi-head self-attention, then adds the result to the original input. It normalizes that result, applies a feed-forward network, and adds the second result. Repeating these blocks allows the token representations to become increasingly contextualized. Actual architectures may include dropout, stochastic depth, specialized normalization, or other design choices."
+        },
+        {
+            "id": "vit-encoder-math",
+            "title": "Residual Encoder Formulation",
+            "type": "math",
+            "content": "A pre-normalized Transformer block can be described as two residual updates. The first adds the attention output to the input, and the second adds the feed-forward output to the intermediate representation.",
+            "formula": "h' = h + MSA(LN(h)); h_next = h' + MLP(LN(h'))",
+            "example": "If a sublayer produces a small update, the residual path preserves the original representation and adds the learned correction. This structure can improve optimization in deep networks."
+        },
+        {
+            "id": "vit-classification-token",
+            "title": "The Classification Token",
+            "type": "concept",
+            "content": "Some ViT models prepend a learned classification token to the patch sequence. Through self-attention, this token can aggregate information from all image patches. Its final representation is passed to a classification head. Other vision Transformers use global average pooling over patch tokens or alternative pooling mechanisms. These designs provide different ways to summarize a spatial token sequence into a representation suitable for image-level prediction."
+        },
+        {
+            "id": "vit-classification-head",
+            "title": "Classification Heads",
+            "type": "concept",
+            "content": "A classification head maps the final image representation to a vector of class logits. The number of output dimensions corresponds to the number of target classes. During training, cross-entropy loss is typically applied to logits and integer class labels. A pretrained backbone can be reused with a new head when the target labels differ from the pretraining task. The new head must be trained, and the backbone may be frozen or fine-tuned depending on data size and domain similarity."
+        },
+        {
+            "id": "vit-vs-cnn",
+            "title": "Vision Transformers Versus CNNs",
+            "type": "concept",
+            "content": "CNNs encode strong assumptions about locality and shared spatial filters. ViTs use tokenization and attention to learn relationships across patches. CNNs can be data-efficient on smaller datasets because their inductive biases match common image structure. ViTs can scale effectively with large datasets and pretraining and can model long-range interactions directly. The comparison is not absolute: hybrid architectures combine convolutional stems with attention, and modern CNNs can also model broad context. Benchmark results depend on the dataset, training recipe, augmentation, parameter count, and compute budget."
+        },
+        {
+            "id": "vit-data-requirements",
+            "title": "Data Scale and Pretraining",
+            "type": "concept",
+            "content": "Early ViT results highlighted the importance of large-scale pretraining, especially when compared with CNNs trained from scratch on smaller datasets. Pretraining provides visual representations that can be transferred to downstream tasks. Modern training strategies, strong augmentation, self-supervised learning, and improved architectures can reduce dependence on large labeled datasets. Transfer learning is often a practical starting point when the target dataset is limited."
+        },
+        {
+            "id": "vit-augmentation",
+            "title": "Augmentation for ViTs",
+            "type": "concept",
+            "content": "Vision Transformer training often uses crops, flips, color transformations, mixup, cutmix, or random erasing, depending on the dataset and architecture. Mixup combines examples and labels, while cutmix replaces a region of one image with a region from another and adjusts the label mixture. These methods can regularize the model and improve generalization. However, they may be inappropriate for tasks requiring precise spatial labels or exact visual relationships. Augmentation must be consistent with the task's semantics."
+        },
+        {
+            "id": "vit-transfer-learning",
+            "title": "Fine-Tuning a Pretrained ViT",
+            "type": "concept",
+            "content": "A pretrained ViT can be adapted by replacing its classification head and training on a target dataset. A common strategy is to train the new head first while freezing the backbone, then optionally fine-tune the backbone with a smaller learning rate. Learning-rate schedules, weight decay, and augmentation can strongly influence results. If the target images differ substantially from the pretraining distribution, more extensive fine-tuning or domain-specific pretraining may be required."
+        },
+        {
+            "id": "vit-pytorch-model",
+            "title": "Using a Vision Transformer in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torchvision.models import vit_b_16, ViT_B_16_Weights\n\nweights = ViT_B_16_Weights.DEFAULT\nmodel = vit_b_16(weights=weights)\nmodel.heads.head = torch.nn.Linear(model.heads.head.in_features, 5)\nmodel.eval()\n\npreprocess = weights.transforms()\nprint(model.heads.head)",
+            "explanation": "This example loads pretrained ViT-B/16 weights and replaces the classification head for a five-class task. The new head is randomly initialized and must be trained on labeled examples. Use the preprocessing associated with the pretrained weights unless you have a justified alternative."
+        },
+        {
+            "id": "vit-inference",
+            "title": "Inference with a Pretrained ViT",
+            "type": "code",
+            "language": "python",
+            "content": "from PIL import Image\nimport torch\n\nimage = Image.open(\"example.jpg\").convert(\"RGB\")\ninput_tensor = preprocess(image).unsqueeze(0)\nmodel.eval()\nwith torch.inference_mode():\n    logits = model(input_tensor)\n    probabilities = torch.softmax(logits, dim=1)\n    predicted_class = probabilities.argmax(dim=1).item()\nprint(predicted_class, probabilities.max().item())",
+            "explanation": "This snippet demonstrates the inference shape and probability calculation. Because the classification head was replaced, its outputs are meaningful only after training it for the intended classes. The maximum softmax score is not automatically a calibrated confidence estimate."
+        },
+        {
+            "id": "vit-training-considerations",
+            "title": "Training Considerations",
+            "type": "concept",
+            "content": "Training ViTs requires attention to batch size, learning rate, weight decay, warmup, augmentation, normalization, and optimization stability. A learning rate that is too high may destabilize fine-tuning, while one that is too low may prevent useful adaptation. Large image resolutions and long token sequences increase memory requirements. Gradient accumulation can simulate a larger effective batch, but it does not make every aspect of large-batch training identical. Record the full training configuration to make experiments reproducible."
+        },
+        {
+            "id": "vit-position-interpolation",
+            "title": "Changing Image Resolution",
+            "type": "concept",
+            "content": "A pretrained ViT may use learned positional embeddings for a specific patch grid. If inference or fine-tuning uses a different resolution, the positional embedding grid may need to be interpolated. This operation adapts the spatial position representation to the new grid but does not guarantee that the model will behave identically at the new resolution. Special tokens, such as a classification token, must be handled separately from spatial embeddings. Always follow the implementation's documented resolution adaptation procedure."
+        },
+        {
+            "id": "vit-hierarchical",
+            "title": "Hierarchical Vision Transformers",
+            "type": "concept",
+            "content": "A standard ViT often keeps a fixed token resolution throughout its encoder. Hierarchical vision Transformers progressively merge or downsample tokens, creating feature maps at multiple spatial scales. This design can reduce computation and support dense prediction tasks such as detection and segmentation. Windowed attention restricts interactions to local windows in selected layers, with mechanisms for information exchange between windows. Hierarchical models combine Transformer flexibility with multiscale processing patterns common in CNNs."
+        },
+        {
+            "id": "vit-self-supervised",
+            "title": "Self-Supervised Vision Transformers",
+            "type": "concept",
+            "content": "Self-supervised learning creates training signals from the data itself rather than requiring a manual label for every image. Methods include masked image modeling, where the model reconstructs or predicts missing content, and teacher-student approaches, where one network learns representations from another network's targets. Contrastive and non-contrastive methods also learn useful visual representations. Self-supervised pretraining can provide strong features for classification, retrieval, segmentation, and other downstream tasks."
+        },
+        {
+            "id": "vit-masked-modeling",
+            "title": "Masked Image Modeling",
+            "type": "concept",
+            "content": "Masked image modeling hides a portion of image patches and trains a model to predict information about the missing patches. The learning target may be pixel values, discrete visual tokens, or learned representations. The task encourages the model to learn spatial and semantic structure without requiring human class labels for every image. The masking ratio, reconstruction target, and encoder-decoder design affect the learned representation. Strong reconstruction performance does not necessarily imply the best downstream classification performance."
+        },
+        {
+            "id": "vit-dense-prediction",
+            "title": "ViTs for Detection and Segmentation",
+            "type": "concept",
+            "content": "Vision Transformers can act as backbones for object detection and segmentation. Their token representations are connected to task-specific heads that predict bounding boxes, object classes, masks, or dense feature maps. Dense prediction requires preserving or reconstructing spatial information rather than reducing the entire image to one class vector. Hierarchical Transformers, feature pyramids, decoder modules, and multiscale fusion are common ways to provide suitable spatial features."
+        },
+        {
+            "id": "vit-evaluation",
+            "title": "Evaluating Vision Transformers",
+            "type": "concept",
+            "content": "For image classification, common metrics include accuracy, macro-F1, per-class recall, and calibration measures. For retrieval, use ranking metrics. For detection and segmentation, use task-specific spatial metrics. Evaluate latency, memory consumption, robustness, and performance under domain shift. Compare architectures under controlled training conditions and similar compute budgets. A model with higher benchmark accuracy may be unsuitable for a mobile application if its latency and memory requirements exceed the deployment budget."
+        },
+        {
+            "id": "vit-robustness",
+            "title": "Robustness and Limitations",
+            "type": "concept",
+            "content": "ViTs can still fail on distribution shifts, corrupted images, unusual viewpoints, small objects, or underrepresented categories. Attention mechanisms do not guarantee causal understanding or reliable object relationships. A model may rely on backgrounds, watermarks, or dataset-specific cues. Evaluate on realistic variations, inspect representative failures, and consider uncertainty estimation or abstention. Explanations based on attention maps should not be treated as definitive evidence of the model's reasoning."
+        },
+        {
+            "id": "vit-efficient-inference",
+            "title": "Efficient ViT Inference",
+            "type": "concept",
+            "content": "Efficient inference strategies include choosing an appropriate input resolution, batching requests, using mixed precision, applying supported quantization, and selecting a smaller pretrained architecture. Token reduction and efficient attention methods may further reduce cost. Measure end-to-end latency on the target hardware because theoretical complexity does not fully predict real performance. Any optimization should be evaluated for accuracy loss, numerical stability, and compatibility with the deployment backend."
+        },
+        {
+            "id": "vit-project",
+            "title": "Project: Compare a CNN and a ViT",
+            "type": "project",
+            "content": "Select an image classification dataset and create leakage-safe training, validation, and test splits. Train a small CNN baseline and fine-tune a pretrained ViT. Keep data splits and evaluation metrics identical. Record training time, inference latency, memory use, per-class metrics, and robustness to image corruption. Compare the effect of training-set size by using controlled subsets. Inspect misclassified examples and discuss how the models use local patterns and global context. Document preprocessing and model checkpoints so the experiment can be reproduced."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "vit-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "How does a standard Vision Transformer convert an image into a sequence?",
+            "correctAnswer": "It divides the image into patches, projects each patch into an embedding, and adds positional information.",
+            "solution": "The resulting sequence of patch tokens is processed by Transformer encoder blocks."
+        },
+        {
+            "id": "vit-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "How many patches does a 384 by 384 image produce with patch size 16?",
+            "correctAnswer": "576 patches.",
+            "solution": "There are 384/16 = 24 patches per dimension, so the total is 24 * 24 = 576."
+        },
+        {
+            "id": "vit-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Why does quadrupling the token count increase the full-attention score count by sixteen times?",
+            "correctAnswer": "Full self-attention scales quadratically with sequence length.",
+            "solution": "If the token count changes from N to 4N, the score count changes from N squared to (4N) squared = 16N squared."
+        },
+        {
+            "id": "vit-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the purpose of positional embeddings in a ViT?",
+            "correctAnswer": "They provide spatial position information for patch tokens.",
+            "solution": "Self-attention alone does not inherently encode the original spatial arrangement of image patches."
+        },
+        {
+            "id": "vit-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the role of a classification token?",
+            "correctAnswer": "It provides a learned token that can aggregate information from image patches for image-level prediction.",
+            "solution": "The final classification-token representation can be passed to a classification head. Some architectures use global average pooling instead."
+        },
+        {
+            "id": "vit-ex-6",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "What is the attention output when two value vectors receive weights 0.25 and 0.75?",
+            "correctAnswer": "0.25 times the first value vector plus 0.75 times the second value vector.",
+            "solution": "Attention computes a weighted sum of values using normalized attention weights."
+        },
+        {
+            "id": "vit-ex-7",
+            "type": "applied",
+            "difficulty": "advanced",
+            "question": "Why can a pretrained ViT perform poorly if the input preprocessing is changed?",
+            "correctAnswer": "The input scale, resolution, normalization, or channel conventions may no longer match those used by the pretrained model.",
+            "solution": "Preprocessing is part of the model's effective input contract. Mismatches can alter the distribution of input activations and reduce accuracy."
+        },
+        {
+            "id": "vit-ex-8",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why might a CNN be preferable to a ViT for a small image dataset?",
+            "correctAnswer": "CNNs have strong local spatial inductive biases that can improve data efficiency in some small-data settings.",
+            "solution": "The comparison depends on pretraining, augmentation, architecture, and compute. A pretrained ViT may still perform very well on small datasets."
+        },
+        {
+            "id": "vit-ex-9",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Which PyTorch vision model function can load a standard pretrained ViT-B/16?",
+            "correctAnswer": "torchvision.models.vit_b_16, optionally using ViT_B_16_Weights.DEFAULT.",
+            "solution": "Load the pretrained model, replace its classification head if necessary, and train the new head or fine-tune the model on the target dataset."
+        },
+        {
+            "id": "vit-ex-10",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How would you compare a ViT and CNN fairly?",
+            "correctAnswer": "Use identical data splits, comparable evaluation procedures, documented preprocessing, controlled training settings, and report accuracy alongside resource costs.",
+            "solution": "A fair comparison considers data scale, pretraining, training compute, augmentation, latency, memory, and per-class performance rather than comparing isolated benchmark numbers."
+        }
+    ],
+    "summary": "Vision Transformers represent images as sequences of patch embeddings enriched with positional information. Transformer encoders use multi-head self-attention, feed-forward networks, normalization, and residual connections to learn contextual visual representations. ViTs can model long-range interactions and benefit greatly from pretraining, while their attention costs grow with sequence length. Practical applications require careful resolution selection, preprocessing, fine-tuning, evaluation, and deployment-aware optimization.",
+    "relatedTopics": [
+        "cnns",
+        "image-embeddings",
+        "object-detection",
+        "segmentation",
+        "diffusion-models",
+        "clip-style-models",
+        "multimodal-models"
+    ]
+}

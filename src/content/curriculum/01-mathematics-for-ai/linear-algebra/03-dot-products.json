@@ -1,1 +1,397 @@
-{}
+{
+    "id": "dot-products",
+    "title": "Dot Products",
+    "slug": "dot-products",
+    "module": "mathematics-for-ai",
+    "description": "Understand the dot product from algebraic, geometric, and computational perspectives, and learn why it is fundamental to similarity measurement, linear models, projections, and neural network computations.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations"
+    ],
+    "learningObjectives": [
+        "Define the dot product of two vectors.",
+        "Calculate dot products by hand and with NumPy.",
+        "Interpret the dot product geometrically using vector lengths and angles.",
+        "Understand orthogonality and perpendicular vectors.",
+        "Distinguish the dot product from element-wise multiplication.",
+        "Explain the relationship between dot products and cosine similarity.",
+        "Understand how dot products appear in linear regression and neural network layers.",
+        "Recognize dimensionality and shape requirements for dot-product operations."
+    ],
+    "sections": [
+        {
+            "id": "intuition",
+            "title": "1. Intuition: Combining Two Vectors into One Number",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A dot product takes two vectors of the same length and produces one scalar. It combines corresponding components, multiplies each pair, and adds the products. This operation gives us a useful way to measure alignment between vectors and to calculate weighted sums."
+                },
+                {
+                    "type": "text",
+                    "value": "Imagine a system that predicts a house price from its features. Each feature has a corresponding weight that represents its contribution to the prediction. Multiplying each feature by its weight and adding the results is a dot product. The result is a single number that summarizes the weighted contribution of all features."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{w}^{T}\\mathbf{x}=w_1x_1+w_2x_2+\\cdots+w_nx_n"
+                },
+                {
+                    "type": "text",
+                    "value": "Dot products also describe geometric relationships. If two vectors point in similar directions, their dot product is positive. If they are perpendicular, their dot product is zero. If they point in opposing directions strongly enough, their dot product is negative. These interpretations assume ordinary real-valued Euclidean vectors."
+                }
+            ]
+        },
+        {
+            "id": "algebraic-definition",
+            "title": "2. The Algebraic Definition",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Let a and b be real-valued vectors with n components. Their dot product is the sum of the products of corresponding components. The result is a scalar rather than another vector."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\cdot\\mathbf{b}=\\sum_{i=1}^{n}a_i b_i"
+                },
+                {
+                    "type": "text",
+                    "value": "Consider a = [2, 3] and b = [4, 5]. Multiply the first components to obtain 2 × 4 = 8. Multiply the second components to obtain 3 × 5 = 15. Add the products: 8 + 15 = 23. Therefore, the dot product is 23."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{aligned}\\mathbf{a}\\cdot\\mathbf{b}&=2(4)+3(5)\\\\&=8+15\\\\&=23\\end{aligned}"
+                },
+                {
+                    "type": "text",
+                    "value": "The vectors must have the same number of components for the ordinary dot product to be defined. If one vector has three components and the other has four, there is no corresponding component for the extra value. The operation is therefore not defined as an ordinary dot product between those two vectors."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([2, 3])\nb = np.array([4, 5])\n\nresult = np.dot(a, b)\nresult_with_operator = a @ b\n\nprint(\"Dot product:\", result)\nprint(\"Using @:\", result_with_operator)\nprint(\"Result type:\", type(result))"
+                },
+                {
+                    "type": "text",
+                    "value": "For one-dimensional NumPy arrays, np.dot(a, b) and a @ b both calculate the dot product. The @ operator is also used for matrix multiplication when its operands have higher-dimensional shapes. Understanding the shapes of the operands is essential because the same operator has shape-dependent behavior."
+                }
+            ]
+        },
+        {
+            "id": "geometric-interpretation",
+            "title": "3. Geometric Interpretation: Angles and Alignment",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For nonzero vectors in Euclidean space, the dot product can also be expressed using their lengths and the cosine of the angle between them. This connects component-wise arithmetic to geometry."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\cdot\\mathbf{b}=\\|\\mathbf{a}\\|_2\\|\\mathbf{b}\\|_2\\cos\\theta"
+                },
+                {
+                    "type": "text",
+                    "value": "The angle θ lies between zero and π radians. If the angle is zero, the vectors point in the same direction and cos θ equals 1. If the angle is π/2, they are perpendicular and cos θ equals 0. If the angle is π, they point in opposite directions and cos θ equals -1."
+                },
+                {
+                    "type": "text",
+                    "value": "This explains why the sign of a dot product conveys directional information. A positive dot product indicates an angle smaller than 90 degrees, a zero dot product indicates orthogonality for nonzero vectors, and a negative dot product indicates an angle greater than 90 degrees."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{cases}\\mathbf{a}\\cdot\\mathbf{b}>0 & \\text{acute angle}\\\\\\mathbf{a}\\cdot\\mathbf{b}=0 & \\text{orthogonal nonzero vectors}\\\\\\mathbf{a}\\cdot\\mathbf{b}<0 & \\text{obtuse angle}\\end{cases}"
+                },
+                {
+                    "type": "text",
+                    "value": "A dot product is influenced by both vector magnitude and alignment. Doubling the length of one vector doubles the dot product without changing the angle. Therefore, the raw dot product is not a pure measure of directional similarity."
+                }
+            ]
+        },
+        {
+            "id": "worked-examples",
+            "title": "4. Worked Examples",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Example 1: Let a = [1, 2, 3] and b = [4, -1, 2]. Multiply corresponding components: 1 × 4 = 4, 2 × (-1) = -2, and 3 × 2 = 6. Summing them gives 4 − 2 + 6 = 8."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\cdot\\mathbf{b}=4-2+6=8"
+                },
+                {
+                    "type": "text",
+                    "value": "Example 2: Let a = [1, 0] and b = [0, 1]. Their dot product is 1 × 0 + 0 × 1 = 0. Both vectors are nonzero, so a zero dot product tells us that they are perpendicular."
+                },
+                {
+                    "type": "math",
+                    "value": "\\begin{bmatrix}1 \\\\ 0\\end{bmatrix}\\cdot\\begin{bmatrix}0 \\\\ 1\\end{bmatrix}=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Example 3: Let a = [1, 2] and b = [-2, -4]. Their dot product is -2 − 8 = -10. The second vector points in the direction opposite to the first. Because b = -2a, the vectors are exactly opposite in direction."
+                },
+                {
+                    "type": "text",
+                    "value": "Example 4: Find the angle between a = [1, 0] and b = [1, 1]. The dot product is 1. Their norms are 1 and √2. Therefore, cos θ = 1/√2, so θ = 45 degrees, or π/4 radians."
+                },
+                {
+                    "type": "math",
+                    "value": "\\cos\\theta=\\frac{\\mathbf{a}\\cdot\\mathbf{b}}{\\|\\mathbf{a}\\|_2\\|\\mathbf{b}\\|_2}=\\frac{1}{\\sqrt{2}}"
+                }
+            ]
+        },
+        {
+            "id": "orthogonality",
+            "title": "5. Orthogonality and Perpendicularity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Two vectors are orthogonal when their dot product is zero. In two and three dimensions, orthogonality corresponds to perpendicular directions. In higher-dimensional spaces, orthogonality remains a precise mathematical relationship even though it is difficult to visualize directly."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\perp\\mathbf{b}\\iff\\mathbf{a}\\cdot\\mathbf{b}=0"
+                },
+                {
+                    "type": "text",
+                    "value": "Orthogonality appears in coordinate systems, projections, least-squares optimization, and numerical algorithms. For example, an orthonormal basis consists of unit vectors that are mutually orthogonal. Such bases simplify coordinate calculations and help represent vectors without unnecessary overlap between basis directions."
+                },
+                {
+                    "type": "text",
+                    "value": "A zero dot product does not imply that one of the vectors is zero. Two nonzero vectors can be orthogonal. If either vector is zero, its dot product with every vector is zero, but the angle involving the zero vector is undefined because the zero vector has no direction."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([1.0, 0.0, 0.0])\nb = np.array([0.0, 1.0, 0.0])\nc = np.array([1.0, 2.0, 0.0])\n\nprint(np.dot(a, b))\nprint(np.dot(a, c))\n\nassert np.isclose(np.dot(a, b), 0.0)"
+                }
+            ]
+        },
+        {
+            "id": "cosine-similarity",
+            "title": "6. Cosine Similarity",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Cosine similarity measures the cosine of the angle between two nonzero vectors. It is the dot product divided by the product of their Euclidean norms. This normalization removes the direct effect of vector magnitude and focuses on directional alignment."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{cos\\_sim}(\\mathbf{a},\\mathbf{b})=\\frac{\\mathbf{a}\\cdot\\mathbf{b}}{\\|\\mathbf{a}\\|_2\\|\\mathbf{b}\\|_2}"
+                },
+                {
+                    "type": "text",
+                    "value": "For nonzero real vectors, cosine similarity ranges from -1 to 1. A value of 1 means the vectors point in the same direction, 0 means they are orthogonal, and -1 means they point in opposite directions. For many text-embedding applications, vectors are designed or used so that greater cosine similarity corresponds to greater semantic relatedness, but this interpretation depends on the embedding model and task."
+                },
+                {
+                    "type": "text",
+                    "value": "Consider a = [1, 2] and b = [2, 4]. These vectors differ in magnitude but point in the same direction because b = 2a. Their cosine similarity is 1. The raw dot product is 10, demonstrating that raw dot products and cosine similarity encode different information."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\ndef cosine_similarity(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n\n    if a.shape != b.shape:\n        raise ValueError(\"Vectors must have the same shape.\")\n\n    norm_a = np.linalg.norm(a)\n    norm_b = np.linalg.norm(b)\n\n    if norm_a == 0 or norm_b == 0:\n        raise ValueError(\"Cosine similarity is undefined for a zero vector.\")\n\n    return np.dot(a, b) / (norm_a * norm_b)\n\nprint(cosine_similarity([1, 2], [2, 4]))\nprint(cosine_similarity([1, 0], [0, 1]))\nprint(cosine_similarity([1, 0], [-1, 0]))"
+                },
+                {
+                    "type": "text",
+                    "value": "Cosine similarity is undefined for zero vectors under the standard formula because the denominator becomes zero. Real-world software may define a special fallback behavior, but that behavior should be understood rather than assumed."
+                }
+            ]
+        },
+        {
+            "id": "dot-product-versus-elementwise",
+            "title": "7. Dot Product Versus Element-Wise Multiplication",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "One common source of confusion is the difference between element-wise multiplication and the dot product. Element-wise multiplication returns a vector whose components are products of corresponding components. The dot product sums those products and returns a scalar."
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\odot\\mathbf{b}=(a_1b_1,a_2b_2,\\ldots,a_nb_n)"
+                },
+                {
+                    "type": "math",
+                    "value": "\\mathbf{a}\\cdot\\mathbf{b}=\\sum_{i=1}^{n}a_ib_i"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\na = np.array([2, 3, 4])\nb = np.array([5, 6, 7])\n\nelementwise = a * b\ndot_product = a @ b\n\nprint(\"Element-wise result:\", elementwise)\nprint(\"Dot product:\", dot_product)\n\n# Element-wise: [10, 18, 28]\n# Dot product: 56"
+                },
+                {
+                    "type": "text",
+                    "value": "Element-wise multiplication preserves the vector's shape. The dot product combines the components into one scalar. Both operations are useful, but they answer different mathematical questions."
+                }
+            ]
+        },
+        {
+            "id": "dot-products-in-linear-models",
+            "title": "8. Dot Products in Linear Regression and Neural Networks",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A linear prediction model calculates a weighted sum of features. Given a feature vector x, weight vector w, and scalar bias b, its prediction can be expressed as wᵀx + b. The dot product combines the features with their corresponding learned weights, while the bias shifts the result."
+                },
+                {
+                    "type": "math",
+                    "value": "\\hat{y}=\\mathbf{w}^{T}\\mathbf{x}+b"
+                },
+                {
+                    "type": "text",
+                    "value": "For example, let x = [120, 3] represent area and bedroom count, w = [2500, 15000], and b = 20000. The weighted sum is 2500 × 120 + 15000 × 3 + 20000 = 365000. The numerical result is meaningful only if the features, units, weights, and bias were defined consistently."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nx = np.array([120.0, 3.0])\nw = np.array([2500.0, 15000.0])\nb = 20000.0\n\nprediction = np.dot(w, x) + b\nprint(\"Prediction:\", prediction)\n\n# Expected result: 365000.0"
+                },
+                {
+                    "type": "text",
+                    "value": "A neural network dense layer performs the same kind of weighted combination for each output unit. For a batch of inputs, matrix multiplication performs many related dot products efficiently. Each row of the input is combined with the columns of a weight matrix to produce the corresponding output activations."
+                },
+                {
+                    "type": "math",
+                    "value": "Y=XW+\\mathbf{b}"
+                },
+                {
+                    "type": "text",
+                    "value": "The dot product is therefore one of the core operations behind linear regression, classification models, dense neural network layers, attention mechanisms, and many similarity-search systems. Efficient hardware and numerical libraries are designed to execute large collections of such operations."
+                }
+            ]
+        },
+        {
+            "id": "common-mistakes",
+            "title": "9. Common Mistakes and Misconceptions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Forgetting to multiply corresponding components before summing. A dot product is not the sum of the two vectors and is not simply the product of their lengths."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Assuming a positive dot product always means the vectors are almost identical. The dot product depends on magnitude as well as direction. Cosine similarity separates directional alignment from vector magnitude."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Assuming a zero dot product means the vectors must be zero. Nonzero orthogonal vectors also have a zero dot product."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Using the dot-product formula when vector dimensions do not match. The ordinary dot product requires corresponding components."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 5: Applying cosine similarity to a zero vector without handling the zero denominator."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 6: Confusing aᵀb with element-wise multiplication. The first expression represents a scalar dot product for compatible vectors; the second produces component-wise products."
+                }
+            ]
+        },
+        {
+            "id": "mini-project",
+            "title": "10. Mini Project: Find the Most Similar Embedding",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Suppose three documents are represented by numerical embeddings. Given a query embedding, calculate the cosine similarity between the query and every document, then identify the document with the highest score. This is a simplified illustration of vector-based retrieval."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nquery = np.array([0.8, 0.2, 0.5])\ndocuments = np.array([\n    [0.7, 0.3, 0.4],\n    [-0.4, 0.8, 0.1],\n    [0.9, 0.1, 0.4]\n])\n\nquery_norm = np.linalg.norm(query)\ndocument_norms = np.linalg.norm(documents, axis=1)\n\nif query_norm == 0 or np.any(document_norms == 0):\n    raise ValueError(\"Cosine similarity requires nonzero vectors.\")\n\nscores = documents @ query / (document_norms * query_norm)\n\nfor i, score in enumerate(scores):\n    print(f\"Document {i + 1}: {score:.4f}\")\n\nbest_index = int(np.argmax(scores))\nprint(\"Most similar document:\", best_index + 1)"
+                },
+                {
+                    "type": "text",
+                    "value": "This example demonstrates the mathematics of cosine similarity, not a complete semantic search system. Real embedding systems use a trained model to produce vectors, and production retrieval may use an approximate nearest-neighbor index to search a large collection efficiently."
+                },
+                {
+                    "type": "text",
+                    "value": "Extension: Replace cosine similarity with raw dot-product ranking and compare the rankings. Construct examples with different vector magnitudes to see why the two measures can produce different results."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "Calculate the dot product of a = [2, -1, 3] and b = [4, 5, -2].",
+            "hints": [
+                "Multiply corresponding components.",
+                "Add all three products, including their signs."
+            ],
+            "solution": "a · b = 2(4) + (-1)(5) + 3(-2) = 8 - 5 - 6 = -3."
+        },
+        {
+            "id": "exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Two nonzero vectors have a dot product of zero. What can you conclude about their geometric relationship in real Euclidean space?",
+            "hints": [
+                "Use the formula involving the cosine of the angle.",
+                "Both vector norms are positive because the vectors are nonzero."
+            ],
+            "solution": "The vectors are orthogonal. Since both norms are positive, a · b = ||a|| ||b|| cos θ = 0 implies cos θ = 0, so the angle between them is 90 degrees."
+        },
+        {
+            "id": "exercise-3",
+            "type": "coding",
+            "difficulty": "beginner",
+            "question": "Write a NumPy program that calculates the dot product and element-wise product of [1, 2, 3] and [4, 5, 6]. Print both results.",
+            "hints": [
+                "Use the * operator for element-wise multiplication.",
+                "Use @ for the dot product of one-dimensional arrays."
+            ],
+            "solution": "import numpy as np\n\na = np.array([1, 2, 3])\nb = np.array([4, 5, 6])\n\nprint(a * b)  # [ 4 10 18]\nprint(a @ b)  # 32"
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Calculate the cosine similarity between a = [3, 0] and b = [4, 4].",
+            "hints": [
+                "Calculate the dot product.",
+                "Calculate both L2 norms.",
+                "Divide the dot product by the product of the norms."
+            ],
+            "solution": "The dot product is 3(4) + 0(4) = 12. The norms are 3 and √(4² + 4²) = 4√2. Cosine similarity = 12/(12√2) = 1/√2 ≈ 0.7071."
+        },
+        {
+            "id": "exercise-5",
+            "type": "analysis",
+            "difficulty": "intermediate",
+            "question": "Explain why a model can use a dot product to calculate a weighted prediction from numerical features.",
+            "hints": [
+                "Associate each feature with one weight.",
+                "Consider what the sum of weighted features represents."
+            ],
+            "solution": "The dot product multiplies each feature by its corresponding weight and sums the contributions. This produces a single scalar score. Adding a bias gives the usual linear prediction formula, wᵀx + b."
+        },
+        {
+            "id": "exercise-6",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "Implement a function that returns cosine similarity between two NumPy vectors. The function should reject mismatched shapes and zero vectors. Test it with parallel, perpendicular, and opposite vectors.",
+            "hints": [
+                "Check shape equality before computing the dot product.",
+                "Check both norms before dividing.",
+                "Use np.isclose for floating-point comparisons."
+            ],
+            "solution": "import numpy as np\n\ndef cosine_similarity(a, b):\n    a = np.asarray(a, dtype=float)\n    b = np.asarray(b, dtype=float)\n\n    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:\n        raise ValueError(\"Inputs must be one-dimensional vectors of equal length.\")\n\n    na = np.linalg.norm(a)\n    nb = np.linalg.norm(b)\n    if na == 0 or nb == 0:\n        raise ValueError(\"Cosine similarity is undefined for zero vectors.\")\n\n    return np.dot(a, b) / (na * nb)\n\nprint(cosine_similarity([1, 0], [2, 0]))   # 1.0\nprint(cosine_similarity([1, 0], [0, 1]))   # 0.0\nprint(cosine_similarity([1, 0], [-1, 0]))  # -1.0"
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality",
+        "probability-distributions"
+    ]
+}

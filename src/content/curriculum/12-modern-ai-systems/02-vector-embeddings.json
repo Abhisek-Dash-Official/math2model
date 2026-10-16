@@ -1,1 +1,418 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-vector-embeddings",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 2,
+    "title": "Vector Embeddings",
+    "slug": "vector-embeddings",
+    "href": "/curriculum/12-modern-ai-systems/vector-embeddings",
+    "filePath": "content/curriculum/12-modern-ai-systems/02-vector-embeddings.json",
+    "description": "Understand how embedding models map text into vector spaces, how similarity metrics and contrastive training support retrieval, and how to evaluate, version, and deploy embeddings reliably.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "Basic linear algebra and vector operations",
+        "Tokenization and transformer fundamentals",
+        "Basic Python programming",
+        "Introduction to information retrieval"
+    ],
+    "learningObjectives": [
+        "Explain the role of embeddings in semantic search and machine learning systems.",
+        "Describe embedding functions, vector dimensions, pooling, and normalization.",
+        "Calculate cosine similarity, dot products, and Euclidean distance.",
+        "Explain contrastive training and query-document asymmetry.",
+        "Choose chunking, preprocessing, and encoding strategies for retrieval.",
+        "Understand exact and approximate nearest-neighbor search.",
+        "Evaluate embedding quality with retrieval metrics and representative datasets.",
+        "Plan model upgrades, privacy controls, and index migrations."
+    ],
+    "sections": [
+        {
+            "id": "embedding-intuition",
+            "title": "1. What Is a Vector Embedding?",
+            "type": "concept",
+            "content": "A vector embedding is a list of numbers produced by a model to represent an item such as a word, sentence, paragraph, image, or audio segment. For text retrieval, an embedding model maps text into a fixed-dimensional vector space where geometric relationships are intended to reflect useful semantic or task-specific relationships. Similar texts often have vectors that are close under an appropriate similarity measure, although the geometry is learned and imperfect.\n\nAn embedding is not a dictionary definition, a human-readable explanation, or a guaranteed summary of every fact in the text. It is a compact numerical representation optimized by a training objective. A sentence about a “bank account” and a sentence about a “river bank” may share words while differing in meaning; the quality of the representation depends on the model, context, and training data.\n\nEmbeddings support retrieval, clustering, deduplication, recommendation, classification, and semantic matching. They are especially useful when users express the same idea with different words. However, lexical search remains valuable for exact identifiers, rare names, product codes, and phrases whose precise wording matters.",
+            "keyPoints": [
+                "An embedding is a learned vector representation.",
+                "Vector dimensions are not usually directly interpretable as named concepts.",
+                "Similarity depends on the model and metric.",
+                "Embedding similarity is evidence of relatedness, not a proof of equivalence."
+            ]
+        },
+        {
+            "id": "embedding-function",
+            "title": "2. The Embedding Function",
+            "type": "math",
+            "content": "Let fθ be an embedding model with parameters θ. Given a text input x, the model returns a vector e = fθ(x) in a d-dimensional space. The vector dimension d is determined by the model architecture or output configuration. For a fixed model, texts are represented in a consistent coordinate system, allowing vector comparison and indexing.\n\nAn embedding model may process a single sentence, a passage, or a query. Some models use the same encoding function for both queries and documents. Others are asymmetric and are trained with distinct query and document encoders or different prompt prefixes. Correct usage requires following the model's expected input format, pooling strategy, and normalization behavior.\n\nThe vector values are generally floating-point numbers. They can be stored at different precisions, but quantizing vectors or changing normalization can affect ranking. Embedding generation should be treated as a versioned transformation: record the model identity and preprocessing used to create each indexed vector.",
+            "formula": "e = fθ(x), where e ∈ ℝᵈ",
+            "example": "If a model outputs d = 3 for illustration, it might map a sentence to [0.12, -0.44, 0.81]. Real embedding dimensions are often much larger. The individual values are not normally labels such as “positive,” “finance,” or “question.”"
+        },
+        {
+            "id": "semantic-space",
+            "title": "3. Semantic Space and Neighborhoods",
+            "type": "concept",
+            "content": "A vector space gives a mathematical way to compare representations. Each vector is a point in a coordinate system, and a similarity function assigns a score to pairs of vectors. Embedding models learn a space where task-relevant items tend to be closer than irrelevant ones. In text retrieval, a query about “resetting a forgotten password” may retrieve a passage titled “Recover account access,” even though the wording differs.\n\nThe word “semantic” should not be interpreted too strongly. Similarity can reflect topic, style, shared entities, domain, or patterns in the training objective. Two passages can be close but contradict each other, and two passages that answer the same question can have different embeddings because they use different terminology. Embeddings also inherit biases and coverage limitations from their training data.\n\nNeighborhood inspection is a useful diagnostic. If a query retrieves irrelevant neighbors, review the query wording, document chunking, model choice, and similarity metric. Do not assume that increasing vector dimensions alone will fix a retrieval problem.",
+            "example": "A query “How do I end my membership?” might be near documents titled “Cancel subscription” or “Terminate a plan.” A keyword-only search may miss the match if the words differ substantially.",
+            "pitfalls": [
+                "Semantic closeness does not establish factual agreement.",
+                "Vectors may cluster by topic instead of by answer usefulness.",
+                "Rare identifiers can be poorly represented compared with common natural language."
+            ]
+        },
+        {
+            "id": "cosine-similarity",
+            "title": "4. Cosine Similarity",
+            "type": "math",
+            "content": "Cosine similarity compares the angle between two vectors. It is commonly used for text embeddings because it emphasizes orientation rather than raw magnitude. For nonzero vectors, the score ranges from -1 to 1 mathematically, although many embedding systems produce scores in a narrower range in practice. A larger score usually indicates greater similarity under that model and task, but score thresholds must be calibrated rather than assumed.\n\nCosine similarity is scale-invariant: multiplying a vector by a positive constant does not change its cosine similarity to another vector. This is useful when vector magnitude is not intended to encode relevance. If vectors are normalized to unit length, cosine similarity equals their dot product, which can make search efficient.\n\nA cosine score is not a probability. A score of 0.8 does not mean there is an 80% chance that a passage answers the question. The same numeric score can have different meanings across models, corpora, and query distributions.",
+            "formula": "cos(u, v) = (u · v) / (||u||₂ ||v||₂)",
+            "example": "For u = [1, 0] and v = [2, 0], cosine similarity is 1 because they point in the same direction. For u = [1, 0] and w = [0, 1], cosine similarity is 0 because they are orthogonal.",
+            "pitfalls": [
+                "Cosine similarity is undefined for a zero vector, so handle invalid embeddings.",
+                "Do not compare thresholds across unrelated embedding models without calibration.",
+                "Normalization must be consistent between indexing and query-time search."
+            ]
+        },
+        {
+            "id": "dot-product",
+            "title": "5. Dot Product and Euclidean Distance",
+            "type": "comparison",
+            "content": "Cosine similarity is not the only possible metric. Dot-product similarity is u · v and is often used by embedding systems trained for maximum inner-product search. It depends on both direction and magnitude unless vectors are normalized. Euclidean distance measures the straight-line distance between vectors; smaller distances indicate closer points under that metric.\n\nFor unit-normalized vectors, cosine similarity and dot product are identical. Also, squared Euclidean distance between unit vectors is related to cosine similarity by ||u − v||² = 2 − 2 cos(u, v). These relationships can help explain why different systems sometimes produce similar rankings after normalization. Without normalization, the metrics may rank candidates differently.\n\nThe best metric is the one consistent with the embedding model's training and the index implementation. Do not select a metric solely because it is familiar. Verify model documentation and evaluate retrieval results on representative queries.",
+            "formula": "u · v = Σᵢ uᵢvᵢ;  ||u − v||₂ = √(Σᵢ(uᵢ − vᵢ)²)",
+            "table": [
+                {
+                    "metric": "Cosine similarity",
+                    "Interpretation": "Directional similarity",
+                    "Ranking behavior": "Ignores positive vector scaling"
+                },
+                {
+                    "metric": "Dot product",
+                    "Interpretation": "Inner-product score",
+                    "Ranking behavior": "Magnitude can affect ranking"
+                },
+                {
+                    "metric": "Euclidean distance",
+                    "Interpretation": "Straight-line distance",
+                    "Ranking behavior": "Lower is closer; sensitive to scale"
+                }
+            ]
+        },
+        {
+            "id": "pooling-and-token-embeddings",
+            "title": "6. From Token States to a Sentence Vector",
+            "type": "concept",
+            "content": "Transformer encoders usually produce a hidden vector for each token. A sentence embedding model must turn these token-level states into a single fixed-size representation, or otherwise define a document representation suitable for comparison. Common strategies include using a designated special-token representation, mean pooling across token states, or a model-specific pooling head trained for sentence-level similarity.\n\nPooling choices are not interchangeable. Mean pooling can dilute a short but important phrase in a long passage. A special-token representation depends on how the model was trained to use that token. Some models use late interaction or multiple vectors instead of one pooled vector to preserve token-level matching. For retrieval, use the pooling method expected by the pretrained model rather than inventing a new one without evaluation.\n\nPadding tokens should not contribute to mean pooling. Attention masks or equivalent valid-token masks are needed to avoid averaging padded positions into the final representation. This implementation detail can silently reduce embedding quality.",
+            "bestPractices": [
+                "Use the model's documented pooling strategy.",
+                "Exclude padding tokens from pooling.",
+                "Keep preprocessing consistent across indexed documents and incoming queries.",
+                "Evaluate long passages separately because truncation can remove important content."
+            ]
+        },
+        {
+            "id": "contrastive-learning",
+            "title": "7. How Embedding Models Are Trained",
+            "type": "concept",
+            "content": "Many modern text embedding models are trained using contrastive objectives. A training example contains an anchor, a positive example that should be close, and often negative examples that should be farther away. For retrieval, the anchor might be a query, the positive might be a passage that answers it, and negatives might be unrelated passages or difficult near-matches.\n\nThe objective encourages the model to assign higher similarity to positive pairs than to negatives. In-batch negatives use other examples in the same training batch as negative candidates, improving training efficiency. Hard negatives are especially challenging because they look relevant but do not answer the query. High-quality negative selection matters: a passage that actually answers the query should not be mislabeled as negative.\n\nTraining data defines what “similar” means operationally. A model trained for paraphrase similarity may not rank passages optimally for question answering. A retrieval model trained on query-document pairs may perform better for search than a general-purpose sentence similarity model.",
+            "formula": "A simplified contrastive loss: Lᵢ = −log(exp(sim(qᵢ, dᵢ⁺)/τ) / Σⱼ exp(sim(qᵢ, dⱼ)/τ))",
+            "example": "The query “Where can I change my billing card?” should be close to a passage explaining payment-method settings and farther from a passage about changing a profile picture, even though both passages contain the word “change.”"
+        },
+        {
+            "id": "query-document-asymmetry",
+            "title": "8. Query and Document Embeddings",
+            "type": "concept",
+            "content": "Some retrieval systems use the same embedding function for queries and documents. Others use an asymmetric setup because queries are short and underspecified while documents are longer and contain answer-bearing information. An asymmetric model may use different encoders, prompts, or instructions for queries and passages. For example, the query encoder may be instructed to represent the information needed to retrieve a relevant passage, while the document encoder represents the passage's content.\n\nThis means that encoding a query with the document pathway—or vice versa—can lower retrieval quality even if the vectors have the same dimension. The vector dimensions matching does not guarantee that the coordinate spaces are compatible. Follow the model's prescribed query and document prefixes, normalization, maximum length, and truncation behavior.\n\nWhen debugging, check the exact embedding input strings. A common mistake is to test a model using one instruction format, then index production documents with another. Store the embedding model version and preprocessing configuration with the index metadata.",
+            "checklist": [
+                "Confirm whether the model is symmetric or asymmetric.",
+                "Use the correct query and document encoding paths.",
+                "Check required prefixes or task instructions.",
+                "Keep truncation and normalization behavior consistent.",
+                "Re-embed documents if the embedding space changes."
+            ]
+        },
+        {
+            "id": "similarity-search",
+            "title": "9. Nearest-Neighbor Search",
+            "type": "concept",
+            "content": "Once vectors are indexed, nearest-neighbor search finds vectors closest to a query vector under the selected metric. Exact search compares the query with every stored vector. This is straightforward but becomes expensive as the corpus grows. Approximate nearest-neighbor (ANN) indexes reduce query time by searching a carefully constructed subset of the space, often with a small trade-off in recall.\n\nANN methods include graph-based indexes, inverted-file approaches, and quantized vector indexes. Their parameters control trade-offs among memory, indexing time, query latency, and recall. A low-latency configuration may miss relevant vectors; a high-recall configuration may consume more compute. These settings should be benchmarked using actual queries and corpus sizes.\n\nThe nearest vector is only nearest among the indexed representations. If a relevant chunk was never embedded or was deleted incorrectly, the search cannot retrieve it. Search quality therefore depends on ingestion correctness as well as index algorithms.",
+            "keyPoints": [
+                "Exact search compares against all vectors.",
+                "ANN trades exactness for speed and scale.",
+                "Recall should be measured against an exact or trusted baseline when possible.",
+                "Metadata filters and index settings can affect which candidates are searched."
+            ]
+        },
+        {
+            "id": "normalization",
+            "title": "10. Normalization and Preprocessing",
+            "type": "concept",
+            "content": "Text normalization determines what content the embedding model sees. Typical choices include whitespace cleanup, Unicode normalization, removal of repeated boilerplate, and consistent treatment of headings. The correct level of normalization depends on the domain. Removing punctuation may be harmless for general prose but harmful for code, chemical notation, version strings, or identifiers.\n\nOver-cleaning can erase meaning. For example, hyphens in product identifiers or decimal points in version numbers may be important. Likewise, removing headings may make a paragraph ambiguous. Preserve the original text for display and provenance even if a normalized form is used for embedding. That separation allows the system to search a clean representation while showing users the authoritative source.\n\nNormalization should be deterministic and versioned. If the process changes, existing vectors may need to be regenerated so old and new records use compatible transformations.",
+            "example": "The strings “v1.2.0” and “v120” should not automatically be treated as equivalent if the punctuation carries version semantics. A normalization rule that strips all punctuation could damage exact retrieval.",
+            "pitfalls": [
+                "Applying aggressive cleanup to code or structured identifiers.",
+                "Changing preprocessing without rebuilding affected vectors.",
+                "Losing original text needed for citations or user inspection."
+            ]
+        },
+        {
+            "id": "long-documents",
+            "title": "11. Long Documents, Truncation, and Chunk Embeddings",
+            "type": "concept",
+            "content": "Embedding models have maximum input lengths. A long document may be truncated if it is sent as one input, causing content near the end to disappear from its representation. Even when the model accepts a long input, a single vector may blur multiple topics and make specific questions difficult to retrieve accurately. Chunking gives different parts of a document separate representations and makes targeted retrieval possible.\n\nThe chunk size should balance semantic coherence and specificity. Very small chunks can omit context; very large chunks can mix topics and consume more tokens during generation. For structured sources, preserve heading paths and relationships between chunks. A question may require adjacent chunks, so the retrieval layer can expand selected results to include neighboring sections when appropriate.\n\nSome applications use hierarchical embeddings: represent sections, then documents, then individual chunks. A document-level vector can help route a query to a relevant document, while chunk-level vectors locate the exact evidence. This can improve scale but introduces more complexity and should be evaluated against a simpler baseline.",
+            "bestPractices": [
+                "Measure the target model's token limit using its tokenizer.",
+                "Preserve section headings in chunk text or metadata.",
+                "Test queries that target the beginning, middle, and end of long documents.",
+                "Consider neighboring-chunk expansion for context-dependent passages."
+            ]
+        },
+        {
+            "id": "multilingual-embeddings",
+            "title": "12. Multilingual and Domain-Specific Embeddings",
+            "type": "concept",
+            "content": "Multilingual embedding models aim to place text from different languages into a shared or comparable space. This enables cross-lingual retrieval, such as asking a question in English and retrieving a source written in Hindi. Performance varies by language, script, domain, and training coverage. A model that performs well on common languages may be weaker on low-resource languages or specialized terminology.\n\nDomain-specific models can improve retrieval for fields such as law, medicine, software, or scientific literature, but a domain label alone does not guarantee better performance. Evaluate the actual query types, terminology, abbreviations, and documents in the target corpus. For multilingual systems, preserve the original language and consider whether translation is needed for retrieval or generation.\n\nDo not assume that translating every query is always beneficial. Translation can lose exact terms, names, or legal wording. A hybrid approach may search both the original query and a translated version, then merge and rerank results.",
+            "evaluationQuestions": [
+                "Can a query in one language retrieve a relevant passage in another?",
+                "How well does the model handle domain abbreviations and named entities?",
+                "Does translation improve recall without adding too many irrelevant results?",
+                "Are similarity thresholds calibrated for each language and task?"
+            ]
+        },
+        {
+            "id": "embedding-drift",
+            "title": "13. Model Versions and Embedding Drift",
+            "type": "concept",
+            "content": "An embedding space is tied to a particular model and preprocessing configuration. When a model version changes, the meaning of vector coordinates can change even if the output dimension stays identical. Comparing vectors from incompatible spaces may produce arbitrary rankings. A safe migration normally embeds a representative corpus with the new model, builds a separate index, evaluates retrieval, and switches traffic only after validation.\n\nEmbedding drift can also come from changing source content, chunking, normalization, or metadata. Monitor document counts, vector norms, missing embeddings, and retrieval metrics over time. Repeatedly updating only some records with a new model can create a mixed index whose ranking behavior is difficult to reason about.\n\nA migration plan should include rollback. Keep the old index available until the new index passes quality and latency checks. For large corpora, backfill in batches and verify that every source document has the expected number of current chunks.",
+            "migrationSteps": [
+                "Version the model and preprocessing configuration.",
+                "Build a new index rather than mixing incompatible vectors.",
+                "Backfill documents and verify counts.",
+                "Run retrieval evaluation on fixed and recent queries.",
+                "Compare latency, memory, relevance, and operational cost.",
+                "Switch traffic gradually and retain a rollback path."
+            ]
+        },
+        {
+            "id": "vector-database-use",
+            "title": "14. Embeddings in a Retrieval Application",
+            "type": "process",
+            "content": "A practical semantic-search service typically embeds documents offline and queries online. Offline embedding can be batched because documents are known ahead of time. Online query embedding is latency-sensitive and should use the same compatible query pathway. The vector store returns candidate IDs and scores; the application then fetches text and metadata, applies authorization rules, and may rerank candidates.\n\nThe vector store is not necessarily the source of truth. Many systems keep canonical documents in object storage or a relational database and store only searchable representations in the vector index. This makes it easier to update source content and rebuild the index. It also requires consistency logic so deleted or updated documents do not leave stale chunks behind.\n\nFor observability, log the embedding model version, query latency, candidate IDs, similarity scores, and filters where safe. These traces make it possible to distinguish poor embedding quality from an indexing or authorization problem.",
+            "steps": [
+                "Load canonical documents and stable IDs.",
+                "Normalize and chunk the content.",
+                "Batch-encode chunks with the document encoder.",
+                "Upsert vectors and metadata into the index.",
+                "Encode an incoming query with the query encoder.",
+                "Search using the configured metric and filters.",
+                "Fetch authorized text for candidate IDs.",
+                "Evaluate or rerank results before using them downstream."
+            ]
+        },
+        {
+            "id": "python-cosine",
+            "title": "15. Computing Cosine Similarity in Python",
+            "type": "code",
+            "content": "A small implementation helps make the metric concrete. Production vector libraries use optimized numeric kernels, but the core formula is simple. The function below rejects zero vectors rather than silently dividing by zero. It also checks that the vectors have the same dimension.",
+            "language": "python",
+            "code": "import math\n\ndef cosine_similarity(a, b):\n    if len(a) != len(b):\n        raise ValueError(\"Vectors must have equal dimensions\")\n    dot = sum(x * y for x, y in zip(a, b))\n    norm_a = math.sqrt(sum(x * x for x in a))\n    norm_b = math.sqrt(sum(y * y for y in b))\n    if norm_a == 0 or norm_b == 0:\n        raise ValueError(\"Cosine similarity is undefined for zero vectors\")\n    return dot / (norm_a * norm_b)\n\nprint(cosine_similarity([1, 0], [2, 0]))  # 1.0\nprint(cosine_similarity([1, 0], [0, 1]))  # 0.0",
+            "explanation": "The dot product is divided by the product of Euclidean norms. The first example points in the same direction and receives a score of 1. The second example is orthogonal and receives 0. This implementation is educational; for large matrices, use vectorized numerical libraries or the database's native similarity implementation.",
+            "implementationNotes": [
+                "Real embedding vectors may contain hundreds or thousands of dimensions.",
+                "Floating-point arithmetic can introduce small rounding differences.",
+                "Normalize vectors once when appropriate if repeated cosine comparisons are required.",
+                "Use the metric expected by the embedding model and index."
+            ]
+        },
+        {
+            "id": "retrieval-evaluation",
+            "title": "16. Evaluating Embedding Quality",
+            "type": "concept",
+            "content": "Embedding quality should be measured by the downstream task, not by vector dimension or a handful of attractive examples. Build a representative query set with relevant passages or documents labeled by people who understand the domain. Include paraphrases, exact identifiers, ambiguous queries, multilingual examples where relevant, long-document cases, and queries that should return no useful result.\n\nEvaluate ranking metrics such as Recall@k, Precision@k, and MRR, and inspect failure cases manually. If an embedding model retrieves passages that are topically related but do not answer the question, improve the training objective or use a retrieval-oriented model, reranking, hybrid search, or better chunking. If the model misses exact product IDs, combine vector search with lexical search rather than expecting semantic embeddings to solve every matching problem.\n\nCompare models under the same corpus, query set, chunking, filters, and index settings. Otherwise, differences may be caused by the pipeline rather than the embedding model itself.",
+            "metrics": [
+                {
+                    "name": "Recall@k",
+                    "purpose": "Measures whether relevant evidence appears among top-k results."
+                },
+                {
+                    "name": "Precision@k",
+                    "purpose": "Measures the proportion of top-k results that are relevant."
+                },
+                {
+                    "name": "MRR",
+                    "purpose": "Rewards a high rank for the first relevant result."
+                },
+                {
+                    "name": "Latency",
+                    "purpose": "Measures query embedding and search response time."
+                },
+                {
+                    "name": "Index footprint",
+                    "purpose": "Measures memory and storage cost of the representation."
+                }
+            ]
+        },
+        {
+            "id": "common-mistakes",
+            "title": "17. Common Embedding Mistakes",
+            "type": "concept",
+            "content": "A frequent mistake is assuming that semantically similar text must be factually equivalent. Another is selecting a similarity threshold from intuition rather than measuring precision and recall on a labeled set. Other problems include mixing vectors from different model versions, using the wrong query prefix, forgetting to normalize when required, embedding whole books as single vectors, or dropping headings that establish a passage's meaning.\n\nEmbedding systems can also fail on rare entities and exact strings. A user searching for an error code, SKU, legal clause number, or function name may need lexical matching. Hybrid search combines dense semantic retrieval with sparse term-based retrieval and often provides better coverage than either method alone. A reranker can then score the candidate set using a richer interaction between query and passage.\n\nFinally, embeddings can encode sensitive information indirectly. Access controls, retention, deletion, and data-processing requirements apply to the vectors and metadata as well as the original documents.",
+            "checklist": [
+                "Verify model identity and encoding instructions.",
+                "Inspect top results for both semantic relevance and exact-term coverage.",
+                "Calibrate thresholds with a labeled dataset.",
+                "Rebuild indexes after incompatible model or preprocessing changes.",
+                "Preserve metadata and enforce permissions for retrieved records.",
+                "Test domain-specific and multilingual queries."
+            ]
+        },
+        {
+            "id": "advanced-patterns",
+            "title": "18. Advanced Patterns: Multi-Vector and Hybrid Representations",
+            "type": "concept",
+            "content": "A single dense vector compresses an entire text into one representation. This is efficient, but it can lose fine-grained details. Multi-vector approaches retain several vectors per document or token-level representations so that a query can match specific parts of a passage. They can improve fine-grained matching but increase storage and search complexity.\n\nHybrid retrieval combines dense vectors with sparse representations such as term frequencies or learned sparse vectors. Dense search helps with paraphrases and semantic similarity; lexical search helps with exact terms, rare identifiers, and precise phrase matches. The candidate lists can be merged with rank-based fusion or a learned combination, then reranked.\n\nThese techniques should be added in response to measured failure modes. A simple dense index may be sufficient for a small, clean corpus. Multi-vector or hybrid systems introduce more tuning, storage, and operational complexity, so evaluate the quality improvement against the additional cost.",
+            "options": [
+                {
+                    "pattern": "Dense single-vector",
+                    "strength": "Compact and efficient semantic retrieval",
+                    "tradeoff": "Can blur multiple concepts in a long passage"
+                },
+                {
+                    "pattern": "Hybrid dense plus lexical",
+                    "strength": "Combines paraphrase matching with exact-term recall",
+                    "tradeoff": "Requires candidate fusion and tuning"
+                },
+                {
+                    "pattern": "Multi-vector or late interaction",
+                    "strength": "Preserves finer-grained token or passage matching",
+                    "tradeoff": "Higher storage and query complexity"
+                }
+            ]
+        },
+        {
+            "id": "privacy-and-governance",
+            "title": "19. Privacy and Governance",
+            "type": "concept",
+            "content": "Embeddings should not automatically be considered anonymous. Depending on the model and data, vectors may reveal information about the underlying text or allow sensitive attributes to be inferred. Treat embedding creation as a data-processing operation with the same source permissions and retention expectations as the original content. Avoid sending confidential text to an embedding provider unless the deployment and contractual controls permit it.\n\nDeletion workflows should remove vectors, cached representations, and associated metadata when a source must be erased or access is revoked. Backup and index snapshots need retention policies too. For multi-tenant systems, ensure that search filters and cache keys prevent one tenant's vectors or metadata from leaking to another.\n\nGovernance includes model provenance, dataset provenance, licensing, evaluation for bias, and documented limitations. The team should know which model created an embedding and what changes require re-indexing.",
+            "safeguards": [
+                "Classify source data before embedding it.",
+                "Use approved providers and deployment settings for sensitive data.",
+                "Apply tenant and document permissions at retrieval time.",
+                "Define deletion and retention behavior for vectors and backups.",
+                "Record model version, source provenance, and preprocessing configuration."
+            ]
+        },
+        {
+            "id": "worked-example",
+            "title": "20. Worked Example: Semantic Search",
+            "type": "example",
+            "content": "Imagine three indexed passages: A explains how to reset a password, B explains how to update a profile photo, and C explains how to change a billing card. The query is “I need to replace the card used for monthly payments.” A lexical search may miss passage C because the query says “replace” and “monthly payments” while the passage says “update billing method.” A suitable embedding model can place the query near C because the underlying intent is similar.\n\nThis does not mean dense retrieval always wins. If the user asks for “ERR_AUTH_403,” a lexical index may be more reliable because the exact identifier is central. A hybrid system can retrieve candidates through both paths and merge them. The final ranking should be checked against a labeled set of realistic questions rather than this one example.\n\nThe system should preserve the original passage and metadata so a user can inspect the result. Similarity scores are useful for ranking and debugging, but should not be presented as calibrated probabilities unless a separate calibration process justifies that interpretation.",
+            "steps": [
+                "Create stable IDs for the three passages.",
+                "Encode passages with the selected document embedding pathway.",
+                "Encode the query with the matching query pathway.",
+                "Retrieve nearest vectors using the model's recommended metric.",
+                "Optionally merge candidates from lexical search.",
+                "Inspect the rank of passage C and compare against labeled queries.",
+                "Record the result for regression evaluation."
+            ]
+        },
+        {
+            "id": "deployment-checklist",
+            "title": "21. Deployment Checklist",
+            "type": "checklist",
+            "content": "Before shipping an embedding-powered feature, verify correctness, compatibility, quality, and operations. The same source should produce stable vectors under the same model and preprocessing version. Index counts should match the expected source inventory. Query and document encoders should follow the correct instructions. Search should enforce permissions, and evaluation should include both semantic paraphrases and exact-match cases.\n\nOperational checks include batch sizing, retry behavior, rate limits, timeouts, index rebuilds, and monitoring. Embedding services can fail or throttle requests, so ingestion should support resumable batches and idempotent upserts. Query-time embedding failures should produce a controlled error or fallback, not a misleading empty result that is treated as a successful search.\n\nDocument a migration process before the first model upgrade. A versioned index and a fixed evaluation set make it possible to compare a new embedding model safely and roll back if retrieval quality regresses.",
+            "checklist": [
+                "Pin the embedding model and preprocessing version.",
+                "Verify dimensions, normalization, and query/document pathways.",
+                "Check index completeness and duplicate records.",
+                "Evaluate ranking quality on representative queries.",
+                "Test exact identifiers, multilingual cases, and unanswerable queries.",
+                "Enforce access control and deletion workflows.",
+                "Monitor latency, errors, rate limits, and index growth.",
+                "Maintain a tested migration and rollback plan."
+            ]
+        },
+        {
+            "id": "embedding-production-monitoring",
+            "title": "22. Monitoring an Embedding Pipeline",
+            "type": "concept",
+            "content": "Embedding pipelines need monitoring after launch because data distributions, source formats, and query behavior change over time. A new document source may contain more tables or code than the original corpus. Users may begin searching for new product names or new terminology. Even if the model itself remains unchanged, these shifts can reduce retrieval quality. Monitor the pipeline for missing vectors, unusual vector norms, embedding failures, index lag, duplicate chunks, and changes in retrieval metrics. Use privacy-aware aggregate telemetry and avoid retaining raw sensitive text unless it is necessary and approved.",
+            "signals": [
+                "Embedding API error rate and retry count",
+                "Number of source documents awaiting indexing",
+                "Expected versus actual chunk and vector counts",
+                "Index freshness and time since the latest successful update",
+                "Distribution of similarity scores for a stable evaluation query set",
+                "Recall and ranking metrics on periodically refreshed labeled queries"
+            ],
+            "responsePlan": [
+                "Alert on missing or stale index records.",
+                "Sample failed documents and inspect parsing or token-limit errors.",
+                "Run a fixed retrieval regression set after model or preprocessing changes.",
+                "Compare score distributions only within a compatible model and metric configuration.",
+                "Rebuild or roll back the index when a migration causes a verified quality regression."
+            ],
+            "pitfalls": [
+                "Treating a change in raw similarity scores as a quality regression without checking query and corpus changes.",
+                "Monitoring API availability but not whether the resulting vectors are actually indexed.",
+                "Using only hand-picked demonstration queries instead of a representative evaluation set."
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "ve-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does a text embedding represent, and what should you not assume about its individual dimensions?",
+            "correctAnswer": "It is a learned numeric representation of text; individual dimensions usually do not correspond directly to human-readable concepts.",
+            "solution": "The model learns a coordinate system useful for its training objective. A dimension's value is not generally a transparent label such as sentiment or topic, and similarity depends on the model and metric."
+        },
+        {
+            "id": "ve-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Compute cosine similarity for u = [1, 0] and v = [0, 2].",
+            "correctAnswer": "0",
+            "solution": "The dot product is 1×0 + 0×2 = 0. The norms are 1 and 2, so cosine similarity is 0/(1×2) = 0."
+        },
+        {
+            "id": "ve-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can query and document embeddings require different encoding instructions?",
+            "correctAnswer": "Some models are trained asymmetrically because queries and documents have different roles and distributions.",
+            "solution": "The query encoder is optimized to represent an information need, while the document encoder represents candidate evidence. Using the wrong pathway or prefix can move vectors away from the space expected by the retrieval model."
+        },
+        {
+            "id": "ve-ex-4",
+            "type": "debugging",
+            "difficulty": "advanced",
+            "question": "A team upgrades its embedding model but keeps old document vectors and starts embedding only new queries with the new model. Why is this dangerous?",
+            "correctAnswer": "The old and new vectors may belong to incompatible embedding spaces, making similarity scores and rankings unreliable.",
+            "solution": "Equal vector dimensions do not guarantee compatible coordinates. The team should build a new index with the new model, evaluate it, and migrate traffic after validation."
+        },
+        {
+            "id": "ve-ex-5",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "A search feature must find both paraphrases and exact product codes. What retrieval design would you consider?",
+            "correctAnswer": "Hybrid retrieval that combines dense embedding search with lexical or sparse search, followed by candidate fusion or reranking.",
+            "solution": "Dense vectors can handle semantic variation, while lexical search is strong for exact identifiers. Combining both can improve coverage; evaluate the result on a labeled query set."
+        },
+        {
+            "id": "ve-ex-6",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Why might one embedding for an entire 100-page manual perform worse than embeddings for coherent chunks?",
+            "correctAnswer": "A single vector can blur multiple topics and may lose details due to input truncation, while chunk vectors enable targeted retrieval.",
+            "solution": "Chunk-level representations allow a query to match a specific section and preserve local context. Chunk boundaries should still respect headings, tables, and exceptions so the retrieved unit remains interpretable."
+        }
+    ],
+    "summary": "Embeddings map text into learned vector spaces so systems can compare items numerically. Their effectiveness depends on the training objective, query/document encoding path, pooling, preprocessing, similarity metric, chunking, and index configuration. Cosine similarity and dot product are ranking signals rather than probabilities. Evaluate embeddings on realistic retrieval tasks, preserve model versions, combine dense and lexical search when useful, and treat vectors as governed data.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-vector-databases",
+        "module-12-modern-ai-systems-retrieval",
+        "module-12-modern-ai-systems-reranking"
+    ]
+}

@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-04-embeddings-representation-learning",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 6,
+  "title": "Embeddings & Representation Learning",
+  "slug": "embeddings-representation-learning",
+  "href": "/curriculum/04-deep-learning/embeddings-representation-learning",
+  "filePath": "content/curriculum/04-deep-learning/06-embeddings-representation-learning.json",
+  "description": "Explore learned vector representations, embedding spaces, similarity measures, and supervised or self-supervised representation learning.",
+  "difficulty": "intermediate",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "MLPs",
+    "CNNs",
+    "Linear Algebra"
+  ],
+  "learningObjectives": [
+    "Explain what an embedding represents.",
+    "Compute common vector similarities and distances.",
+    "Describe how representations support downstream tasks.",
+    "Recognize normalization and evaluation pitfalls."
+  ],
+  "sections": [
+    {
+      "id": "definition",
+      "title": "What Is a Representation?",
+      "type": "concept",
+      "content": "A representation is a numerical encoding of an input that makes useful structure accessible to a model. An embedding is often a dense vector learned so that relevant items have useful geometric relationships. Words, images, users, products, and entire documents can all be represented as vectors.\n\nThe dimensions do not usually have simple human-readable meanings individually. The useful information is distributed across the vector and is revealed by how the model uses it."
+    },
+    {
+      "id": "geometry",
+      "title": "Distances and Similarities",
+      "type": "math",
+      "content": "For vectors x and y, Euclidean distance is ||x−y||_2. Cosine similarity is (x·y)/(||x||_2 ||y||_2), provided neither vector is zero. Cosine similarity emphasizes direction rather than magnitude and is common for semantic retrieval. Dot product depends on both direction and magnitude.\n\nExample: x=[1,0] and y=[2,0] have cosine similarity 1 because they point in the same direction, while their Euclidean distance is 1. Similarity choice should match how embeddings were trained and how the application defines relevance."
+    },
+    {
+      "id": "learning",
+      "title": "How Embeddings Are Learned",
+      "type": "concept",
+      "content": "An embedding may be learned as a lookup table, produced by a neural encoder, or trained through contrastive objectives. In contrastive learning, related examples are encouraged to have similar representations while unrelated examples are separated according to the training objective. Supervised labels can also teach representations that distinguish task-relevant classes.\n\nA representation trained for one task may not transfer perfectly to another. Data diversity, objective design, augmentations, and the target domain all influence what information is preserved."
+    },
+    {
+      "id": "retrieval",
+      "title": "Nearest-Neighbor Retrieval",
+      "type": "concept",
+      "content": "A common use is semantic retrieval: encode a query and a collection of items, then rank items by vector similarity. For small collections, direct matrix multiplication can be enough. Large collections may use approximate-nearest-neighbor indexes to reduce latency. The retrieval system should be evaluated using relevance judgments, recall at k, precision at k, or mean reciprocal rank as appropriate.\n\nSimilarity is not the same as truth. A nearby item may be semantically related but incorrect, outdated, biased, or irrelevant to the user's exact need."
+    },
+    {
+      "id": "code",
+      "title": "Cosine Similarity in PyTorch",
+      "type": "code",
+      "content": "import torch\nimport torch.nn.functional as F\n\nitems = F.normalize(torch.tensor([[1., 0.], [0.8, 0.2], [0., 1.]]), dim=1)\nquery = F.normalize(torch.tensor([[1., 0.]]), dim=1)\nscores = query @ items.T\nprint(scores)  # higher scores indicate closer direction",
+      "language": "python",
+      "explanation": "Normalization makes each nonzero vector unit length, so the dot product becomes cosine similarity. For production retrieval, handle zero vectors, batch queries, measure latency, and validate ranking quality."
+    },
+    {
+      "id": "pitfalls",
+      "title": "Representation Pitfalls",
+      "type": "concept",
+      "content": "Do not assume vector dimensions are interpretable, or that high similarity guarantees equivalent meaning. Embeddings can encode sensitive or unwanted correlations from training data. Domain shift can degrade retrieval quality, and frequent or generic items may dominate results. Evaluate performance on representative queries, inspect failure cases, and monitor changes after model updates."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "emb-ex1",
+      "type": "calculation",
+      "difficulty": "easy",
+      "question": "What is the cosine similarity between [1,0] and [0,1]?",
+      "correctAnswer": "0.",
+      "solution": "Their dot product is zero, so their vectors are orthogonal."
+    },
+    {
+      "id": "emb-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "What is the cosine similarity between [1,0] and [3,0]?",
+      "correctAnswer": "1.",
+      "solution": "They point in the same direction; positive scaling does not change cosine similarity."
+    },
+    {
+      "id": "emb-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why might cosine similarity be preferred over Euclidean distance for text embeddings?",
+      "correctAnswer": "It compares vector direction and is less affected by vector magnitude.",
+      "solution": "Many embedding spaces are designed so angular similarity reflects semantic relatedness."
+    },
+    {
+      "id": "emb-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Name one metric for evaluating a ranked retrieval system.",
+      "correctAnswer": "Recall@k, Precision@k, or Mean Reciprocal Rank.",
+      "solution": "Ranking metrics assess whether relevant items appear near the top of the returned list."
+    }
+  ],
+  "summary": "Embeddings encode inputs as vectors whose geometry can support similarity search and downstream tasks. Select similarity metrics carefully and evaluate retrieval on realistic examples.",
+  "relatedTopics": [
+    "autoencoders",
+    "transfer-learning",
+    "mlps",
+    "cnns"
+  ]
+}

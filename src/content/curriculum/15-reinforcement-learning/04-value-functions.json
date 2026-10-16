@@ -1,1 +1,350 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-value-functions",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 4,
+    "title": "Value Functions & Bellman Equations",
+    "slug": "value-functions",
+    "href": "/curriculum/15-reinforcement-learning/value-functions",
+    "filePath": "content/curriculum/15-reinforcement-learning/04-value-functions.json",
+    "description": "Learn state-value and action-value functions, discounted returns, Bellman expectation and optimality equations, dynamic programming, temporal-difference learning, and how value estimates guide reinforcement learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "markov-decision-processes"
+    ],
+    "learningObjectives": [
+        "Define return, state-value, and action-value functions.",
+        "Explain the difference between V and Q functions.",
+        "Calculate discounted returns from reward sequences.",
+        "Derive Bellman expectation equations.",
+        "Understand Bellman optimality equations.",
+        "Distinguish policy evaluation from policy improvement.",
+        "Explain the relationship between value functions and optimal policies.",
+        "Understand Monte Carlo and temporal-difference estimation.",
+        "Calculate one-step TD targets and TD errors.",
+        "Explain bootstrapping and its benefits and risks.",
+        "Implement iterative value estimation in Python.",
+        "Recognize the limitations of tabular value functions."
+    ],
+    "sections": [
+        {
+            "id": "value-functions-introduction",
+            "title": "Why Do We Need Value Functions?",
+            "type": "concept",
+            "content": "A reward describes the immediate result of an interaction, but an agent must often consider consequences that arrive many steps later. Value functions summarize expected future return. They allow an agent to compare states and actions according to their long-term usefulness rather than relying only on immediate rewards. A state that provides little immediate reward may still be valuable because it leads to promising future opportunities. Value functions are central to dynamic programming, Q-learning, actor-critic algorithms, and many deep reinforcement learning systems."
+        },
+        {
+            "id": "return-definition",
+            "title": "The Return",
+            "type": "concept",
+            "content": "The return is the accumulated reward from a given time onward. In discounted reinforcement learning, each future reward is multiplied by a power of gamma. This makes immediate rewards contribute more than distant rewards when gamma is below one. The return is a random quantity because future states, actions, and rewards may be stochastic. A value function is an expectation over returns under a specified policy. Return is therefore the outcome being summarized, while value is the expected quantity used for prediction and decision-making."
+        },
+        {
+            "id": "return-equation",
+            "title": "Discounted Return Formula",
+            "type": "math",
+            "content": "The discounted return beginning at time t is the sum of future rewards weighted by powers of the discount factor. In an episodic task, the sum ends at termination. In a continuing task, the discounted sum may extend indefinitely under suitable assumptions.",
+            "formula": "G_t = \\sum_{k=0}^{\\infty}\\gamma^k r_{t+k+1}",
+            "example": "If the rewards are 2, 3, and 1 and gamma is 0.5, the return is 2 + 0.5(3) + 0.25(1) = 3.75."
+        },
+        {
+            "id": "state-value-function",
+            "title": "The State-Value Function",
+            "type": "concept",
+            "content": "The state-value function V under policy pi gives the expected return when the agent begins in state s and follows policy pi afterward. It measures the long-term usefulness of a state under that policy. The value depends on the policy: the same state may have high value under a strong policy and low value under a poor policy. State values are useful for comparing situations and evaluating a policy, but they do not always identify the best immediate action without additional information about action consequences."
+        },
+        {
+            "id": "state-value-equation",
+            "title": "Mathematical Definition of V",
+            "type": "math",
+            "content": "The state-value function is the expectation of the return conditioned on the initial state and following policy pi. The expectation includes randomness in the policy and environment.",
+            "formula": "V^{\\pi}(s)=\\mathbb{E}_{\\pi}[G_t\\mid s_t=s]",
+            "example": "If a state leads to a return of 10 with probability 0.25 and a return of 2 with probability 0.75, its expected value is 0.25(10) + 0.75(2) = 4."
+        },
+        {
+            "id": "action-value-function",
+            "title": "The Action-Value Function",
+            "type": "concept",
+            "content": "The action-value function Q under policy pi gives the expected return when the agent starts in state s, takes action a, and follows policy pi afterward. It estimates the long-term usefulness of choosing a particular action in a particular state. Q values are especially useful for action selection because the agent can compare available actions directly. In a small discrete problem, the agent may store a separate value for each state-action pair. In larger problems, a neural network may approximate Q(s,a)."
+        },
+        {
+            "id": "action-value-equation",
+            "title": "Mathematical Definition of Q",
+            "type": "math",
+            "content": "The action-value function conditions the expected return on both the current state and the first action. After that first action, the future behavior follows the specified policy.",
+            "formula": "Q^{\\pi}(s,a)=\\mathbb{E}_{\\pi}[G_t\\mid s_t=s,a_t=a]",
+            "example": "If action LEFT has expected return 3 and action RIGHT has expected return 7 from the same state under the relevant policy, RIGHT has the larger action value."
+        },
+        {
+            "id": "v-versus-q",
+            "title": "State Value Versus Action Value",
+            "type": "concept",
+            "content": "V(s) evaluates a state under a policy, while Q(s,a) evaluates taking a particular action in that state and then following a policy. If the policy is stochastic, V(s) is the policy-weighted average of action values. Q values contain action-specific information and can support greedy action selection. V values summarize the quality of states and are often used as baselines or critics in policy-gradient methods. The two functions are related, but they answer different questions."
+        },
+        {
+            "id": "v-from-q",
+            "title": "Computing V from Q",
+            "type": "math",
+            "content": "The state value is the expected action value when actions are selected according to the policy. For a discrete action space, this becomes a sum of action probabilities multiplied by their corresponding Q values.",
+            "formula": "V^{\\pi}(s)=\\sum_a\\pi(a\\mid s)Q^{\\pi}(s,a)",
+            "example": "Suppose a policy selects action A with probability 0.7 and action B with probability 0.3. If their Q values are 4 and 10, then V(s) = 0.7(4) + 0.3(10) = 5.8."
+        },
+        {
+            "id": "bellman-intuition",
+            "title": "The Bellman Principle",
+            "type": "concept",
+            "content": "The Bellman principle expresses a long-term value recursively as immediate reward plus discounted future value. Instead of considering every possible future reward sequence separately, an agent can combine the immediate outcome with the value of the next state. The Markov property makes this decomposition possible. Bellman equations are expectation equations because transitions, rewards, or policies may be stochastic. They are not merely formulas for adding a reward to the value of whichever next state happens to be most likely."
+        },
+        {
+            "id": "bellman-v-expectation",
+            "title": "Bellman Expectation Equation for V",
+            "type": "math",
+            "content": "The state-value function under a fixed policy equals the expected immediate reward plus the discounted value of the next state. The expectation averages over actions chosen by the policy and next states generated by the environment. Terminal states contribute no future value under the usual episodic convention.",
+            "formula": "V^{\\pi}(s)=\\sum_a\\pi(a\\mid s)\\sum_{s'}P(s'\\mid s,a)[R(s,a,s')+\\gamma V^{\\pi}(s')]",
+            "example": "If an action produces immediate reward 2 and leads deterministically to a state with value 6, with gamma = 0.5, the backed-up value is 2 + 0.5(6) = 5."
+        },
+        {
+            "id": "bellman-q-expectation",
+            "title": "Bellman Expectation Equation for Q",
+            "type": "math",
+            "content": "The action-value function first takes the specified action and then evaluates future behavior according to the policy. The next action is averaged according to pi. This equation connects the Q value of the current action with the expected value of subsequent states.",
+            "formula": "Q^{\\pi}(s,a)=\\sum_{s'}P(s'\\mid s,a)[R(s,a,s')+\\gamma\\sum_{a'}\\pi(a'\\mid s')Q^{\\pi}(s',a')]",
+            "example": "If an action gives immediate reward 1 and leads to a state whose policy-weighted value is 8, then with gamma = 0.9 the corresponding expected target is 1 + 0.9(8) = 8.2."
+        },
+        {
+            "id": "optimal-value-functions",
+            "title": "Optimal Value Functions",
+            "type": "concept",
+            "content": "An optimal value function represents the best achievable expected return under the MDP's objective. The optimal state-value function V* gives the maximum value attainable from each state over all valid policies. The optimal action-value function Q* gives the best return achievable after taking a specified first action and then acting optimally. If the optimal action values are known, an optimal policy can be formed by choosing an action with the largest Q* value in each state. When several actions tie, any maximizing action is optimal under the stated objective."
+        },
+        {
+            "id": "bellman-optimality-v",
+            "title": "Bellman Optimality Equation for V",
+            "type": "math",
+            "content": "The optimal value of a state is the maximum, over available actions, of the expected immediate reward plus discounted optimal value of the next state. The maximization represents choosing the best action, while the expectation represents uncertainty in the environment.",
+            "formula": "V^*(s)=\\max_a\\sum_{s'}P(s'\\mid s,a)[R(s,a,s')+\\gamma V^*(s')]",
+            "example": "Suppose action A has expected immediate reward 2 and next-state value 4, while action B has expected immediate reward 1 and next-state value 8. With gamma = 0.5, A has target 4 and B has target 5, so B is preferred."
+        },
+        {
+            "id": "bellman-optimality-q",
+            "title": "Bellman Optimality Equation for Q",
+            "type": "math",
+            "content": "The optimal action value combines the immediate reward with the best optimal value among possible next actions. This recursive equation is the theoretical basis for Q-learning. It allows a learner to update an estimate toward a target based on the reward and the highest estimated next-state action value.",
+            "formula": "Q^*(s,a)=\\sum_{s'}P(s'\\mid s,a)[R(s,a,s')+\\gamma\\max_{a'}Q^*(s',a')]",
+            "example": "If the immediate reward is 3, gamma is 0.9, and the largest next-state Q value is 5, the one-step target is 3 + 0.9(5) = 7.5."
+        },
+        {
+            "id": "policy-evaluation",
+            "title": "Policy Evaluation",
+            "type": "concept",
+            "content": "Policy evaluation estimates the value of a fixed policy. If the MDP model is known, iterative methods can update state values using the Bellman expectation equation. The update repeatedly combines expected immediate reward with discounted value estimates for successor states. Under standard finite-MDP discounted assumptions, iterative policy evaluation converges to the policy's value function when the update process is applied appropriately. Policy evaluation does not itself improve the policy; it measures the behavior currently being considered."
+        },
+        {
+            "id": "policy-improvement",
+            "title": "Policy Improvement",
+            "type": "concept",
+            "content": "Policy improvement uses value estimates to select actions that appear better than those chosen by the current policy. A common approach is to choose actions that maximize expected reward plus discounted successor value. Policy iteration alternates policy evaluation and policy improvement. Under standard finite discounted MDP assumptions, repeated exact policy iteration reaches an optimal policy. Approximate evaluation, large state spaces, and function approximation introduce additional challenges that are not covered by the simplest tabular convergence arguments."
+        },
+        {
+            "id": "policy-iteration",
+            "title": "Policy Iteration",
+            "type": "concept",
+            "content": "Policy iteration alternates two operations: evaluate the current policy, then improve it using the resulting value estimates. In a small known MDP, policy evaluation can calculate the value of every state, and policy improvement can compare available actions. The process repeats until the policy no longer changes or a chosen stopping criterion is met. Policy iteration is a model-based dynamic programming method. It requires access to the transition and reward model or a way to estimate their effects."
+        },
+        {
+            "id": "value-iteration",
+            "title": "Value Iteration",
+            "type": "concept",
+            "content": "Value iteration combines value estimation and greedy improvement in one repeated update. Instead of fully evaluating a fixed policy before improving it, each state is updated toward the maximum expected action value. For finite discounted MDPs with a known model, the Bellman optimality operator is a contraction, and repeated updates converge to the optimal value function under standard assumptions. Value iteration is often computationally attractive for small MDPs but can be expensive when there are many states or actions."
+        },
+        {
+            "id": "value-iteration-equation",
+            "title": "Value Iteration Update",
+            "type": "math",
+            "content": "The value iteration update uses the current value estimates for successor states and chooses the action with the largest expected one-step return. Each iteration propagates information about rewards through the state space.",
+            "formula": "V_{k+1}(s)=\\max_a\\sum_{s'}P(s'\\mid s,a)[R(s,a,s')+\\gamma V_k(s')]",
+            "example": "If one action has immediate reward 1 and leads to a state with current value 4, while another gives reward 2 and leads to a state with value 2, and gamma = 0.5, their targets are 3 and 3. A tie occurs, so either action maximizes the one-step target."
+        },
+        {
+            "id": "monte-carlo-value",
+            "title": "Monte Carlo Value Estimation",
+            "type": "concept",
+            "content": "Monte Carlo methods estimate values using returns observed from completed episodes or suitable sampled returns. They do not need an explicit transition model. For a state visited during an episode, the observed return provides a sample of its value under the behavior policy. Averaging many samples estimates the expected return. Monte Carlo methods do not bootstrap from an estimated successor value in the basic formulation, so their targets depend on observed outcomes. They may have high variance and generally require complete returns or another suitable return-construction method."
+        },
+        {
+            "id": "temporal-difference",
+            "title": "Temporal-Difference Learning",
+            "type": "concept",
+            "content": "Temporal-difference (TD) learning updates a value estimate using the immediate reward and an estimate of future value. Unlike basic Monte Carlo estimation, TD learning does not need to wait until an entire episode finishes. It bootstraps from the current value estimate of the next state. This can make learning more incremental and data-efficient, but it introduces bias when the value estimate is inaccurate. TD methods form the foundation for SARSA, Q-learning, and many actor-critic algorithms."
+        },
+        {
+            "id": "td-error",
+            "title": "The TD Error",
+            "type": "math",
+            "content": "For one-step TD prediction, the TD target is the immediate reward plus discounted value of the next state. The TD error is the target minus the current estimate. A positive error means the observed outcome was better than predicted, while a negative error means it was worse than predicted. Terminal transitions normally use zero bootstrap value.",
+            "formula": "\\delta_t=r_{t+1}+\\gamma V(s_{t+1})-V(s_t)",
+            "example": "If reward = 2, gamma = 0.9, next-state value = 5, and current value = 4, then the TD error is 2 + 0.9(5) - 4 = 2.5."
+        },
+        {
+            "id": "td-update",
+            "title": "The TD Value Update",
+            "type": "math",
+            "content": "TD learning adjusts the current estimate in the direction of the TD error. The learning rate alpha controls how much of the new target is incorporated. A small learning rate produces slower updates, while a large learning rate responds more strongly to each sample and may increase instability in noisy settings.",
+            "formula": "V(s_t)\\leftarrow V(s_t)+\\alpha[r_{t+1}+\\gamma V(s_{t+1})-V(s_t)]",
+            "example": "If the current value is 4, the TD error is 2.5, and alpha is 0.1, the new estimate is 4 + 0.1(2.5) = 4.25."
+        },
+        {
+            "id": "bootstrapping",
+            "title": "What Is Bootstrapping?",
+            "type": "concept",
+            "content": "Bootstrapping means updating an estimate using another estimate. In TD learning, the next-state value contributes to the target even though that value is itself learned. Bootstrapping enables updates before the full return is observed and can improve sample efficiency. However, inaccurate estimates can influence future updates. Errors may propagate through a sequence of states, and unstable function approximation can amplify them. The distinction between bootstrapped and full-return targets is important when comparing Monte Carlo, TD, and multi-step methods."
+        },
+        {
+            "id": "bias-variance",
+            "title": "Bias and Variance in Value Estimation",
+            "type": "concept",
+            "content": "Monte Carlo targets use sampled returns and are unbiased estimates of the corresponding policy value under standard sampling assumptions, but they can have high variance. One-step TD targets bootstrap from an estimated next-state value, which can introduce bias but often reduces variance. Multi-step methods combine several observed rewards with a bootstrap value. The choice involves a trade-off between reliance on sampled outcomes and reliance on learned predictions. There is no universally best target for every environment; the appropriate choice depends on data availability, reward delay, and estimation stability."
+        },
+        {
+            "id": "n-step-returns",
+            "title": "Multi-Step Returns",
+            "type": "concept",
+            "content": "An n-step return uses the next n observed rewards and then bootstraps from a value estimate at the state reached after those steps. One-step TD uses only the immediate reward before bootstrapping, while Monte Carlo methods use the full observed return. Multi-step returns can propagate information faster than one-step updates while retaining some bootstrapping. They are widely used in modern RL algorithms, but the treatment of terminal transitions and discount factors must be implemented carefully."
+        },
+        {
+            "id": "n-step-formula",
+            "title": "The n-Step Return",
+            "type": "math",
+            "content": "The n-step target sums the first n discounted rewards and adds the discounted value estimate of the state after n steps, unless the episode terminates first. This combines real observed feedback with a learned prediction of more distant outcomes.",
+            "formula": "G_t^{(n)}=\\sum_{k=0}^{n-1}\\gamma^k r_{t+k+1}+\\gamma^n V(s_{t+n})",
+            "example": "With rewards 1 and 2, gamma = 0.5, and a value estimate of 8 after two steps, the two-step target is 1 + 0.5(2) + 0.25(8) = 4."
+        },
+        {
+            "id": "value-function-code",
+            "title": "Implementing Iterative Value Updates",
+            "type": "code",
+            "language": "python",
+            "content": "The following implementation performs value iteration for a small tabular MDP. Each transition outcome contains a probability, next state, reward, and terminal flag. The algorithm uses the known model to compute expected action values.",
+            "explanation": "This example assumes a finite state space and discrete actions. It demonstrates planning with a known model, not model-free learning from sampled transitions.",
+            "code": "def value_iteration(mdp, gamma=0.9, iterations=100):\n    values = {state: 0.0 for state in mdp}\n\n    for _ in range(iterations):\n        updated = values.copy()\n        for state, actions in mdp.items():\n            if not actions:\n                updated[state] = 0.0\n                continue\n\n            action_values = []\n            for outcomes in actions.values():\n                expected = 0.0\n                for probability, next_state, reward, terminated in outcomes:\n                    future = 0.0 if terminated else values[next_state]\n                    expected += probability * (reward + gamma * future)\n                action_values.append(expected)\n\n            updated[state] = max(action_values)\n        values = updated\n\n    return values\n\nprint(value_iteration(mdp))"
+        },
+        {
+            "id": "greedy-policy-code",
+            "title": "Extracting a Greedy Policy",
+            "type": "code",
+            "language": "python",
+            "content": "After value iteration, a greedy policy chooses the action with the largest expected immediate reward plus discounted successor value. The policy is extracted from the model and the computed state values.",
+            "explanation": "Ties are resolved by selecting the first maximizing action encountered. Other tie-breaking strategies are possible.",
+            "code": "def extract_greedy_policy(mdp, values, gamma=0.9):\n    policy = {}\n    for state, actions in mdp.items():\n        if not actions:\n            continue\n\n        best_action = None\n        best_value = float('-inf')\n        for action, outcomes in actions.items():\n            expected = 0.0\n            for probability, next_state, reward, terminated in outcomes:\n                future = 0.0 if terminated else values[next_state]\n                expected += probability * (reward + gamma * future)\n            if expected > best_value:\n                best_value = expected\n                best_action = action\n        policy[state] = best_action\n\n    return policy\n\nvalues = value_iteration(mdp)\nprint(extract_greedy_policy(mdp, values))"
+        },
+        {
+            "id": "tabular-limitations",
+            "title": "Limitations of Tabular Value Functions",
+            "type": "concept",
+            "content": "A tabular value function stores a separate estimate for every state or state-action pair. This is simple and effective for small finite problems, but memory requirements grow with the number of states and actions. Continuous states cannot generally be enumerated exactly. Function approximation addresses this by representing values with a parameterized model such as a neural network. Approximation introduces new challenges, including generalization error, correlated samples, nonstationary targets, and instability. Deep RL methods therefore require careful algorithm design and evaluation."
+        },
+        {
+            "id": "value-estimation-errors",
+            "title": "Common Value Estimation Errors",
+            "type": "concept",
+            "content": "Value estimation can fail because rewards are misaligned with transitions, terminal states are handled incorrectly, discounting is inconsistent, or the value target uses the wrong successor state. Another common error is confusing the value of a state under the current policy with its optimal value. Policy evaluation estimates V for a particular policy, whereas optimality equations seek the best achievable value. Bootstrapping errors can also propagate when estimates are inaccurate or the learning rate is poorly chosen."
+        },
+        {
+            "id": "value-functions-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Value functions estimate expected future return. V(s) evaluates a state under a policy, while Q(s,a) evaluates taking a particular action and then following a policy. Bellman expectation equations describe values for a fixed policy, and Bellman optimality equations describe the best achievable values. Policy iteration alternates evaluation and improvement, while value iteration repeatedly applies optimality backups. Monte Carlo methods learn from observed returns, whereas TD methods bootstrap from estimated future values. These ideas provide the foundation for Q-learning and actor-critic methods."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "value-functions-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does the state-value function V under a policy represent?",
+            "correctAnswer": "The expected return obtained by starting in a state and following that policy afterward.",
+            "solution": "V summarizes long-term expected reward from a state under a specified policy. Changing the policy can change the value of the same state."
+        },
+        {
+            "id": "value-functions-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main difference between V(s) and Q(s,a)?",
+            "correctAnswer": "V evaluates a state under a policy, while Q evaluates a state-action pair by conditioning on a particular first action.",
+            "solution": "Q contains action-specific information. V averages over the actions selected by the policy, weighted by their probabilities."
+        },
+        {
+            "id": "value-functions-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Calculate the return for rewards 3, 2, and 4 with gamma equal to 0.5.",
+            "correctAnswer": "5",
+            "solution": "G = 3 + 0.5(2) + 0.25(4) = 3 + 1 + 1 = 5."
+        },
+        {
+            "id": "value-functions-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "The current value is 5, the reward is 2, the next-state value is 8, and gamma is 0.9. Calculate the TD error.",
+            "correctAnswer": "4.2",
+            "solution": "The TD error is reward + gamma times next-state value minus current value: 2 + 0.9(8) - 5 = 2 + 7.2 - 5 = 4.2."
+        },
+        {
+            "id": "value-functions-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If the current value is 5, the TD error is 4.2, and the learning rate is 0.1, what is the updated value?",
+            "correctAnswer": "5.42",
+            "solution": "V_new = 5 + 0.1(4.2) = 5.42."
+        },
+        {
+            "id": "value-functions-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why does TD learning not need to wait for the complete episode?",
+            "correctAnswer": "It bootstraps from the current estimate of the next state's value after observing a transition.",
+            "solution": "The one-step target uses the immediate reward and estimated future value. This allows incremental updates before the full return is known."
+        },
+        {
+            "id": "value-functions-ex-7",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the difference between policy evaluation and policy improvement?",
+            "correctAnswer": "Policy evaluation estimates how well a fixed policy performs, while policy improvement changes action choices using value information.",
+            "solution": "Evaluation measures the current policy. Improvement attempts to choose better actions based on expected immediate rewards and future values."
+        },
+        {
+            "id": "value-functions-ex-8",
+            "type": "coding",
+            "difficulty": "medium",
+            "question": "Implement one tabular TD(0) value update in Python.",
+            "correctAnswer": "Compute the TD error from reward, discounted next-state value, and current value, then add the learning-rate-scaled error to the current value.",
+            "solution": "Example: def td_update(values, state, reward, next_state, alpha, gamma, terminated=False):\n    future = 0.0 if terminated else values[next_state]\n    delta = reward + gamma * future - values[state]\n    values[state] += alpha * delta\n    return delta"
+        },
+        {
+            "id": "value-functions-ex-9",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Explain one benefit and one risk of bootstrapping.",
+            "correctAnswer": "Bootstrapping enables incremental updates without waiting for full returns, but inaccurate value estimates can bias targets and propagate errors.",
+            "solution": "TD learning can use each transition immediately. However, the estimated next-state value may be wrong, so the update is not based entirely on observed rewards."
+        },
+        {
+            "id": "value-functions-ex-10",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "Why might a state with a low immediate reward still have a high value?",
+            "correctAnswer": "It may lead to future states that provide substantial rewards.",
+            "solution": "Value includes expected discounted future rewards, not just the immediate reward. A temporarily costly action or state can be beneficial if it creates better future opportunities."
+        }
+    ],
+    "summary": "Value functions summarize expected future return and allow RL agents to reason about long-term consequences. The state-value function V evaluates a state under a policy, while Q evaluates a state-action pair. Bellman expectation equations describe values under a fixed policy, and Bellman optimality equations describe optimal values. Dynamic programming methods use a known model for evaluation and planning. Monte Carlo methods use observed returns, while temporal-difference learning bootstraps from estimated successor values. These concepts directly support Q-learning, deep value learning, and actor-critic architectures.",
+    "relatedTopics": [
+        "markov-decision-processes",
+        "q-learning",
+        "policy-gradients",
+        "actor-critic",
+        "ppo"
+    ]
+}

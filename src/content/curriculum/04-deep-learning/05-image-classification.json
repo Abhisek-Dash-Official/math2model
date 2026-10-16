@@ -1,1 +1,106 @@
-{}
+{
+  "id": "module-04-image-classification",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 5,
+  "title": "Image Classification",
+  "slug": "image-classification",
+  "href": "/curriculum/04-deep-learning/image-classification",
+  "filePath": "content/curriculum/04-deep-learning/05-image-classification.json",
+  "description": "Build an end-to-end understanding of image classification, from datasets and preprocessing to training, metrics, evaluation, and error analysis.",
+  "difficulty": "beginner",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "CNNs",
+    "Pooling Layers",
+    "Loss Functions",
+    "Optimizers: Momentum, RMSProp, Adam"
+  ],
+  "learningObjectives": [
+    "Describe an image-classification pipeline.",
+    "Choose a suitable output layer, loss, and metric.",
+    "Explain data augmentation and leakage prevention.",
+    "Evaluate model errors beyond overall accuracy."
+  ],
+  "sections": [
+    {
+      "id": "task",
+      "title": "What Is Image Classification?",
+      "type": "concept",
+      "content": "Image classification assigns one or more labels to an image. In single-label multiclass classification, each image belongs to one of K mutually exclusive classes. In multilabel classification, several labels may be true at once, such as an image containing both a dog and a bicycle.\n\nA model typically maps image pixels to class logits. Training compares logits with labels using a loss function, then updates model parameters by gradient descent."
+    },
+    {
+      "id": "data",
+      "title": "Dataset Splits and Preprocessing",
+      "type": "concept",
+      "content": "Separate data into training, validation, and test sets. Train on the training set, use validation performance to choose settings, and reserve the test set for a final unbiased evaluation. Near-duplicate images or images from the same subject/session should not leak across splits when that would inflate results.\n\nTypical preprocessing includes resizing or cropping, converting pixel values to tensors, and normalization. Apply stochastic augmentation only to training data unless there is a specific evaluation protocol requiring otherwise."
+    },
+    {
+      "id": "loss",
+      "title": "Outputs and Losses",
+      "type": "math",
+      "content": "For mutually exclusive classes, a network produces K logits z. Softmax converts them to probabilities p_k = exp(z_k)/sum_j exp(z_j). Cross-entropy for the correct class y is −log(p_y). In practice, frameworks usually accept raw logits and integer class labels directly.\n\nFor multilabel classification, independent sigmoid outputs with binary cross-entropy are common. Do not use softmax for independent labels because softmax forces probabilities to sum to one."
+    },
+    {
+      "id": "metrics",
+      "title": "Metrics and Class Imbalance",
+      "type": "concept",
+      "content": "Accuracy is the fraction of examples classified correctly, but it can hide poor minority-class performance. Precision measures the share of predicted positives that are true positives; recall measures the share of actual positives detected; F1 is their harmonic mean. A confusion matrix reveals which classes are confused.\n\nFor imbalanced datasets, consider macro-averaged metrics, per-class recall, balanced accuracy, or precision-recall curves. Select metrics based on the cost of false positives and false negatives."
+    },
+    {
+      "id": "code",
+      "title": "A Minimal Training Step",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nmodel = nn.Sequential(\n    nn.Conv2d(3, 16, 3, padding=1), nn.ReLU(),\n    nn.AdaptiveAvgPool2d((1, 1)), nn.Flatten(),\n    nn.Linear(16, 4)\n)\noptimizer = torch.optim.Adam(model.parameters(), lr=1e-3)\ncriterion = nn.CrossEntropyLoss()\nimages = torch.randn(8, 3, 32, 32)\nlabels = torch.randint(0, 4, (8,))\n\noptimizer.zero_grad()\nlogits = model(images)\nloss = criterion(logits, labels)\nloss.backward()\noptimizer.step()\nprint(float(loss))",
+      "language": "python",
+      "explanation": "This example demonstrates the core optimization step. Real training code must iterate over a DataLoader, switch between model.train() and model.eval(), use torch.no_grad() during evaluation, and record validation metrics."
+    },
+    {
+      "id": "analysis",
+      "title": "Error Analysis and Reproducibility",
+      "type": "concept",
+      "content": "After evaluation, inspect a sample of incorrect predictions, stratify results by class and relevant subgroups, and look for label noise, class imbalance, spurious backgrounds, or distribution shifts. A model that relies on watermarks or backgrounds may fail when deployment images differ.\n\nRecord data versions, random seeds, preprocessing, architecture, optimizer settings, and evaluation metrics. Reproducibility makes comparisons meaningful and helps diagnose regressions."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "imgcls-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "Why should the test set not be repeatedly used to select hyperparameters?",
+      "correctAnswer": "Repeated tuning to the test set leaks information and makes the final estimate optimistically biased.",
+      "solution": "Use validation data for model selection and keep the test set for final evaluation."
+    },
+    {
+      "id": "imgcls-ex2",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Which output/loss pairing is commonly used for mutually exclusive multiclass classification in PyTorch?",
+      "correctAnswer": "K raw logits with CrossEntropyLoss.",
+      "solution": "CrossEntropyLoss performs the log-softmax and negative log-likelihood calculation internally."
+    },
+    {
+      "id": "imgcls-ex3",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "A classifier makes 85 correct predictions out of 100. What is its accuracy?",
+      "correctAnswer": "85%.",
+      "solution": "Accuracy = correct predictions / total predictions = 85/100."
+    },
+    {
+      "id": "imgcls-ex4",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why can accuracy be misleading for a dataset where 95% of examples belong to one class?",
+      "correctAnswer": "A model can predict the majority class for every example and still achieve 95% accuracy while missing the minority class.",
+      "solution": "Inspect per-class recall and metrics that account for class imbalance."
+    }
+  ],
+  "summary": "A reliable image-classification system requires sound data splits, appropriate preprocessing and loss functions, meaningful metrics, and structured error analysis—not just a neural-network architecture.",
+  "relatedTopics": [
+    "cnns",
+    "pooling",
+    "transfer-learning",
+    "embeddings-representation-learning"
+  ]
+}

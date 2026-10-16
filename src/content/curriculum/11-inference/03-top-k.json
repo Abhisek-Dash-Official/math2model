@@ -1,1 +1,158 @@
-{}
+{
+    "id": "module-11-inference-top-k",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 3,
+    "title": "Top-k Sampling",
+    "slug": "top-k",
+    "href": "/curriculum/11-inference/top-k",
+    "filePath": "content/curriculum/11-inference/03-top-k.json",
+    "description": "Understand Top-k sampling, which restricts next-token selection to the k highest-scoring candidates before sampling from their renormalized probabilities.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature"
+    ],
+    "learningObjectives": [
+        "Explain how Top-k sampling filters a vocabulary distribution.",
+        "Understand the role of the k hyperparameter.",
+        "Implement Top-k sampling with Python and PyTorch.",
+        "Explain the benefits and limitations of a fixed candidate count.",
+        "Understand how Top-k interacts with temperature and softmax.",
+        "Choose and evaluate Top-k settings for different generation tasks."
+    ],
+    "sections": [
+        {
+            "id": "topk-introduction",
+            "title": "1. What Is Top-k Sampling?",
+            "type": "concept",
+            "content": "Top-k sampling restricts the next-token candidates to the k tokens with the highest logits. The system removes all other candidates, converts the remaining scores into a normalized probability distribution, and samples from that reduced distribution. This prevents tokens outside the selected set from being chosen at that decoding step. Top-k is a sampling restriction, not a change to the model's learned parameters."
+        },
+        {
+            "id": "topk-motivation",
+            "title": "2. Why Restrict the Candidate Set?",
+            "type": "concept",
+            "content": "A language model's vocabulary may contain tens of thousands or more tokens. Some tokens receive very small probabilities but can still occasionally be sampled. Top-k sampling limits selection to a set of high-scoring candidates, reducing the chance of choosing low-ranked alternatives. However, whether a candidate is suitable depends on the context. A fixed cutoff can exclude a valid token or retain several weak candidates, so Top-k is a trade-off rather than a universal solution."
+        },
+        {
+            "id": "topk-mathematics",
+            "title": "3. Mathematical Definition",
+            "type": "math",
+            "content": "Let z_i be the logit of token i, and let S_k contain the indices of the k largest logits. Scores outside S_k are excluded before the probabilities are renormalized over the remaining candidates.",
+            "formula": "S_k = TopK(z, k);  P_k(i) = exp(z_i) / Σ_{j ∈ S_k} exp(z_j), for i ∈ S_k",
+            "example": "If the logits are [5, 3, 2, 0] and k = 2, only the first two candidates remain. Their probabilities are proportional to exp(5) and exp(3), and all other candidates receive zero probability at this step."
+        },
+        {
+            "id": "topk-renormalization",
+            "title": "4. Renormalizing the Remaining Probabilities",
+            "type": "concept",
+            "content": "After filtering, the probabilities of the retained candidates must sum to one. The original probabilities of those tokens are therefore renormalized. This means a token's probability after Top-k filtering is generally different from its probability in the original full-vocabulary distribution. Excluded tokens receive zero probability for that selection step, even if they originally had a nonzero probability."
+        },
+        {
+            "id": "topk-hyperparameter",
+            "title": "5. Understanding k",
+            "type": "concept",
+            "content": "The parameter k controls the maximum number of candidates retained. When k is small, sampling is restricted to a narrow set and outputs tend to be more conservative. Larger k allows more alternatives and can increase diversity. If k equals the vocabulary size, Top-k filtering has no effect. Implementations usually require k to be a positive integer no larger than the available vocabulary size."
+        },
+        {
+            "id": "topk-example",
+            "title": "6. Worked Example",
+            "type": "concept",
+            "content": "Suppose the candidate tokens are 'red', 'blue', 'green', 'fast', and 'quiet', with logits [4, 3, 1, 0, -1]. For k = 2, only 'red' and 'blue' remain. Their normalized probabilities are approximately 0.731 and 0.269. The other tokens cannot be selected at this step. For k = 3, 'green' is also retained, creating a broader sampling choice."
+        },
+        {
+            "id": "topk-python",
+            "title": "7. Implementing Top-k Sampling",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef top_k_sample(logits, k=50, temperature=1.0):\n    if temperature <= 0:\n        raise ValueError(\"Temperature must be positive\")\n    if not 1 <= k <= logits.shape[-1]:\n        raise ValueError(\"k must be between 1 and vocabulary size\")\n    scaled = logits / temperature\n    values, indices = torch.topk(scaled, k=k, dim=-1)\n    filtered = torch.full_like(scaled, float(\"-inf\"))\n    filtered.scatter_(-1, indices, values)\n    probabilities = torch.softmax(filtered, dim=-1)\n    return torch.multinomial(probabilities, num_samples=1), probabilities\n\nlogits = torch.tensor([4.0, 3.0, 1.0, 0.0, -1.0])\ntoken_id, probabilities = top_k_sample(logits, k=2)\nprint(token_id)\nprint(probabilities)",
+            "explanation": "The function optionally scales logits by temperature, retains the k highest scores, masks the rest with negative infinity, and samples from the normalized distribution. It operates on a single vocabulary-logit vector or compatible batched tensors. Real generation systems may use optimized kernels and additional checks for non-finite logits."
+        },
+        {
+            "id": "topk-k-one",
+            "title": "8. What Happens When k = 1?",
+            "type": "concept",
+            "content": "When k = 1, only the highest-logit token remains. Sampling from a one-token distribution is equivalent to greedy selection for that step. If the model and execution are deterministic, the selected token is deterministic. Repeating this process produces greedy decoding, although numerical and implementation differences can still affect reproducibility across environments."
+        },
+        {
+            "id": "topk-fixed-limit",
+            "title": "9. The Limitation of a Fixed k",
+            "type": "concept",
+            "content": "Top-k always retains a fixed number of candidates, regardless of how concentrated or diffuse the original probability distribution is. In a context where one token dominates, retaining many alternatives may include unlikely options. In a context where many tokens are plausible, a small k may remove useful candidates. This limitation motivates Top-p sampling, which adapts the candidate set according to cumulative probability."
+        },
+        {
+            "id": "topk-temperature",
+            "title": "10. Combining Top-k with Temperature",
+            "type": "concept",
+            "content": "Temperature and Top-k have different roles. Temperature rescales logits and changes relative probabilities; Top-k determines which candidates remain eligible. A common pipeline scales logits by temperature, retains the highest k logits, normalizes the remaining scores, and samples. Since positive temperature scaling preserves the ranking of finite logits, it does not normally change which tokens enter Top-k, but it changes their probabilities after filtering."
+        },
+        {
+            "id": "topk-diversity",
+            "title": "11. Diversity and Repetition",
+            "type": "concept",
+            "content": "A larger k can provide more variety because additional candidates are eligible for sampling. It does not automatically prevent repetition, improve coherence, or ensure factual accuracy. Repetition also depends on the model, prompt, sampling temperature, sequence history, and any repetition penalties or other decoding controls. Evaluate the complete generation pipeline rather than treating k as the only relevant parameter."
+        },
+        {
+            "id": "topk-performance",
+            "title": "12. Computational Considerations",
+            "type": "concept",
+            "content": "Top-k selection requires identifying high-scoring candidates, which can introduce computational overhead for large vocabularies. Modern frameworks and inference engines often use optimized implementations. The main purpose of Top-k is controlling sampling behavior, not necessarily reducing the cost of the model's neural-network forward pass. The vocabulary logits may still need to be computed before filtering can occur."
+        },
+        {
+            "id": "topk-evaluation",
+            "title": "13. Evaluating Top-k Settings",
+            "type": "concept",
+            "content": "Test multiple k values on the same prompts while keeping the model and other decoding settings fixed. Depending on the task, measure quality, diversity, repetition, format validity, and human preference. For stochastic methods, generate multiple samples per prompt. A suitable k for creative writing may be unsuitable for structured extraction or strict instruction following."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "topk-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does Top-k sampling do to the next-token distribution?",
+            "correctAnswer": "It retains the k highest-scoring tokens and excludes all other candidates before renormalizing and sampling.",
+            "solution": "Top-k creates a restricted candidate set containing at most k tokens. Only these tokens can be selected at that decoding step."
+        },
+        {
+            "id": "topk-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A model has 50,000 vocabulary tokens. If k = 20, how many candidates remain eligible after Top-k filtering?",
+            "correctAnswer": "20 candidates.",
+            "solution": "Top-k retains the 20 tokens with the highest logits, excluding the other 49,980 candidates for that step."
+        },
+        {
+            "id": "topk-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What decoding behavior does Top-k with k = 1 produce?",
+            "correctAnswer": "Greedy next-token selection.",
+            "solution": "Only the highest-logit token remains, so it must be selected."
+        },
+        {
+            "id": "topk-ex-4",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "Why might Top-k with k = 5 be unsuitable for a context where many tokens are plausible?",
+            "correctAnswer": "It may exclude valid alternatives ranked below the top five.",
+            "solution": "Top-k uses a fixed candidate count. If many tokens are reasonable continuations, a small k can remove useful options and reduce diversity."
+        },
+        {
+            "id": "topk-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "How would you compare k = 10 and k = 50 for a creative-writing assistant?",
+            "correctAnswer": "Use a fixed prompt set, generate multiple samples with each setting, and compare quality, diversity, repetition, and user preference.",
+            "solution": "Keep temperature and all other settings fixed so the comparison isolates k as much as possible. Since sampling is stochastic, evaluate multiple outputs instead of relying on one generation."
+        }
+    ],
+    "summary": "Top-k sampling restricts the next-token distribution to the k highest-logit candidates and renormalizes their probabilities before sampling. Small k values limit variation, while larger values permit more alternatives. Top-k is easy to understand and combine with temperature, but its fixed candidate count cannot adapt to the shape of the probability distribution. Evaluation should consider the target task and other decoding parameters.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-temperature",
+        "module-11-inference-top-p",
+        "module-11-inference-beam-search"
+    ]
+}

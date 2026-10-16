@@ -1,1 +1,342 @@
-{}
+{
+    "id": "module-13-computer-vision-diffusion-models",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 6,
+    "title": "Diffusion Models for Vision",
+    "slug": "diffusion-models",
+    "href": "/curriculum/13-computer-vision/diffusion-models",
+    "filePath": "content/curriculum/13-computer-vision/06-diffusion-models.json",
+    "description": "Explore diffusion-based image generation, forward noise processes, reverse denoising, conditioning, latent diffusion, and practical image-generation pipelines.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "cnns",
+        "vision-transformers",
+        "image-embeddings"
+    ],
+    "learningObjectives": [
+        "Explain the probabilistic motivation behind diffusion-based generation.",
+        "Describe the forward noising process and the learned reverse process.",
+        "Understand the roles of beta schedules, cumulative signal retention, and noise prediction.",
+        "Explain why training samples random timesteps.",
+        "Compare predicting noise, clean data, and velocity parameterizations.",
+        "Understand conditional generation and classifier-free guidance.",
+        "Distinguish pixel-space diffusion from latent diffusion.",
+        "Explain the roles of text encoders, denoisers, and decoders in text-to-image systems.",
+        "Understand sampling speed and quality trade-offs.",
+        "Recognize dataset, evaluation, safety, and copyright considerations in generative vision."
+    ],
+    "sections": [
+        {
+            "id": "diffusion-introduction",
+            "title": "The Diffusion Modeling Idea",
+            "type": "concept",
+            "content": "Diffusion models generate data by learning to reverse a gradual corruption process. During the forward process, noise is added to a training image over multiple timesteps until the result becomes approximately Gaussian noise. A neural network learns how to predict or remove that noise at different noise levels. Generation begins with random noise and repeatedly applies the learned reverse process to produce a sample. The central insight is that predicting a small denoising step can be easier to learn than directly mapping random numbers to every detail of a complex image. Diffusion models have become important in image synthesis, editing, inpainting, super-resolution, and conditional visual generation."
+        },
+        {
+            "id": "probabilistic-view",
+            "title": "A Probabilistic View",
+            "type": "concept",
+            "content": "Let x0 represent a clean training image and xt represent the image after t corruption steps. The forward process is designed so that sampling xt becomes progressively less dependent on the original image and more dominated by noise. The reverse model estimates a distribution over a less noisy image given the current noisy image and timestep. A chain of learned transitions turns a simple starting distribution into a complicated data distribution. The model is not normally given the target image at inference time; the clean image is available during training to construct noisy examples and supervise denoising. Generation quality depends on both the learned denoising network and the numerical sampling procedure."
+        },
+        {
+            "id": "forward-process",
+            "title": "The Forward Noising Process",
+            "type": "math",
+            "content": "A common DDPM forward process adds Gaussian noise according to a variance schedule βt. Define αt = 1 - βt and the cumulative product ᾱt = Π from s=1 to t of αs. The noisy sample at timestep t can be drawn directly from the clean image without simulating all earlier steps. The coefficient √ᾱt controls the retained clean signal, while √(1-ᾱt) controls the injected noise. At early timesteps the image remains recognizable; at late timesteps the noise dominates. The schedule determines how quickly information is removed and affects training and sampling behavior.",
+            "formula": "q(xt | x0) = N(√ᾱt x0, (1 - ᾱt)I); xt = √ᾱt x0 + √(1 - ᾱt) ε, ε ~ N(0, I)",
+            "example": "If ᾱt is close to one, most of the original signal remains. If ᾱt is close to zero, xt is approximately standard Gaussian noise, independent of the original image."
+        },
+        {
+            "id": "schedule",
+            "title": "Noise Schedules",
+            "type": "concept",
+            "content": "The variance schedule determines the noise level associated with each timestep. A linear schedule increases βt over time, while cosine-style schedules are designed to control the evolution of cumulative signal retention more smoothly. The schedule should allow the model to learn denoising across a useful range of signal-to-noise ratios. If too much signal is destroyed too early, or if late timesteps remain too clean, the learning problem can become poorly balanced. Different model families use different schedules and parameterizations. Training and sampling must use compatible timestep conventions and noise definitions."
+        },
+        {
+            "id": "signal-noise",
+            "title": "Signal-to-Noise Ratio",
+            "type": "math",
+            "content": "Signal-to-noise ratio (SNR) describes the relative strength of the retained clean signal and the added noise. For the common variance-preserving parameterization, the signal variance scales with ᾱt and the noise variance scales with 1 - ᾱt. SNR therefore falls as the forward process adds more noise. The relationship between SNR and timestep is often more informative than timestep alone because different schedules assign different noise levels to the same integer timestep. Training objectives may weight different noise levels differently to improve sample quality or optimization.",
+            "formula": "SNR(t) = ᾱt / (1 - ᾱt)",
+            "example": "If ᾱt = 0.8, SNR = 0.8/0.2 = 4. If ᾱt = 0.1, SNR = 0.1/0.9 ≈ 0.111."
+        },
+        {
+            "id": "reverse-process",
+            "title": "Learning the Reverse Process",
+            "type": "concept",
+            "content": "The reverse process starts from a noisy sample and predicts a distribution for a slightly cleaner sample at the previous timestep. A neural network receives the current noisy image and a representation of the timestep. Conditional systems also receive text, class labels, image features, or other context. The network estimates noise or another parameterization from which a denoising transition can be computed. Repeating this operation progressively reveals large-scale structure, shapes, textures, and details. The reverse process is stochastic in many samplers, although deterministic sampling procedures also exist. Training a denoiser and choosing a sampler are related but distinct design decisions."
+        },
+        {
+            "id": "noise-prediction",
+            "title": "Noise-Prediction Training Objective",
+            "type": "math",
+            "content": "A common training objective samples a clean image, chooses a random timestep, samples Gaussian noise, constructs the corresponding noisy image, and asks the model to predict the injected noise. The target noise is known exactly because it was sampled by the training procedure. Mean squared error provides a simple supervision signal. The network learns a shared denoising function across timesteps instead of training a separate model for every noise level. Practical systems may use weighting, alternative parameterizations, perceptual objectives, or other refinements, but noise prediction remains a foundational formulation.",
+            "formula": "L_simple = E_x0,t,ε [ || ε - εθ(xt, t) ||² ]",
+            "example": "The training target is the sampled ε, not a new noise sample and not the original image itself. The network receives xt and t and predicts the noise component used to construct xt."
+        },
+        {
+            "id": "random-timesteps",
+            "title": "Why Sample Random Timesteps?",
+            "type": "concept",
+            "content": "Training at randomly selected timesteps exposes the denoiser to many noise levels. Some examples are nearly clean, while others contain little recognizable image structure. The model learns how to operate across the full denoising trajectory. Uniform sampling over integer timesteps is common, but some methods change timestep probabilities or apply loss weights to emphasize particular signal-to-noise regions. Training only on a narrow range of timesteps would leave the model poorly supervised for the remaining reverse trajectory. The timestep is often embedded with sinusoidal features or a learned representation and injected into multiple network blocks."
+        },
+        {
+            "id": "time-embedding",
+            "title": "Timestep Embeddings",
+            "type": "concept",
+            "content": "The same noisy image values can have different meanings at different noise levels, so the denoiser must know the timestep or equivalent noise-level information. Sinusoidal embeddings represent a scalar timestep with multiple frequencies. A small neural network transforms this embedding before it is added to or used to modulate intermediate feature representations. Some architectures use adaptive normalization to condition blocks on time and text features. Correct timestep scaling is important: a model trained with one range or convention may behave poorly when inference uses incompatible values."
+        },
+        {
+            "id": "unet-denoiser",
+            "title": "The U-Net Denoiser",
+            "type": "concept",
+            "content": "Many pixel-space diffusion models use a U-Net-style denoiser. The encoder path reduces spatial resolution and expands feature channels, the middle blocks process high-level representations, and the decoder restores resolution. Skip connections combine features across scales. Residual blocks and attention layers help the network learn both local image structure and longer-range relationships. Timestep embeddings condition the residual blocks, and text-conditioned models inject contextual information through cross-attention or related mechanisms. The output typically has the same spatial dimensions as the noisy image and predicts noise, clean data, or another training target."
+        },
+        {
+            "id": "prediction-parameterizations",
+            "title": "Noise, Sample, and Velocity Prediction",
+            "type": "concept",
+            "content": "Diffusion systems may predict the noise ε, the clean sample x0, or a velocity-like target often written v. These targets are related by the forward-process coefficients, so one can be converted into another when the relevant timestep and noisy sample are known. Noise prediction provides a direct target based on sampled corruption. Clean-sample prediction directly estimates the original data, while velocity prediction can offer useful optimization behavior across different noise levels. The best parameterization depends on the schedule, weighting, architecture, and training setup. A checkpoint and sampler must agree on the intended parameterization."
+        },
+        {
+            "id": "velocity-formula",
+            "title": "Velocity Parameterization",
+            "type": "math",
+            "content": "For a common variance-preserving setup, write xt = √ᾱt x0 + √(1-ᾱt) ε. A velocity target can be defined as vt = √ᾱt ε - √(1-ᾱt) x0. This target mixes the clean signal and noise in a timestep-dependent way. Given xt and a predicted velocity, the corresponding clean-sample and noise estimates can be recovered using the same coefficients. Exact notation varies across implementations, so follow the convention used by the model rather than assuming all systems define velocity identically.",
+            "formula": "vt = √ᾱt ε - √(1 - ᾱt) x0",
+            "example": "Velocity prediction does not mean the model estimates physical motion. It is a mathematical parameterization of the denoising target."
+        },
+        {
+            "id": "sampling",
+            "title": "Sampling from Noise",
+            "type": "concept",
+            "content": "At inference, a sample begins with Gaussian noise drawn at the model's expected initial noise level. A sampler repeatedly evaluates the denoiser and applies a transition rule to obtain the next sample. The number of denoiser evaluations strongly affects latency. Using fewer steps can make generation faster, but naive step reduction may damage detail, diversity, or prompt alignment. Different samplers approximate the learned reverse dynamics in different ways. Some introduce stochastic noise at each step, while others follow a more deterministic trajectory. Sampling settings should be evaluated for the intended resolution, conditioning strength, and hardware budget."
+        },
+        {
+            "id": "ddpm-ddim",
+            "title": "DDPM and DDIM Sampling",
+            "type": "concept",
+            "content": "DDPM sampling follows a probabilistic reverse transition and commonly uses a relatively long sequence of denoising steps. DDIM provides a family of alternative sampling trajectories that can reduce the number of steps and, under common settings, produce deterministic outputs for a fixed initial noise and condition. The methods differ in their transition rules and assumptions; DDIM is not simply a faster implementation of an identical stochastic trajectory. In practice, sampler behavior depends on the model's training schedule and the selected inference configuration. A model should be evaluated across several step counts before choosing a speed-quality operating point."
+        },
+        {
+            "id": "classifier-guidance",
+            "title": "Classifier Guidance",
+            "type": "concept",
+            "content": "Classifier guidance uses a classifier trained to recognize a condition from noisy samples. The gradient of the classifier's log probability with respect to the noisy image modifies the reverse sampling direction toward samples that more strongly match the requested condition. This can improve class alignment, but it requires a compatible classifier and additional gradient computation. Strong guidance may reduce diversity or create unnatural artifacts. The classifier must also remain meaningful at the noise levels used by the diffusion model. Classifier guidance illustrates how gradients from a separate model can steer generative sampling."
+        },
+        {
+            "id": "classifier-free-guidance",
+            "title": "Classifier-Free Guidance",
+            "type": "math",
+            "content": "Classifier-free guidance (CFG) combines conditional and unconditional denoiser predictions. During training, a conditional model is sometimes taught to operate without its condition by randomly dropping the condition. During sampling, the two predictions are combined to increase the influence of the prompt or class label. Guidance scale controls the strength of this extrapolation. Larger values may improve condition adherence but can reduce diversity and cause oversaturated or distorted outputs. The exact sign and scale convention varies by implementation, so use the convention documented by the selected pipeline.",
+            "formula": "ε_guided = ε_uncond + s(ε_cond - ε_uncond)",
+            "example": "When s = 1, the expression equals the conditional prediction. Larger s values move farther from the unconditional prediction in the direction of the conditional one."
+        },
+        {
+            "id": "text-conditioning",
+            "title": "Text Conditioning",
+            "type": "concept",
+            "content": "Text-to-image systems encode a prompt into a representation that the denoiser can use. A text encoder converts tokens into contextual vectors, and cross-attention allows image features to attend to those vectors. This mechanism provides a flexible way to associate words, attributes, and relationships with spatial visual features. Prompt conditioning is not perfect symbolic reasoning: models may confuse counting, unusual spatial relations, negation, or rare concepts. A longer prompt is not automatically better, and the text encoder's vocabulary and training distribution constrain what the system can represent. Prompt adherence should be evaluated rather than assumed."
+        },
+        {
+            "id": "latent-diffusion",
+            "title": "Latent Diffusion Models",
+            "type": "concept",
+            "content": "Pixel-space diffusion operates directly on image tensors, which can be expensive at high resolution. Latent diffusion first uses a learned autoencoder to map images into a lower-resolution latent representation. The diffusion model operates in latent space, and a decoder converts the final latent into pixels. This reduces the spatial computation required for repeated denoising. The trade-off is that the autoencoder may discard fine details or introduce reconstruction artifacts. Latent representations also have their own scale and distribution, which the diffusion model must handle consistently. Many text-to-image systems use this general design."
+        },
+        {
+            "id": "latent-tradeoff",
+            "title": "Pixel Space Versus Latent Space",
+            "type": "concept",
+            "content": "Pixel-space models represent every pixel channel throughout the denoising process. Latent-space models operate on a compressed representation whose spatial dimensions are usually smaller. For example, an autoencoder may downsample an image by a fixed factor, reducing the number of spatial positions substantially. This makes repeated denoising more efficient, but quality depends on the latent representation's capacity and decoder fidelity. Latent diffusion is not always preferable: tasks requiring exact pixel fidelity, specialized scientific measurements, or precise reconstruction may need different designs and evaluation criteria."
+        },
+        {
+            "id": "generation-code",
+            "title": "Generating an Image with a Diffusion Pipeline",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom diffusers import DiffusionPipeline\n\nmodel_id = \"stable-diffusion-v1-5/stable-diffusion-v1-5\"\ndevice = \"cuda\" if torch.cuda.is_available() else \"cpu\"\ndtype = torch.float16 if device == \"cuda\" else torch.float32\npipe = DiffusionPipeline.from_pretrained(model_id, torch_dtype=dtype).to(device)\nimage = pipe(\"A small red fox standing in a snowy forest, natural winter light\", num_inference_steps=25, guidance_scale=6.5, generator=torch.Generator(device=device).manual_seed(42)).images[0]\nimage.save(\"generated.png\")",
+            "explanation": "This example demonstrates the structure of a text-to-image inference call using the Diffusers library. Model identifiers, required access, supported precision, and pipeline classes can change, so verify the model card and installed library documentation. A fixed seed helps reproduce the initial random state but does not guarantee identical output across different hardware, library versions, or numerical kernels. Check model licensing and safety requirements before using generated images."
+        },
+        {
+            "id": "reproducibility",
+            "title": "Seeds and Reproducibility",
+            "type": "concept",
+            "content": "The random seed determines the initial random stream used by the generator. Reusing a seed and prompt can make experiments easier to compare, but it does not guarantee bit-for-bit reproducibility across software versions, hardware, precision modes, or sampler implementations. To reproduce an experiment, record the model checkpoint, prompt, negative prompt if used, seed, sampler, step count, guidance scale, resolution, scheduler configuration, library versions, and relevant hardware. For scientific comparisons, generate multiple samples because a single favorable output can hide substantial variance."
+        },
+        {
+            "id": "conditioning-modes",
+            "title": "Beyond Text-to-Image",
+            "type": "concept",
+            "content": "Diffusion models can be conditioned on more than text. Image-to-image generation begins with an input image that is partially noised before denoising under a prompt or other condition. Inpainting modifies selected regions while preserving context outside a mask. Outpainting extends the image beyond its original boundaries. Super-resolution conditions generation on a lower-resolution image. Control signals such as edge maps, depth maps, poses, or segmentation maps can guide spatial structure. Each condition changes the inference workflow and the balance between preserving input information and allowing new content."
+        },
+        {
+            "id": "inpainting",
+            "title": "Inpainting and Masked Editing",
+            "type": "concept",
+            "content": "Inpainting replaces or synthesizes content in a selected region while considering surrounding pixels. A mask identifies the editable region, though some pipelines define white and black regions differently. The system may noise the latent representation, denoise it under the prompt, and blend or constrain unmasked regions. Mask boundaries can reveal seams when the generated content does not match local lighting, texture, or geometry. Correct preprocessing of masks, suitable padding, and careful denoising strength are important. Editing results should be inspected for changes outside the intended region, particularly in applications requiring preservation of original content."
+        },
+        {
+            "id": "training-cost",
+            "title": "Training Costs and Efficiency",
+            "type": "concept",
+            "content": "Training diffusion models can require substantial compute because each example includes a large neural-network evaluation and models must learn many noise levels. Common efficiency techniques include mixed precision, gradient accumulation, memory-efficient attention, latent-space training, and parameter-efficient fine-tuning. These methods address different bottlenecks. Gradient accumulation increases the effective batch size without holding all examples in memory at once, while mixed precision can reduce memory use and improve accelerator throughput. Efficiency changes must preserve numerical stability and be validated for quality. Inference optimization is a separate problem from training optimization."
+        },
+        {
+            "id": "lora",
+            "title": "Parameter-Efficient Adaptation",
+            "type": "concept",
+            "content": "Low-Rank Adaptation (LoRA) adds trainable low-rank update matrices to selected model layers while keeping most original weights frozen. It can reduce the number of trainable parameters needed to adapt a large generative model to a style, subject, or domain. LoRA does not remove the need for representative data, careful captioning, or evaluation. A poorly prepared dataset can cause overfitting or unwanted associations. Compatibility between the base model, adapter architecture, and inference pipeline matters. The adapter's license and the base model's terms both affect permissible use."
+        },
+        {
+            "id": "evaluation",
+            "title": "Evaluating Generated Images",
+            "type": "concept",
+            "content": "Generative evaluation is difficult because image quality, diversity, prompt adherence, realism, and usefulness are distinct goals. Fréchet Inception Distance (FID) compares feature distributions of generated and real images, but its value depends on the dataset, feature extractor, sample count, and preprocessing. CLIP-based similarity measures compare image and text embeddings, yet they may reward superficial alignment rather than full correctness. Human evaluation can assess composition and utility but requires a clear protocol and controls against bias. No single metric captures every dimension, and comparisons should use consistent settings and sufficient samples."
+        },
+        {
+            "id": "prompt-adherence",
+            "title": "Prompt Adherence and Counting",
+            "type": "concept",
+            "content": "Text-to-image systems can produce visually plausible outputs that fail explicit prompt constraints. Common failures include incorrect object counts, swapped attributes, malformed text, impossible geometry, and incorrect spatial relationships. These failures occur partly because models learn statistical visual associations rather than executing a symbolic specification. Evaluation prompts should cover simple and compositional instructions, including rare combinations and negative constraints. When exact counts, measurements, or safety-critical details matter, generation should be combined with structured validation or human review instead of treating the prompt as a guarantee."
+        },
+        {
+            "id": "bias-and-data",
+            "title": "Dataset Bias and Training Data",
+            "type": "concept",
+            "content": "Generative models reflect patterns and imbalances in their training data. They may overrepresent some visual cultures, occupations, body types, environments, or aesthetic conventions while underrepresenting others. Models may also memorize distinctive training examples, particularly when data is duplicated or a concept is rare. Data governance includes provenance, consent where required, licensing review, deduplication, privacy safeguards, and documentation of known limitations. Fine-tuning can intensify bias when the dataset is small or narrowly curated. Technical evaluation should be paired with a review of the model's data and intended use."
+        },
+        {
+            "id": "copyright-and-safety",
+            "title": "Copyright, Privacy, and Safe Use",
+            "type": "concept",
+            "content": "Image-generation systems raise questions about copyrighted works, recognizable individuals, privacy, impersonation, and misleading synthetic media. Legal rules and model terms vary across jurisdictions and providers. Before deployment, review training and fine-tuning data rights, output-use restrictions, privacy obligations, and applicable law. Avoid using generation to create deceptive depictions of real people or to bypass consent. Where synthetic media could be mistaken for authentic evidence, consider provenance records, labeling, and appropriate disclosure. These controls do not guarantee that every misuse can be prevented, but they reduce avoidable risks."
+        },
+        {
+            "id": "failure-analysis",
+            "title": "Diagnosing Diffusion Failures",
+            "type": "concept",
+            "content": "When generation fails, isolate whether the issue arises from the prompt, conditioning, checkpoint, sampler, or input preprocessing. Try a simpler prompt, verify image dimensions and mask semantics, check the model's expected prediction parameterization, and inspect intermediate outputs when the pipeline supports it. Compare several seeds before concluding that a model cannot represent a concept. If details are consistently malformed, consider whether the model's training distribution or resolution is suitable. Change one setting at a time and keep a record of results to avoid attributing an improvement to the wrong factor."
+        },
+        {
+            "id": "deployment",
+            "title": "Serving Generative Models",
+            "type": "concept",
+            "content": "Production generation systems must manage model loading, GPU memory, queueing, timeouts, cancellation, safety checks, and output storage. High-resolution generation can consume substantial memory and take much longer than ordinary inference. Batching requests may improve throughput but can complicate latency and memory management. Model downloads and custom code should come from trusted sources, and access to generated outputs should follow privacy and retention policies. Track failure rates, latency, compute cost, and user feedback. A useful deployment includes clear limits, fallback behavior, and documentation of model capabilities."
+        },
+        {
+            "id": "diffusion-summary",
+            "title": "End-to-End Diffusion Workflow",
+            "type": "concept",
+            "content": "Diffusion models learn to reverse a controlled noising process. Training constructs noisy samples from clean data and supervises a neural network to predict noise or an equivalent target across timesteps. Generation starts from noise and applies a sequence of reverse updates, optionally conditioned on text, images, masks, or structural signals. Noise schedules, prediction parameterization, samplers, and guidance settings jointly affect quality and speed. Latent diffusion reduces repeated computation by denoising compressed representations. Reliable use requires reproducible settings, appropriate evaluation, data governance, and careful attention to prompt failures, bias, privacy, and copyright."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "diff-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What happens during the forward process of a diffusion model?",
+            "correctAnswer": "Noise is gradually added to clean training samples until they approach a simple noise distribution.",
+            "solution": "The forward process is usually predefined and used to construct noisy training inputs. The neural network learns the reverse denoising behavior."
+        },
+        {
+            "id": "diff-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If ᾱt = 0.9, what is the coefficient multiplying the sampled noise in the common forward equation?",
+            "correctAnswer": "√0.1, approximately 0.316.",
+            "solution": "The noise coefficient is √(1 - ᾱt) = √(1 - 0.9) = √0.1 ≈ 0.316."
+        },
+        {
+            "id": "diff-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Compute SNR when ᾱt = 0.75.",
+            "correctAnswer": "3.",
+            "solution": "SNR = ᾱt/(1 - ᾱt) = 0.75/0.25 = 3."
+        },
+        {
+            "id": "diff-ex-4",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is the training timestep provided to a denoiser?",
+            "correctAnswer": "It tells the model the noise level so it can apply the appropriate denoising behavior.",
+            "solution": "A noisy image with a high noise level requires different reconstruction behavior from one that is nearly clean. The timestep or noise-level embedding provides that information."
+        },
+        {
+            "id": "diff-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is classifier-free guidance?",
+            "correctAnswer": "A method that combines conditional and unconditional model predictions to control how strongly generation follows a condition.",
+            "solution": "The guidance scale controls extrapolation from the unconditional prediction toward the conditional one. Stronger guidance can improve adherence but may reduce diversity or cause artifacts."
+        },
+        {
+            "id": "diff-ex-6",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why can latent diffusion be more computationally efficient than pixel-space diffusion?",
+            "correctAnswer": "It performs repeated denoising in a compressed latent representation with fewer spatial positions.",
+            "solution": "A learned encoder reduces image dimensions before diffusion, and a decoder reconstructs the final image. This reduces repeated computation at the cost of possible compression artifacts."
+        },
+        {
+            "id": "diff-ex-7",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Does a fixed random seed guarantee identical generated images on all hardware and software versions?",
+            "correctAnswer": "No.",
+            "solution": "Different numerical kernels, libraries, precision settings, model revisions, and sampler implementations can produce different results even when the seed is unchanged."
+        },
+        {
+            "id": "diff-ex-8",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You need to reduce generation latency by half. What should you test before changing the model architecture?",
+            "correctAnswer": "Benchmark fewer sampling steps, an appropriate faster sampler, optimized attention, precision changes, and latent or resolution settings where supported.",
+            "solution": "Measure the current end-to-end pipeline first, identify the bottleneck, and evaluate speed-quality trade-offs for each intervention. Fewer steps can reduce latency but may damage quality."
+        },
+        {
+            "id": "diff-ex-9",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A text-to-image model often produces the wrong number of objects. How would you evaluate and mitigate this limitation?",
+            "correctAnswer": "Create a controlled prompt set with varying counts, measure count accuracy, test prompt and model alternatives, and use structured validation or human review when exact counts matter.",
+            "solution": "Generative models do not guarantee symbolic counting. Testing multiple seeds and prompts helps characterize failure rates. If exact counts are required, use a workflow that verifies the generated result rather than trusting prompt adherence."
+        },
+        {
+            "id": "diff-ex-10",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the main trade-off when increasing classifier-free guidance scale?",
+            "correctAnswer": "Prompt adherence may improve, but diversity can decrease and visual artifacts may increase.",
+            "solution": "Larger guidance scales push predictions more strongly toward the conditional output. Excessive guidance can distort textures, colors, and composition."
+        },
+        {
+            "id": "diff-ex-11",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How would you compare two image-generation models fairly?",
+            "correctAnswer": "Use the same prompt set, comparable sampling budgets and resolutions, multiple seeds, consistent evaluation metrics, and a documented human-rating protocol if human judgment is used.",
+            "solution": "Generative results vary across seeds and settings. Standardized prompts and compute budgets reduce confounding, while multiple quantitative and qualitative measures capture different aspects of quality."
+        },
+        {
+            "id": "diff-ex-12",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "Why should the license and provenance of a generative model be reviewed before commercial deployment?",
+            "correctAnswer": "The model, its training data, and its outputs may be subject to different usage restrictions, privacy obligations, and legal risks.",
+            "solution": "A technically capable model is not automatically suitable for every use. Review the base model and adapter terms, data rights, privacy requirements, and applicable law before deployment."
+        }
+    ],
+    "summary": "Diffusion models learn to reverse a gradual noising process. During training, clean images are corrupted at random timesteps and a denoiser learns to predict noise or an equivalent target. During generation, sampling repeatedly updates an initial noise tensor, optionally guided by text or other conditions. Noise schedules, prediction parameterizations, samplers, and guidance strength determine the balance between speed and quality. Latent diffusion reduces computation by operating in compressed representations. Practical use requires reproducible settings, suitable evaluation, and careful treatment of bias, privacy, copyright, and model limitations.",
+    "relatedTopics": [
+        "cnns",
+        "vision-transformers",
+        "image-embeddings",
+        "clip-style-models",
+        "multimodal-models"
+    ]
+}

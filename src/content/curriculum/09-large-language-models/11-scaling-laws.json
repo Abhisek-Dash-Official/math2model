@@ -1,1 +1,174 @@
-{}
+{
+    "id": "module-09-large-language-models-scaling-laws",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 11,
+    "title": "Neural Scaling Laws (Chinchilla, Kaplan)",
+    "slug": "scaling-laws",
+    "href": "/curriculum/09-large-language-models/scaling-laws",
+    "filePath": "content/curriculum/09-large-language-models/11-scaling-laws.json",
+    "description": "Explore empirical neural scaling laws, compute-optimal model and dataset allocation, Kaplan-style scaling relationships, Chinchilla findings, power-law loss curves, and the practical limits of extrapolating model performance.",
+    "difficulty": "advanced",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-distributed-training"
+    ],
+    "learningObjectives": [
+        "Explain what neural scaling laws measure.",
+        "Interpret power-law relationships between compute, model size, data, and loss.",
+        "Understand the basic ideas behind Kaplan-style scaling results.",
+        "Explain the Chinchilla compute-optimal training result.",
+        "Distinguish parameter scaling from training-token scaling.",
+        "Understand how compute budgets constrain model and dataset choices.",
+        "Interpret fitted scaling curves and their uncertainty.",
+        "Recognize data quality, architecture, and evaluation limitations.",
+        "Use simple Python calculations to compare hypothetical scaling allocations.",
+        "Understand why scaling laws are useful for planning but do not guarantee capability."
+    ],
+    "sections": [
+        {
+            "id": "scaling-laws-introduction",
+            "title": "1. What Are Neural Scaling Laws?",
+            "type": "concept",
+            "content": "Neural scaling laws are empirical relationships that describe how model performance changes as training resources and model scale change. Researchers study variables such as parameter count, number of training tokens, compute budget, and validation loss across many training runs.\n\nA recurring observation is that loss often follows a smooth power-law-like trend over a useful range of model sizes and training budgets. These trends help estimate the returns from investing in more parameters, more data, or more computation. They can also help identify when a model is undertrained relative to its size.\n\nScaling laws are empirical approximations, not universal physical laws. Their fitted coefficients and exponents depend on the model family, dataset, tokenizer, training procedure, evaluation distribution, and range of scales studied. Extrapolating far beyond the measured range can be misleading."
+        },
+        {
+            "id": "power-law-form",
+            "title": "2. Power-Law Relationships",
+            "type": "math",
+            "content": "A common scaling relationship models excess loss above an irreducible floor as a power law. One simplified form is L(N) = L_infinity + A * N^(-alpha), where N represents model parameter count, A is a positive coefficient, alpha is a positive exponent, and L_infinity is the limiting loss floor under the assumed setting.\n\nAs N increases, the term A * N^(-alpha) decreases. This means larger models tend to reduce the modeled excess loss, but with diminishing returns when alpha is positive and the curve follows this form. Similar relationships can be fitted against training-token count or compute budget.\n\nTaking logarithms of the excess loss gives log(L - L_infinity) = log(A) - alpha * log(N). If the assumptions hold and the floor is known or estimated, a log-log plot can reveal an approximately linear relationship. Estimating the loss floor is difficult and can strongly affect the fitted exponent.",
+            "formula": "L(N) = L_infinity + A * N^(-alpha)",
+            "example": "If the excess-loss term is A * N^(-0.1), increasing N by a factor of 10 multiplies that term by 10^(-0.1), approximately 0.794. The modeled excess loss decreases by about 20.6%, assuming the same fitted relationship remains valid."
+        },
+        {
+            "id": "compute-budget",
+            "title": "3. Training Compute and Model Size",
+            "type": "concept",
+            "content": "Training compute is commonly approximated in floating-point operations, or FLOPs. A simplified dense Transformer estimate for training can be proportional to the number of model parameters multiplied by the number of training tokens. A frequently used rough approximation is C approximately equal to 6ND, where N is the number of parameters and D is the number of training tokens.\n\nThe factor six is a rule of thumb associated with approximate forward and backward computation for dense parameterized operations. Actual compute depends on architecture, attention implementation, sequence length, vocabulary operations, activation recomputation, hardware utilization, and the exact FLOP-counting convention. It should not be treated as an exact cost model for every model.\n\nThe relationship highlights a fundamental allocation problem: for a fixed compute budget, one can train a larger model on fewer tokens or a smaller model on more tokens. Which allocation yields the lowest loss depends on the scaling behavior and whether the model is trained sufficiently."
+        },
+        {
+            "id": "compute-formula",
+            "title": "4. A Simple Compute Estimate",
+            "type": "math",
+            "content": "Using C approximately equal to 6ND, a hypothetical model with 10 billion parameters trained on 200 billion tokens has an estimated dense training compute of 6 * 10^10 * 2 * 10^11 = 1.2 * 10^23 FLOPs. This is a rough analytical estimate, not a benchmark of actual hardware execution time.\n\nThe same compute budget can support different combinations of model parameters and tokens. For example, doubling N while halving D leaves the simple product ND unchanged. But equal estimated compute does not imply equal final performance because the allocation may change how well the model and dataset are matched.\n\nWhen estimating a real project, separate theoretical FLOPs from wall-clock cost. The wall-clock duration also depends on sustained hardware throughput, parallel efficiency, communication overhead, checkpointing, data preparation, and idle time.",
+            "formula": "C approximately equals 6 * N * D",
+            "example": "For N = 10,000,000,000 parameters and D = 200,000,000,000 tokens, C is approximately 1.2e23 FLOPs under the simplified estimate."
+        },
+        {
+            "id": "kaplan-scaling",
+            "title": "5. Kaplan-Style Scaling Results",
+            "type": "concept",
+            "content": "Kaplan and collaborators reported influential empirical scaling relationships for language models, studying how loss changed with model size, dataset size, and training compute. Their work helped establish the idea that model performance can often be predicted approximately from smooth trends across scales.\n\nOne practical implication of early scaling analyses was that increasing model size could yield substantial improvements, leading to strong interest in scaling parameters. These results influenced how researchers thought about compute allocation and the relative value of larger models versus more training data.\n\nLater work refined the compute-optimal picture and highlighted the importance of training-token quantity. Scaling conclusions should therefore be understood in their historical and experimental context. A recommendation fitted to one family of models and data should not automatically be applied unchanged to every architecture or training regime."
+        },
+        {
+            "id": "chinchilla-findings",
+            "title": "6. Chinchilla and Compute-Optimal Training",
+            "type": "concept",
+            "content": "The Chinchilla study by Hoffmann and collaborators examined compute-optimal language-model training and argued that many prominent models were undertrained relative to their parameter counts. Under the study's compute and data assumptions, a smaller model trained on substantially more tokens could outperform a larger model trained on fewer tokens at a similar training-compute budget.\n\nThis result shifted attention from parameter count alone toward the relationship between model size and training data. It showed that allocating compute to additional training tokens can be highly valuable when a model has not been trained on enough data. The optimal balance is not determined by parameter count alone.\n\nChinchilla-style guidance is a useful reference point rather than a universal constant. The best allocation depends on dataset quality, data repetition, model architecture, training objective, inference budget, desired capabilities, and the available compute. Models intended for long-term deployment may also be optimized for inference cost rather than training loss alone."
+        },
+        {
+            "id": "parameter-token-allocation",
+            "title": "7. Parameters Versus Training Tokens",
+            "type": "math",
+            "content": "Let N denote model parameters and D denote training tokens. A fixed compute budget constrains their product under the simplified C approximately equal to 6ND model. If N increases, D must decrease to maintain the same estimated compute, and vice versa.\n\nA model with many parameters and relatively few tokens may be undertrained: it has substantial capacity but insufficient training exposure to use that capacity effectively. A smaller model trained on more tokens can sometimes achieve lower loss at the same compute cost. However, the best choice also depends on data quality and the target distribution.\n\nThe number of tokens is not the same as the number of documents or examples. Token count depends on tokenizer design, sequence packing, filtering, and data composition. Duplicate or low-quality tokens may provide less useful information than diverse, high-quality tokens, so token count alone does not measure effective information content.",
+            "example": "Under a fixed product ND, doubling parameter count requires halving training-token count. This preserves the simplified compute estimate, but it does not prove the two configurations will have equal validation loss."
+        },
+        {
+            "id": "scaling-exponents",
+            "title": "8. Interpreting Scaling Exponents",
+            "type": "math",
+            "content": "A scaling exponent describes how quickly the modeled excess loss decreases as a scale variable increases. In L(N) = L_infinity + A * N^(-alpha), a larger positive alpha means the excess loss decreases more quickly with parameter count under the fitted model.\n\nExponents are estimated from finite experiments and can be sensitive to the range of model sizes, uncertainty in the loss floor, data quality, and training completeness. A single fitted exponent should not be treated as a guaranteed prediction for a new architecture or an order of magnitude beyond the measured range.\n\nLog-log plots can help visualize multiplicative relationships. If the relationship is approximately a power law, the excess-loss points may align near a straight line. Deviations can indicate a change in regime, data bottlenecks, architecture differences, or measurement noise."
+        },
+        {
+            "id": "scaling-law-python",
+            "title": "9. Fitting a Simple Scaling Curve",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\nimport matplotlib.pyplot as plt\n\nparameter_counts = np.array([1e7, 3e7, 1e8, 3e8, 1e9])\nlosses = np.array([3.8, 3.3, 2.9, 2.6, 2.35])\nloss_floor = 1.8\n\nx = np.log(parameter_counts)\ny = np.log(losses - loss_floor)\nslope, intercept = np.polyfit(x, y, 1)\nalpha = -slope\nA = np.exp(intercept)\npredicted = loss_floor + A * parameter_counts ** (-alpha)\n\nprint(\"Estimated exponent:\", alpha)\nprint(\"Predicted losses:\", predicted)",
+            "explanation": "This example fits the simplified power law after assuming a loss floor. The measurements are illustrative rather than experimental results. Real analyses should quantify uncertainty, compare alternative models, and avoid treating the assumed floor as known unless the evidence supports it."
+        },
+        {
+            "id": "data-quality-and-scaling",
+            "title": "10. Data Quality and Effective Scaling",
+            "type": "concept",
+            "content": "More tokens do not always mean proportionally more useful training information. Duplicate content, noisy text, low-quality synthetic examples, and distribution mismatch can reduce the benefit of additional training data. Data filtering and deduplication can therefore change the relationship between nominal token count and observed performance.\n\nA model trained on a carefully curated corpus may perform differently from one trained on a much larger but noisier corpus. The result depends on the evaluation distribution and the skills being measured. Different domains may benefit from different data mixtures, so a single global token count can hide important differences.\n\nData quality also interacts with model size. A larger model may have more capacity to exploit useful patterns, but it can also memorize repeated or sensitive material. Scaling experiments should track dataset composition, duplication, tokenization, filtering, and validation behavior rather than considering token count in isolation."
+        },
+        {
+            "id": "compute-optimality",
+            "title": "11. What Does Compute-Optimal Mean?",
+            "type": "concept",
+            "content": "Compute-optimal training means choosing a model size and training-token allocation that optimizes a specified objective under a fixed compute budget and a set of assumptions. It does not mean the model is optimal for every downstream use case.\n\nIf the goal is to minimize pretraining loss under a training-compute budget, one allocation may be preferred. If the goal is to minimize inference cost, meet a latency requirement, or fit a limited deployment memory budget, a different model size may be more appropriate. Fine-tuning cost and expected usage can also influence the decision.\n\nA compute-optimal recipe must specify what counts as compute, which loss or metric is optimized, how the dataset is defined, and what model families are considered. Without these details, the term can be used too loosely to compare unlike training runs."
+        },
+        {
+            "id": "limitations-of-scaling-laws",
+            "title": "12. Limitations and Extrapolation",
+            "type": "concept",
+            "content": "Scaling laws summarize regularities observed across measured experiments. They can be useful for budgeting and experimental design, but extrapolation introduces uncertainty. An estimated curve may fail when model architecture changes, data quality improves, context length expands, training objectives change, or a new capability emerges only under different conditions.\n\nLower pretraining loss does not automatically guarantee better reasoning, factuality, safety, calibration, or instruction following. These properties require their own evaluations. A scaling curve for average next-token prediction is not a complete description of a deployed model's behavior.\n\nSmall experiments can also mislead when extrapolated to enormous scales because hardware efficiency, communication costs, optimizer settings, and data pipelines may change. Use scaling laws as one source of evidence, combine them with targeted evaluations, and explicitly represent uncertainty in compute and capability projections."
+        },
+        {
+            "id": "planning-scaling-experiment",
+            "title": "13. Planning a Scaling Experiment",
+            "type": "concept",
+            "content": "A useful scaling study varies model size and training-token count across a planned set of experiments. Keep the tokenizer, data mixture, evaluation process, and optimization quality as consistent as possible so that differences are interpretable. Measure validation loss at defined token counts rather than comparing only the final checkpoints of runs with different durations.\n\nRecord parameter count, token count, estimated FLOPs, actual wall-clock time, hardware utilization, optimizer configuration, batch size, and validation metrics. If training runs differ substantially in convergence quality, the observed loss may reflect optimization difficulty rather than only model scale.\n\nFit candidate scaling relationships and examine residuals. Repeat measurements where feasible, estimate uncertainty, and test whether predictions hold for a separate configuration. Use the resulting estimates to select promising larger runs, not to eliminate the need for direct measurement."
+        },
+        {
+            "id": "scaling-laws-practical-checklist",
+            "title": "14. Practical Scaling-Law Checklist",
+            "type": "concept",
+            "content": "Before using a scaling law for planning, define the objective and the compute budget. Decide whether the main constraint is training compute, token availability, inference cost, latency, memory, or deployment price. These constraints can lead to different choices.\n\nConfirm that the experiments used to fit the relationship are comparable. Check the tokenizer, model architecture, data quality, loss normalization, context length, and training completeness. A change in any of these can alter the fitted relationship or its interpretation.\n\nFinally, report assumptions and uncertainty alongside predicted losses or model sizes. A transparent estimate with a range is more useful than a precise-looking number derived from an uncertain extrapolation. Revisit the plan when new measurements become available."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "scaling-laws-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What is the main purpose of neural scaling laws?",
+            "correctAnswer": "To describe and estimate empirical relationships between model performance and scale variables such as parameters, data, and compute.",
+            "solution": "Scaling laws summarize observed trends across training runs. They help estimate returns from additional resources and inform model-training plans, but they are not guarantees of future capability."
+        },
+        {
+            "id": "scaling-laws-exercise-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Using C approximately equal to 6ND, estimate training FLOPs for a model with 2 billion parameters trained on 50 billion tokens.",
+            "correctAnswer": "Approximately 6e20 FLOPs",
+            "solution": "N = 2e9 and D = 5e10. C approximately equals 6 * 2e9 * 5e10 = 6e20 FLOPs under the simplified estimate."
+        },
+        {
+            "id": "scaling-laws-exercise-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What key training-allocation insight is associated with the Chinchilla study?",
+            "correctAnswer": "Many large language models were undertrained, and compute could often be used more effectively by training appropriately sized models on more tokens.",
+            "solution": "The study emphasized balancing model parameters with training-token count under a fixed compute budget rather than focusing only on parameter count."
+        },
+        {
+            "id": "scaling-laws-exercise-4",
+            "type": "calculation",
+            "difficulty": "advanced",
+            "question": "Under the simplified compute estimate C = 6ND, if parameter count doubles while the compute budget remains fixed, what happens to the allowable token count?",
+            "correctAnswer": "The allowable token count is halved.",
+            "solution": "Since the product ND must remain constant, doubling N requires reducing D by a factor of two to preserve the same estimated compute."
+        },
+        {
+            "id": "scaling-laws-exercise-5",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "Why should a scaling law fitted to one dataset and architecture not be treated as a universal predictor of reasoning capability?",
+            "correctAnswer": "The fitted relationship depends on data, architecture, training procedure, evaluation distribution, and metric, while reasoning capability is not fully captured by pretraining loss.",
+            "solution": "Scaling laws summarize the regime measured in the experiments. Architecture changes, data composition, optimization, and evaluation can alter the observed trend. Reasoning and other capabilities need direct task-specific evaluation."
+        }
+    ],
+    "summary": "Neural scaling laws model empirical relationships between loss and factors such as parameter count, training tokens, and compute. Kaplan-style work established influential scaling relationships, while Chinchilla highlighted the importance of balancing model size with training-token quantity. The approximation C ≈ 6ND is useful for rough compute planning, but actual costs and performance depend on architecture, data, hardware, and training quality. Scaling laws guide experiments; they do not guarantee specific capabilities.",
+    "relatedTopics": [
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-distributed-training",
+        "module-09-large-language-models-checkpointing"
+    ]
+}

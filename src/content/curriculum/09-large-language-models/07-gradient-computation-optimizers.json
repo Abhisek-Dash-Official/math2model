@@ -1,1 +1,183 @@
-{}
+{
+    "id": "module-09-large-language-models-gradient-computation-optimizers",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 7,
+    "title": "Gradient Computation & Optimizers",
+    "slug": "gradient-computation-optimizers",
+    "href": "/curriculum/09-large-language-models/gradient-computation-optimizers",
+    "filePath": "content/curriculum/09-large-language-models/07-gradient-computation-optimizers.json",
+    "description": "Study backpropagation, computational graphs, gradient accumulation, gradient clipping, SGD, momentum, Adam, AdamW, and the optimization techniques used to train large language models.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "module-06-neural-networks",
+        "module-07-deep-learning",
+        "module-09-large-language-models-training-objective-cross-entropy"
+    ],
+    "learningObjectives": [
+        "Explain gradients as derivatives of a loss with respect to trainable parameters.",
+        "Describe reverse-mode automatic differentiation and backpropagation.",
+        "Apply the chain rule to a simple neural-network computation.",
+        "Understand the roles of forward passes, backward passes, and optimizer steps.",
+        "Compare stochastic gradient descent, momentum, Adam, and AdamW.",
+        "Explain adaptive first- and second-moment estimates.",
+        "Understand gradient clipping and its limitations.",
+        "Implement a correct PyTorch training loop.",
+        "Explain gradient accumulation and its relationship to effective batch size.",
+        "Diagnose common gradient and optimizer failures during LLM training."
+    ],
+    "sections": [
+        {
+            "id": "what-is-a-gradient",
+            "title": "1. What Is a Gradient?",
+            "type": "concept",
+            "content": "A gradient describes how a scalar function changes with respect to its input variables. In machine learning, the scalar is usually the loss and the variables are trainable parameters. The gradient points in the direction of steepest local increase in the loss, so an optimization algorithm generally moves parameters in a direction related to the negative gradient.\n\nFor a parameter vector theta and objective L(theta), the gradient is written as nabla_theta L. Each component describes the local sensitivity of the loss to one parameter. A large gradient component indicates strong local sensitivity, while a small component indicates weaker local sensitivity at the current point.\n\nA gradient is local information, not a guarantee that one update will improve every future step. Neural-network losses are nonconvex, and interactions between parameters make optimization complicated. The optimizer uses gradients together with its learning rate, state, and other rules to construct parameter updates."
+        },
+        {
+            "id": "chain-rule",
+            "title": "2. The Chain Rule",
+            "type": "math",
+            "content": "Neural networks are compositions of functions. If y = f(g(x)), the derivative dy/dx is the derivative of f with respect to g multiplied by the derivative of g with respect to x. Backpropagation applies this rule repeatedly through the network's computation graph.\n\nConsider a simple scalar model: z = wx + b, prediction y_hat = z, and squared loss L = one half times (y_hat - y)^2. The derivative with respect to w is (y_hat - y) times x. The derivative with respect to b is y_hat - y. These formulas show how the prediction error is transmitted backward and combined with the input.\n\nFor a large neural network, intermediate values can be tensors rather than scalars, and derivatives are represented by Jacobian-vector products or vector-Jacobian products. Reverse-mode automatic differentiation efficiently computes gradients of a scalar loss with respect to many parameters.",
+            "formula": "dL/dw = (y_hat - y) * x for L = 0.5 * (y_hat - y)^2 and y_hat = wx + b",
+            "example": "Let x = 2, y = 5, w = 1, and b = 0. Then y_hat = 2, the error is -3, and dL/dw = -3 * 2 = -6. A small gradient-descent step increases w because the negative gradient is positive.",
+            "explanation": "The example is a linear model with a single output. Neural networks use the same chain-rule principle across many interconnected operations."
+        },
+        {
+            "id": "computational-graph",
+            "title": "3. Computational Graphs and Automatic Differentiation",
+            "type": "concept",
+            "content": "A computational graph represents operations and dependencies in a forward computation. Nodes may represent tensor values or mathematical operations, and edges indicate which values are used to compute others. During the forward pass, the framework records enough information to calculate gradients during the backward pass.\n\nPyTorch builds a dynamic autograd graph when operations involve tensors that require gradients. Calling loss.backward() computes gradients for participating leaf parameters. These gradients are usually accumulated into each parameter's .grad attribute, rather than replacing earlier values.\n\nGradient accumulation is useful when several mini-batches contribute to one optimizer update, but it can also cause bugs if gradients are not reset at the intended point. Optimizers generally update parameters only when optimizer.step() is called. Computing gradients and changing parameters are separate operations.",
+            "example": "Forward pass: input -> embedding -> Transformer blocks -> logits -> cross-entropy loss. Backward pass: loss gradient -> output projection -> Transformer blocks -> embeddings. Each parameter receives a gradient based on its contribution to the loss.",
+            "pitfalls": [
+                "Call optimizer.zero_grad() or an equivalent gradient-reset operation at the intended update boundary.",
+                "Calling backward() does not itself update parameters.",
+                "Avoid retaining computational graphs unnecessarily because they can consume substantial memory."
+            ]
+        },
+        {
+            "id": "gradient-descent",
+            "title": "4. Gradient Descent",
+            "type": "math",
+            "content": "Basic gradient descent updates parameters by subtracting the learning rate multiplied by the gradient. The learning rate determines the update scale. If it is too small, learning may be slow; if it is too large, updates may overshoot useful regions or cause instability.\n\nFull-batch gradient descent calculates the gradient using the entire training dataset, which is often expensive for LLMs. Stochastic gradient descent uses one example or a small batch to estimate the gradient. Mini-batch optimization is standard because it balances computational efficiency, hardware utilization, and gradient-noise characteristics.\n\nA mini-batch gradient is an estimate of the full-data gradient. It varies with the sampled examples, so training is not a perfectly smooth descent process. Shuffling, batch construction, data distribution, and learning-rate scheduling affect optimization behavior.",
+            "formula": "theta_next = theta - learning_rate * gradient",
+            "example": "If a parameter is 2.0, its gradient is 0.5, and the learning rate is 0.1, the updated value is 2.0 - 0.1 * 0.5 = 1.95."
+        },
+        {
+            "id": "sgd-momentum",
+            "title": "5. SGD and Momentum",
+            "type": "concept",
+            "content": "Stochastic gradient descent updates parameters using the gradient estimated from the current batch. Momentum adds a moving state that accumulates information from recent gradients. This can smooth noisy updates and accelerate movement along directions where gradients consistently point in a similar direction.\n\nA common momentum formulation maintains velocity v_t = beta * v_(t-1) + g_t and updates theta using theta_t = theta_(t-1) - learning_rate * v_t. Some implementations use alternative conventions that scale the current gradient differently, so equations should be interpreted alongside the optimizer definition.\n\nMomentum can be effective in many deep-learning settings, but the learning rate and momentum coefficient still require tuning. It is not equivalent to adaptive methods such as Adam because it does not independently normalize each parameter's update by a moving estimate of squared gradients.",
+            "formula": "v_t = beta * v_(t-1) + g_t; theta_t = theta_(t-1) - eta * v_t",
+            "example": "If recent gradients repeatedly point in the same direction, momentum accumulates them and can increase the effective movement in that direction. If gradients alternate, momentum can smooth some of the oscillation."
+        },
+        {
+            "id": "adam-optimizer",
+            "title": "6. Adam: Adaptive Moment Estimation",
+            "type": "math",
+            "content": "Adam maintains moving averages of gradients and squared gradients. The first-moment estimate m_t tracks a smoothed gradient direction, while the second-moment estimate v_t tracks the scale of recent squared gradients. Bias correction compensates for the fact that these moving averages begin at zero.\n\nA standard Adam update computes m_t = beta1 * m_(t-1) + (1 - beta1) * g_t and v_t = beta2 * v_(t-1) + (1 - beta2) * g_t^2. It then forms bias-corrected estimates m_hat_t and v_hat_t and updates each parameter using m_hat_t divided by the square root of v_hat_t plus a small epsilon, multiplied by the learning rate.\n\nAdaptive normalization allows different parameters to receive different effective step scales. Adam is widely used in deep learning because it often works well with limited manual tuning, but it still depends on learning rate, epsilon, moment coefficients, numerical precision, and the training setup.",
+            "formula": "m_t = beta1*m_(t-1) + (1-beta1)*g_t; v_t = beta2*v_(t-1) + (1-beta2)*g_t^2",
+            "example": "If one parameter consistently has much larger gradients than another, the second-moment estimate for the first parameter also tends to be larger. Adam's normalization adjusts their effective update magnitudes instead of applying the same raw gradient scale to both."
+        },
+        {
+            "id": "adamw",
+            "title": "7. AdamW and Decoupled Weight Decay",
+            "type": "concept",
+            "content": "AdamW is a widely used optimizer for training Transformers and other large neural networks. It separates weight decay from Adam's gradient-based moment calculations. This distinction matters because adding an L2 penalty to the loss and applying weight decay inside an adaptive optimizer are not generally equivalent.\n\nWeight decay shrinks selected parameters toward zero as part of the update. In many LLM recipes, decay is applied to matrix weights but excluded from biases and normalization parameters. The exact parameter groups depend on the architecture and training configuration.\n\nAdamW is not a substitute for choosing a suitable learning rate or schedule. It also requires decisions about beta values, epsilon, decay strength, gradient clipping, and numerical precision. When reproducing a published training run, the complete optimizer configuration matters more than the optimizer name alone.",
+            "example": "A typical PyTorch configuration uses torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.1). These values are only illustrative; they are not universal recommendations for every model size or dataset.",
+            "pitfalls": [
+                "Do not assume weight decay should be applied to every parameter tensor.",
+                "Check whether a framework configuration already separates decay and no-decay parameter groups.",
+                "Do not confuse optimizer weight decay with dropout."
+            ]
+        },
+        {
+            "id": "gradient-clipping",
+            "title": "8. Gradient Clipping",
+            "type": "concept",
+            "content": "Gradient clipping limits unusually large gradients. Global norm clipping computes the norm across selected gradients and scales them together when the norm exceeds a threshold. This preserves the overall gradient direction while reducing its magnitude.\n\nIf the combined gradient norm is greater than threshold c, global norm clipping scales the gradients by approximately c divided by the original norm. If the norm is already below the threshold, gradients remain unchanged. This can help reduce the impact of gradient spikes, but it cannot correct every source of instability.\n\nGradient clipping is especially relevant in large or deep models where occasional gradient spikes can produce destructive updates. The clipping threshold should be monitored and selected based on the training regime. If clipping happens almost every step, the learning rate, loss scale, data, or model behavior may need investigation.",
+            "formula": "g_clipped = g * min(1, threshold / ||g||)",
+            "code": "import torch\n\nmodel = torch.nn.Linear(10, 1)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)\nloss = model(torch.randn(8, 10)).square().mean()\nloss.backward()\ngrad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\noptimizer.step()\noptimizer.zero_grad(set_to_none=True)\nprint(\"Pre-clipping norm:\", float(grad_norm))",
+            "explanation": "clip_grad_norm_ returns the total norm measured before clipping. The optimizer then applies an update using the clipped gradients. A production loop may reset gradients at the start of the next iteration instead."
+        },
+        {
+            "id": "gradient-accumulation",
+            "title": "9. Gradient Accumulation and Effective Batch Size",
+            "type": "concept",
+            "content": "Large LLM training often cannot fit the desired batch into GPU memory at once. Gradient accumulation divides the effective batch into several micro-batches. Each micro-batch computes a loss and contributes gradients, and the optimizer updates parameters only after the configured number of micro-batches.\n\nIf each device processes a micro-batch of size B, there are A accumulation steps, and D devices participate in data parallelism, the nominal global batch size is B * A * D, assuming each micro-batch contributes the same number of examples. For variable-length language-model batches, counting valid target tokens may be more informative than counting sequences.\n\nTo reproduce the average gradient over equally sized micro-batches, each micro-batch loss is typically divided by the number of accumulation steps before backward(). Variable numbers of valid tokens require additional care: averaging each micro-batch independently can differ from averaging all valid tokens globally. Distributed training also requires correct synchronization and normalization.",
+            "formula": "Nominal global batch size = micro_batch_size * accumulation_steps * data_parallel_world_size",
+            "code": "from contextlib import nullcontext\n\naccumulation_steps = 4\noptimizer.zero_grad(set_to_none=True)\nfor step, batch in enumerate(train_loader):\n    with nullcontext():\n        loss = model(**batch).loss / accumulation_steps\n    loss.backward()\n    if (step + 1) % accumulation_steps == 0:\n        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)\n        optimizer.step()\n        optimizer.zero_grad(set_to_none=True)",
+            "explanation": "This illustrates the basic idea but omits mixed precision, distributed synchronization, and the final incomplete accumulation group. A production loop must handle these cases explicitly. In distributed training, loss normalization and gradient synchronization must match the intended global objective."
+        },
+        {
+            "id": "pytorch-training-loop",
+            "title": "10. A Minimal PyTorch Training Step",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nmodel = torch.nn.Linear(16, 4)\noptimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)\ninputs = torch.randn(32, 16)\ntargets = torch.randint(0, 4, (32,))\n\nmodel.train()\noptimizer.zero_grad(set_to_none=True)\nlogits = model(inputs)\nloss = F.cross_entropy(logits, targets)\nloss.backward()\ntorch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)\noptimizer.step()\nprint(\"Training loss:\", loss.item())",
+            "explanation": "The training step runs a forward pass, computes the objective, backpropagates the loss, clips gradients, and updates parameters. For LLMs, the model output is typically a vocabulary-sized logit tensor, and the loss is computed over valid next-token targets."
+        },
+        {
+            "id": "mixed-precision-and-gradients",
+            "title": "11. Gradient Precision and Numerical Stability",
+            "type": "concept",
+            "content": "LLM training commonly uses mixed precision to reduce memory use and increase throughput. However, low-precision arithmetic can introduce rounding error or overflow and underflow. The exact behavior depends on the hardware and dtype, such as bfloat16 or float16.\n\nWith float16 training, gradient scaling may multiply the loss by a scale factor before backward propagation so small gradients are less likely to underflow. Before clipping or updating parameters, gradients are unscaled. If gradients contain invalid values, the optimizer step may be skipped depending on the scaler implementation.\n\nBfloat16 has a wider exponent range than float16 and often reduces the need for gradient scaling, but it still has limited precision. Accumulating selected statistics in higher precision, using stable loss calculations, and monitoring non-finite values remain important. Mixed precision changes numerical behavior, so a training configuration should be tested rather than assumed safe."
+        },
+        {
+            "id": "optimizer-debugging",
+            "title": "12. Debugging Gradient and Optimizer Problems",
+            "type": "concept",
+            "content": "If the loss does not change, verify that the model is in training mode where appropriate, trainable parameters have requires_grad enabled, the loss depends on those parameters, backward() is called, and optimizer.step() is executed. Also confirm that the optimizer contains the intended parameters and that gradients are not being cleared before the update.\n\nIf the loss becomes unstable, inspect the learning rate, gradient norm, loss scale, input data, target alignment, and numerical finiteness. Large gradient norms may motivate clipping or a smaller learning rate, while consistently tiny gradients may point to saturation, an implementation issue, or weak signal propagation.\n\nWhen debugging, print a small number of parameter norms and gradient norms rather than every tensor value. Check that parameters actually change after an optimizer step. Use a tiny dataset to test whether the model can overfit a few examples; this is a useful diagnostic for many supervised training pipelines."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "optimizer-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A parameter is 1.5, its gradient is 0.4, and the learning rate is 0.05. What is its value after one plain gradient-descent update?",
+            "correctAnswer": "1.48",
+            "solution": "theta_next = 1.5 - 0.05 * 0.4 = 1.5 - 0.02 = 1.48."
+        },
+        {
+            "id": "optimizer-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What are the two moving statistics maintained by Adam?",
+            "correctAnswer": "A moving average of gradients and a moving average of squared gradients.",
+            "solution": "The first moment estimates a smoothed gradient direction. The second moment estimates squared-gradient scale. Bias correction adjusts these estimates, especially early in training."
+        },
+        {
+            "id": "optimizer-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Each GPU processes 8 sequences, there are 4 accumulation steps, and data parallelism uses 2 GPUs. What is the nominal global batch size?",
+            "correctAnswer": "64 sequences",
+            "solution": "8 * 4 * 2 = 64 sequences, assuming equal batch sizes and no incomplete accumulation group."
+        },
+        {
+            "id": "optimizer-exercise-4",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Write the three essential PyTorch calls for computing gradients and applying an optimizer update.",
+            "correctAnswer": "optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step()",
+            "solution": "Reset old gradients, compute new gradients through backward(), and update the parameters with optimizer.step(). Additional steps such as gradient clipping may be inserted before the update."
+        },
+        {
+            "id": "optimizer-exercise-5",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "A training run frequently clips gradients to the maximum norm, and the loss still spikes. Name several factors to investigate.",
+            "correctAnswer": "Learning rate, data or label errors, non-finite activations, loss scaling, model stability, and clipping frequency.",
+            "solution": "Track gradient norms before clipping, learning-rate changes, activation statistics, target masks, and finite-value checks. Gradient clipping limits update magnitude but does not repair invalid targets, unstable forward computations, or every underlying optimization problem."
+        }
+    ],
+    "summary": "Backpropagation uses the chain rule to calculate gradients through a model's computational graph. Optimizers convert gradients into parameter updates: SGD uses direct gradient steps, momentum smooths updates, Adam adapts update scales using moving moments, and AdamW decouples weight decay. Gradient clipping, accumulation, and mixed precision are important tools for large-scale training, but they must be implemented with correct normalization and numerical checks.",
+    "relatedTopics": [
+        "module-09-large-language-models-parameter-initialization",
+        "module-09-large-language-models-training-objective-cross-entropy",
+        "module-09-large-language-models-learning-rate-schedules",
+        "module-09-large-language-models-distributed-training",
+        "module-09-large-language-models-checkpointing"
+    ]
+}

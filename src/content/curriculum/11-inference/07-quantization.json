@@ -1,1 +1,187 @@
-{}
+{
+    "id": "module-11-inference-quantization",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 7,
+    "title": "Quantization (AWQ, GPTQ, GGUF)",
+    "slug": "quantization",
+    "href": "/curriculum/11-inference/quantization",
+    "filePath": "content/curriculum/11-inference/07-quantization.json",
+    "description": "Understand neural-network quantization, reduced-precision weights and activations, calibration, quantization error, and common LLM deployment formats and methods.",
+    "difficulty": "advanced",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-03-neural-networks",
+        "module-04-deep-learning",
+        "module-09-large-language-models",
+        "module-11-inference-autoregressive-generation"
+    ],
+    "learningObjectives": [
+        "Explain why quantization reduces model memory requirements.",
+        "Distinguish floating-point precision from integer quantization.",
+        "Calculate approximate model-weight storage requirements.",
+        "Understand scale, zero point, calibration, and quantization error.",
+        "Compare post-training quantization and quantization-aware training.",
+        "Describe AWQ, GPTQ, and GGUF at a practical level.",
+        "Evaluate the trade-offs between memory, latency, and model quality."
+    ],
+    "sections": [
+        {
+            "id": "quantization-introduction",
+            "title": "1. What Is Model Quantization?",
+            "type": "concept",
+            "content": "Quantization represents model parameters or intermediate values using a lower-precision numerical format. For example, a model that stores weights in 16-bit floating-point format may be converted to a representation using 8-bit or 4-bit values. Lower precision can reduce memory use and data movement, potentially allowing larger models to run on limited hardware. Quantization introduces approximation error, so the best format depends on the model, workload, kernels, and acceptable quality loss."
+        },
+        {
+            "id": "quantization-motivation",
+            "title": "2. Why Quantize Large Language Models?",
+            "type": "concept",
+            "content": "Model weights consume substantial memory, and moving them between memory and compute units can limit inference throughput. Lower-bit representations reduce the storage needed for each parameter and can improve memory bandwidth efficiency. Quantization may make local deployment possible on hardware that cannot hold the original model. However, the reduction in weight storage does not automatically translate into the same reduction in total runtime memory because caches, activations, metadata, and temporary buffers still require space."
+        },
+        {
+            "id": "quantization-storage",
+            "title": "3. Estimating Weight Storage",
+            "type": "math",
+            "content": "A simple estimate multiplies parameter count by the number of bits used per parameter. It excludes metadata, alignment, non-quantized tensors, temporary buffers, and runtime overhead. Actual memory depends on the quantization format and inference implementation.",
+            "formula": "Weight storage in bytes ≈ N_parameters × bits_per_parameter / 8",
+            "example": "A model with 7 billion parameters stored at 16 bits requires approximately 7 × 10^9 × 2 = 14 billion bytes for weights alone. At an idealized 4 bits per parameter, the estimate becomes 3.5 billion bytes. Actual quantized checkpoints usually require additional storage for scales, zero points, and other metadata."
+        },
+        {
+            "id": "quantization-python",
+            "title": "4. Calculating Approximate Storage",
+            "type": "code",
+            "language": "python",
+            "content": "def estimate_weight_bytes(parameters, bits_per_parameter):\n    if parameters < 0 or bits_per_parameter <= 0:\n        raise ValueError(\"Invalid parameters or precision\")\n    return parameters * bits_per_parameter / 8\n\nparams = 7_000_000_000\nfor bits in (16, 8, 4):\n    size_gib = estimate_weight_bytes(params, bits) / (1024 ** 3)\n    print(f\"{bits}-bit: {size_gib:.2f} GiB (idealized)\")",
+            "explanation": "The function computes idealized parameter storage and converts it to gibibytes. It does not predict peak GPU memory or exact checkpoint size. Real formats include quantization metadata and may leave some layers in higher precision."
+        },
+        {
+            "id": "quantization-linear",
+            "title": "5. Quantization Intuition",
+            "type": "concept",
+            "content": "Quantization maps values from a large numerical range to a smaller set of representable values. Values are rounded or otherwise approximated according to the quantization scheme. When a value falls between representable levels, the quantized value introduces error. Good schemes allocate representable values in ways that preserve important information for the model's workload. Some methods use uniform intervals; others use specialized group-wise or nonuniform representations."
+        },
+        {
+            "id": "quantization-formula",
+            "title": "6. Uniform Quantization",
+            "type": "math",
+            "content": "A simplified uniform affine quantizer maps a real value to an integer using a scale and zero point. Implementations clamp the result to the representable integer range. Dequantization approximately reconstructs the original value. The precise formulas and supported ranges vary by framework and quantization format.",
+            "formula": "q = clamp(round(x / s) + z, q_min, q_max);  x_hat = s(q - z)",
+            "example": "With scale s = 0.1 and zero point z = 0, the value x = 0.34 maps to round(3.4) = 3, giving reconstructed value x_hat = 0.3. The quantization error is approximately -0.04."
+        },
+        {
+            "id": "quantization-error",
+            "title": "7. Understanding Quantization Error",
+            "type": "concept",
+            "content": "Quantization error is the difference between the original value and its reconstructed approximation. Errors may accumulate through layers and affect the final output. A model's sensitivity is not uniform: some weights, channels, or layers may have a larger impact on output quality than others. Quantization methods attempt to minimize important errors, but no single numerical error measure perfectly predicts downstream task quality."
+        },
+        {
+            "id": "quantization-ptq",
+            "title": "8. Post-Training Quantization",
+            "type": "concept",
+            "content": "Post-training quantization converts a trained model to a lower-precision representation without performing a complete additional training run. Some methods use calibration examples to observe activation ranges or other statistics. PTQ is attractive because it can be cheaper and simpler than retraining. The achievable quality depends on the model, quantization granularity, calibration data, and supported inference kernels."
+        },
+        {
+            "id": "quantization-aware-training",
+            "title": "9. Quantization-Aware Training",
+            "type": "concept",
+            "content": "Quantization-aware training simulates quantization effects during training so that model parameters can adapt to the approximation. The forward pass uses quantization-like operations, while gradients are typically approximated using a technique such as a straight-through estimator. QAT can preserve quality better in some settings but requires additional training effort and infrastructure. It is not always necessary for large language models, where specialized post-training methods are common."
+        },
+        {
+            "id": "quantization-granularity",
+            "title": "10. Per-Tensor, Per-Channel, and Group-Wise Quantization",
+            "type": "concept",
+            "content": "Per-tensor quantization uses a shared scale for an entire tensor. Per-channel quantization assigns separate scales to different channels, allowing different value ranges to be represented more accurately. Group-wise quantization divides weights into groups and quantizes each group using its own parameters. More granular scales can reduce error but add metadata and implementation complexity. The best choice depends on the tensor structure and supported kernels."
+        },
+        {
+            "id": "quantization-awq",
+            "title": "11. Activation-Aware Weight Quantization (AWQ)",
+            "type": "concept",
+            "content": "AWQ is a post-training weight-quantization approach that uses activation information to identify and protect weight channels that are particularly important to model behavior. It applies transformations and scaling strategies so that low-bit weight quantization preserves useful information more effectively. AWQ is associated with efficient low-bit inference for large language models. Compatibility and performance depend on the specific checkpoint, quantization configuration, hardware, and inference engine."
+        },
+        {
+            "id": "quantization-gptq",
+            "title": "12. GPTQ",
+            "type": "concept",
+            "content": "GPTQ is a post-training weight-quantization method that uses approximate second-order information to reduce the impact of quantization errors as weights are quantized. It typically quantizes weights layer by layer and compensates for errors introduced during the process. GPTQ can produce compact low-bit model weights, but practical performance depends on group size, bit width, checkpoint format, calibration, and available kernels."
+        },
+        {
+            "id": "quantization-gguf",
+            "title": "13. GGUF and Model Packaging",
+            "type": "concept",
+            "content": "GGUF is a binary model file format commonly used by llama.cpp-based inference tools. It can store model tensors alongside metadata needed by compatible runtimes. GGUF files are available in multiple quantized variants, but GGUF itself is a container format rather than one specific quantization algorithm. File compatibility and performance depend on the model architecture, tensor representation, runtime version, and hardware backend."
+        },
+        {
+            "id": "quantization-weight-activation",
+            "title": "14. Weight-Only Versus Activation Quantization",
+            "type": "concept",
+            "content": "Weight-only quantization stores model weights at lower precision while other computations may use higher-precision activations. This can reduce model storage substantially, especially when weight memory dominates. Weight-and-activation quantization also lowers the precision of intermediate values and can offer additional compute or memory benefits when supported. Activation quantization requires handling dynamic value ranges and may be more sensitive to outliers."
+        },
+        {
+            "id": "quantization-quality",
+            "title": "15. Quality Evaluation",
+            "type": "concept",
+            "content": "A quantized model should be evaluated against the original checkpoint using task-relevant metrics. Depending on the application, this may include perplexity, reasoning benchmarks, coding tests, instruction-following evaluation, latency, throughput, and peak memory. Small average differences can hide significant regressions on particular tasks. Test the actual runtime and hardware because a compact file may not run efficiently if optimized kernels are unavailable."
+        },
+        {
+            "id": "quantization-hardware",
+            "title": "16. Hardware and Kernel Considerations",
+            "type": "concept",
+            "content": "Lower-bit weights improve performance only when the inference engine and hardware can process them efficiently. Some systems unpack quantized weights or convert them to another representation during execution. Kernel support, memory bandwidth, matrix-multiplication capabilities, and batch size all affect the result. Measure end-to-end inference rather than assuming that fewer bits always mean proportionally faster generation."
+        },
+        {
+            "id": "quantization-selection",
+            "title": "17. Selecting a Quantization Method",
+            "type": "concept",
+            "content": "Start with deployment constraints: available memory, target latency, concurrency, acceptable quality loss, and runtime compatibility. Compare supported quantization formats on the same evaluation set and hardware. AWQ and GPTQ are quantization approaches, whereas GGUF is a model packaging format that may contain tensors represented using different quantization schemes. These names therefore describe related but different parts of a deployment workflow."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "quantization-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main purpose of quantizing model weights?",
+            "correctAnswer": "To reduce the numerical precision and storage requirements of model weights, potentially improving memory efficiency and inference performance.",
+            "solution": "Using fewer bits per weight can reduce memory consumption and data movement. The actual speed benefit depends on hardware and inference-kernel support."
+        },
+        {
+            "id": "quantization-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Approximately how many decimal gigabytes are required to store 2 billion parameters at 8 bits each, ignoring overhead?",
+            "correctAnswer": "2 billion bytes, or approximately 2 GB.",
+            "solution": "Storage = 2 × 10^9 × 8 / 8 = 2 × 10^9 bytes. This is approximately 2 GB in decimal units or 1.86 GiB in binary units."
+        },
+        {
+            "id": "quantization-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Using q = round(x / s) with zero point zero, quantize x = 0.76 when s = 0.2, then reconstruct it.",
+            "correctAnswer": "q = 4 and reconstructed value = 0.8.",
+            "solution": "Calculate 0.76 / 0.2 = 3.8 and round to 4. Reconstruct with x_hat = 4 × 0.2 = 0.8. The error is 0.04."
+        },
+        {
+            "id": "quantization-ex-4",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "What is the difference between GPTQ and GGUF?",
+            "correctAnswer": "GPTQ is a post-training quantization method, while GGUF is a model file format used by compatible inference runtimes.",
+            "solution": "GPTQ describes a way to quantize model weights. GGUF describes a format for packaging model tensors and metadata. A format is not itself a single quantization algorithm."
+        },
+        {
+            "id": "quantization-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A quantized model uses much less disk space but generates text no faster than the original. Give two possible explanations.",
+            "correctAnswer": "The inference runtime may lack optimized kernels for the quantized format, or generation may be limited by another bottleneck such as KV-cache bandwidth or sequential decoding.",
+            "solution": "Smaller weights do not guarantee faster inference. Runtime support, hardware capabilities, context length, batch size, and memory traffic can dominate end-to-end performance."
+        }
+    ],
+    "summary": "Quantization reduces the precision used to represent model parameters or intermediate values, often lowering memory requirements and data movement. Post-training methods such as AWQ and GPTQ produce compact model weights, while GGUF provides a model packaging format used by compatible runtimes. Quantization introduces approximation error, so deployment decisions should balance model quality, memory, latency, hardware support, and actual runtime performance.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-kv-cache",
+        "module-11-inference-batching",
+        "module-11-inference-speculative-decoding"
+    ]
+}

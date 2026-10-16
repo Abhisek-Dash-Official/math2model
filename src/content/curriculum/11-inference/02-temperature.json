@@ -1,1 +1,159 @@
-{}
+{
+    "id": "module-11-inference-temperature",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 2,
+    "title": "Temperature Sampling",
+    "slug": "temperature",
+    "href": "/curriculum/11-inference/temperature",
+    "filePath": "content/curriculum/11-inference/02-temperature.json",
+    "description": "Learn how temperature rescales model logits to control the concentration, diversity, and randomness of next-token sampling.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "module-11-inference-autoregressive-generation"
+    ],
+    "learningObjectives": [
+        "Explain the purpose of temperature in language-model inference.",
+        "Derive the temperature-scaled softmax distribution.",
+        "Understand the effects of low, high, and unit temperature.",
+        "Implement temperature sampling with Python.",
+        "Distinguish temperature from Top-k and Top-p filtering.",
+        "Select reasonable temperature settings for different generation tasks."
+    ],
+    "sections": [
+        {
+            "id": "temperature-introduction",
+            "title": "1. What Is Temperature?",
+            "type": "concept",
+            "content": "Temperature is a decoding parameter that changes the distribution from which the next token is sampled. It rescales model logits before applying softmax. Lower temperatures make the distribution more concentrated around high-scoring tokens, while higher temperatures flatten it and give lower-scoring tokens relatively more probability. Temperature does not retrain the model or change its underlying learned parameters; it changes how predictions are converted into sampling probabilities at inference time."
+        },
+        {
+            "id": "temperature-logits",
+            "title": "2. Logits and Temperature Scaling",
+            "type": "math",
+            "content": "Let z_i be the logit for token i and T be a positive temperature. Divide each logit by T before applying softmax. Because softmax depends on relative differences between logits, scaling changes the sharpness of the resulting distribution.",
+            "formula": "P(x_i) = exp(z_i / T) / Σ_j exp(z_j / T)",
+            "example": "For logits [2, 1, 0], temperature T = 1 preserves the original softmax distribution, approximately [0.665, 0.245, 0.090]. At a lower temperature, the first token receives more probability; at a higher temperature, the distribution becomes flatter."
+        },
+        {
+            "id": "temperature-low",
+            "title": "3. Low Temperature",
+            "type": "concept",
+            "content": "When temperature approaches zero from above, the distribution becomes increasingly concentrated on the highest-logit token. With ordinary sampling, a very small positive temperature makes the highest-logit token overwhelmingly likely, although numerical implementation details matter. Low temperature is useful when consistency and predictability are important. However, it does not guarantee factual correctness, and repeated or rigid output can still occur."
+        },
+        {
+            "id": "temperature-high",
+            "title": "4. High Temperature",
+            "type": "concept",
+            "content": "Increasing temperature makes the probability distribution flatter. Tokens that originally had relatively small probabilities may become more competitive, increasing output variability. This can be useful for brainstorming, fiction, and exploratory generation. Excessively high temperatures may produce incoherent, irrelevant, or less reliable text. Higher temperature does not add new knowledge to the model; it changes the likelihood of selecting among its existing token candidates."
+        },
+        {
+            "id": "temperature-unit",
+            "title": "5. Temperature Equal to One",
+            "type": "concept",
+            "content": "At T = 1, logits are passed to softmax without temperature scaling. The resulting distribution is the model's ordinary softmax distribution, assuming no other decoding transformations. This is a useful reference point when comparing lower or higher temperatures. The final behavior still depends on the model, context, sampling method, and any other inference-time filters."
+        },
+        {
+            "id": "temperature-limit",
+            "title": "6. Mathematical Intuition",
+            "type": "math",
+            "content": "For two tokens i and j, the ratio of their temperature-scaled probabilities depends on the difference between their logits. Lower temperature amplifies the relative preference for the token with the larger logit, while higher temperature reduces that preference.",
+            "formula": "P(x_i) / P(x_j) = exp((z_i - z_j) / T)",
+            "example": "If z_i - z_j = 2, the probability ratio is exp(2) ≈ 7.39 at T = 1. At T = 2, the ratio becomes exp(1) ≈ 2.72. The higher temperature reduces the relative dominance of the first token."
+        },
+        {
+            "id": "temperature-example",
+            "title": "7. Worked Example",
+            "type": "concept",
+            "content": "Suppose a model assigns logits [3, 2, 0] to the tokens 'cat', 'dog', and 'car'. With low temperature, 'cat' dominates. At temperature one, the approximate probabilities are [0.705, 0.259, 0.035]. With a higher temperature such as T = 2, they become approximately [0.547, 0.331, 0.122]. These rounded values illustrate how a higher temperature distributes probability more evenly."
+        },
+        {
+            "id": "temperature-python",
+            "title": "8. Implementing Temperature Sampling",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef sample_with_temperature(logits, temperature=1.0):\n    if temperature <= 0:\n        raise ValueError(\"Temperature must be positive\")\n    scaled_logits = logits / temperature\n    probabilities = torch.softmax(scaled_logits, dim=-1)\n    return torch.multinomial(probabilities, num_samples=1), probabilities\n\nlogits = torch.tensor([3.0, 2.0, 0.0])\ntoken_id, probabilities = sample_with_temperature(logits, temperature=0.7)\nprint(probabilities)\nprint(token_id)",
+            "explanation": "The function divides logits by a positive temperature, converts them to probabilities, and samples one token. In production, use numerically stable framework operations and handle invalid logits or non-finite values. A temperature of zero is often treated by generation libraries as a request for greedy decoding, but this function intentionally requires a positive value."
+        },
+        {
+            "id": "temperature-determinism",
+            "title": "9. Does Low Temperature Guarantee Determinism?",
+            "type": "concept",
+            "content": "No. Temperature changes the distribution, not whether a sampling operation is random. Any positive temperature can still produce different tokens across runs when sampling is used. As temperature becomes very low, the distribution may become extremely concentrated, making different outputs less likely. For deterministic next-token selection, use greedy decoding or another deterministic strategy and account for numerical and implementation differences."
+        },
+        {
+            "id": "temperature-task",
+            "title": "10. Choosing Temperature by Task",
+            "type": "concept",
+            "content": "Lower temperatures are often useful for structured extraction, predictable formatting, and tasks where consistency matters. Moderate temperatures can suit general conversation and explanations. Higher temperatures can help explore varied ideas or creative continuations. These are starting points, not universal rules. The best setting depends on the model, prompt, evaluation criteria, and consequences of errors. For strict JSON or tool arguments, schema-constrained decoding and validation are more reliable than temperature tuning alone."
+        },
+        {
+            "id": "temperature-vs-topk",
+            "title": "11. Temperature Versus Top-k and Top-p",
+            "type": "concept",
+            "content": "Temperature rescales the probabilities of all candidate tokens. Top-k limits sampling to a fixed number of highest-scoring candidates, while Top-p retains a candidate set based on cumulative probability. These methods can be combined. For example, a system may first adjust temperature, then apply Top-k or Top-p filtering, renormalize the remaining probabilities, and sample. The exact order and implementation should be documented because different pipelines can yield different outputs."
+        },
+        {
+            "id": "temperature-pitfalls",
+            "title": "12. Common Mistakes",
+            "type": "concept",
+            "content": "A common mistake is assuming high temperature makes a model more intelligent or knowledgeable. It does not; it increases sampling diversity. Another mistake is assuming low temperature guarantees truth. A confidently wrong high-probability token may still be selected. Extremely small temperatures can also cause numerical issues if implemented carelessly. Evaluate settings on representative examples rather than relying only on intuition."
+        },
+        {
+            "id": "temperature-evaluation",
+            "title": "13. Evaluating Temperature",
+            "type": "concept",
+            "content": "Compare temperatures using repeated generations over a fixed test set. Measure task-specific accuracy, formatting validity, diversity, repetition, and human-rated usefulness as appropriate. For stochastic sampling, evaluate multiple runs because one sample may not represent typical behavior. Keep the model, prompt, token budget, and other decoding settings fixed so that differences can be attributed more confidently to temperature."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "temperature-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What happens to the softmax distribution when temperature increases?",
+            "correctAnswer": "It generally becomes flatter, reducing the relative dominance of the highest-logit tokens.",
+            "solution": "Temperature divides logits before softmax. Larger temperatures reduce the magnitude of logit differences, making the resulting probabilities more similar."
+        },
+        {
+            "id": "temperature-ex-2",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Does a temperature of 0.2 guarantee that a generated answer is factually correct?",
+            "correctAnswer": "No.",
+            "solution": "Temperature changes token-selection probabilities, not the model's factual knowledge or verification process. A high-probability token can still lead to a false answer."
+        },
+        {
+            "id": "temperature-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Two tokens have logits 4 and 2. What is the ratio of their temperature-scaled probabilities at T = 2?",
+            "correctAnswer": "e, approximately 2.718.",
+            "solution": "The ratio is exp((4 - 2) / 2) = exp(1) ≈ 2.718."
+        },
+        {
+            "id": "temperature-ex-4",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "You are building a strict structured-data extraction system. What decoding strategy should you consider, and why is temperature alone insufficient?",
+            "correctAnswer": "Use a predictable decoding strategy and, where supported, constrained structured decoding with schema validation.",
+            "solution": "Low temperature can improve predictability but does not guarantee valid JSON or correct field values. Constrained decoding and application-level validation directly enforce the required output structure."
+        },
+        {
+            "id": "temperature-ex-5",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "Why should a temperature comparison use several generations per prompt?",
+            "correctAnswer": "Sampling is stochastic, so repeated generations reveal variability that a single output may hide.",
+            "solution": "A single generation may be unusually good or poor. Repeated samples help estimate typical quality, diversity, and failure rates for each temperature."
+        }
+    ],
+    "summary": "Temperature rescales logits before softmax and controls the sharpness of the next-token probability distribution. Lower temperatures concentrate probability on high-logit tokens, while higher temperatures increase diversity by flattening the distribution. Temperature does not guarantee correctness or determinism. Choose it based on task requirements, and combine it with suitable sampling filters, structured decoding, and evaluation when necessary.",
+    "relatedTopics": [
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-top-k",
+        "module-11-inference-top-p",
+        "module-11-inference-beam-search"
+    ]
+}

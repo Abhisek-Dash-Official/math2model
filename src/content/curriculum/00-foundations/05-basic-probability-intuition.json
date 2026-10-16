@@ -1,1 +1,464 @@
-{}
+{
+  "id": "basic-probability-intuition",
+  "title": "Basic Probability Intuition",
+  "slug": "basic-probability-intuition",
+  "module": "Foundations",
+  "description": "Build the probabilistic intuition needed for machine learning: outcomes, events, random variables, distributions, conditional probability, independence, expectation, variance, Bayes' rule, and uncertainty in model predictions.",
+  "difficulty": "Beginner",
+  "estimatedHours": 10,
+  "prerequisites": [
+    "programming-fundamentals"
+  ],
+  "learningObjectives": [
+    "Interpret probability as a numerical description of uncertainty.",
+    "Distinguish sample spaces, events, and random variables.",
+    "Understand discrete and continuous probability distributions.",
+    "Calculate conditional probabilities and apply Bayes' theorem.",
+    "Explain independence, expectation, variance, and covariance.",
+    "Use sampling and simulation to build intuition.",
+    "Connect probability to classification, uncertainty, and model evaluation."
+  ],
+  "sections": [
+    {
+      "id": "probability-language",
+      "title": "Probability, Outcomes, and Events",
+      "content": [
+        {
+          "type": "text",
+          "value": "Probability is a mathematical framework for reasoning about uncertain outcomes. An experiment is a process with an uncertain result; the sample space Ω is the set of possible outcomes. An event is a subset of the sample space."
+        },
+        {
+          "type": "text",
+          "value": "For a fair six-sided die, the sample space is {1, 2, 3, 4, 5, 6}. The event 'roll an even number' contains {2, 4, 6}. If all outcomes are equally likely, the event has probability 3/6 = 1/2."
+        },
+        {
+          "type": "math",
+          "value": "0 \\leq P(A) \\leq 1"
+        },
+        {
+          "type": "text",
+          "value": "Probability zero means an event is impossible under the model, and probability one means it is certain under the model. These statements depend on the assumptions of the probability model."
+        },
+        {
+          "type": "math",
+          "value": "P(\\Omega)=1,\\qquad P(A^c)=1-P(A)"
+        },
+        {
+          "type": "text",
+          "value": "The complement rule gives the probability that an event does not occur. It is often easier to calculate the probability of at least one success by subtracting the probability of zero successes from one."
+        }
+      ],
+      "keyTakeaways": [
+        "Define the sample space before calculating probabilities.",
+        "An event is a set of outcomes.",
+        "Probability values lie between zero and one."
+      ]
+    },
+    {
+      "id": "counting",
+      "title": "Counting and Equally Likely Outcomes",
+      "content": [
+        {
+          "type": "text",
+          "value": "When a finite sample space has equally likely outcomes, probability is the number of favorable outcomes divided by the total number of outcomes. Counting principles help calculate these quantities without listing every outcome."
+        },
+        {
+          "type": "math",
+          "value": "P(A)=\\frac{|A|}{|\\Omega|}"
+        },
+        {
+          "type": "text",
+          "value": "The multiplication principle says that if one choice has m possibilities and a subsequent independent choice has n possibilities, the combined choices have mn possibilities. This principle underlies counting ordered sequences such as coin-toss outcomes."
+        },
+        {
+          "type": "text",
+          "value": "For two fair coin tosses, the equally likely outcomes are HH, HT, TH, and TT. Exactly one head occurs in HT and TH, so the probability is 2/4 = 1/2."
+        },
+        {
+          "type": "text",
+          "value": "Be careful: outcomes are not automatically equally likely just because they are listed as separate cases. A sample space must reflect the experiment and its probability model. Counting is invalid when unequal likelihoods are ignored."
+        }
+      ],
+      "keyTakeaways": [
+        "Count favorable outcomes and total equally likely outcomes.",
+        "Check whether outcomes truly are equally likely.",
+        "Define whether order matters."
+      ]
+    },
+    {
+      "id": "random-variables",
+      "title": "Random Variables",
+      "content": [
+        {
+          "type": "text",
+          "value": "A random variable maps outcomes of a random experiment to numerical values. A discrete random variable takes a finite or countably infinite set of values. A continuous random variable is modeled over a continuum, usually with a probability density function."
+        },
+        {
+          "type": "text",
+          "value": "For a coin toss, X might equal 1 for heads and 0 for tails. For a die, X could be the number rolled. In machine learning, random variables can represent input features, labels, noise, or predictions viewed under uncertainty."
+        },
+        {
+          "type": "text",
+          "value": "The distribution of a random variable describes the probabilities assigned to its possible values. For a discrete variable, probabilities of all possible values sum to one. For a continuous variable, probabilities are areas under a density curve; the probability at one exact point is generally zero."
+        },
+        {
+          "type": "math",
+          "value": "\\sum_x P(X=x)=1"
+        },
+        {
+          "type": "text",
+          "value": "A probability mass function (PMF) describes discrete probabilities. A probability density function (PDF) describes a continuous distribution; its value is not itself the probability at a point. A cumulative distribution function (CDF) gives P(X ≤ x)."
+        }
+      ],
+      "keyTakeaways": [
+        "A random variable maps outcomes to numbers.",
+        "PMFs describe discrete variables; PDFs describe continuous variables.",
+        "A density value is not the same as a point probability."
+      ]
+    },
+    {
+      "id": "bernoulli-binomial",
+      "title": "Bernoulli and Binomial Distributions",
+      "content": [
+        {
+          "type": "text",
+          "value": "A Bernoulli random variable models a single binary outcome: success with probability p and failure with probability 1-p. Its values are commonly 1 and 0."
+        },
+        {
+          "type": "math",
+          "value": "P(X=x)=p^x(1-p)^{1-x},\\quad x\\in\\{0,1\\}"
+        },
+        {
+          "type": "text",
+          "value": "Its expectation is p and its variance is p(1-p). A binomial random variable counts successes in n independent Bernoulli trials with the same success probability p."
+        },
+        {
+          "type": "math",
+          "value": "P(X=k)=\\binom{n}{k}p^k(1-p)^{n-k}"
+        },
+        {
+          "type": "text",
+          "value": "For example, if a fair coin is tossed ten times, the number of heads follows a Binomial(n=10, p=0.5) distribution. The expected number of heads is np = 5, and the variance is np(1-p) = 2.5."
+        },
+        {
+          "type": "text",
+          "value": "These distributions provide simple models for binary labels, success counts, and repeated trials. Their assumptions matter: trials must be independent and share the same probability for the standard binomial model."
+        }
+      ],
+      "keyTakeaways": [
+        "Bernoulli models one binary trial.",
+        "Binomial counts successes across independent trials.",
+        "Check the assumptions before choosing a distribution."
+      ]
+    },
+    {
+      "id": "normal-distribution",
+      "title": "The Normal Distribution",
+      "content": [
+        {
+          "type": "text",
+          "value": "The normal distribution is a continuous, symmetric, bell-shaped distribution characterized by its mean μ and standard deviation σ. The mean sets the center, while σ controls the spread. The standard normal distribution has mean zero and standard deviation one."
+        },
+        {
+          "type": "math",
+          "value": "f(x)=\\frac{1}{\\sigma\\sqrt{2\\pi}}\\exp\\left(-\\frac{(x-\\mu)^2}{2\\sigma^2}\\right)"
+        },
+        {
+          "type": "text",
+          "value": "A z-score expresses how many standard deviations a value lies from the mean: z = (x - μ)/σ. Standardization can help compare measurements on different scales, though it does not guarantee that a feature is normally distributed."
+        },
+        {
+          "type": "math",
+          "value": "z=\\frac{x-\\mu}{\\sigma}"
+        },
+        {
+          "type": "text",
+          "value": "The familiar 68–95–99.7 rule says that approximately 68%, 95%, and 99.7% of normal-distribution mass lies within one, two, and three standard deviations of the mean, respectively. These are approximations specific to a normal distribution."
+        },
+        {
+          "type": "text",
+          "value": "Normal distributions appear in measurement-error models, statistical inference, and some parameter initialization schemes. Real data may be skewed, heavy-tailed, multimodal, or otherwise non-normal, so always inspect the assumptions."
+        }
+      ],
+      "keyTakeaways": [
+        "Mean sets location; standard deviation sets scale.",
+        "Z-scores measure distance in standard deviations.",
+        "The 68–95–99.7 rule assumes a normal distribution."
+      ]
+    },
+    {
+      "id": "conditional-probability",
+      "title": "Conditional Probability",
+      "content": [
+        {
+          "type": "text",
+          "value": "Conditional probability measures the probability of event A given that event B is known to have occurred. Conditioning changes the reference set from all possible outcomes to the outcomes compatible with B."
+        },
+        {
+          "type": "math",
+          "value": "P(A\\mid B)=\\frac{P(A\\cap B)}{P(B)},\\quad P(B)>0"
+        },
+        {
+          "type": "text",
+          "value": "Suppose 30% of examples belong to class A, and 60% of class-A examples have property B. Then P(B|A)=0.6. This is not the same as P(A|B); reversing the condition changes the question."
+        },
+        {
+          "type": "text",
+          "value": "Conditional probabilities are central to medical testing, spam filtering, recommendation, and probabilistic inference. Always read the vertical bar as 'given' and identify which event is being conditioned on."
+        },
+        {
+          "type": "text",
+          "value": "If A and B are events, the multiplication rule is P(A∩B)=P(A|B)P(B), when P(B)>0. This rule links joint and conditional probabilities."
+        }
+      ],
+      "keyTakeaways": [
+        "P(A given B) and P(B given A) are different.",
+        "State the conditioning event explicitly.",
+        "Use the multiplication rule to connect joint and conditional probability."
+      ]
+    },
+    {
+      "id": "bayes-theorem",
+      "title": "Bayes' Theorem and Base Rates",
+      "content": [
+        {
+          "type": "text",
+          "value": "Bayes' theorem updates a probability after observing evidence. It combines a prior probability, a likelihood, and the overall probability of the evidence."
+        },
+        {
+          "type": "math",
+          "value": "P(A\\mid B)=\\frac{P(B\\mid A)P(A)}{P(B)}"
+        },
+        {
+          "type": "text",
+          "value": "The prior P(A) represents belief before observing B; the likelihood P(B|A) describes how probable the evidence is under A; and the posterior P(A|B) is the updated probability after observing B."
+        },
+        {
+          "type": "text",
+          "value": "Consider a rare condition present in 1% of a population. A test has 90% sensitivity and a 5% false-positive rate. Among 10,000 people, about 100 have the condition and 90 of them test positive. Of the 9,900 without the condition, about 495 test positive. Therefore, among roughly 585 positive results, only about 90 are true positives, giving a positive predictive value near 15.4%."
+        },
+        {
+          "type": "math",
+          "value": "P(A\\mid B)=\\frac{0.90\\times0.01}{(0.90\\times0.01)+(0.05\\times0.99)}\\approx0.154"
+        },
+        {
+          "type": "text",
+          "value": "This example illustrates the base-rate effect: even a reasonably sensitive test can produce many false positives when the target event is rare. Similar reasoning matters when evaluating classifiers on imbalanced datasets."
+        }
+      ],
+      "keyTakeaways": [
+        "Bayes' theorem combines prior, likelihood, and evidence probability.",
+        "Rare-event base rates can dominate interpretation.",
+        "Sensitivity and positive predictive value are not the same metric."
+      ]
+    },
+    {
+      "id": "independence",
+      "title": "Independence and Dependence",
+      "content": [
+        {
+          "type": "text",
+          "value": "Two events A and B are independent if knowing that one occurred does not change the probability of the other. For events with nonzero probability, this can be expressed as P(A|B)=P(A), or equivalently P(A∩B)=P(A)P(B)."
+        },
+        {
+          "type": "math",
+          "value": "P(A\\cap B)=P(A)P(B)"
+        },
+        {
+          "type": "text",
+          "value": "Mutually exclusive events cannot happen together, while independent events do not influence each other's probability. These are different ideas: two events with positive probabilities that are mutually exclusive are not independent."
+        },
+        {
+          "type": "text",
+          "value": "Many machine-learning methods use independence assumptions to simplify modeling. Naive Bayes assumes conditional independence of features given the class. The assumption is often unrealistic in detail, but the classifier can still perform well in some settings."
+        },
+        {
+          "type": "text",
+          "value": "Data leakage and correlated observations can make evaluation misleading. For example, putting near-duplicate records from the same person into both training and test sets may inflate measured performance because the examples are not independent in the relevant sense."
+        }
+      ],
+      "keyTakeaways": [
+        "Independence is not mutual exclusivity.",
+        "Model assumptions simplify reasoning but may be imperfect.",
+        "Correlated data can invalidate naive evaluation assumptions."
+      ]
+    },
+    {
+      "id": "expectation-variance",
+      "title": "Expectation, Variance, and Covariance",
+      "content": [
+        {
+          "type": "text",
+          "value": "Expectation is the probability-weighted average of a random variable. For a discrete variable, multiply each possible value by its probability and sum the results. For a continuous variable, the analogous calculation is an integral over the density."
+        },
+        {
+          "type": "math",
+          "value": "E[X]=\\sum_x xP(X=x)"
+        },
+        {
+          "type": "text",
+          "value": "Variance measures expected squared deviation from the mean. Standard deviation is the square root of variance and is expressed in the original units of the variable."
+        },
+        {
+          "type": "math",
+          "value": "\\operatorname{Var}(X)=E[(X-E[X])^2]=E[X^2]-(E[X])^2"
+        },
+        {
+          "type": "text",
+          "value": "Covariance measures how two variables vary together. Positive covariance means above-average values tend to occur together; negative covariance means one tends to be above average when the other is below average. Covariance depends on the variables' units and scales."
+        },
+        {
+          "type": "math",
+          "value": "\\operatorname{Cov}(X,Y)=E[(X-E[X])(Y-E[Y])]"
+        },
+        {
+          "type": "text",
+          "value": "Correlation standardizes covariance to a unitless value between -1 and 1 when both standard deviations are nonzero. Correlation describes linear association, not causation, and a near-zero correlation does not rule out nonlinear dependence."
+        }
+      ],
+      "keyTakeaways": [
+        "Expectation describes the center in a probabilistic sense.",
+        "Variance measures spread.",
+        "Correlation measures linear association, not causation."
+      ]
+    },
+    {
+      "id": "simulation",
+      "title": "Monte Carlo Simulation and Sampling",
+      "content": [
+        {
+          "type": "text",
+          "value": "Simulation uses generated random outcomes to approximate probabilities or expectations. Monte Carlo methods estimate a quantity by repeatedly sampling from a model and averaging the results. The approximation usually improves as the number of independent samples increases."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\nrng = np.random.default_rng(42)\nn = 100_000\nx = rng.uniform(0.0, 1.0, size=n)\ny = rng.uniform(0.0, 1.0, size=n)\n\ninside_circle = x * x + y * y <= 1.0\npi_estimate = 4.0 * inside_circle.mean()\nprint(pi_estimate)"
+        },
+        {
+          "type": "text",
+          "value": "The example estimates π by sampling points in the unit square and measuring the fraction inside a quarter-circle. It demonstrates the idea of approximating an expectation with samples, not a method for high-precision numerical computation."
+        },
+        {
+          "type": "text",
+          "value": "Sampling quality matters. Samples may be dependent, biased, or unrepresentative. A simulation only answers questions about the model and sampling process you implemented; it does not automatically establish that the model describes the real world."
+        }
+      ],
+      "keyTakeaways": [
+        "Monte Carlo estimates quantities using random samples.",
+        "More samples usually reduce sampling noise, with diminishing returns.",
+        "Simulation cannot correct a misspecified model."
+      ]
+    },
+    {
+      "id": "probability-in-ml",
+      "title": "Probability in Machine Learning",
+      "content": [
+        {
+          "type": "text",
+          "value": "Probability appears throughout machine learning: labels can be modeled as random variables, likelihood functions quantify how well parameters explain data, and predictive distributions represent uncertainty about outcomes."
+        },
+        {
+          "type": "text",
+          "value": "A classifier may produce logits, scores, or probability estimates. Softmax converts a finite vector of logits into nonnegative values that sum to one. Those values are model outputs; whether they are well-calibrated probabilities is a separate question."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import numpy as np\n\ndef softmax(logits):\n    logits = np.asarray(logits, dtype=np.float64)\n    shifted = logits - np.max(logits)\n    exp_values = np.exp(shifted)\n    return exp_values / exp_values.sum()\n\nprobs = softmax([2.0, 1.0, 0.1])\nprint(probs)\nprint(probs.sum())"
+        },
+        {
+          "type": "text",
+          "value": "Maximum likelihood estimation chooses parameters that make observed data most likely under a model. In classification, cross-entropy loss is closely related to negative log-likelihood. In probabilistic modeling, uncertainty can be represented through distributions rather than a single point prediction."
+        },
+        {
+          "type": "text",
+          "value": "Evaluation must consider the task. Accuracy measures the fraction of correct labels but can hide poor performance on rare classes. Precision, recall, calibration, log loss, and other metrics answer different questions."
+        }
+      ],
+      "keyTakeaways": [
+        "Scores are not automatically calibrated probabilities.",
+        "Likelihood connects data to parameter estimation.",
+        "Choose evaluation metrics based on the problem and class balance."
+      ]
+    }
+  ],
+  "workedExamples": [
+    {
+      "title": "Bayes' theorem for a screening test",
+      "problem": "A condition has prevalence 2%. A test has sensitivity 95% and a false-positive rate of 10%. Estimate the probability that a person has the condition given a positive test.",
+      "solution": "P(condition | positive) = (0.95 × 0.02) / [(0.95 × 0.02) + (0.10 × 0.98)] ≈ 0.1624, or 16.2%.",
+      "explanation": "The numerator is the probability of having the condition and testing positive. The denominator includes all positive tests, both true and false positives."
+    },
+    {
+      "title": "Estimate a probability by simulation",
+      "problem": "Simulate many fair coin tosses and estimate the probability of heads.",
+      "solution": "import numpy as np\n\nrng = np.random.default_rng(42)\ntosses = rng.integers(0, 2, size=100_000)\nestimate = np.mean(tosses == 1)\nprint(estimate)",
+      "explanation": "The sample proportion estimates the probability 0.5. It will usually not be exactly 0.5 for a finite sample."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "exercise-1",
+      "title": "Complement Rule",
+      "difficulty": "Beginner",
+      "problem": "If an event has probability 0.23, calculate the probability that it does not occur.",
+      "hints": [
+        "Use P(A complement) = 1 - P(A)."
+      ],
+      "solution": "0.77"
+    },
+    {
+      "id": "exercise-2",
+      "title": "Conditional Probability",
+      "difficulty": "Beginner",
+      "problem": "Given P(A intersection B)=0.12 and P(B)=0.4, calculate P(A given B).",
+      "hints": [
+        "Divide the joint probability by P(B)."
+      ],
+      "solution": "0.3"
+    },
+    {
+      "id": "exercise-3",
+      "title": "Bayes and Base Rates",
+      "difficulty": "Intermediate",
+      "problem": "A classifier detects a rare event with known sensitivity and false-positive rate. Compute the positive predictive value for a stated prevalence and explain the base-rate effect.",
+      "hints": [
+        "Use Bayes' theorem and include both true and false positives."
+      ]
+    },
+    {
+      "id": "exercise-4",
+      "title": "Expectation and Variance",
+      "difficulty": "Intermediate",
+      "problem": "For a Bernoulli random variable with success probability p, derive its expectation and variance.",
+      "hints": [
+        "Use X^2 = X for X in {0,1}."
+      ]
+    },
+    {
+      "id": "exercise-5",
+      "title": "Monte Carlo Estimate",
+      "difficulty": "Intermediate",
+      "problem": "Estimate the probability that the sum of two independent fair six-sided dice equals seven using simulation. Compare with the exact answer.",
+      "hints": [
+        "Enumerate the 36 equally likely ordered outcomes for the exact answer."
+      ]
+    },
+    {
+      "id": "exercise-6",
+      "title": "Evaluate an Imbalanced Classifier",
+      "difficulty": "Advanced",
+      "problem": "Explain why a classifier with 99% accuracy may be poor on a dataset where only 1% of examples are positive. Recommend additional metrics.",
+      "hints": [
+        "Compare accuracy with precision, recall, and a confusion matrix."
+      ]
+    }
+  ],
+  "relatedTopics": [
+    "linear-algebra",
+    "calculus",
+    "statistics",
+    "machine-learning-fundamentals"
+  ]
+}

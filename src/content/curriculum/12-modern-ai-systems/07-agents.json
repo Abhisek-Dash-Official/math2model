@@ -1,1 +1,375 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-agents",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 7,
+    "title": "Autonomous AI Agents",
+    "slug": "agents",
+    "href": "/curriculum/12-modern-ai-systems/agents",
+    "filePath": "content/curriculum/12-modern-ai-systems/07-agents.json",
+    "description": "Explore AI agent architectures, planning, memory, tool use, orchestration, feedback loops, multi-agent systems, autonomy levels, evaluation, and production safety.",
+    "difficulty": "intermediate",
+    "estimatedHours": 9,
+    "prerequisites": [
+        "Foundational knowledge of language models",
+        "Basic Python programming",
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-tool-calling",
+        "Basic API and software architecture concepts"
+    ],
+    "learningObjectives": [
+        "Define an AI agent and distinguish it from a simple chatbot or fixed workflow.",
+        "Identify the major components of an agent architecture.",
+        "Explain the observe, plan, act, and evaluate loop.",
+        "Understand tool use, state, memory, and planning.",
+        "Distinguish reactive, planning-based, and workflow-driven agents.",
+        "Design bounded agent loops with explicit stopping conditions.",
+        "Understand task decomposition and dependency management.",
+        "Recognize the benefits and limitations of multi-agent systems.",
+        "Design human approval for high-impact agent actions.",
+        "Understand agent memory, retrieval, and state persistence.",
+        "Evaluate task success, tool correctness, reliability, latency, and cost.",
+        "Identify prompt-injection, runaway-loop, and privilege-escalation risks.",
+        "Build a simple agent architecture with deterministic execution controls."
+    ],
+    "sections": [
+        {
+            "id": "agent-introduction",
+            "title": "1. What Is an AI Agent?",
+            "type": "concept",
+            "content": "An AI agent is a system that uses observations, goals, internal state, and available actions to pursue an objective. In modern language-model applications, an agent often uses an LLM to interpret a task, choose actions, call tools, inspect results, and decide what to do next. A simple chatbot usually responds to each message without independently coordinating a sequence of external operations. An agent can carry out a multi-step task, such as searching documentation, comparing evidence, generating a report, and checking whether the report satisfies a set of requirements. The distinction is not binary: systems range from fixed workflows with one model call to highly flexible loops that choose actions dynamically. More autonomy generally increases both capability and operational risk."
+        },
+        {
+            "id": "agent-vs-chatbot",
+            "title": "2. Agents Versus Chatbots",
+            "type": "concept",
+            "content": "A basic chatbot receives a message and generates a response. A workflow-based assistant may invoke a predetermined sequence of functions. An agent can choose among available actions based on the current task and the results of earlier steps. For example, a fixed workflow might always search two databases and summarize the results, while an agent may decide to search a database, inspect the first result, and perform another targeted search if evidence is missing. This flexibility is useful for tasks with uncertain paths. It also makes behavior harder to predict, test, and constrain. Use an agent only when dynamic decisions provide enough value to justify the extra complexity."
+        },
+        {
+            "id": "agent-components",
+            "title": "3. Core Components of an Agent",
+            "type": "concept",
+            "content": "An agent commonly includes a goal or task specification, a model, a set of tools, working state, optional memory, a control loop, and a stopping policy. The goal defines what successful completion means. The model interprets the situation and proposes a next step. Tools allow the system to observe external information or perform actions. Working state tracks what has happened during the current task. Memory may preserve useful information across steps or sessions. The control loop determines when to call the model and when to execute an action. The stopping policy limits iterations, cost, and risk. Production systems also require authentication, authorization, observability, error handling, and evaluation."
+        },
+        {
+            "id": "agent-loop",
+            "title": "4. The Observe-Plan-Act-Evaluate Loop",
+            "type": "concept",
+            "content": "A useful conceptual agent loop consists of observation, planning, action, and evaluation. Observation gathers the current user request, tool results, and relevant state. Planning selects a next action or a sequence of actions. Action executes an approved tool or produces an intermediate result. Evaluation checks whether the action advanced the task and whether the goal has been reached. The system repeats the loop when more work is needed. These stages may be explicit modules or may be represented implicitly in a model prompt. Separating them conceptually helps developers inspect decisions, validate actions, and determine why an agent failed. It also enables deterministic checks to override unsafe or invalid model proposals."
+        },
+        {
+            "id": "agent-goals",
+            "title": "5. Defining Clear Goals",
+            "type": "concept",
+            "content": "An agent cannot reliably determine completion when its goal is vague. A task such as 'research vector databases' may require clarification about scope, output format, source quality, and depth. A stronger task specification might require a comparison of three products, current official documentation, a fixed set of evaluation criteria, and a concise recommendation. Goals should describe observable success conditions rather than relying only on subjective language. Include constraints, allowed sources, deadlines, output requirements, and actions that are prohibited. If a task is ambiguous or consequential, the agent should ask a clarifying question instead of guessing. Clear goals make planning and evaluation more reliable."
+        },
+        {
+            "id": "agent-state",
+            "title": "6. Working State",
+            "type": "concept",
+            "content": "Working state represents what the agent currently knows about the task and what has already occurred. It may include the user's goal, the current plan, completed steps, tool outputs, unresolved questions, error information, and a budget of remaining actions. State prevents the agent from repeatedly performing the same operation and helps it resume after a failure. Keep state structured when possible instead of relying entirely on a long free-form conversation transcript. A state transition should record which action was attempted and whether it succeeded. For durable workflows, persist state outside the model context so that process restarts do not erase the task's progress."
+        },
+        {
+            "id": "planning",
+            "title": "7. Planning in AI Agents",
+            "type": "concept",
+            "content": "Planning determines which actions may help achieve a goal and in what order. A simple agent may select one next action at a time. A more structured planner may create a list of subtasks, identify dependencies, and determine which outputs are required before the next step. Plans can be useful for long tasks because they make progress visible and expose missing prerequisites. However, a plan generated before any tools are executed may rely on incorrect assumptions. Good agents revise their plans when observations contradict expectations. A plan should be treated as a proposal rather than an unconditional execution script, especially when new information changes the task's safety or feasibility."
+        },
+        {
+            "id": "task-decomposition",
+            "title": "8. Task Decomposition",
+            "type": "concept",
+            "content": "Task decomposition breaks a large objective into smaller tasks that can be completed and checked individually. For example, preparing a technical comparison might involve identifying criteria, gathering official documentation, extracting evidence, comparing trade-offs, and producing a final report. Each subtask should have a clear output and completion condition. Dependencies matter: the comparison cannot be finalized before sufficient evidence has been gathered. Over-decomposition creates unnecessary planning overhead, while under-decomposition can leave important requirements unaddressed. A useful strategy is to decompose only when the task's complexity justifies it and to revise the subtask list as evidence becomes available."
+        },
+        {
+            "id": "planning-strategies",
+            "title": "9. Common Planning Strategies",
+            "type": "concept",
+            "content": "Reactive planning chooses the next action from the current observation without constructing a large upfront plan. Hierarchical planning separates a high-level objective into subgoals and then into executable actions. Plan-and-execute architectures generate a plan and follow it while checking progress. Replanning architectures update the plan after unexpected results. Search-based planning explores multiple possible action sequences and compares their expected outcomes, though it may be computationally expensive. No single strategy is best for every task. A short lookup may need only reactive behavior, while a multi-step research task benefits from decomposition, checkpoints, and replanning."
+        },
+        {
+            "id": "tool-use-agents",
+            "title": "10. Tool Use as an Agent Capability",
+            "type": "concept",
+            "content": "Tools give agents access to capabilities beyond text generation. Read tools may search documentation, inspect a database, or retrieve a file. Write tools may create a draft, update a record, or trigger an external workflow. Tool choice should depend on the goal, available evidence, and tool descriptions. The agent must interpret tool outputs and decide whether another action is needed. Tool access should be limited to an explicit allowlist, and every execution must pass through the application's validation and authorization layers. An agent's ability to reason about a tool does not imply permission to use it. The execution layer remains responsible for controlling real-world effects."
+        },
+        {
+            "id": "agent-memory",
+            "title": "11. Memory in Agent Systems",
+            "type": "concept",
+            "content": "Agent memory refers to information retained to support decisions beyond the immediate model input. Working memory contains details needed during the current task. Persistent memory can preserve user preferences, task history, project facts, or reusable knowledge across sessions. Retrieval-based memory stores information externally and retrieves relevant items when needed. Memory design should consider relevance, freshness, privacy, access control, and deletion. Saving everything is rarely useful because it increases storage, retrieval noise, and privacy risk. The system should distinguish confirmed facts from model-generated assumptions and should update or remove stale information when appropriate. Sensitive information needs stricter storage and access policies."
+        },
+        {
+            "id": "short-vs-long-memory",
+            "title": "12. Short-Term and Long-Term Memory",
+            "type": "concept",
+            "content": "Short-term memory usually refers to information maintained within a current interaction or task. It may include recent messages, tool results, and the current plan. Long-term memory persists across interactions and may use a database, document store, or vector index. Long-term memory is not simply an unlimited conversation transcript. A useful memory system selects compact, relevant information and retrieves it when needed. It should record provenance, timestamps, and ownership so the agent can determine whether a memory is still valid. If a user corrects an earlier assumption, the system should avoid continuing to rely on the outdated version."
+        },
+        {
+            "id": "memory-retrieval",
+            "title": "13. Retrieval-Augmented Agent Memory",
+            "type": "concept",
+            "content": "An agent can use a retrieval system to access information from a larger memory store without including every record in the prompt. When a task begins, the application retrieves memories related to the goal, user, or project. Retrieved items are added to the current state along with relevant provenance. This approach can support long-running projects, but semantic similarity alone does not establish that a memory is accurate or current. Use metadata such as owner, timestamp, source, and version. Apply authorization before exposing memory records. A memory retrieval system should also avoid allowing malicious stored text to override trusted system instructions."
+        },
+        {
+            "id": "reflection",
+            "title": "14. Reflection and Self-Checking",
+            "type": "concept",
+            "content": "Reflection is a process in which an agent reviews an intermediate result and identifies possible errors, missing requirements, or next steps. A report-writing agent might compare its draft against a checklist and search for unsupported claims. Reflection can improve completeness when it uses specific criteria and access to evidence. However, a model reviewing its own output can repeat the same mistake or produce unjustified confidence. Independent checks are often more reliable for factual claims, calculations, permissions, and required fields. Use deterministic validators where possible, and reserve model-based reflection for tasks that require semantic judgment."
+        },
+        {
+            "id": "feedback-loops",
+            "title": "15. Feedback Loops",
+            "type": "concept",
+            "content": "Feedback allows an agent to compare an action's observed outcome with the expected result. If a search returns no useful documents, the agent may refine the query. If a generated file fails validation, it may correct the structure and retry. Feedback is valuable only when the observation provides useful information. Repeating the same action without changing the relevant conditions can create a loop that wastes time and money. Define what constitutes progress and stop when repeated attempts fail to improve the result. Keep a record of prior attempts so the agent can avoid repeating unsuccessful strategies."
+        },
+        {
+            "id": "stopping-conditions",
+            "title": "16. Stopping Conditions and Budgets",
+            "type": "concept",
+            "content": "An agent needs explicit conditions for stopping. Completion may occur when all required subtasks pass validation, a final result is produced, or an authorized user confirms a state-changing action. Safety stops may occur when permissions are missing, the task is ambiguous, a dependency is unavailable, or a budget is exhausted. Set limits for model calls, tool calls, elapsed time, token use, and external API spending. A model's statement that it is finished should not replace deterministic checks for required outputs. If the agent cannot finish within the allowed budget, it should report what was completed and what remains unresolved."
+        },
+        {
+            "id": "bounded-agent-loop",
+            "title": "17. Implementing a Bounded Agent Loop",
+            "type": "code",
+            "language": "python",
+            "content": "def run_bounded_agent(task, decide, execute, max_steps=8):\n    state = {\"task\": task, \"history\": [], \"status\": \"running\"}\n    for step in range(max_steps):\n        decision = decide(state)\n        if decision[\"type\"] == \"finish\":\n            state[\"status\"] = \"completed\"\n            state[\"result\"] = decision.get(\"result\")\n            return state\n        if decision[\"type\"] != \"action\":\n            raise ValueError(\"Unknown decision type\")\n        result = execute(decision[\"name\"], decision.get(\"arguments\", {}))\n        state[\"history\"].append({\"action\": decision[\"name\"], \"result\": result})\n    state[\"status\"] = \"step_limit_reached\"\n    return state",
+            "explanation": "The example separates decision-making from action execution and imposes a maximum number of steps. It does not include production-grade validation, authorization, timeouts, persistence, or structured error handling. The execute function must enforce those controls. A real system should also detect repeated actions and verify completion criteria rather than trusting an unconstrained model response."
+        },
+        {
+            "id": "agent-types",
+            "title": "18. Common Types of Agents",
+            "type": "concept",
+            "content": "A reactive agent chooses an action based mainly on the current observation. A planning agent constructs or revises a sequence of actions. A retrieval agent gathers information from a knowledge base before answering or acting. A coding agent inspects files, edits code, runs tests, and responds to failures. A browser agent navigates websites and extracts information. A workflow agent coordinates a series of business operations. These categories overlap because one application may combine retrieval, planning, and workflow execution. The useful design question is which capabilities the task requires, not which label sounds most advanced."
+        },
+        {
+            "id": "workflow-vs-agent",
+            "title": "19. Fixed Workflows Versus Autonomous Agents",
+            "type": "concept",
+            "content": "A fixed workflow follows predefined steps and transitions. It is often easier to test, audit, and predict because the allowed path is known in advance. An autonomous agent can choose actions dynamically and adapt when observations change. That flexibility can help with uncertain tasks but also introduces more possible failure paths. Many production systems benefit from a hybrid approach: deterministic code manages permissions, state transitions, retries, and critical business rules, while an LLM handles language interpretation or selects among a small set of approved actions. Choose the least complex architecture that satisfies the task's requirements."
+        },
+        {
+            "id": "multi-agent-systems",
+            "title": "20. What Is a Multi-Agent System?",
+            "type": "concept",
+            "content": "A multi-agent system uses multiple agents or specialized model-driven roles to work on a larger objective. One agent may gather evidence, another may review it, and a coordinator may combine the results. Parallel specialization can improve coverage when subtasks are genuinely independent. However, multiple agents can also repeat work, contradict one another, propagate errors, and increase cost. Adding more agents does not automatically improve reasoning quality. Each role should have a clear responsibility, defined inputs and outputs, and an evaluation criterion. The orchestration layer must manage dependencies, conflicts, deadlines, and shared resources."
+        },
+        {
+            "id": "agent-specialization",
+            "title": "21. Specialized Agent Roles",
+            "type": "concept",
+            "content": "Specialized roles can help divide complex tasks into manageable responsibilities. A research role gathers source-backed evidence, an analysis role compares findings, a reviewer checks claims and completeness, and a coordinator organizes the final output. These roles may use different prompts, tools, or models, but their names alone do not guarantee expertise. Define each role through explicit responsibilities and output contracts. The reviewer should check against evidence and requirements rather than simply approve another agent's work. For sensitive tasks, role specialization must not create an indirect path around access controls. Every agent should operate under the same trusted security policy."
+        },
+        {
+            "id": "parallelism",
+            "title": "22. Parallel and Sequential Agent Execution",
+            "type": "concept",
+            "content": "Parallel execution is useful when tasks are independent, such as retrieving official documentation from several sources. Sequential execution is necessary when one step depends on another, such as reviewing evidence before writing a final report. Parallelism can reduce wall-clock time but may increase concurrent resource use and produce conflicting results. Define a maximum concurrency limit and handle partial failures. When combining outputs, preserve source attribution and resolve disagreements through explicit validation. Do not assume that majority agreement among model-generated answers proves correctness; independent outputs can share the same underlying error."
+        },
+        {
+            "id": "agent-coordination",
+            "title": "23. Coordinating Multiple Agents",
+            "type": "concept",
+            "content": "A coordinator manages task assignment, shared state, dependencies, deadlines, and final integration. It should define what each worker receives and what output format it must return. Workers should avoid changing shared state unless the operation is explicitly permitted. When results conflict, the coordinator can request evidence, rerun a specific check, or ask for human review. Keep a trace of which agent produced each result and which sources support it. The coordinator must also enforce overall budgets so that a worker cannot create an unbounded chain of additional agents or tool calls."
+        },
+        {
+            "id": "agent-handoffs",
+            "title": "24. Handoffs and Structured Outputs",
+            "type": "concept",
+            "content": "A handoff transfers a task or result from one component to another. Handoffs become more reliable when they use structured output contracts rather than vague free-form messages. A research worker might return a list of claims, supporting sources, confidence notes, and unresolved questions. A reviewer can validate those fields without guessing how to interpret the output. Required fields should be checked by code, and source references should be verified against actual records. Structured handoffs also reduce the amount of irrelevant conversation passed between agents. They do not eliminate the need for validation because a syntactically valid result can still be factually wrong."
+        },
+        {
+            "id": "agent-memory-collaboration",
+            "title": "25. Shared Memory in Multi-Agent Systems",
+            "type": "concept",
+            "content": "Multiple agents may use a shared store for task state, retrieved evidence, and intermediate outputs. Shared memory can reduce repeated work, but it introduces synchronization and ownership problems. Two agents may write conflicting values or assume that a result is final when another agent is still updating it. Use explicit state transitions, version numbers, and ownership rules for mutable resources. Store provenance and timestamps with evidence. Restrict access according to each role's permissions. A shared memory system should not allow one agent to inject arbitrary instructions into another agent's trusted control context."
+        },
+        {
+            "id": "agent-reliability",
+            "title": "26. Reliability and Failure Recovery",
+            "type": "concept",
+            "content": "Agents fail in ways that ordinary request-response applications may not. They can choose the wrong tool, misunderstand a result, repeat an action, produce malformed output, or continue after the goal has already been achieved. External dependencies can also fail during a multi-step workflow. Reliable systems persist progress, classify errors, retry only safe operations, and stop when repeated attempts do not help. For long-running tasks, use durable task records and resumable checkpoints. A recovery procedure should determine which steps actually completed rather than assuming that an interrupted workflow performed nothing."
+        },
+        {
+            "id": "agent-safety",
+            "title": "27. Safety Boundaries for Agents",
+            "type": "concept",
+            "content": "Agent safety depends on controlling which observations can influence decisions, which tools are available, and which actions may be executed. Use least-privilege tools, strict schemas, server-side authorization, and explicit limits. Separate planning from commitment for consequential actions. Require human approval where the impact warrants it. Treat external content as untrusted and do not allow it to change system policy. Keep secrets out of model context and avoid exposing unnecessary personal data. Safety controls should remain effective even if the model hallucinates, is manipulated by prompt injection, or repeatedly proposes invalid actions."
+        },
+        {
+            "id": "agent-prompt-injection",
+            "title": "28. Prompt Injection in Agent Workflows",
+            "type": "concept",
+            "content": "An agent that reads websites, documents, emails, or tool outputs may encounter malicious instructions embedded in the content. Those instructions can attempt to redirect the task, request confidential data, or persuade the agent to invoke a dangerous tool. The application should distinguish trusted instructions from untrusted observations and enforce permissions outside the model. Limit the data each tool can access, validate external destinations, and require approval for sensitive operations. Do not assume that a model will always correctly identify malicious text. Test workflows with adversarial documents and ensure that the execution layer blocks unauthorized actions even when the model is influenced."
+        },
+        {
+            "id": "agent-autonomy-levels",
+            "title": "29. Levels of Autonomy",
+            "type": "concept",
+            "content": "Agent autonomy can be understood as a spectrum. At the lowest level, the model suggests an action but a person performs it. At a higher level, the system executes read-only tools automatically. More autonomous systems may perform reversible state changes within narrow permissions. The highest-risk systems execute consequential actions with minimal supervision. The appropriate level depends on reversibility, financial impact, privacy, legal obligations, and the reliability of available checks. Autonomy should be increased gradually after evaluation. A task that is safe to automate for read-only lookup may still require explicit confirmation before it modifies data or communicates externally."
+        },
+        {
+            "id": "human-in-the-loop",
+            "title": "30. Human-in-the-Loop Design",
+            "type": "concept",
+            "content": "Human-in-the-loop design places a person at a decision point where judgment or approval is important. The agent can prepare a plan, gather evidence, and propose an action, while a human reviews the details before execution. The review interface should show the target, parameters, expected effects, and relevant evidence. Approval must be tied to the exact proposed action and expire or become invalid if the action changes materially. A human approval step should not be a vague instruction hidden in a chat transcript; it should be enforced by trusted application state. Good interfaces make uncertainty and unresolved issues visible so reviewers can make informed decisions."
+        },
+        {
+            "id": "agent-evaluation",
+            "title": "31. Evaluating Agent Performance",
+            "type": "concept",
+            "content": "Agent evaluation should measure task completion, factual correctness, tool-selection accuracy, argument validity, policy compliance, efficiency, and recovery from failures. A task may appear successful while relying on fabricated evidence or an unauthorized operation, so outcome quality and process quality should be measured separately. Use deterministic checks for structured requirements and human review for subjective outputs. Include difficult tasks, ambiguous instructions, missing data, tool failures, and adversarial inputs. Track performance across multiple runs because model-driven systems can be nondeterministic. A single successful demonstration does not establish that an agent is reliable in production."
+        },
+        {
+            "id": "agent-benchmarks",
+            "title": "32. Building an Agent Evaluation Set",
+            "type": "concept",
+            "content": "An evaluation set should contain realistic tasks with explicit success criteria and known constraints. Include straightforward tasks, multi-step tasks, tasks that require clarification, tasks with missing evidence, and tasks that should be refused or stopped. Record expected tool permissions, required outputs, and forbidden side effects. For research or browsing agents, define what counts as an acceptable source and how citations are checked. For coding agents, run tests and inspect the resulting changes. Keep a held-out set for final evaluation and avoid repeatedly tuning prompts against every test case. Update the suite when production failures reveal new categories of risk."
+        },
+        {
+            "id": "agent-cost-latency",
+            "title": "33. Cost and Latency in Agent Systems",
+            "type": "concept",
+            "content": "Agent workflows can require multiple model calls and external operations for a single user request. Total cost depends on input and output tokens, model selection, tool usage, retries, and the number of steps. Sequential calls add latency, while parallel calls can increase peak resource usage. A longer plan is not necessarily a better plan. Use small, bounded steps, avoid redundant tools, and use deterministic code for routine validation. Track cost and latency by task category. Define budgets and graceful stopping behavior. When optimizing, preserve task success and safety metrics rather than focusing on speed alone."
+        },
+        {
+            "id": "agent-observability",
+            "title": "34. Tracing Agent Decisions",
+            "type": "concept",
+            "content": "An agent trace should show the task identifier, model and prompt versions, selected action, tool name, execution status, duration, and relevant state transitions. For multi-agent workflows, record which role produced each output and how the coordinator used it. Avoid logging secrets or unnecessary private content. Traces should distinguish a proposed action from an executed action and record whether a human approved a consequential operation. These records help developers identify loops, repeated calls, unexpected tool selection, and failures in task completion. Use sampling and retention policies that balance debugging value with privacy and storage cost."
+        },
+        {
+            "id": "agent-state-machine",
+            "title": "35. Agents as State Machines",
+            "type": "concept",
+            "content": "A state machine defines a set of states and the allowed transitions between them. An agent workflow might move through received, planning, awaiting_approval, executing, verifying, completed, and failed states. Each transition can enforce preconditions and record an audit event. The model may propose a transition, but deterministic application logic decides whether it is allowed. For example, a workflow should not enter completed before required output validation passes. Explicit states make long-running workflows easier to resume and reason about than an unstructured sequence of model messages. They also make it easier to detect impossible transitions and recover from partial failures."
+        },
+        {
+            "id": "agent-state-machine-example",
+            "title": "36. A Simple Agent State Transition",
+            "type": "code",
+            "language": "python",
+            "content": "ALLOWED = {\"received\": {\"planning\", \"failed\"}, \"planning\": {\"executing\", \"awaiting_approval\", \"failed\"}, \"awaiting_approval\": {\"executing\", \"failed\"}, \"executing\": {\"verifying\", \"failed\"}, \"verifying\": {\"completed\", \"planning\", \"failed\"}, \"completed\": set(), \"failed\": set()}\n\ndef transition(state, next_state):\n    if next_state not in ALLOWED.get(state, set()):\n        raise ValueError(f\"Invalid transition: {state} -> {next_state}\")\n    return next_state",
+            "explanation": "This example defines a small finite-state machine and rejects transitions that are not explicitly allowed. A production workflow would persist state, handle concurrent updates, record transition history, and check authorization before executing state-changing operations. The model should not be able to bypass the transition rules by generating a different state name."
+        },
+        {
+            "id": "agent-verification",
+            "title": "37. Verification Before Completion",
+            "type": "concept",
+            "content": "An agent should verify its output against the task requirements before declaring success. A file-generation agent can parse the file, validate its schema, and run tests. A research agent can check whether each major claim has supporting evidence. A workflow agent can query the authoritative system to confirm that an operation succeeded. Verification should use the strongest practical source of truth. Asking the same model whether it succeeded may be useful for a semantic review, but it is not sufficient for exact or consequential requirements. If verification fails, the agent can attempt a bounded correction or report the unresolved problem."
+        },
+        {
+            "id": "agent-planning-example",
+            "title": "38. Worked Example: Research Agent",
+            "type": "concept",
+            "content": "Suppose an agent must compare three database products using official documentation. It first decomposes the task into product-specific research subtasks and a comparison stage. Research workers retrieve official information about deployment, filtering, scaling, and operational requirements. The coordinator validates source URLs and checks that each required criterion has evidence. If a criterion is missing, it launches a targeted retrieval step rather than rewriting the entire report. A reviewer checks whether the conclusions follow from the evidence. The final response includes the comparison, source references, uncertainties, and limitations. The agent stops when all required criteria pass validation or when its budget is exhausted."
+        },
+        {
+            "id": "agent-failure-cases",
+            "title": "39. Common Agent Failure Modes",
+            "type": "concept",
+            "content": "Common failures include unclear goals, incorrect plans, repeated tool calls, stale memory, hallucinated completion, incorrect interpretation of tool results, and unsafe actions influenced by untrusted content. Multi-agent systems add coordination errors, conflicting outputs, and duplicated work. External services can fail after earlier steps have succeeded, leaving partial state. Diagnose failures by examining the goal specification, state transitions, tool records, evidence, and verification results. Do not respond to every failure by increasing model size or adding more agents. Often the solution is a clearer contract, a deterministic validator, better retrieval, a stronger stopping condition, or a more reliable execution layer."
+        },
+        {
+            "id": "agent-recovery",
+            "title": "40. Recovery and Resuming Long Tasks",
+            "type": "concept",
+            "content": "Long-running agents should persist progress at meaningful checkpoints. A checkpoint can record completed subtasks, outputs, source references, pending actions, and the current workflow state. After a process restart, the system verifies the stored state and resumes from the last safe point. Do not blindly repeat state-changing actions because the previous response may have been lost after successful execution. Query the authoritative system to determine whether the action occurred and use idempotency mechanisms where available. Recovery logic should distinguish transient failures from invalid requests and terminal authorization errors."
+        },
+        {
+            "id": "agent-production",
+            "title": "41. Production Deployment Checklist",
+            "type": "concept",
+            "content": "Before deployment, define task success criteria, allowed tools, permissions, action budgets, timeouts, and stopping conditions. Test the system with representative and adversarial tasks. Validate structured outputs and verify consequential operations against authoritative systems. Use durable state for long-running tasks and implement safe recovery from partial failures. Monitor task success, tool errors, latency, cost, and policy violations. Require human approval where the impact warrants it. Keep prompts, tool schemas, and model versions under change control. Establish a rollback plan and assign responsibility for investigating regressions and incidents."
+        },
+        {
+            "id": "agent-lab",
+            "title": "42. Practical Lab: Build a Bounded Research Agent",
+            "type": "exercise",
+            "content": "Build an agent that answers a technical question using a controlled document-search tool. The agent should identify the task requirements, search for evidence, inspect results, and produce a concise answer with source identifiers. Give it a maximum of six action steps, a bounded number of search results, and an explicit stopping condition. Include a verification stage that checks whether each major claim has supporting evidence. Test questions that can be answered, questions with missing evidence, empty search results, tool timeouts, and malicious instructions embedded in a document. Record the number of calls, task outcome, latency, and failure category."
+        },
+        {
+            "id": "agent-lab-solution",
+            "title": "43. Lab Design: Reliable Research",
+            "type": "concept",
+            "content": "A reliable solution stores the goal, search history, evidence, and remaining budget in structured state. The search tool returns stable document IDs, titles, snippets, and provenance. The agent can request another search when evidence is insufficient, but repeated equivalent searches are detected and limited. The final answer is generated from the retrieved evidence, and a validator checks that source IDs are present and correspond to actual results. The system treats document instructions as untrusted content and exposes no write-capable tools. If the tool fails or the evidence is insufficient, the agent reports the limitation rather than inventing a conclusion."
+        },
+        {
+            "id": "agent-architecture-choice",
+            "title": "44. Choosing Between a Workflow and an Agent",
+            "type": "concept",
+            "content": "Use a fixed workflow when the task follows known steps, the state transitions are predictable, and correctness requirements are strict. Use an agent when the next useful step depends on uncertain observations and flexible language understanding provides real value. A hybrid architecture is often the most practical choice: deterministic code handles permissions, state, validation, and critical transitions, while the model interprets the task and proposes among approved actions. Evaluate the additional autonomy against its cost, latency, testability, and risk. The objective is not maximum autonomy; it is reliable task completion with an appropriate level of flexibility."
+        },
+        {
+            "id": "agent-future",
+            "title": "45. The Future of Agentic Systems",
+            "type": "concept",
+            "content": "Agentic systems are moving toward stronger tool integration, persistent task state, improved multimodal observation, and more structured orchestration. These capabilities may support complex research, software development, data analysis, and business workflows. Greater capability also increases the importance of permissions, verification, and predictable recovery. Benchmarks and demonstrations can overstate real-world reliability if they omit ambiguous tasks, long-running failures, or adversarial inputs. Practical progress depends on evaluating complete systems, including their tools and execution environment, rather than measuring model reasoning in isolation. Strong agent engineering combines useful autonomy with explicit boundaries and measurable success criteria."
+        },
+        {
+            "id": "agents-summary",
+            "title": "46. Key Takeaways",
+            "type": "concept",
+            "content": "An AI agent uses observations, state, tools, and model-driven decisions to pursue a goal across one or more steps. Effective agents have clear goals, structured state, bounded loops, explicit stopping conditions, and verification procedures. Planning and task decomposition help with complex tasks, while memory supports continuity when designed with privacy and freshness controls. Multi-agent systems can provide specialization and parallelism but also add coordination cost and failure modes. Production agents require least-privilege tools, authorization outside the model, prompt-injection defenses, durable state, safe retries, observability, and rigorous evaluation. Choose the least complex architecture that can reliably complete the task."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "agents-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What distinguishes an agent from a basic chatbot?",
+            "correctAnswer": "An agent can coordinate multiple steps, use tools, maintain task state, and adapt its next action based on observations.",
+            "solution": "A basic chatbot commonly generates a response to a message. An agent can execute a bounded loop that observes information, selects an action, evaluates the result, and continues until a goal or stopping condition is reached."
+        },
+        {
+            "id": "agents-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why should an agent have a maximum step count?",
+            "correctAnswer": "To limit runaway loops, latency, resource consumption, and uncontrolled repeated actions.",
+            "solution": "Model-driven systems can repeatedly call tools or fail to recognize completion. A maximum step count provides a deterministic upper bound. It should be combined with timeouts, call budgets, and explicit success criteria."
+        },
+        {
+            "id": "agents-ex-3",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "When is a fixed workflow preferable to a highly autonomous agent?",
+            "correctAnswer": "When the task has predictable steps, strict correctness requirements, or consequential operations that benefit from explicit state transitions.",
+            "solution": "Fixed workflows are easier to test and audit. A hybrid system can still use a model for language interpretation while keeping permissions, transitions, and critical actions in deterministic code."
+        },
+        {
+            "id": "agents-ex-4",
+            "type": "security",
+            "difficulty": "advanced",
+            "question": "An agent reads a web page instructing it to reveal its API keys. How should the architecture respond?",
+            "correctAnswer": "Treat the page as untrusted data and ensure the agent cannot access or disclose secrets through its available tools and permissions.",
+            "solution": "Prompt instructions alone are not a sufficient security boundary. Secrets should remain outside model context, tools should use least-privilege credentials, and the execution layer should block unauthorized access or transfer."
+        },
+        {
+            "id": "agents-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A multi-step agent creates a record successfully but crashes before recording completion. How should it resume?",
+            "correctAnswer": "Load the durable task state, inspect the authoritative system to determine whether the record exists, and resume safely without duplicating the operation.",
+            "solution": "Persist checkpoints and operation identifiers. Use idempotency where available and verify actual state before retrying. A restarted agent should not assume that an interrupted request had no side effects."
+        },
+        {
+            "id": "agents-ex-6",
+            "type": "evaluation",
+            "difficulty": "advanced",
+            "question": "Why is a final answer that looks correct insufficient to establish that an agent performed reliably?",
+            "correctAnswer": "The answer may rely on fabricated evidence, unauthorized data, or an operation that never actually succeeded.",
+            "solution": "Evaluate task outcomes and process properties separately. Verify tool execution records, source evidence, authorization decisions, state changes, and structured output requirements."
+        }
+    ],
+    "summary": "Autonomous AI agents combine language-model decisions, tools, task state, memory, and feedback loops to complete multi-step objectives. Reliable agents need clear goals, explicit planning and verification, bounded execution, durable state, and well-defined stopping conditions. Multi-agent systems can improve specialization and parallelism but add coordination and reliability challenges. Production architecture must enforce permissions outside the model, treat external content as untrusted, use safe recovery for partial failures, and evaluate task success alongside cost, latency, and security. The goal is controlled autonomy, not unrestricted action.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-retrieval",
+        "module-12-modern-ai-systems-tool-calling",
+        "module-12-modern-ai-systems-function-calling",
+        "module-12-modern-ai-systems-structured-generation"
+    ]
+}

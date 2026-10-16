@@ -1,1 +1,311 @@
-{}
+{
+    "id": "module-15-reinforcement-learning-markov-decision-processes",
+    "moduleId": "module-15-reinforcement-learning",
+    "moduleIndex": 15,
+    "topicIndex": 3,
+    "title": "Markov Decision Processes (MDP)",
+    "slug": "markov-decision-processes",
+    "href": "/curriculum/15-reinforcement-learning/markov-decision-processes",
+    "filePath": "content/curriculum/15-reinforcement-learning/03-markov-decision-processes.json",
+    "description": "Understand Markov decision processes, transition probabilities, reward functions, initial-state distributions, terminal states, discounted objectives, and how MDPs mathematically describe sequential decision-making.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "agent-environment",
+        "states-actions-rewards"
+    ],
+    "learningObjectives": [
+        "Define a Markov decision process and explain its components.",
+        "Understand the Markov property and its role in reinforcement learning.",
+        "Represent transition dynamics using probabilities.",
+        "Distinguish deterministic and stochastic environments.",
+        "Define reward functions and expected immediate rewards.",
+        "Explain the role of initial-state distributions.",
+        "Calculate probabilities of state transitions.",
+        "Compute expected rewards and discounted returns.",
+        "Distinguish finite-horizon and infinite-horizon tasks.",
+        "Understand terminal states and absorbing states.",
+        "Explain policies and their relationship to MDPs.",
+        "Implement a small tabular MDP in Python.",
+        "Understand the relationship between MDPs, planning, and RL algorithms."
+    ],
+    "sections": [
+        {
+            "id": "mdp-introduction",
+            "title": "What Is a Markov Decision Process?",
+            "type": "concept",
+            "content": "A Markov decision process, commonly called an MDP, is a mathematical framework for modeling sequential decision-making under uncertainty. An agent observes a state, chooses an action, receives a reward, and transitions to another state. The transition may be deterministic or stochastic. The objective is usually to find a policy that maximizes expected cumulative reward. MDPs provide the foundation for many reinforcement learning algorithms, including dynamic programming, Monte Carlo methods, temporal-difference learning, Q-learning, and policy optimization. An MDP describes the decision problem; it does not by itself specify which learning algorithm must solve it."
+        },
+        {
+            "id": "mdp-components",
+            "title": "The Components of an MDP",
+            "type": "concept",
+            "content": "A standard MDP is represented by the tuple (S, A, P, R, gamma). S is the state space, A is the action space, P describes transition probabilities, R describes rewards, and gamma is the discount factor. Some formulations additionally specify an initial-state distribution and a terminal-state structure. The state space defines possible situations, the action space defines available decisions, the transition model describes how actions change the environment, and the reward function defines immediate feedback. The discount factor determines how future rewards contribute to the objective. These components jointly define the mathematical task that an agent must solve."
+        },
+        {
+            "id": "mdp-tuple",
+            "title": "Formal MDP Definition",
+            "type": "math",
+            "content": "A finite MDP can be written as M = (S, A, P, R, gamma). Here, P(s'|s,a) is the probability that the next state is s' after taking action a in state s. A reward model may be written as R(s,a), or more generally as R(s,a,s') when the reward depends on the resulting state. The discount factor gamma is usually between zero and one for discounted infinite-horizon problems. The transition probabilities must be nonnegative and sum to one over all possible next states for each valid state-action pair.",
+            "formula": "P(s'\\mid s,a) \\geq 0, \\qquad \\sum_{s'\\in S}P(s'\\mid s,a)=1",
+            "example": "A robot in a hallway may move left or right. A command to move right might succeed with probability 0.8, leave the robot in place with probability 0.1, and move it left with probability 0.1. These probabilities describe the stochastic transition model."
+        },
+        {
+            "id": "state-space",
+            "title": "The State Space",
+            "type": "concept",
+            "content": "The state space S contains the states that can occur in the task. In a small board game, states may be complete board configurations. In a grid world, a state may be a coordinate pair. In a robotic control problem, it may contain position, velocity, orientation, and other physical variables. State spaces may be finite, countably infinite, or continuous. Tabular algorithms are practical only when the relevant state representation is small enough to store explicitly. Large or continuous state spaces usually require approximation, structured representations, or function-based models."
+        },
+        {
+            "id": "action-space",
+            "title": "The Action Space",
+            "type": "concept",
+            "content": "The action space A describes the choices available to the agent. Some MDPs use the same action set in every state, while others define state-dependent legal actions A(s). A grid world might permit four directional movements, whereas a resource-allocation system might permit assigning a job to one of several servers. Continuous-control problems use real-valued actions. The action representation affects how policies are represented and which algorithms are appropriate. A correct model must also define what happens when an action is unavailable in a particular state."
+        },
+        {
+            "id": "transition-model",
+            "title": "Transition Probabilities",
+            "type": "concept",
+            "content": "The transition model P(s'|s,a) specifies the probability of reaching state s' after taking action a in state s. If the environment is deterministic, each state-action pair leads to one next state with probability one. In a stochastic environment, several outcomes may be possible. Randomness can represent physical uncertainty, opponents, weather, demand variation, or deliberately randomized dynamics. The transition model is useful for planning because it allows an agent to evaluate possible consequences before acting. In model-free RL, the agent may not know P and must learn from sampled interactions."
+        },
+        {
+            "id": "deterministic-stochastic-mdp",
+            "title": "Deterministic and Stochastic MDPs",
+            "type": "concept",
+            "content": "In a deterministic MDP, the next state is a fixed function of the current state and action. In a stochastic MDP, the transition model assigns probabilities to multiple possible next states. Stochasticity does not imply that the environment is completely unpredictable: outcomes may have stable probabilities. A policy must account for expected consequences rather than assuming that the most likely outcome always occurs. An action with a high average reward may also have significant downside risk, which matters when safety or reliability is part of the objective."
+        },
+        {
+            "id": "transition-calculation",
+            "title": "Calculating Transition Probabilities",
+            "type": "math",
+            "content": "For a fixed state and action, the probabilities of all possible next states sum to one. If an action has two possible outcomes, the probability of the second outcome is one minus the probability of the first, provided the outcomes are mutually exclusive and exhaustive. For several outcomes, each probability must be included in the total. Transition probabilities describe uncertainty about the next state, not the probability that an agent will select the action; action selection is described by the policy.",
+            "formula": "\\sum_{s'}P(s'\\mid s,a)=1",
+            "example": "Suppose a robot moves forward successfully with probability 0.7, slips into the left cell with probability 0.2, and remains in place with probability 0.1. The total is 0.7 + 0.2 + 0.1 = 1.0, so the distribution is valid."
+        },
+        {
+            "id": "reward-model",
+            "title": "The Reward Function",
+            "type": "concept",
+            "content": "The reward model specifies immediate feedback associated with a transition. One convention uses R(s,a), while another uses R(s,a,s') to express dependence on the resulting state. A stochastic reward model may instead describe the distribution of rewards. Rewards can represent task completion, cost, energy, risk, or other quantities that the objective should consider. The reward function is not the same as the transition model: the transition model describes what happens, while the reward model evaluates the outcome. In an MDP, both are needed to determine the expected long-term consequences of a policy."
+        },
+        {
+            "id": "expected-reward",
+            "title": "Expected Immediate Reward",
+            "type": "math",
+            "content": "When an action can produce several next states, the expected immediate reward averages the possible rewards using their transition probabilities. If the reward depends on the resulting state, each possible reward is multiplied by the probability of that transition. This expected value is useful for planning, although it does not describe the full variability of outcomes.",
+            "formula": "\\mathbb{E}[R\\mid s,a]=\\sum_{s'}P(s'\\mid s,a)R(s,a,s')",
+            "example": "An action produces reward +5 with probability 0.6 and reward -2 with probability 0.4. Its expected reward is 0.6(5) + 0.4(-2) = 3 - 0.8 = 2.2."
+        },
+        {
+            "id": "initial-state-distribution",
+            "title": "Initial-State Distributions",
+            "type": "concept",
+            "content": "The initial-state distribution describes where an episode begins. It is often written as rho_0(s). In some tasks, every episode starts from a fixed state. In others, the environment randomly selects an initial state from a distribution. This matters because policy performance can depend strongly on starting conditions. A policy that succeeds from one location may fail from another. Training over a variety of initial states can improve robustness, while evaluation should measure performance on the initial-state distribution that reflects the intended use."
+        },
+        {
+            "id": "discount-factor",
+            "title": "The Discount Factor",
+            "type": "concept",
+            "content": "The discount factor gamma determines how much future rewards contribute to the return. When gamma is zero, only the next reward matters. As gamma approaches one, rewards farther into the future retain more weight. For an infinite-horizon discounted problem, choosing gamma below one helps ensure a finite return when rewards are bounded. A large gamma encourages long-term planning but may make value estimation more sensitive to distant outcomes. A small gamma emphasizes immediate consequences. The choice should reflect the task horizon and objective rather than being treated as an arbitrary default."
+        },
+        {
+            "id": "discounted-objective",
+            "title": "The MDP Optimization Objective",
+            "type": "math",
+            "content": "A policy is evaluated by the expected discounted sum of rewards. The expectation accounts for randomness in initial states, transitions, rewards, and potentially policy actions. The objective is to find a policy whose expected return is as large as possible. Some applications instead use average reward per time step or finite-horizon objectives; the appropriate criterion depends on the task.",
+            "formula": "J(\\pi)=\\mathbb{E}_{\\pi}\\left[\\sum_{t=0}^{\\infty}\\gamma^t r_{t+1}\\right]",
+            "example": "If an agent receives rewards 2, 1, and 4 and gamma is 0.5, the three-step return is 2 + 0.5(1) + 0.25(4) = 3.5."
+        },
+        {
+            "id": "mdp-policy",
+            "title": "Policies in an MDP",
+            "type": "concept",
+            "content": "A policy defines how the agent selects actions. A deterministic policy maps each state to an action, while a stochastic policy assigns probabilities to available actions. A policy induces a distribution over trajectories because transitions may be stochastic and the policy itself may randomize. The same MDP can be evaluated under many policies. Learning and planning algorithms attempt to identify a policy that maximizes the chosen return criterion. The best policy depends on the transition model, rewards, discount factor, and task assumptions."
+        },
+        {
+            "id": "trajectory-probability",
+            "title": "Probability of a Trajectory",
+            "type": "math",
+            "content": "The probability of a trajectory depends on the initial-state probability, the policy's action probabilities, and the environment's transition probabilities. Under the usual Markov assumptions, the probability factors into a product of these terms across time. This factorization is important in model-based planning and policy-gradient methods, where trajectory probabilities are used to reason about expected returns.",
+            "formula": "P(\\tau)=\\rho_0(s_0)\\prod_{t=0}^{T-1}\\pi(a_t\\mid s_t)P(s_{t+1}\\mid s_t,a_t)",
+            "example": "If the initial state has probability 1, the policy chooses an action with probability 0.5, and the transition succeeds with probability 0.8, the probability of that particular one-step state-action outcome is 0.5(0.8) = 0.4."
+        },
+        {
+            "id": "finite-horizon",
+            "title": "Finite-Horizon MDPs",
+            "type": "concept",
+            "content": "A finite-horizon MDP has a fixed or bounded number of decision steps. The remaining time can affect which action is best. For example, a resource-allocation agent near the end of a shift may behave differently from one with many hours remaining. In general, the optimal policy for a finite-horizon problem can depend on both the current state and the time remaining. This can be modeled by including time in the state or by using time-indexed value functions and policies."
+        },
+        {
+            "id": "infinite-horizon",
+            "title": "Infinite-Horizon MDPs",
+            "type": "concept",
+            "content": "An infinite-horizon MDP models ongoing decisions without a fixed final time. Discounted-return objectives are common because they give a well-defined objective under standard bounded-reward assumptions when gamma is below one. Some continuing tasks use average reward per step instead. The choice between discounted and average-reward objectives changes the meaning of optimality. Discounted objectives value near-term rewards more heavily, whereas average-reward objectives focus on long-run performance per time step."
+        },
+        {
+            "id": "terminal-and-absorbing",
+            "title": "Terminal and Absorbing States",
+            "type": "concept",
+            "content": "A terminal state indicates that the task has ended. An absorbing state is a state that, once entered, cannot be left under the modeled transition dynamics. Some MDP formulations represent terminal states as absorbing states with zero future reward, while implementations may instead stop collecting transitions immediately. These conventions are mathematically related but should be handled consistently. A terminal state should not accidentally allow the agent to continue accumulating rewards from an episode that has already ended."
+        },
+        {
+            "id": "bellman-connection",
+            "title": "Why MDPs Lead to Bellman Equations",
+            "type": "concept",
+            "content": "The Markov property allows the expected return to be decomposed into immediate reward plus discounted future value. This recursive structure is the foundation of Bellman equations. Instead of enumerating every possible future trajectory explicitly, a value function summarizes the expected future return from a state or state-action pair. Dynamic programming uses known model dynamics to calculate such values, while model-free RL methods estimate related quantities from sampled experience. The next topic develops value functions and Bellman equations in detail."
+        },
+        {
+            "id": "mdp-planning-learning",
+            "title": "Planning Versus Learning",
+            "type": "concept",
+            "content": "Planning uses a known or learned model to predict the results of actions and compare possible decisions. Learning uses data or interaction to improve estimates of values, dynamics, or policies. Dynamic programming assumes access to the MDP model, while model-free RL can operate without explicit knowledge of transition probabilities. Model-based RL learns or approximates a model and uses it for planning. The distinction is about the information and computational process used, not whether the underlying task is an MDP."
+        },
+        {
+            "id": "gridworld-mdp",
+            "title": "Example: A Grid-World MDP",
+            "type": "example",
+            "content": "Consider a small grid in which an agent starts in the upper-left cell and must reach a goal in the lower-right cell. Each cell is a state, and the four movement directions are actions. Moving toward a wall may leave the agent in place. Ordinary moves incur a small cost, while entering the goal produces a positive reward. If movement is uncertain, an intended move may succeed or slip into a neighboring cell. The MDP specifies these transition probabilities and rewards. A policy then maps each cell to a movement decision."
+        },
+        {
+            "id": "gridworld-code",
+            "title": "Implementing a Tabular MDP",
+            "type": "code",
+            "language": "python",
+            "content": "The following example defines a tiny MDP with two nonterminal states and one terminal state. Actions move the agent between states, and transition outcomes are represented as probabilities. The example demonstrates how to store the model rather than implementing a complete planning algorithm.",
+            "explanation": "Each transition tuple contains probability, next state, reward, and a termination flag. Probabilities for each state-action pair should sum to one.",
+            "code": "mdp = {\n    0: {\n        0: [(1.0, 0, -1.0, False)],\n        1: [(0.8, 1, 0.0, False), (0.2, 0, -1.0, False)]\n    },\n    1: {\n        0: [(1.0, 0, 0.0, False)],\n        1: [(1.0, 2, 1.0, True)]\n    },\n    2: {}\n}\n\nfor state, actions in mdp.items():\n    for action, outcomes in actions.items():\n        probability_sum = sum(outcome[0] for outcome in outcomes)\n        assert abs(probability_sum - 1.0) < 1e-9\n\nprint('MDP transition probabilities are valid.')"
+        },
+        {
+            "id": "expected-reward-code",
+            "title": "Computing Expected Immediate Reward in Python",
+            "type": "code",
+            "language": "python",
+            "content": "Expected immediate reward is computed by weighting each possible reward by the probability of its transition. This calculation is useful when the MDP model is available.",
+            "explanation": "The function assumes that each transition outcome contains a probability and a reward in positions zero and two.",
+            "code": "def expected_reward(outcomes):\n    total_probability = sum(probability for probability, _, _, _ in outcomes)\n    if abs(total_probability - 1.0) > 1e-9:\n        raise ValueError('Transition probabilities must sum to 1')\n    return sum(probability * reward for probability, _, reward, _ in outcomes)\n\noutcomes = [(0.7, 1, 5.0, False), (0.3, 2, -2.0, False)]\nprint(expected_reward(outcomes))"
+        },
+        {
+            "id": "policy-evaluation-code",
+            "title": "Evaluating a Fixed Policy",
+            "type": "code",
+            "language": "python",
+            "content": "When the transition model is known, a fixed policy can be evaluated by solving its Bellman expectation equations. For a tiny MDP, iterative updates provide an intuitive demonstration. Each update combines expected immediate reward with discounted value of the next state.",
+            "explanation": "This simplified example assumes a deterministic policy and treats terminal states as having value zero. The transition model must provide valid probabilities.",
+            "code": "def evaluate_policy(mdp, policy, gamma=0.9, iterations=100):\n    states = list(mdp)\n    values = {state: 0.0 for state in states}\n\n    for _ in range(iterations):\n        updated = values.copy()\n        for state in states:\n            if not mdp[state]:\n                updated[state] = 0.0\n                continue\n            action = policy[state]\n            total = 0.0\n            for probability, next_state, reward, terminated in mdp[state][action]:\n                future = 0.0 if terminated else values[next_state]\n                total += probability * (reward + gamma * future)\n            updated[state] = total\n        values = updated\n\n    return values\n\npolicy = {0: 1, 1: 1}\nprint(evaluate_policy(mdp, policy))"
+        },
+        {
+            "id": "model-estimation",
+            "title": "Learning an MDP Model from Experience",
+            "type": "concept",
+            "content": "When transition probabilities are unknown, an agent can estimate them from observed transitions. For a discrete state-action pair, the empirical probability of reaching a state is the number of observed transitions to that state divided by the number of times the pair was sampled. Rare transitions can be difficult to estimate accurately, so uncertainty should be considered. A learned model can support planning, but model errors may accumulate over long predicted trajectories. Model estimation also requires enough exploration to observe important state-action combinations."
+        },
+        {
+            "id": "mdp-assumptions",
+            "title": "Assumptions and Limitations of MDPs",
+            "type": "concept",
+            "content": "The standard MDP framework assumes that the state representation satisfies the Markov property and that the transition and reward mechanisms follow the modeled rules. Real tasks may violate these assumptions because of hidden variables, changing dynamics, delayed effects, or nonstationary opponents. Some violations can be addressed by expanding the state, adding memory, or using a partially observable Markov decision process. Others require models that account for changing environments or constraints. The MDP framework is powerful, but its usefulness depends on how accurately the problem is represented."
+        },
+        {
+            "id": "common-mdp-errors",
+            "title": "Common MDP Modeling Errors",
+            "type": "concept",
+            "content": "Frequent errors include transition probabilities that do not sum to one, rewards assigned to the wrong transition, terminal states that continue accumulating rewards, and state representations that omit relevant variables. Another common error is confusing policy probabilities with transition probabilities. The policy describes the agent's action selection, while the transition model describes the environment's response. Incorrect reward timing can also shift the objective by one step. Validate the MDP model before implementing planning or learning algorithms."
+        },
+        {
+            "id": "mdp-summary-concept",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "An MDP represents sequential decision-making through states, actions, transition probabilities, rewards, and a discount factor. The Markov property makes it possible to express future outcomes using the current state and action. Transition models describe environmental uncertainty, reward models evaluate outcomes, and policies determine behavior. Initial-state distributions influence expected performance, while finite-horizon and infinite-horizon formulations represent different task structures. MDPs provide the mathematical foundation for value functions, Bellman equations, dynamic programming, and many model-free RL algorithms."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mdp-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "List the five standard components of a discounted MDP.",
+            "correctAnswer": "State space S, action space A, transition model P, reward model R, and discount factor gamma.",
+            "solution": "These components define the situations, decisions, environmental dynamics, immediate feedback, and weighting of future rewards. Some formulations separately specify the initial-state distribution and terminal-state structure."
+        },
+        {
+            "id": "mdp-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "An action leads to three next states with probabilities 0.2, 0.5, and 0.3. Is this a valid transition distribution?",
+            "correctAnswer": "Yes, because all probabilities are nonnegative and sum to 1.",
+            "solution": "The total probability is 0.2 + 0.5 + 0.3 = 1.0."
+        },
+        {
+            "id": "mdp-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "An action gives reward 6 with probability 0.75 and reward -4 with probability 0.25. Calculate its expected immediate reward.",
+            "correctAnswer": "3.5",
+            "solution": "The expected reward is 0.75(6) + 0.25(-4) = 4.5 - 1 = 3.5."
+        },
+        {
+            "id": "mdp-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Explain the difference between a transition probability and a policy probability.",
+            "correctAnswer": "A transition probability describes the environment's next-state outcome after an action, while a policy probability describes how likely the agent is to choose an action.",
+            "solution": "The policy is part of the agent's behavior. The transition model is part of the environment. Both may be stochastic, but they represent different sources of uncertainty."
+        },
+        {
+            "id": "mdp-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "An agent receives rewards 3, 2, and 4 with gamma equal to 0.5. Calculate the discounted return.",
+            "correctAnswer": "5",
+            "solution": "G = 3 + 0.5(2) + 0.25(4) = 3 + 1 + 1 = 5."
+        },
+        {
+            "id": "mdp-ex-6",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why might a robot's position alone fail to form a Markov state?",
+            "correctAnswer": "Because velocity or other hidden variables may affect the next state and reward.",
+            "solution": "Two robots at the same position but with different velocities can respond differently to the same control action. Including velocity may provide the information needed to predict the transition."
+        },
+        {
+            "id": "mdp-ex-7",
+            "type": "coding",
+            "difficulty": "medium",
+            "question": "Write Python code to verify that a list of transition probabilities sums to one within a tolerance.",
+            "correctAnswer": "Sum the probabilities and compare the absolute difference from one with a small tolerance.",
+            "solution": "Example: def valid_probabilities(probabilities, tol=1e-9):\n    return all(p >= 0 for p in probabilities) and abs(sum(probabilities) - 1.0) <= tol"
+        },
+        {
+            "id": "mdp-ex-8",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why can a policy that performs well from one initial state perform poorly on average?",
+            "correctAnswer": "Its decisions may be effective only for that starting condition and may fail for other states sampled from the initial-state distribution.",
+            "solution": "The expected objective depends on the initial-state distribution as well as subsequent transitions. Evaluation across representative initial conditions is necessary to estimate overall performance."
+        },
+        {
+            "id": "mdp-ex-9",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A resource-allocation problem has random job arrivals and variable processing times. Identify its likely stochastic MDP components.",
+            "correctAnswer": "States may include queue lengths and server status, actions assign or schedule jobs, transition probabilities model arrivals and processing outcomes, and rewards reflect throughput, delay, energy, or service quality.",
+            "solution": "Random arrivals and processing outcomes create stochastic transitions. The reward function specifies the operational objective, while the discount factor determines how future outcomes are valued."
+        },
+        {
+            "id": "mdp-ex-10",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "What is the difference between model-based planning and model-free RL?",
+            "correctAnswer": "Model-based planning uses transition and reward predictions to compare actions, while model-free RL learns values or policies from experience without requiring an explicit transition model.",
+            "solution": "Planning can be efficient when the model is accurate. Model-free methods can operate when transition dynamics are unknown, although they may require more interaction data."
+        }
+    ],
+    "summary": "A Markov decision process formalizes sequential decision-making using states, actions, transition probabilities, rewards, and a discount factor. The Markov property ensures that the current state and action contain the information needed to describe the next transition. Transition models represent uncertainty, reward models evaluate outcomes, and policies determine actions. Initial-state distributions, terminal conditions, and horizon assumptions influence the optimization objective. MDPs form the foundation for Bellman equations, value functions, planning, and reinforcement learning algorithms.",
+    "relatedTopics": [
+        "agent-environment",
+        "states-actions-rewards",
+        "value-functions",
+        "q-learning",
+        "policy-gradients"
+    ]
+}

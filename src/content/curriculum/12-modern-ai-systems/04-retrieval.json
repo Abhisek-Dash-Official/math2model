@@ -1,1 +1,391 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-retrieval",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 4,
+    "title": "Retrieval & Hybrid Search",
+    "slug": "retrieval",
+    "href": "/curriculum/12-modern-ai-systems/retrieval",
+    "filePath": "content/curriculum/12-modern-ai-systems/04-retrieval.json",
+    "description": "Learn how to build reliable retrieval pipelines using dense vector search, lexical search, hybrid ranking, query rewriting, metadata filters, reciprocal rank fusion, and retrieval evaluation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-vector-embeddings",
+        "module-12-modern-ai-systems-vector-databases",
+        "Basic probability and information retrieval concepts",
+        "Python programming fundamentals"
+    ],
+    "learningObjectives": [
+        "Explain the role of retrieval in a RAG pipeline.",
+        "Distinguish lexical, dense, sparse, and hybrid retrieval.",
+        "Understand TF-IDF and BM25 at a conceptual and mathematical level.",
+        "Explain how query-document embeddings support semantic retrieval.",
+        "Implement a simple lexical retrieval baseline.",
+        "Implement a simple dense retrieval baseline using vector similarity.",
+        "Understand candidate generation, ranking, and top-k selection.",
+        "Combine rankings using Reciprocal Rank Fusion.",
+        "Design metadata filters without compromising tenant isolation.",
+        "Apply query normalization, expansion, and rewriting appropriately.",
+        "Understand multi-query retrieval and its cost-quality trade-off.",
+        "Recognize common retrieval failures and diagnose their causes.",
+        "Evaluate retrieval using Recall@k, Precision@k, MRR, and nDCG.",
+        "Build a reproducible retrieval benchmark.",
+        "Design production retrieval pipelines with observability and access controls."
+    ],
+    "sections": [
+        {
+            "id": "retrieval-role",
+            "title": "1. What Retrieval Does",
+            "type": "concept",
+            "content": "Retrieval is the process of finding a small, useful set of records from a much larger corpus in response to a query. In a RAG application, the retrieved records provide evidence that a language model can use to answer a question. Retrieval therefore acts as an information bottleneck: the corpus may contain millions of chunks, but the model receives only a limited context window. A good retrieval system finds evidence that is relevant, sufficiently complete, current, and permitted for the requesting user. A weak retriever can make the final answer inaccurate even when the language model is capable of reasoning correctly. Conversely, better retrieval cannot guarantee that the model will faithfully use the retrieved evidence. Retrieval quality and generation quality must be evaluated separately."
+        },
+        {
+            "id": "retrieval-pipeline",
+            "title": "2. The End-to-End Retrieval Pipeline",
+            "type": "concept",
+            "content": "A retrieval request often passes through query validation, authentication, query normalization, optional query rewriting, candidate generation, metadata filtering, candidate merging, deduplication, reranking, and context selection. Candidate generation may use a vector index, a lexical index, or both. The initial candidate pool should usually be larger than the final context because later stages can improve ordering and remove duplicates. Authorization must constrain which records are eligible before their contents are exposed to the model. The final context builder should preserve source identifiers and useful metadata for citations. Each stage should be observable so developers can distinguish a poor query rewrite from an indexing defect or an ineffective ranking strategy."
+        },
+        {
+            "id": "retrieval-vocabulary",
+            "title": "3. Essential Retrieval Vocabulary",
+            "type": "concept",
+            "content": "A corpus is the collection of searchable documents or chunks. A query is the information request submitted to the system. A candidate is a record returned by an initial retrieval method. A ranker assigns an ordering to candidates. Top-k refers to the first k results in that ordering. A relevant item is one that satisfies the needs of the query according to an evaluation definition. Recall measures how much of the known relevant set was retrieved, while precision measures how much of the returned set is relevant. A filter restricts eligible records using structured conditions. A reranker applies a more expensive scoring function to an already retrieved candidate set. These terms help describe retrieval behavior independently of any particular database vendor."
+        },
+        {
+            "id": "lexical-retrieval",
+            "title": "4. Lexical Retrieval",
+            "type": "concept",
+            "content": "Lexical retrieval matches query terms against terms in indexed documents. Search engines commonly use inverted indexes that map terms to documents containing them. Lexical methods can be highly effective for exact names, product identifiers, error messages, version numbers, and rare technical phrases. They are also relatively interpretable because a result can often be explained by matching terms and their weights. However, lexical retrieval may miss relevant documents that use different wording. A query asking about 'reducing memory consumption' may fail to retrieve a passage that only says 'lower the RAM footprint' if there is no useful term overlap. Tokenization, stemming, analyzers, language handling, and index configuration affect lexical results."
+        },
+        {
+            "id": "inverted-index",
+            "title": "5. How an Inverted Index Works",
+            "type": "concept",
+            "content": "An inverted index maps each indexed term to a posting list of documents or positions where that term occurs. For example, the term 'cache' might point to document IDs 12, 38, and 91. A query containing several terms can combine their posting lists and score matching documents. Search engines may store term frequencies, document lengths, and positional information to support phrase matching and relevance scoring. This structure avoids scanning the full text of every document for every query. An inverted index is a central foundation of lexical search and can complement a vector index in hybrid retrieval."
+        },
+        {
+            "id": "tf-idf",
+            "title": "6. TF-IDF Intuition",
+            "type": "math",
+            "content": "Term Frequency-Inverse Document Frequency (TF-IDF) weights a term according to its frequency within a document and its rarity across the corpus. A term that occurs repeatedly in one document can help characterize that document, while a term appearing in nearly every document provides less discriminative information. Implementations vary in how they define term frequency, document frequency, logarithms, smoothing, and length normalization. TF-IDF is useful for understanding lexical ranking, although many production search engines use BM25 or other scoring methods.",
+            "formula": "idf(t) = log(N / df(t)); tfidf(t, d) = tf(t, d) × idf(t)",
+            "example": "Suppose a corpus contains 100 documents and the term 'backpropagation' appears in 5. Using the simplified formula, idf = log(100 / 5) = log(20). A common term appearing in 90 documents receives a much smaller inverse-document-frequency value. Exact scores depend on the logarithm base and implementation details."
+        },
+        {
+            "id": "bm25",
+            "title": "7. BM25 Ranking",
+            "type": "math",
+            "content": "BM25 is a widely used lexical ranking function. It combines inverse document frequency with a term-frequency saturation function and document-length normalization. Repeated occurrences of a query term can increase a document's score, but the benefit diminishes rather than increasing without limit. Length normalization helps prevent long documents from winning solely because they contain more words. The parameters k1 and b control term-frequency saturation and the strength of document-length normalization. BM25 remains a strong baseline for many search tasks, especially when exact terms are important.",
+            "formula": "BM25(d, q) = Σ IDF(t) × [f(t,d)(k1+1)] / [f(t,d) + k1(1-b+b|d|/avgdl)]",
+            "example": "If a query contains the terms 'connection' and 'pooling', BM25 scores documents according to the evidence for each term, their corpus rarity, and document length. A document containing both terms in a focused explanation may outrank a very long document in which those terms appear only incidentally. Actual implementations may use different IDF variants and query-term handling."
+        },
+        {
+            "id": "dense-retrieval",
+            "title": "8. Dense Vector Retrieval",
+            "type": "concept",
+            "content": "Dense retrieval uses an embedding model to represent queries and documents as numeric vectors. The search system ranks document vectors according to a similarity metric or distance function. Because embeddings capture learned semantic patterns, dense retrieval can find related passages even when the query and passage do not share many exact terms. For example, a query about 'fixing a frozen interface' might retrieve a passage about 'diagnosing application hangs'. However, semantic proximity is not equivalent to factual relevance. Dense retrieval can overlook exact identifiers, conflate related concepts, or rank broadly similar but unhelpful documents. It should be evaluated on the target domain rather than assumed to outperform lexical search."
+        },
+        {
+            "id": "dense-score-example",
+            "title": "9. Ranking with Vector Similarity",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef cosine_similarity(query, vectors):\n    query = np.asarray(query, dtype=np.float32)\n    vectors = np.asarray(vectors, dtype=np.float32)\n    query_norm = max(float(np.linalg.norm(query)), 1e-12)\n    vector_norms = np.maximum(np.linalg.norm(vectors, axis=1), 1e-12)\n    return (vectors @ query) / (vector_norms * query_norm)\n\nvectors = np.array([[1.0, 0.0], [0.8, 0.2], [0.0, 1.0]])\nquery = [1.0, 0.1]\nscores = cosine_similarity(query, vectors)\nprint(np.argsort(scores)[::-1])",
+            "explanation": "The example computes cosine similarity for a tiny matrix and ranks candidates from highest score to lowest. A production embedding model normally produces much higher-dimensional vectors, and a vector database or optimized nearest-neighbor library is preferable for large collections. Confirm the metric and normalization conventions expected by the embedding model."
+        },
+        {
+            "id": "sparse-retrieval",
+            "title": "10. Sparse Retrieval and Learned Sparse Representations",
+            "type": "concept",
+            "content": "Sparse representations contain many zero values and assign weights to a smaller subset of terms or vocabulary dimensions. Traditional lexical systems are sparse because documents contain only a small portion of the vocabulary. Learned sparse retrieval models can expand or reweight terms based on contextual meaning while preserving an indexable sparse representation. These methods can improve matching beyond literal word overlap while retaining some advantages of inverted-index infrastructure. Their effectiveness depends on the model, vocabulary, index implementation, and workload. Sparse retrieval should be treated as a distinct representation strategy rather than simply another name for dense vectors."
+        },
+        {
+            "id": "dense-vs-sparse",
+            "title": "11. Dense, Sparse, and Lexical Search Compared",
+            "type": "concept",
+            "content": "Lexical search is often effective for exact phrases, identifiers, and uncommon terms. Dense retrieval is useful for semantic similarity and paraphrases. Learned sparse retrieval may combine lexical-style indexing with model-generated term weights or expansions. The best choice depends on the domain and query distribution. A technical support corpus may require exact error-code matching as well as semantic matching for natural-language descriptions. A legal or policy search system may need exact clause references and conceptual discovery. Benchmark all candidate approaches using the same labeled queries and corpus. Measure ranking quality and operational cost, and inspect failure cases instead of relying on average scores alone."
+        },
+        {
+            "id": "hybrid-search",
+            "title": "12. What Is Hybrid Search?",
+            "type": "concept",
+            "content": "Hybrid search combines complementary retrieval methods, commonly lexical search and dense vector search. Each method generates its own candidate list. The system then merges or reranks those candidates to produce a unified result set. A lexical result can contribute exact-term evidence, while a dense result can contribute semantic matches. Hybrid search is especially valuable when a corpus contains product names, acronyms, identifiers, and natural-language explanations. Combining systems introduces complexity: score scales may differ, candidate lists may overlap, and one retriever may dominate the merge. Evaluate the combination on representative queries and preserve enough candidates from each retriever to give the merger useful evidence."
+        },
+        {
+            "id": "hybrid-architecture",
+            "title": "13. Hybrid Retrieval Architecture",
+            "type": "concept",
+            "content": "A common architecture embeds the user query and runs dense retrieval against a vector index while simultaneously running lexical retrieval against an inverted index. Each retriever returns a candidate list with IDs, scores, and metadata. The merge stage normalizes or combines the rankings, removes duplicate records, and optionally applies a reranker. The final candidate set is filtered according to trusted authorization constraints and selected for context construction. In some architectures, metadata filters are applied directly during both retrieval calls; in others, a secure server-side eligibility layer enforces the same rules. Both branches must use compatible record IDs or an explicit mapping so that duplicate documents can be recognized."
+        },
+        {
+            "id": "score-fusion",
+            "title": "14. Why Raw Score Fusion Is Difficult",
+            "type": "concept",
+            "content": "Lexical and dense retrievers often produce scores with different ranges, distributions, and meanings. A BM25 score of 12 is not directly comparable to a cosine similarity of 0.72. Even two embedding models may have different score distributions. Adding raw scores can cause one retriever to dominate for numerical reasons rather than relevance. Score normalization can help, but min-max scaling and z-score normalization may behave poorly when candidate distributions vary by query. Rank-based fusion avoids relying on directly comparable raw score values. It is a strong baseline when combining heterogeneous retrieval methods."
+        },
+        {
+            "id": "rrf",
+            "title": "15. Reciprocal Rank Fusion",
+            "type": "math",
+            "content": "Reciprocal Rank Fusion (RRF) combines ranked lists using the position of each document rather than the raw score assigned by a retriever. Each document receives a contribution from every list in which it appears. A document ranked near the top of multiple lists can receive a strong combined score. The constant k reduces the difference between adjacent ranks and is usually chosen through validation rather than assumed to be universally optimal. RRF is useful because lexical and dense rankings can be combined without calibrating their score scales.",
+            "formula": "RRF(d) = Σ_r 1 / (k + rank_r(d))",
+            "example": "Suppose k = 60. A document ranked 1st in a lexical list and 5th in a dense list receives 1/61 + 1/65. A document ranked 2nd in both lists receives 2/62. The second document can receive a higher combined score because it performs consistently well across both retrieval methods. The exact result depends on the ranks and the lists used."
+        },
+        {
+            "id": "rrf-python",
+            "title": "16. Implementing Reciprocal Rank Fusion",
+            "type": "code",
+            "language": "python",
+            "content": "def reciprocal_rank_fusion(rankings, k=60):\n    scores = {}\n    for ranking in rankings:\n        for rank, document_id in enumerate(ranking, start=1):\n            scores[document_id] = scores.get(document_id, 0.0) + 1.0 / (k + rank)\n    return sorted(scores.items(), key=lambda item: item[1], reverse=True)\n\nlexical = [\"doc-a\", \"doc-b\", \"doc-c\"]\ndense = [\"doc-c\", \"doc-a\", \"doc-d\"]\nprint(reciprocal_rank_fusion([lexical, dense]))",
+            "explanation": "Each input list is already ranked from most relevant to least relevant. The function adds reciprocal-rank contributions for every occurrence and sorts the documents by the resulting score. A production implementation should define tie-breaking, duplicate handling, candidate limits, and how document IDs map to chunk IDs."
+        },
+        {
+            "id": "candidate-generation",
+            "title": "17. Candidate Generation and Recall",
+            "type": "concept",
+            "content": "Candidate generation determines which records are available to later ranking stages. If a relevant document is absent from every candidate list, a reranker cannot recover it. Retrieving too few candidates can therefore limit the maximum achievable recall. Retrieving too many candidates increases latency, memory use, and downstream reranking cost. The appropriate candidate count depends on corpus size, index behavior, query complexity, and the reranker's capacity. Tune candidate limits by measuring recall before reranking and final ranking quality afterward. The goal is to provide enough high-quality candidates for downstream stages without overwhelming the system with noise."
+        },
+        {
+            "id": "top-k-selection",
+            "title": "18. Selecting Top-k Results",
+            "type": "concept",
+            "content": "The parameter k determines how many results a retriever returns. A small k reduces downstream cost and context size but may omit useful evidence. A large k increases coverage but can introduce redundant or irrelevant passages. There is no universal optimal k because the appropriate value depends on document granularity, query type, context limits, and whether reranking is available. Use separate parameters for initial candidate generation and final context selection. For example, a system may retrieve dozens of candidates, rerank them, and include only a smaller set in the prompt. Tune these values against both retrieval metrics and end-to-end answer quality."
+        },
+        {
+            "id": "metadata-filters",
+            "title": "19. Metadata Filters and Search Constraints",
+            "type": "concept",
+            "content": "Metadata filters constrain the eligible records using structured properties such as organization, language, document type, publication status, or time range. Filters can improve relevance by removing content that does not match the request. They are also essential for access control when a corpus contains private or tenant-specific documents. The application must derive security-sensitive filter values from trusted authentication and authorization systems. Applying a filter only after returning unauthorized text to the application can still expose sensitive information through logs, debugging tools, or intermediate processing. Where access rights can change quickly, validate current permissions against an authoritative source when necessary."
+        },
+        {
+            "id": "query-normalization",
+            "title": "20. Query Normalization",
+            "type": "concept",
+            "content": "Query normalization makes queries more consistent before retrieval. Operations may include trimming whitespace, standardizing Unicode, correcting obvious encoding issues, or normalizing case for a case-insensitive lexical index. More aggressive transformations, such as stemming, removing punctuation, or rewriting technical identifiers, can destroy useful information. For example, changing the punctuation in an error code or stripping a version suffix may produce a different search target. Normalize only what is appropriate for the corpus and retrieval method. Keep the original query for auditing and debugging when permitted by the application's privacy policy."
+        },
+        {
+            "id": "query-rewriting",
+            "title": "21. Query Rewriting",
+            "type": "concept",
+            "content": "Query rewriting transforms a user's request into a search-friendly formulation. A conversational query such as 'What about its memory requirements?' may depend on an earlier message to identify the subject. A rewrite stage can resolve the reference and produce a standalone query. Rewriting may also expand acronyms, correct spelling, or emphasize the user's intended information need. However, a model can introduce assumptions or remove important constraints. Preserve the original query, make rewrites observable, and evaluate them against known-answer cases. For high-stakes or permission-sensitive retrieval, do not allow a rewrite model to change the authorization scope."
+        },
+        {
+            "id": "query-expansion",
+            "title": "22. Query Expansion",
+            "type": "concept",
+            "content": "Query expansion adds related terms or alternative phrasings to improve coverage. For instance, a query about 'GPU memory' might also search for 'VRAM' or 'accelerator memory'. Expansion can be based on dictionaries, domain vocabularies, pseudo-relevance feedback, or language models. It is particularly useful when terminology varies across documents. Excessive expansion can introduce ambiguity, increase the number of irrelevant results, and dilute the original intent. Retain important original terms and compare expanded retrieval with a baseline. For exact identifiers, legal references, and version-specific questions, expansion should be conservative."
+        },
+        {
+            "id": "multi-query-retrieval",
+            "title": "23. Multi-Query Retrieval",
+            "type": "concept",
+            "content": "Multi-query retrieval generates several alternative queries for a single user request, retrieves candidates for each, and merges the results. Different phrasings may expose relevant documents missed by the original wording. The technique can help with ambiguous or broad questions and domains with inconsistent terminology. Its costs include additional model calls, more search operations, increased latency, and more duplicate candidates. The generated queries should preserve the same underlying information need and authorization constraints. Use a bounded number of alternatives and deduplicate by stable document or chunk IDs. Evaluate whether multi-query retrieval improves relevant coverage enough to justify the additional cost."
+        },
+        {
+            "id": "query-decomposition",
+            "title": "24. Query Decomposition",
+            "type": "concept",
+            "content": "Some questions require evidence from multiple topics or documents. Query decomposition splits a complex request into smaller subqueries that can be retrieved separately. For example, comparing two database systems may require documentation about indexing, filtering, scaling, and pricing. Each subquery can retrieve evidence for one dimension, after which the application merges and organizes the results. Decomposition can improve coverage, but poorly chosen subqueries may drift from the user's intent or overemphasize minor details. Track which evidence supports each subquestion, deduplicate overlapping chunks, and ensure that the final answer does not make unsupported comparisons."
+        },
+        {
+            "id": "hybrid-retrieval-python",
+            "title": "25. A Simple Hybrid Retrieval Skeleton",
+            "type": "code",
+            "language": "python",
+            "content": "def hybrid_retrieve(query, lexical_search, dense_search, limit=10):\n    lexical_hits = lexical_search(query, limit=limit)\n    dense_hits = dense_search(query, limit=limit)\n    lexical_ids = [hit[\"id\"] for hit in lexical_hits]\n    dense_ids = [hit[\"id\"] for hit in dense_hits]\n    fused = reciprocal_rank_fusion([lexical_ids, dense_ids])\n    return fused[:limit]",
+            "explanation": "This skeleton assumes that both search functions return ranked records with stable IDs and that the RRF function from the previous section is available. It omits authorization, timeouts, error handling, metadata filters, tracing, and result hydration. A production implementation must apply security constraints to both branches and ensure that merged IDs resolve to the correct document versions."
+        },
+        {
+            "id": "deduplication",
+            "title": "26. Deduplication and Diversity",
+            "type": "concept",
+            "content": "Different retrievers may return the same chunk, and overlapping chunks may repeat nearly identical information. Deduplication prevents duplicate candidates from consuming context space. A simple strategy uses stable chunk IDs; a more advanced strategy may compare source-document IDs, content hashes, or text similarity. However, removing every result from the same document can discard useful evidence when the answer depends on multiple sections of that document. Diversity methods should balance source coverage against the need for multiple passages from a highly relevant source. Inspect the actual chunking strategy before choosing a deduplication policy."
+        },
+        {
+            "id": "context-selection",
+            "title": "27. From Retrieved Candidates to Context",
+            "type": "concept",
+            "content": "The context builder selects and formats evidence for the language model. It should consider relevance, source reliability, freshness, redundancy, token budget, and the need to cover different parts of the question. A fixed number of chunks does not guarantee a fixed token count because chunk lengths vary. The builder should estimate or count tokens and avoid silently truncating critical evidence. Preserve document IDs, titles, section headings, and source locations when they support citations. Keep retrieved content clearly separated from system instructions, and treat it as untrusted data because external documents may contain prompt-injection attempts."
+        },
+        {
+            "id": "retrieval-failure-taxonomy",
+            "title": "28. Diagnosing Retrieval Failures",
+            "type": "concept",
+            "content": "Retrieval failures can arise from missing source data, parsing errors, poor chunk boundaries, embedding mismatch, weak lexical analysis, insufficient candidate depth, incorrect filters, ranking errors, or stale indexes. First verify that the relevant source exists and was successfully indexed. Then inspect the candidates returned by each retrieval branch before merging. Compare dense-only, lexical-only, and hybrid results to identify which stage loses the evidence. Check whether the query rewrite changed the intent. Finally, inspect context construction to determine whether the correct candidate was retrieved but omitted from the prompt. This stage-by-stage method is more effective than changing several parameters simultaneously."
+        },
+        {
+            "id": "retrieval-evaluation-overview",
+            "title": "29. Why Retrieval Evaluation Matters",
+            "type": "concept",
+            "content": "Retrieval evaluation measures whether the system returns useful evidence for a query. A small set of carefully labeled queries can reveal failures that are not obvious from a few demonstrations. The evaluation set should represent common queries, rare but important cases, different languages, exact identifiers, ambiguous requests, and selective filters. Labels should define what counts as relevant: a document may be topically related but still fail to answer the actual question. Evaluate each retrieval branch and the final merged ranking separately. Retrieval metrics help diagnose candidate quality, while end-to-end answer evaluation determines whether the overall RAG application benefits."
+        },
+        {
+            "id": "precision-recall",
+            "title": "30. Precision and Recall",
+            "type": "math",
+            "content": "Precision measures the proportion of returned results that are relevant. Recall measures the proportion of all known relevant results that were retrieved. High precision means the result set contains relatively little irrelevant material. High recall means the system finds a large fraction of the known relevant material. The metrics express different goals and can move in opposite directions as the number of returned candidates changes. In RAG, recall is often important during candidate generation because a missing passage cannot be recovered by later stages. Precision matters when irrelevant evidence consumes context or confuses generation.",
+            "formula": "Precision@k = RelevantResultsInTopK / k; Recall@k = RelevantResultsInTopK / TotalKnownRelevantResults",
+            "example": "Suppose a query has 4 known relevant chunks and the top 5 retrieved results contain 3 of them. Precision@5 = 3/5 = 0.60, and Recall@5 = 3/4 = 0.75. The values depend on the completeness and correctness of the relevance labels."
+        },
+        {
+            "id": "mrr",
+            "title": "31. Mean Reciprocal Rank",
+            "type": "math",
+            "content": "Mean Reciprocal Rank (MRR) focuses on the position of the first relevant result. For one query, the reciprocal rank is 1 divided by the rank of its first relevant result. If the first relevant result is ranked first, the score is 1. If it is ranked fifth, the score is 0.2. MRR is useful for tasks where quickly finding one correct result is important. It does not fully describe the quality of all relevant results in the ranking, so it is often paired with recall or other ranking metrics.",
+            "formula": "RR(q) = 1 / rank_of_first_relevant_result; MRR = (1 / |Q|) × Σ_q RR(q)",
+            "example": "For three queries whose first relevant results appear at ranks 1, 2, and 4, MRR = (1 + 0.5 + 0.25) / 3 = 0.5833. A query with no relevant result within the evaluated ranking is commonly assigned reciprocal rank zero."
+        },
+        {
+            "id": "ndcg",
+            "title": "32. Normalized Discounted Cumulative Gain",
+            "type": "math",
+            "content": "Normalized Discounted Cumulative Gain (nDCG) evaluates ranking quality when relevance can have multiple grades, such as irrelevant, partially relevant, and highly relevant. Discounted Cumulative Gain assigns less value to relevant results appearing lower in the ranking. nDCG divides the observed DCG by the ideal DCG for the same relevance labels, producing a normalized score under the chosen convention. This makes it useful for comparing ranking systems across queries with different relevance distributions. The gain function and discount formula must be specified consistently when reporting results.",
+            "formula": "DCG@k = Σ_i (2^rel_i - 1) / log2(i + 1); nDCG@k = DCG@k / IDCG@k",
+            "example": "If highly relevant documents receive larger relevance grades than partially relevant documents, ranking the highly relevant items near the top increases DCG. The ideal ranking sorts the same labeled candidates from highest relevance to lowest relevance. nDCG compares the observed order against that ideal order."
+        },
+        {
+            "id": "evaluation-code",
+            "title": "33. Computing Recall@k",
+            "type": "code",
+            "language": "python",
+            "content": "def recall_at_k(retrieved_ids, relevant_ids, k):\n    relevant = set(relevant_ids)\n    if not relevant:\n        return 0.0\n    retrieved = set(retrieved_ids[:k])\n    return len(retrieved & relevant) / len(relevant)\n\nretrieved = [\"a\", \"c\", \"d\", \"b\", \"e\"]\nrelevant = [\"b\", \"c\", \"x\"]\nprint(recall_at_k(retrieved, relevant, 3))",
+            "explanation": "The top three results contain one of the three known relevant IDs, so Recall@3 is 1/3. This simplified implementation assumes unique IDs and a complete relevance set for the query. Real evaluation pipelines should define how duplicate chunks, multiple relevant passages from the same document, and missing judgments are handled."
+        },
+        {
+            "id": "benchmark-design",
+            "title": "34. Designing a Retrieval Benchmark",
+            "type": "concept",
+            "content": "A useful benchmark includes representative queries, relevant document or chunk IDs, query categories, and an evaluation protocol. Separate a development set used for tuning from a held-out test set used for final comparison. Avoid repeatedly adjusting parameters to a small test set because that leads to overfitting. Include hard negatives: records that appear similar to the query but do not actually answer it. Track the embedding model, index version, chunking configuration, filters, and candidate limits for every run. Report average metrics alongside category-level results so that a regression in a critical query class is not hidden by improvements elsewhere."
+        },
+        {
+            "id": "ablation-testing",
+            "title": "35. Ablation Testing",
+            "type": "concept",
+            "content": "An ablation study removes or changes one component to estimate its contribution. Compare lexical-only retrieval, dense-only retrieval, hybrid fusion, hybrid plus reranking, and hybrid with query expansion. Keep the dataset, labels, and evaluation protocol fixed. Measure both retrieval quality and operational cost. If hybrid retrieval improves recall but increases latency, determine whether the gain justifies the additional expense. If query rewriting lowers performance, inspect whether the rewritten queries lose identifiers or constraints. Ablation testing converts architecture choices into measurable hypotheses instead of relying on intuition or isolated examples."
+        },
+        {
+            "id": "retrieval-latency",
+            "title": "36. Latency and Throughput",
+            "type": "concept",
+            "content": "Retrieval latency includes query embedding, lexical search, vector search, network communication, fusion, reranking, and context preparation. Running lexical and dense retrieval concurrently can reduce wall-clock latency compared with executing them sequentially, although it may increase simultaneous resource demand. Tail latency matters because a small fraction of slow requests can affect user experience and service-level objectives. Track p50, p95, and p99 latency, along with error rates and throughput. Apply bounded concurrency, deadlines, and timeouts. If one retrieval branch fails, define whether the application should return partial results or fail the entire request, based on the importance of that branch."
+        },
+        {
+            "id": "timeouts-fallbacks",
+            "title": "37. Timeouts and Graceful Degradation",
+            "type": "concept",
+            "content": "A production retrieval service should not wait indefinitely for a slow search backend. Define timeouts and cancellation behavior for embedding calls, lexical queries, vector queries, and reranking. A fallback may use the surviving retrieval branch when the other branch is unavailable, provided the reduced behavior is safe and clearly observable. Do not silently return an empty result set when the failure should be reported. Record which branch failed, whether fallback occurred, and how the result quality may have changed. For access-controlled systems, graceful degradation must never bypass authorization checks."
+        },
+        {
+            "id": "retrieval-caching",
+            "title": "38. Retrieval Caching",
+            "type": "concept",
+            "content": "Caching can reduce repeated embedding and retrieval work when identical or equivalent queries occur frequently. A cache key may include normalized query text, embedding model version, index version, filters, tenant identity, and relevant configuration. Omitting security-sensitive filter values can cause one user's cached results to be returned to another user. Index updates and permission changes also complicate invalidation. Cache only data that is safe to reuse, use bounded expiration policies, and monitor hit rate and staleness. A cached result should not be considered permanently authorized if access permissions can change between requests."
+        },
+        {
+            "id": "security-retrieval",
+            "title": "39. Security and Untrusted Retrieved Content",
+            "type": "concept",
+            "content": "Retrieved documents are data, not trusted instructions. A malicious or compromised source may contain text that attempts to override system instructions, request secrets, or manipulate tool use. A retrieval system should preserve clear boundaries between trusted instructions and retrieved evidence. Apply document permissions before exposing content to the model, and avoid placing unauthorized text in logs or intermediate outputs. Validate citation references against actual retrieved records. Retrieval itself does not neutralize prompt injection. Security requires controls across ingestion, access management, prompt construction, model behavior, and tool execution."
+        },
+        {
+            "id": "freshness-and-versioning",
+            "title": "40. Freshness, Updates, and Deletions",
+            "type": "concept",
+            "content": "Retrieval quality depends on the currency of the indexed corpus. A deleted document should not remain available through stale vector or lexical indexes. Updated documents may require new chunks, new embeddings, and removal of obsolete chunks. Version metadata can help identify stale records and trace which source version supports an answer. Monitor ingestion lag and compare source counts with indexed counts. For content with strict revocation requirements, use an authoritative permission or document-state check before returning results. An index that is semantically strong but out of date can still produce a materially incorrect answer."
+        },
+        {
+            "id": "retrieval-observability",
+            "title": "41. Retrieval Observability",
+            "type": "concept",
+            "content": "Useful retrieval traces record the query-processing steps, model and index versions, applied filter categories, candidate counts, branch latency, fusion behavior, reranking latency, and final selected IDs. Avoid logging raw sensitive queries or document text unless there is a clear legal, privacy, and operational basis. Aggregate metrics can reveal changes in empty-result rates, score distributions, latency, and source coverage. For difficult failures, controlled sampling with access restrictions can help diagnose ranking defects. Observability should make the system explainable enough for debugging while respecting data minimization and retention policies."
+        },
+        {
+            "id": "retrieval-regression",
+            "title": "42. Regression Testing Retrieval",
+            "type": "concept",
+            "content": "Retrieval regression tests check whether known queries continue to return expected evidence after changes to embedding models, chunking, indexes, filters, or fusion logic. Store representative queries and expected relevant IDs in a version-controlled evaluation dataset. Run the suite before deploying a new configuration and compare both aggregate metrics and individual failures. Some result variation may be acceptable, especially with approximate indexes, but unexplained losses on important queries deserve investigation. Include permission tests and deletion tests in addition to ranking tests. A release should have a rollback path if production quality falls below agreed thresholds."
+        },
+        {
+            "id": "retrieval-lab",
+            "title": "43. Practical Lab: Build a Hybrid Retriever",
+            "type": "exercise",
+            "content": "Create a small corpus of technical documentation with stable document IDs. Implement a lexical baseline and a dense similarity baseline, then merge their ranked lists with Reciprocal Rank Fusion. Prepare at least 20 test queries, including paraphrases, exact identifiers, and queries that have no relevant answer in the corpus. Label relevant chunks before tuning. Compare lexical-only, dense-only, and hybrid results using Recall@5, MRR, and p95 latency. Add a tenant filter and test that records from other tenants never appear. Record model versions, index settings, and experiment results so that the benchmark can be reproduced."
+        },
+        {
+            "id": "retrieval-design-example",
+            "title": "44. Worked Example: Technical Support Search",
+            "type": "concept",
+            "content": "Imagine a support assistant that answers questions about a cloud service. A user asks, 'Why does request ID ERR-1042 occur after upgrading?' The lexical retriever can identify the exact error code and upgrade terminology. The dense retriever may find troubleshooting guidance written as 'requests fail following a version migration'. Both branches return candidates, which are merged using rank fusion. A reranker can then prioritize passages that explain the error and the relevant version. Metadata filters restrict results to published documentation for the correct product and version. The context builder includes the strongest evidence with source links. Evaluation should check whether the correct error explanation appears near the top, whether outdated versions are excluded, and whether the final answer cites the evidence accurately."
+        },
+        {
+            "id": "retrieval-anti-patterns",
+            "title": "45. Common Retrieval Anti-Patterns",
+            "type": "concept",
+            "content": "Common anti-patterns include using dense search for every query without testing lexical search, merging incompatible raw scores without calibration, choosing k arbitrarily, applying security filters only in the prompt, and tuning against a tiny hand-picked benchmark. Another mistake is assuming that more retrieved text always improves answers. Duplicate or weakly related passages can crowd out the evidence that matters. Teams may also evaluate only final answer fluency while ignoring whether the correct sources were retrieved. A disciplined system separates candidate generation, ranking, context selection, and generation evaluation so that each failure can be measured and addressed at the appropriate stage."
+        },
+        {
+            "id": "retrieval-production-checklist",
+            "title": "46. Production Readiness Checklist",
+            "type": "concept",
+            "content": "Before deployment, verify that ingestion is reliable, document IDs are stable, source updates propagate, and deleted content becomes unavailable according to the required guarantees. Evaluate lexical, dense, and hybrid retrieval using representative labeled queries. Measure recall, ranking quality, p95 latency, throughput, and cost. Validate tenant isolation, metadata filter correctness, and prompt-injection handling. Configure timeouts, retries, bounded concurrency, and explicit fallback behavior. Track index and embedding versions, maintain regression tests, and establish a rollback procedure. Finally, define monitoring thresholds and an owner responsible for retrieval quality after launch."
+        },
+        {
+            "id": "retrieval-summary",
+            "title": "47. Key Takeaways",
+            "type": "concept",
+            "content": "Retrieval determines which evidence reaches downstream components in a RAG system. Lexical search is strong for exact terms and identifiers, while dense retrieval supports semantic matching and paraphrases. Hybrid search combines their strengths, and Reciprocal Rank Fusion provides a practical method for merging rankings with different score scales. Query rewriting, expansion, and decomposition can improve coverage but introduce cost and failure risks. Candidate depth, deduplication, metadata filtering, and context selection all affect final quality. Evaluate retrieval with labeled data and metrics such as Recall@k, MRR, and nDCG. Production systems also require secure authorization, freshness guarantees, observability, regression tests, and predictable failure behavior."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "retrieval-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why can lexical retrieval outperform dense retrieval for a query containing an exact error code?",
+            "correctAnswer": "Lexical retrieval can directly match the exact identifier, while dense embeddings may not preserve rare identifiers reliably.",
+            "solution": "Error codes and product identifiers often carry precise meaning. Exact-term matching can locate the correct record even when the embedding model maps the identifier weakly or confuses it with related text. Hybrid retrieval can combine this strength with semantic matching."
+        },
+        {
+            "id": "retrieval-ex-2",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A query has 8 known relevant chunks. The top 10 retrieved results contain 6 relevant chunks. Calculate Precision@10 and Recall@10.",
+            "correctAnswer": "Precision@10 = 0.60; Recall@10 = 0.75.",
+            "solution": "Precision is 6/10 = 0.60. Recall is 6/8 = 0.75. Precision measures the fraction of returned results that are relevant, while recall measures the fraction of all known relevant chunks that were retrieved."
+        },
+        {
+            "id": "retrieval-ex-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "Using RRF with k = 60, calculate the contribution of a document ranked third in one retrieval list.",
+            "correctAnswer": "1/63, approximately 0.01587.",
+            "solution": "The contribution is 1/(k + rank) = 1/(60 + 3) = 1/63. If the document appears in other ranked lists, its contributions from those lists are added."
+        },
+        {
+            "id": "retrieval-ex-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A retrieval system performs well on semantic questions but fails on exact product IDs. What changes would you test?",
+            "correctAnswer": "Add or improve lexical retrieval, validate tokenization and identifier indexing, and evaluate hybrid fusion against the dense-only baseline.",
+            "solution": "Inspect whether product IDs are indexed exactly and whether punctuation or case normalization changes them. Run lexical search alongside dense retrieval and merge the candidate rankings. Compare exact-ID queries separately from semantic queries so improvements in one category do not hide regressions in another."
+        },
+        {
+            "id": "retrieval-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A RAG system retrieves the correct passage but the final prompt does not contain it. Which component should you investigate first?",
+            "correctAnswer": "The post-retrieval stages, especially deduplication, reranking, context selection, and token-budget truncation.",
+            "solution": "Since the correct passage was retrieved, the initial candidate generation may be functioning correctly. Trace the candidate through fusion, reranking, filtering, and context construction to determine where it was removed or truncated. Inspect the final assembled context rather than changing the embedding model immediately."
+        }
+    ],
+    "summary": "Reliable retrieval requires more than a vector database query. Lexical search, dense embeddings, and hybrid fusion offer complementary capabilities. BM25 provides a strong lexical baseline, while dense retrieval handles semantic similarity and paraphrases. Reciprocal Rank Fusion merges ranked lists without assuming their raw scores are comparable. Query rewriting, expansion, decomposition, candidate generation, metadata filtering, deduplication, and context selection can improve results when applied carefully. Evaluate the complete pipeline with labeled queries and metrics such as Recall@k, Precision@k, MRR, and nDCG. Production retrieval must also handle security, latency, freshness, observability, and regression testing.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-vector-embeddings",
+        "module-12-modern-ai-systems-vector-databases",
+        "module-12-modern-ai-systems-reranking",
+        "module-12-modern-ai-systems-tool-calling"
+    ]
+}

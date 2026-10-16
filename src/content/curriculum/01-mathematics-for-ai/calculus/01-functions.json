@@ -1,1 +1,400 @@
-{}
+{
+    "id": "calculus-functions",
+    "title": "Functions",
+    "slug": "functions",
+    "description": "Understand mathematical functions, their properties, domains, ranges, compositions, and their role in machine learning models.",
+    "difficulty": "beginner",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Basic arithmetic",
+        "Algebra",
+        "Coordinate systems"
+    ],
+    "learningObjectives": [
+        "Define a mathematical function and distinguish it from a general relation.",
+        "Identify the domain, codomain, and range of a function.",
+        "Evaluate functions using numerical and algebraic inputs.",
+        "Understand linear, polynomial, exponential, logarithmic, and piecewise functions.",
+        "Analyze injective, surjective, and bijective functions.",
+        "Compose functions and understand inverse functions.",
+        "Recognize how functions represent machine learning models and transformations."
+    ],
+    "sections": [
+        {
+            "id": "function-definition",
+            "title": "1. What Is a Function?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A function is a rule that assigns exactly one output to every valid input. Functions are fundamental to mathematics and machine learning because models transform inputs into predictions."
+                },
+                {
+                    "type": "formula",
+                    "value": "f: X → Y",
+                    "explanation": "The function f maps elements from the input set X to the output set Y."
+                },
+                {
+                    "type": "formula",
+                    "value": "y = f(x)",
+                    "explanation": "The output y is determined by applying the function f to the input x."
+                },
+                {
+                    "type": "example",
+                    "title": "Evaluating a function",
+                    "problem": "Let f(x) = 2x + 3. Find f(4).",
+                    "solution": [
+                        "Start with f(x) = 2x + 3.",
+                        "Substitute x = 4.",
+                        "f(4) = 2(4) + 3.",
+                        "f(4) = 8 + 3 = 11."
+                    ],
+                    "answer": "f(4) = 11"
+                },
+                {
+                    "type": "text",
+                    "value": "A relation is not necessarily a function. For example, y² = x can associate one x-value with two y-values. A function must assign only one output to each input in its domain."
+                }
+            ]
+        },
+        {
+            "id": "domain-codomain-range",
+            "title": "2. Domain, Codomain, and Range",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "The domain contains the valid inputs of a function. The codomain is the declared set of possible output values. The range, also called the image, contains the outputs that the function actually produces."
+                },
+                {
+                    "type": "formula",
+                    "value": "Domain(f) = {x ∈ X | f(x) is defined}",
+                    "explanation": "A valid input must make the function expression meaningful under the chosen number system."
+                },
+                {
+                    "type": "example",
+                    "title": "Finding a domain",
+                    "problem": "Find the real-valued domain of f(x) = 1/(x - 2).",
+                    "solution": [
+                        "A denominator cannot equal zero.",
+                        "Set x - 2 ≠ 0.",
+                        "Therefore x ≠ 2.",
+                        "Every real number except 2 is allowed."
+                    ],
+                    "answer": "Domain: all real numbers except 2"
+                },
+                {
+                    "type": "example",
+                    "title": "Finding a range",
+                    "problem": "Find the range of f(x) = x² for real x.",
+                    "solution": [
+                        "The square of every real number is nonnegative.",
+                        "The smallest possible value is 0, obtained when x = 0.",
+                        "Every nonnegative real value can be obtained by choosing an appropriate x."
+                    ],
+                    "answer": "Range: [0, ∞)"
+                },
+                {
+                    "type": "text",
+                    "value": "For real-valued functions, check common restrictions: denominators cannot be zero, the expression inside a real square root must be nonnegative, and the argument of a real logarithm must be positive."
+                }
+            ]
+        },
+        {
+            "id": "common-functions",
+            "title": "3. Common Types of Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Different functions describe different relationships between inputs and outputs. These patterns appear throughout statistics, optimization, neural networks, and data preprocessing."
+                },
+                {
+                    "type": "formula",
+                    "value": "Constant: f(x) = c",
+                    "explanation": "Every input produces the same output."
+                },
+                {
+                    "type": "formula",
+                    "value": "Linear: f(x) = mx + b",
+                    "explanation": "A linear expression in one variable describes a straight line, where m is the slope and b is the intercept."
+                },
+                {
+                    "type": "formula",
+                    "value": "Quadratic: f(x) = ax² + bx + c",
+                    "explanation": "A polynomial of degree two; its graph is a parabola when a is nonzero."
+                },
+                {
+                    "type": "formula",
+                    "value": "Exponential: f(x) = aˣ",
+                    "explanation": "The input appears in the exponent. Exponential functions model growth and decay."
+                },
+                {
+                    "type": "formula",
+                    "value": "Logarithmic: f(x) = log(x)",
+                    "explanation": "The logarithm is the inverse of an exponential function for a suitable base."
+                },
+                {
+                    "type": "formula",
+                    "value": "Absolute value: f(x) = |x|",
+                    "explanation": "Returns the nonnegative magnitude of a real number."
+                },
+                {
+                    "type": "formula",
+                    "value": "ReLU: f(x) = max(0, x)",
+                    "explanation": "The rectified linear unit is a common activation function in neural networks."
+                },
+                {
+                    "type": "example",
+                    "title": "Comparing linear and quadratic functions",
+                    "problem": "Evaluate f(x) = 2x + 1 and g(x) = x² at x = 3.",
+                    "solution": [
+                        "f(3) = 2(3) + 1 = 7.",
+                        "g(3) = 3² = 9."
+                    ],
+                    "answer": "f(3) = 7 and g(3) = 9"
+                }
+            ]
+        },
+        {
+            "id": "piecewise-functions",
+            "title": "4. Piecewise Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A piecewise function uses different rules on different parts of its domain. Such functions are useful when a process behaves differently under different conditions."
+                },
+                {
+                    "type": "formula",
+                    "value": "f(x) = x, if x ≥ 0; f(x) = 0, if x < 0",
+                    "explanation": "This is the ReLU activation function, written as a piecewise rule."
+                },
+                {
+                    "type": "example",
+                    "title": "Evaluating a piecewise function",
+                    "problem": "Let f(x) = x² for x < 0 and f(x) = 2x + 1 for x ≥ 0. Find f(-2) and f(3).",
+                    "solution": [
+                        "Since -2 < 0, use the first rule: f(-2) = (-2)² = 4.",
+                        "Since 3 ≥ 0, use the second rule: f(3) = 2(3) + 1 = 7."
+                    ],
+                    "answer": "f(-2) = 4 and f(3) = 7"
+                }
+            ]
+        },
+        {
+            "id": "function-properties",
+            "title": "5. Injective, Surjective, and Bijective Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Function properties describe how inputs correspond to outputs. They are especially useful when studying inverse functions, transformations, and whether information can be recovered from an output."
+                },
+                {
+                    "type": "text",
+                    "value": "Injective (one-to-one): different inputs always produce different outputs. Formally, f(a) = f(b) implies a = b."
+                },
+                {
+                    "type": "text",
+                    "value": "Surjective (onto): every element of the codomain is the output of at least one input."
+                },
+                {
+                    "type": "text",
+                    "value": "Bijective: both injective and surjective. A bijection pairs every element of the domain with exactly one element of the codomain and vice versa."
+                },
+                {
+                    "type": "example",
+                    "title": "Checking injectivity",
+                    "problem": "Is f(x) = 2x + 1 injective over the real numbers?",
+                    "solution": [
+                        "Suppose f(a) = f(b).",
+                        "Then 2a + 1 = 2b + 1.",
+                        "Subtract 1 from both sides: 2a = 2b.",
+                        "Divide by 2: a = b.",
+                        "Therefore, the function is injective."
+                    ],
+                    "answer": "Yes, f is injective over the real numbers."
+                },
+                {
+                    "type": "text",
+                    "value": "Surjectivity depends on the declared codomain. For example, f(x) = x² from the real numbers to the real numbers is not surjective because negative values are never produced. If its codomain is the nonnegative real numbers, it is surjective."
+                }
+            ]
+        },
+        {
+            "id": "composition-inverse",
+            "title": "6. Composition and Inverse Functions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Function composition means applying one function to the output of another. The composition is defined only when the output of the inner function is a valid input for the outer function."
+                },
+                {
+                    "type": "formula",
+                    "value": "(f ∘ g)(x) = f(g(x))",
+                    "explanation": "Apply g first, then apply f to the result."
+                },
+                {
+                    "type": "example",
+                    "title": "Computing a composition",
+                    "problem": "Let f(x) = 2x + 1 and g(x) = x². Find f(g(3)).",
+                    "solution": [
+                        "First calculate g(3) = 3² = 9.",
+                        "Then calculate f(9) = 2(9) + 1 = 19."
+                    ],
+                    "answer": "f(g(3)) = 19"
+                },
+                {
+                    "type": "text",
+                    "value": "An inverse function reverses a function's input-output mapping. A function has an inverse on its full domain if it is bijective onto its codomain. If a function is not one-to-one, its domain may sometimes be restricted to make an inverse possible."
+                },
+                {
+                    "type": "example",
+                    "title": "Finding an inverse",
+                    "problem": "Find the inverse of f(x) = 3x - 6 over the real numbers.",
+                    "solution": [
+                        "Write y = 3x - 6.",
+                        "Swap x and y: x = 3y - 6.",
+                        "Solve for y: x + 6 = 3y.",
+                        "Divide by 3: y = (x + 6)/3."
+                    ],
+                    "answer": "f⁻¹(x) = (x + 6)/3"
+                }
+            ]
+        },
+        {
+            "id": "functions-in-ml",
+            "title": "7. Functions in Artificial Intelligence and Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A machine learning model can be represented as a function that maps input features to predictions. For example, a regression model maps a feature vector to a numerical estimate, while a classifier maps features to class scores or probabilities."
+                },
+                {
+                    "type": "formula",
+                    "value": "ŷ = fθ(x)",
+                    "explanation": "Here x is the input, θ represents learned model parameters, and ŷ is the prediction."
+                },
+                {
+                    "type": "text",
+                    "value": "Neural networks are compositions of functions. Each layer transforms its input, often applying an affine transformation followed by an activation function."
+                },
+                {
+                    "type": "formula",
+                    "value": "h = σ(Wx + b)",
+                    "explanation": "W is a weight matrix, b is a bias vector, and σ is an activation function applied elementwise."
+                },
+                {
+                    "type": "text",
+                    "value": "Loss functions measure prediction error. Training adjusts model parameters to minimize the loss over the training data."
+                },
+                {
+                    "type": "formula",
+                    "value": "J(θ) = (1/n) Σᵢ₌₁ⁿ L(fθ(xᵢ), yᵢ)",
+                    "explanation": "The objective J averages the individual losses across n training examples."
+                },
+                {
+                    "type": "example",
+                    "title": "A simple prediction function",
+                    "problem": "A model predicts house price using f(x) = 50000 + 2000x, where x is the number of rooms. Estimate the price for a house with 4 rooms.",
+                    "solution": [
+                        "Substitute x = 4.",
+                        "f(4) = 50000 + 2000(4).",
+                        "f(4) = 50000 + 8000 = 58000."
+                    ],
+                    "answer": "Predicted price: 58,000 units"
+                }
+            ]
+        },
+        {
+            "id": "python-functions",
+            "title": "8. Working with Functions in Python",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Python functions let you define reusable input-output rules. NumPy extends this idea to arrays, making it useful for numerical computing and machine learning."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "def f(x):\n    return 2 * x + 3\n\nprint(f(4))  # 11\n\nimport numpy as np\n\nx = np.array([-2, -1, 0, 1, 2])\ny = x ** 2\nprint(y)  # [4 1 0 1 4]"
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\ndef relu(x):\n    return np.maximum(0, x)\n\nvalues = np.array([-3.0, -1.0, 0.0, 2.0, 5.0])\nprint(relu(values))\n# [0. 0. 0. 2. 5.]"
+                },
+                {
+                    "type": "text",
+                    "value": "Vectorized NumPy expressions apply a function to every element of an array. This is generally clearer and more efficient for numerical workloads than writing a Python loop for every element."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "functions-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If f(x) = 4x - 7, calculate f(5).",
+            "correctAnswer": "13",
+            "solution": "Substitute x = 5: f(5) = 4(5) - 7 = 20 - 7 = 13.",
+            "hints": [
+                "Replace every occurrence of x with 5.",
+                "Multiply before subtracting."
+            ]
+        },
+        {
+            "id": "functions-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Explain the difference between the domain and the range of a function.",
+            "correctAnswer": "The domain is the set of allowed inputs; the range is the set of outputs actually produced.",
+            "solution": "The domain describes which inputs can be used. The range describes which values the function produces from those inputs."
+        },
+        {
+            "id": "functions-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the real-valued domain of f(x) = √(x - 4).",
+            "correctAnswer": "x ≥ 4",
+            "solution": "For a real square root, x - 4 must be nonnegative. Therefore x - 4 ≥ 0, so x ≥ 4."
+        },
+        {
+            "id": "functions-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Let f(x) = x + 2 and g(x) = 3x. Calculate (f ∘ g)(4).",
+            "correctAnswer": "14",
+            "solution": "First g(4) = 12. Then f(12) = 12 + 2 = 14."
+        },
+        {
+            "id": "functions-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the inverse of f(x) = 5x + 10.",
+            "correctAnswer": "f⁻¹(x) = (x - 10)/5",
+            "solution": "Write y = 5x + 10, swap x and y to get x = 5y + 10, then solve y = (x - 10)/5."
+        },
+        {
+            "id": "functions-ex-6",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A model predicts y = 12x + 5. What prediction does it make for x = 8?",
+            "correctAnswer": "101",
+            "solution": "Substitute x = 8: y = 12(8) + 5 = 96 + 5 = 101."
+        }
+    ],
+    "summary": [
+        "A function assigns exactly one output to each valid input.",
+        "The domain is the set of valid inputs; the range is the set of actual outputs.",
+        "Common functions include linear, polynomial, exponential, logarithmic, and piecewise functions.",
+        "Injectivity, surjectivity, and bijectivity describe how inputs map to outputs.",
+        "Composition applies one function after another; an inverse reverses a bijective mapping.",
+        "Machine learning models and neural networks can be represented as compositions of functions."
+    ],
+    "relatedTopics": [
+        "limits",
+        "derivatives",
+        "partial-derivatives",
+        "gradients",
+        "chain-rule",
+        "optimization"
+    ]
+}

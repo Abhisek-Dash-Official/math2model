@@ -1,1 +1,186 @@
-{}
+{
+    "id": "module-09-large-language-models-training-objective-cross-entropy",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 6,
+    "title": "Training Objectives & Cross-Entropy Loss",
+    "slug": "training-objective-cross-entropy",
+    "href": "/curriculum/09-large-language-models/training-objective-cross-entropy",
+    "filePath": "content/curriculum/09-large-language-models/06-training-objective-cross-entropy.json",
+    "description": "Learn how language-model training objectives convert token predictions into optimization signals, with detailed coverage of cross-entropy, negative log-likelihood, causal language modeling, masking, perplexity, and practical loss computation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-08-natural-language-processing-language-modeling",
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-09-large-language-models-model-architecture"
+    ],
+    "learningObjectives": [
+        "Explain the role of a training objective in language-model learning.",
+        "Derive categorical cross-entropy from a probability distribution over tokens.",
+        "Relate cross-entropy to negative log-likelihood and maximum likelihood estimation.",
+        "Understand logits, softmax probabilities, target tokens, and vocabulary dimensions.",
+        "Calculate causal language-model loss over a sequence.",
+        "Explain shifted targets, padding masks, and ignored labels.",
+        "Distinguish token-level loss from sequence-level loss.",
+        "Interpret perplexity and understand its limitations.",
+        "Implement numerically stable cross-entropy computation with PyTorch.",
+        "Recognize common loss-computation errors in language-model training."
+    ],
+    "sections": [
+        {
+            "id": "training-objective-introduction",
+            "title": "1. What Is a Training Objective?",
+            "type": "concept",
+            "content": "A training objective defines what a model should optimize. An LLM produces predictions from its input context, but a learning algorithm needs a numerical measure of how good those predictions are. A loss function supplies that measure and provides gradients for updating the model parameters.\n\nFor autoregressive language modeling, the common objective is to predict the next token given all preceding tokens. If a sequence is x_1, x_2, ..., x_T, the model learns probabilities for x_2 through x_T conditioned on earlier tokens. The training objective rewards assigning high probability to the observed next token.\n\nOther objectives include masked-token prediction, sequence-to-sequence conditional likelihood, denoising, contrastive learning, and preference optimization. These objectives differ in what information is provided to the model, which outputs are scored, and what behavior is encouraged. This lesson focuses on cross-entropy and token prediction because they are central to conventional autoregressive LLM pretraining."
+        },
+        {
+            "id": "probability-of-next-token",
+            "title": "2. From Logits to Probabilities",
+            "type": "math",
+            "content": "At each prediction position, a language model produces one logit for every vocabulary token. Logits are unnormalized real-valued scores. Softmax converts these scores into a probability distribution that sums to one.\n\nFor logits z_1 through z_V, the probability of token i is exp(z_i) divided by the sum of exp(z_j) across the vocabulary. A larger logit generally corresponds to a larger probability relative to other tokens. Adding the same constant to every logit does not change the softmax distribution.\n\nIn implementation, it is often better to compute cross-entropy directly from logits rather than manually applying softmax and then taking logarithms. Stable library implementations use numerically appropriate operations such as log-sum-exp to reduce overflow and underflow.",
+            "formula": "p_i = exp(z_i) / sum_j exp(z_j)",
+            "example": "For logits [2, 1, 0], softmax assigns the highest probability to the first token. The approximate probabilities are [0.665, 0.245, 0.090]. The exact values are determined by exponentiating and normalizing all three logits.",
+            "code": "import torch\nimport torch.nn.functional as F\n\nlogits = torch.tensor([[2.0, 1.0, 0.0]])\nprobabilities = F.softmax(logits, dim=-1)\nprint(probabilities)\nprint(probabilities.sum(dim=-1))",
+            "explanation": "The last dimension represents the vocabulary. Softmax converts the scores into a distribution whose probabilities sum to one."
+        },
+        {
+            "id": "cross-entropy-intuition",
+            "title": "3. Cross-Entropy Intuition",
+            "type": "concept",
+            "content": "Cross-entropy measures how much probability mass a model assigns to the correct target. For a single categorical target y, if the model predicts probability p_y for that target, the loss is -log(p_y).\n\nA correct token assigned probability 0.9 receives a small loss. The same token assigned probability 0.01 receives a much larger loss. This strongly penalizes confident mistakes and encourages the model to place more probability on the observed target.\n\nCross-entropy is not simply a count of incorrect predictions. Two models can make the same number of top-1 mistakes but have different cross-entropy losses because their probability distributions differ. The loss also provides a smooth optimization signal even when the highest-probability token is incorrect.",
+            "formula": "L = -log(p_y)",
+            "example": "If the correct token receives probability 0.8, the loss is approximately 0.223. If it receives probability 0.1, the loss is approximately 2.303. Lower is better when evaluated on the same targets and reduction convention.",
+            "pitfalls": [
+                "A low training loss does not guarantee good generalization.",
+                "Cross-entropy depends on the target distribution and tokenization.",
+                "Do not compare loss values from different datasets or masking conventions without checking how they were computed."
+            ]
+        },
+        {
+            "id": "categorical-cross-entropy",
+            "title": "4. Deriving Categorical Cross-Entropy",
+            "type": "math",
+            "content": "Let the target distribution be q over a vocabulary of size V, and let the model distribution be p. Cross-entropy is H(q, p) = -sum from i=1 to V of q_i log(p_i). For a one-hot target, q_i is zero for every token except the correct token, where q_i is one. The sum therefore reduces to -log(p_y).\n\nFor a batch of examples, the losses are commonly averaged over the valid targets. Some training systems instead sum losses and normalize by a token count across distributed workers. The reduction convention affects the gradient scale and should be consistent with the optimizer and distributed-training setup.\n\nLabel smoothing replaces a strict one-hot target with a slightly distributed target. This can discourage extreme confidence, but its use changes the objective and should not be confused with ordinary next-token cross-entropy.",
+            "formula": "H(q, p) = -sum_i q_i log(p_i)",
+            "example": "If the target is vocabulary index 3, one-hot encoding selects the third probability. The loss is -log(p_3), regardless of the probabilities assigned to other tokens except through the normalization that produced p_3."
+        },
+        {
+            "id": "negative-log-likelihood",
+            "title": "5. Cross-Entropy and Maximum Likelihood",
+            "type": "math",
+            "content": "For an observed token sequence x, autoregressive factorization expresses its probability as the product of conditional next-token probabilities. Taking the logarithm converts this product into a sum. Maximizing the sequence log-likelihood is therefore equivalent to minimizing the negative log-likelihood.\n\nFor a dataset containing many sequences, the objective usually sums or averages the negative log probabilities of all valid target tokens. This gives the model a training signal at every scored position. Cross-entropy with one-hot token targets is the standard categorical form of this negative log-likelihood objective.\n\nThe connection is important because it gives a probabilistic interpretation to training: the model learns parameters that assign high likelihood to the observed training data. It does not mean that the model learns only facts or that high likelihood guarantees factual correctness.",
+            "formula": "log P(x_1,...,x_T) = sum_t log P(x_t | x_<t)",
+            "example": "For a three-token sequence, the sequence probability is P(x_1) * P(x_2 | x_1) * P(x_3 | x_1, x_2). Its negative log-likelihood is the sum of the negative logarithms of these conditional probabilities."
+        },
+        {
+            "id": "causal-language-model-loss",
+            "title": "6. Causal Language Modeling Objective",
+            "type": "concept",
+            "content": "A causal language model predicts each token from the tokens that precede it. A causal attention mask prevents a position from using future tokens when computing its contextual representation. Training then compares each position's logits with the appropriate next-token target.\n\nFor the input sequence [The, model, learns], the desired predictions can be model after The, learns after model, and the next token after learns. In a teacher-forced training pass, the full input sequence can be processed in parallel while the causal mask prevents future-token leakage. The model does not need to generate tokens sequentially during this training pass.\n\nMany implementations store input_ids as [batch, sequence_length]. The model produces logits shaped [batch, sequence_length, vocabulary_size]. The labels are shifted relative to the input positions, either explicitly in the data pipeline or internally by the model implementation. The exact convention depends on the library and model API, so it must be checked before computing the loss."
+        },
+        {
+            "id": "shifted-targets",
+            "title": "7. Input and Target Shifting",
+            "type": "math",
+            "content": "Consider token IDs [11, 24, 7, 19]. Under a simple next-token convention, the inputs are [11, 24, 7] and the targets are [24, 7, 19]. At input position zero, the model predicts token 24; at position one, it predicts token 7; and at position two, it predicts token 19.\n\nIn many Transformer implementations, the input tensor and labels have the same sequence length. The model shifts labels internally or the loss function aligns logits at position t with labels at position t+1. Other training pipelines shift the tensors before calling the model. Applying both conventions accidentally creates a double shift and incorrect supervision.\n\nThe first position of a sequence can be handled differently depending on whether a beginning-of-sequence token is present and how the loss is defined. Always inspect a small example and verify that every prediction position is paired with the intended target token.",
+            "example": "Input IDs: [11, 24, 7, 19]. Next-token targets: [24, 7, 19]. The logit generated after reading token 11 should be compared with target 24.",
+            "pitfalls": [
+                "Check whether the model API shifts labels internally.",
+                "Never let a causal model attend to future target tokens.",
+                "Do not score padding tokens as if they were real training targets."
+            ]
+        },
+        {
+            "id": "padding-and-masking",
+            "title": "8. Padding, Ignored Labels, and Valid Tokens",
+            "type": "concept",
+            "content": "Training batches often combine sequences of different lengths by padding shorter sequences. Padding makes tensor shapes uniform, but padded positions should generally not contribute to the language-model loss. Otherwise, the model is trained to predict artificial padding symbols at many positions, distorting the objective.\n\nA common convention uses an ignore index such as -100 in PyTorch cross-entropy. Positions with this target value are excluded from the loss reduction. The padding token ID itself is not necessarily -100; a preprocessing step may replace padded label positions with the ignore index.\n\nAttention masks and loss masks serve different purposes. An attention mask controls which positions can be attended to, while a loss mask controls which targets contribute to optimization. A system may require both. In packed training sequences, boundary handling must also ensure that unintended cross-document next-token predictions are not introduced unless that behavior is deliberate.",
+            "code": "import torch\nimport torch.nn.functional as F\n\nlogits = torch.randn(2, 4, 20)\nlabels = torch.tensor([[2, 5, 7, 1], [8, 3, -100, -100]])\nloss = F.cross_entropy(logits.reshape(-1, 20), labels.reshape(-1), ignore_index=-100)\nprint(loss.item())",
+            "explanation": "The logits are flattened into a two-dimensional tensor with one row per prediction position. The labels are flattened in the same order. Positions labeled -100 are ignored by the loss function."
+        },
+        {
+            "id": "cross-entropy-implementation",
+            "title": "9. Implementing Cross-Entropy Correctly",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nbatch_size, seq_len, vocab_size = 2, 4, 100\nlogits = torch.randn(batch_size, seq_len, vocab_size)\nlabels = torch.randint(0, vocab_size, (batch_size, seq_len))\nlabels[1, 2:] = -100\n\nloss = F.cross_entropy(logits.reshape(-1, vocab_size), labels.reshape(-1), ignore_index=-100)\nprint(\"Loss:\", loss.item())\nloss.backward() if logits.requires_grad else None",
+            "explanation": "Cross-entropy expects unnormalized logits and integer class targets in this configuration. If the logits come directly from a model, they normally require gradients. In this standalone demonstration they do not, so the optional backward call is skipped. In a real training loop, use model parameters, call loss.backward(), and then update the optimizer."
+        },
+        {
+            "id": "perplexity",
+            "title": "10. Perplexity",
+            "type": "math",
+            "content": "Perplexity is a common language-model evaluation metric derived from average token-level negative log-likelihood. When the average cross-entropy is measured using natural logarithms, perplexity is exp(average_loss). Lower perplexity indicates that the model assigns higher probability on average to the evaluation targets under the specified tokenization and evaluation setup.\n\nFor example, if average loss is approximately 2, perplexity is exp(2), approximately 7.39. Informally, this resembles an effective number of plausible choices under the model's predictive distribution, but it should not be interpreted as the literal number of equally likely words in every context.\n\nPerplexity comparisons require care. Different tokenizers create different prediction units, and different datasets have different difficulty. Padding, context windows, sequence boundaries, and evaluation conventions also affect results. A lower perplexity does not directly establish better factual accuracy, instruction following, safety, or human preference.",
+            "formula": "Perplexity = exp(average token-level cross-entropy)",
+            "example": "If mean negative log-likelihood is 1.5 nats per token, perplexity is exp(1.5), approximately 4.48.",
+            "pitfalls": [
+                "Compare perplexity only when tokenization and evaluation conventions are compatible.",
+                "Do not interpret perplexity as a complete measure of model quality.",
+                "Exclude ignored and padded positions from the average."
+            ]
+        },
+        {
+            "id": "loss-diagnostics",
+            "title": "11. Reading Loss Curves and Diagnosing Errors",
+            "type": "concept",
+            "content": "A training-loss curve shows whether the objective is improving over optimization steps. A decreasing training loss is usually expected during successful learning, but the validation loss is needed to assess generalization. Training loss that falls while validation loss rises can indicate overfitting, a data mismatch, or differences in the training and evaluation pipelines.\n\nA loss that becomes NaN or infinity can result from numerical instability, invalid targets, non-finite logits, overly aggressive learning rates, or mixed-precision issues. An unexpectedly tiny loss may indicate target leakage, accidental evaluation on training labels in an invalid way, or an error in masking and reduction. A loss that stays near an uninformative baseline may indicate incorrect shifting, a frozen model, a broken optimizer, or a data pipeline bug.\n\nFor a reliable diagnosis, inspect logits and labels on a tiny batch, confirm vocabulary dimensions, validate the target shift, count valid tokens, and verify that gradients are nonzero where expected. Compare a simple baseline before scaling up the training run."
+        },
+        {
+            "id": "other-training-objectives",
+            "title": "12. Beyond Standard Next-Token Cross-Entropy",
+            "type": "concept",
+            "content": "Cross-entropy is widely used for autoregressive pretraining, but it is not the only objective in language-model development. Masked language modeling predicts selected tokens while observing unmasked context. Sequence-to-sequence training conditions on a source sequence and predicts a target sequence. Denoising objectives reconstruct content from corrupted inputs.\n\nInstruction fine-tuning often uses the same token-level cross-entropy form while masking prompt tokens so that only assistant responses contribute to the loss. Preference-based methods compare alternative responses or optimize objectives involving reward models or reference policies. These approaches use different supervision signals and should not be reduced conceptually to ordinary next-token pretraining, even if some components still use token-level likelihood.\n\nWhen reading a training implementation, identify which tokens are scored, how targets are formed, whether a reference model is involved, and how losses from different objectives are combined."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "cross-entropy-exercise-1",
+            "type": "calculation",
+            "difficulty": "beginner",
+            "question": "A model assigns probability 0.5 to the correct token. What is its negative log-likelihood using natural logarithms?",
+            "correctAnswer": "Approximately 0.6931",
+            "solution": "The loss is -ln(0.5), which equals ln(2), approximately 0.6931."
+        },
+        {
+            "id": "cross-entropy-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why should padded target positions usually be excluded from the language-model loss?",
+            "correctAnswer": "Padding tokens are artificial batching symbols rather than meaningful next-token targets.",
+            "solution": "Scoring padding positions changes the objective by rewarding predictions of artificial padding symbols. Use a loss mask or an ignored label value so only valid targets contribute."
+        },
+        {
+            "id": "cross-entropy-exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "If mean token-level cross-entropy is 1.0 nat, calculate perplexity.",
+            "correctAnswer": "Approximately 2.718",
+            "solution": "Perplexity = exp(1.0) = e, approximately 2.718."
+        },
+        {
+            "id": "cross-entropy-exercise-4",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Logits have shape [2, 3, 50] and labels have shape [2, 3]. Write the PyTorch expression for cross-entropy with labels equal to -100 ignored.",
+            "correctAnswer": "F.cross_entropy(logits.reshape(-1, 50), labels.reshape(-1), ignore_index=-100)",
+            "solution": "Flatten the batch and sequence dimensions while retaining the vocabulary dimension, flatten labels in the same order, and call F.cross_entropy with ignore_index=-100."
+        },
+        {
+            "id": "cross-entropy-exercise-5",
+            "type": "analysis",
+            "difficulty": "advanced",
+            "question": "A causal language model's training loss decreases unusually quickly, but its validation loss is poor. List three checks you should perform.",
+            "correctAnswer": "Check target shifting, causal masking and leakage, and train-validation data or preprocessing consistency.",
+            "solution": "Inspect whether each logit predicts the next token rather than the current or future token. Verify the causal mask prevents access to future information. Confirm that validation data is separate and that tokenization, masking, and loss reduction are implemented consistently."
+        }
+    ],
+    "summary": "Cross-entropy measures the negative log probability assigned to the correct target token. In autoregressive pretraining, minimizing token-level cross-entropy is equivalent to maximizing the likelihood of observed sequences under an autoregressive factorization. Correct target shifting, causal masking, padding exclusion, and loss reduction are essential. Perplexity is the exponential of average token-level cross-entropy, but it is not a complete measure of LLM quality.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-language-modeling",
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-09-large-language-models-model-architecture",
+        "module-09-large-language-models-gradient-computation-optimizers",
+        "module-09-large-language-models-learning-rate-schedules"
+    ]
+}

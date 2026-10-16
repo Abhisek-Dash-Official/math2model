@@ -1,1 +1,323 @@
-{}
+{
+    "id": "module-13-computer-vision-segmentation",
+    "moduleId": "module-13-computer-vision",
+    "moduleIndex": 13,
+    "topicIndex": 5,
+    "title": "Semantic & Instance Segmentation",
+    "slug": "segmentation",
+    "href": "/curriculum/13-computer-vision/segmentation",
+    "filePath": "content/curriculum/13-computer-vision/05-segmentation.json",
+    "description": "Learn pixel-level visual understanding, semantic and instance segmentation, mask representations, encoder-decoder architectures, and segmentation evaluation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "cnns",
+        "object-detection"
+    ],
+    "learningObjectives": [
+        "Distinguish image classification, object detection, semantic segmentation, and instance segmentation.",
+        "Represent segmentation targets using class-index masks and binary masks.",
+        "Understand encoder-decoder architectures and skip connections.",
+        "Explain U-Net, FCN, DeepLab, Mask R-CNN, and transformer-based segmentation at a high level.",
+        "Understand pixel-wise cross-entropy, Dice loss, and intersection-over-union metrics.",
+        "Handle class imbalance and small structures in segmentation datasets.",
+        "Apply image and mask augmentations consistently.",
+        "Perform inference with a pretrained segmentation model.",
+        "Interpret confusion matrices, boundary errors, and per-class metrics.",
+        "Design a reproducible segmentation evaluation pipeline."
+    ],
+    "sections": [
+        {
+            "id": "segmentation-intro",
+            "title": "Understanding Segmentation",
+            "type": "concept",
+            "content": "Segmentation assigns labels at the pixel level. Unlike image classification, which predicts a label for an entire image, segmentation produces a spatial map that identifies which regions belong to which categories or object instances. Semantic segmentation assigns each pixel a semantic class such as road, tree, person, or sky. Instance segmentation distinguishes separate objects belonging to the same class. Panoptic segmentation combines semantic categories for background regions with individual instance identities for countable objects. Segmentation is useful for autonomous navigation, medical image analysis, satellite imagery, robotics, scene understanding, and industrial inspection. Its output can be used for measurement, tracking, region extraction, or downstream decision-making."
+        },
+        {
+            "id": "segmentation-task-comparison",
+            "title": "Classification, Detection, and Segmentation",
+            "type": "concept",
+            "content": "Classification answers what is present in an image. Object detection adds approximate object locations using boxes. Semantic segmentation provides a class for every pixel but may assign the same class to several separate objects without distinguishing them. Instance segmentation predicts a separate mask for each detected object. For example, semantic segmentation may label all pixels belonging to people as person, while instance segmentation assigns a distinct mask to each person. The appropriate task depends on the application: estimating road area may require semantic segmentation, whereas counting and tracking individual pedestrians usually requires instance-level outputs."
+        },
+        {
+            "id": "mask-representations",
+            "title": "Representing Segmentation Masks",
+            "type": "concept",
+            "content": "A semantic segmentation target is often a two-dimensional integer array in which each value is a class identifier. For example, zero might represent background, one road, and two vehicle. A model generally outputs a tensor with one score per class at each pixel, and the predicted class is selected using an argmax across the class dimension. Binary segmentation uses a foreground mask and commonly predicts a single logit per pixel. Instance segmentation requires object-specific masks, often paired with class labels and confidence scores. Masks can be stored as dense arrays, polygons, run-length encodings, or other compact representations. The encoding must preserve the distinction between class IDs and color values used only for visualization."
+        },
+        {
+            "id": "mask-shape",
+            "title": "Tensor Shapes in Segmentation",
+            "type": "math",
+            "content": "For a batch of B images with C classes and output height H and width W, semantic segmentation logits typically have shape B × C × H × W. A class-index target commonly has shape B × H × W. The class dimension belongs to the predictions but not to the integer target labels. Binary segmentation often uses logits of shape B × 1 × H × W and targets with a compatible shape for binary loss. Shape conventions vary between libraries, so inspect model output and target shapes before computing a loss. Accidentally adding a class dimension to an integer target or applying softmax across the wrong axis can silently produce invalid training behavior."
+        },
+        {
+            "id": "pixelwise-loss",
+            "title": "Pixel-Wise Cross-Entropy",
+            "type": "math",
+            "content": "For multiclass segmentation, cross-entropy penalizes the predicted probability assigned to the correct class at each labeled pixel. The pixel losses are usually averaged or summed over valid pixels. If the model predicts logits z at a pixel and the target class is y, the loss is the negative log of the softmax probability for class y. This is equivalent to applying log-softmax to the logits and selecting the target class. Ignored pixels, such as unlabeled areas, should be excluded from the loss using the framework's supported ignore-index behavior. Class weighting can reduce the influence imbalance between frequent and rare categories.",
+            "formula": "L_pixel = -log(exp(z_y) / Σ_c exp(z_c))",
+            "example": "If the model assigns probability 0.8 to the correct class at a pixel, its cross-entropy is -log(0.8), approximately 0.223. Assigning only 0.1 probability to the correct class produces a much larger loss of approximately 2.303."
+        },
+        {
+            "id": "dice",
+            "title": "Dice Similarity and Dice Loss",
+            "type": "math",
+            "content": "The Dice coefficient measures overlap between predicted and target foreground regions. It is especially useful when the foreground occupies a small portion of an image. For binary masks, the coefficient is twice the intersection divided by the sum of predicted and target foreground sizes. A smoothing term prevents division by zero for empty masks. Dice loss is commonly defined as one minus the Dice coefficient. Soft Dice uses predicted probabilities instead of thresholded binary masks, allowing gradients to flow during training. Multiclass variants may compute Dice separately for each class and then average across classes.",
+            "formula": "Dice = (2 × |P ∩ G| + ε) / (|P| + |G| + ε); L_Dice = 1 - Dice",
+            "example": "If the predicted foreground has 40 pixels, the target has 50 pixels, and the intersection has 30 pixels, Dice = 2×30/(40+50) = 0.667 when smoothing is ignored."
+        },
+        {
+            "id": "iou-segmentation",
+            "title": "Intersection over Union for Segmentation",
+            "type": "math",
+            "content": "For a given class, segmentation IoU compares the predicted pixel region with the ground-truth region. True-positive pixels belong to both regions, false positives belong only to the prediction, and false negatives belong only to the ground truth. IoU divides the true-positive count by the sum of true positives, false positives, and false negatives. Mean IoU averages class IoU values according to the benchmark's convention. This prevents large classes from completely dominating the metric, although classes with no ground-truth examples require explicit handling. Some evaluations average only over present classes, while others apply a fixed class set.",
+            "formula": "IoU_c = TP_c / (TP_c + FP_c + FN_c); mIoU = (1/C) Σ_c IoU_c",
+            "example": "For a class with 70 true-positive pixels, 20 false-positive pixels, and 10 false-negative pixels, IoU is 70/(70+20+10) = 0.7."
+        },
+        {
+            "id": "semantic-code",
+            "title": "Computing a Segmentation Metric",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef mean_iou(prediction, target, num_classes, ignore_index=None):\n    prediction = np.asarray(prediction).reshape(-1)\n    target = np.asarray(target).reshape(-1)\n    valid = np.ones(target.shape, dtype=bool)\n    if ignore_index is not None:\n        valid &= target != ignore_index\n    prediction, target = prediction[valid], target[valid]\n    scores = []\n    for class_id in range(num_classes):\n        pred_mask = prediction == class_id\n        true_mask = target == class_id\n        union = np.logical_or(pred_mask, true_mask).sum()\n        if union:\n            scores.append(np.logical_and(pred_mask, true_mask).sum() / union)\n    return float(np.mean(scores)) if scores else float(\"nan\")\n\npred = np.array([[0, 1], [1, 1]])\ntrue = np.array([[0, 1], [0, 1]])\nprint(mean_iou(pred, true, num_classes=2))",
+            "explanation": "This implementation calculates IoU for each class present in either the prediction or target and averages those values. Benchmark conventions may require including all classes, assigning a defined score to absent classes, or using a distributed confusion matrix. Use the same convention when comparing experiments."
+        },
+        {
+            "id": "encoder-decoder",
+            "title": "Encoder-Decoder Architectures",
+            "type": "concept",
+            "content": "Many segmentation networks use an encoder-decoder structure. The encoder gradually reduces spatial resolution while learning increasingly abstract features. The decoder restores spatial resolution and converts these features into pixel-level predictions. Downsampling expands the effective receptive field and reduces computation, but it can discard precise boundaries. The decoder therefore needs a way to recover spatial detail. Some models use interpolation followed by convolution; others use transposed convolution or more sophisticated upsampling modules. The final output is commonly resized to match the target image dimensions. Upsampling cannot recover information that was completely lost, which motivates skip connections and high-resolution feature pathways."
+        },
+        {
+            "id": "skip-connections",
+            "title": "Skip Connections and U-Net",
+            "type": "concept",
+            "content": "U-Net is a well-known encoder-decoder architecture originally developed for biomedical image segmentation. Its contracting path extracts increasingly abstract features, while its expanding path restores resolution. Skip connections transfer feature maps from encoder stages to corresponding decoder stages, combining fine spatial details with deeper semantic information. Depending on the implementation, skip features may be concatenated or added. Concatenation increases channel count, while addition requires compatible shapes and channel dimensions. Skip connections can improve boundary localization and make optimization easier. U-Net has many variants and is widely applied beyond its original medical-imaging setting."
+        },
+        {
+            "id": "fully-convolutional-networks",
+            "title": "Fully Convolutional Networks",
+            "type": "concept",
+            "content": "Fully Convolutional Networks (FCNs) replace fixed-size fully connected classification layers with convolutional operations so that spatial feature maps can produce dense predictions. Early FCNs upsample coarse semantic outputs and combine information from intermediate feature maps. This demonstrated that image-classification backbones could be adapted for pixel-level prediction. A fully convolutional architecture can process different image dimensions subject to its stride and padding constraints, although batching often requires images to be resized or padded to common dimensions. The final logits are mapped back to the desired resolution before selecting per-pixel labels."
+        },
+        {
+            "id": "deeplab",
+            "title": "DeepLab and Atrous Convolution",
+            "type": "concept",
+            "content": "DeepLab-style architectures use atrous, or dilated, convolution to enlarge the receptive field without proportionally increasing the kernel's parameter count or reducing feature-map resolution. Atrous Spatial Pyramid Pooling (ASPP) applies parallel operations with different dilation rates to gather context at multiple scales. This helps model both local boundaries and broader scene structure. Large dilation rates can introduce gridding artifacts or miss fine details, so their selection must match the feature-map resolution and expected object sizes. DeepLab variants combine these ideas with different backbones, decoders, and training strategies."
+        },
+        {
+            "id": "dilation-math",
+            "title": "Dilated Convolution Geometry",
+            "type": "math",
+            "content": "A dilated convolution inserts gaps between kernel elements. For kernel size k and dilation d, the effective kernel size is k_eff = k + (k - 1)(d - 1). A 3 × 3 kernel with dilation one has an effective size of 3 × 3. With dilation two, its effective size becomes 5 × 5, but it still learns only nine spatial kernel weights per input-output channel pair. Dilation increases the sampled receptive field without adding kernel parameters. Padding must be adjusted when preserving feature-map dimensions is desired.",
+            "formula": "k_eff = k + (k - 1)(d - 1)",
+            "example": "For k = 3 and d = 2, k_eff = 3 + 2×1 = 5. The kernel samples a 5-by-5 spatial extent while using nine kernel positions."
+        },
+        {
+            "id": "mask-r-cnn",
+            "title": "Mask R-CNN and Instance Segmentation",
+            "type": "concept",
+            "content": "Mask R-CNN extends Faster R-CNN with a parallel mask-prediction branch. The detection pipeline proposes regions, classifies and refines their boxes, and predicts a binary mask for each detected instance. RoI Align preserves spatial alignment between proposed regions and feature maps, improving mask quality. Each instance mask is typically predicted at a fixed resolution and then mapped into the detected box in the original image. Instance segmentation therefore combines object detection with pixel-level shape estimation. Errors can originate from missed detections, incorrect classes, inaccurate boxes, or poor masks, so evaluation should inspect these failure modes separately."
+        },
+        {
+            "id": "transformer-segmentation",
+            "title": "Transformer-Based Segmentation",
+            "type": "concept",
+            "content": "Vision transformers and hierarchical transformer backbones can provide global or long-range contextual features for segmentation. Architectures such as SegFormer use hierarchical representations and lightweight decoding, while other approaches use learned queries or mask tokens to produce region masks. Global attention can model relationships between distant image regions, but its computational cost can be high at large resolutions. Hierarchical features, windowed attention, and efficient decoders help manage this cost. Transformer-based segmentation does not eliminate the need for good annotations, suitable augmentations, or careful evaluation of boundaries and small structures."
+        },
+        {
+            "id": "augmentation",
+            "title": "Augmenting Images and Masks Together",
+            "type": "concept",
+            "content": "Image augmentation for segmentation must preserve pixel-to-pixel alignment between the transformed image and its target mask. Geometric operations such as flips, rotations, crops, and scaling must be applied consistently to both. Images may use bilinear interpolation when resized, but categorical masks should generally use nearest-neighbor interpolation so class IDs are not blended into invalid intermediate values. Color transformations usually apply only to the image. Random transformations should not produce impossible examples for the domain. Medical, satellite, and industrial datasets may require domain-specific constraints because arbitrary flips or rotations can alter the meaning of an image."
+        },
+        {
+            "id": "augmentation-code",
+            "title": "A Common Mask-Resizing Mistake",
+            "type": "code",
+            "language": "python",
+            "content": "from PIL import Image\n\nimage = Image.open(\"image.png\").convert(\"RGB\")\nmask = Image.open(\"mask.png\")\nsize = (256, 256)\nimage_resized = image.resize(size, resample=Image.Resampling.BILINEAR)\nmask_resized = mask.resize(size, resample=Image.Resampling.NEAREST)\n\nprint(image_resized.size, mask_resized.size)",
+            "explanation": "Bilinear interpolation is appropriate for continuous image intensities in many settings, but it can invent intermediate values in a categorical label mask. Nearest-neighbor interpolation preserves the existing class identifiers. If masks are RGB palette images, convert their colors to class IDs consistently before computing a segmentation loss."
+        },
+        {
+            "id": "class-imbalance",
+            "title": "Class Imbalance and Rare Structures",
+            "type": "concept",
+            "content": "Some segmentation classes cover huge image areas, while others occupy only a few pixels. Ordinary pixel-averaged cross-entropy can become dominated by common classes. Class weights, focal loss, Dice loss, Tversky-style objectives, and balanced sampling are possible responses. Each strategy has trade-offs: aggressive weighting can destabilize training or increase false positives. Rare-class performance should be measured directly rather than inferred from overall pixel accuracy. A model that labels every pixel as background may achieve deceptively high pixel accuracy on a dataset where foreground is rare, yet be unusable for the actual task."
+        },
+        {
+            "id": "loss-combination",
+            "title": "Combining Segmentation Objectives",
+            "type": "math",
+            "content": "A training objective can combine cross-entropy and overlap-based losses. Cross-entropy provides a local classification signal at individual pixels, while Dice loss emphasizes overlap of the predicted region with the target. The combined loss uses a weighting coefficient to control their relative contributions. This coefficient is a hyperparameter rather than a universal constant. Compare objectives on a validation set using the target application's metrics, including boundary quality and rare-class performance where relevant.",
+            "formula": "L_total = λ L_CE + (1 - λ) L_Dice, where 0 ≤ λ ≤ 1",
+            "example": "If L_CE = 0.4, L_Dice = 0.2, and λ = 0.7, then L_total = 0.7×0.4 + 0.3×0.2 = 0.34."
+        },
+        {
+            "id": "training-pipeline",
+            "title": "Training a Segmentation Model",
+            "type": "concept",
+            "content": "A segmentation training pipeline includes image loading, mask decoding, joint augmentation, batching, forward propagation, loss computation, gradient updates, and validation. The target mask must use valid class IDs and the same spatial dimensions expected by the loss. During validation, disable stochastic training augmentations and gradient calculation. Track both loss and task metrics because loss may improve while a particular class's IoU deteriorates. Save checkpoints based on a predefined validation criterion and record the exact preprocessing configuration. If images are padded, distinguish padding pixels from real background using an ignore label or an appropriate valid-region mask."
+        },
+        {
+            "id": "pytorch-loss",
+            "title": "Multiclass Segmentation Loss in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn.functional as F\n\nlogits = torch.randn(2, 4, 128, 128, requires_grad=True)\ntarget = torch.randint(0, 4, (2, 128, 128), dtype=torch.long)\nloss = F.cross_entropy(logits, target)\nloss.backward()\nprint(float(loss.detach()))",
+            "explanation": "The logits have batch size two, four classes, and a 128-by-128 output grid. The target contains one integer class ID per pixel. This example demonstrates tensor shapes and gradient propagation, not a complete training system. Real training uses model outputs, validated labels, an optimizer, and an appropriate ignore-index policy."
+        },
+        {
+            "id": "pretrained-inference",
+            "title": "Inference with a Pretrained Segmentation Model",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom transformers import AutoImageProcessor, AutoModelForSemanticSegmentation\nfrom PIL import Image\n\nmodel_id = \"nvidia/segformer-b0-finetuned-ade-512-512\"\nprocessor = AutoImageProcessor.from_pretrained(model_id)\nmodel = AutoModelForSemanticSegmentation.from_pretrained(model_id)\nimage = Image.open(\"scene.jpg\").convert(\"RGB\")\ninputs = processor(images=image, return_tensors=\"pt\")\nwith torch.no_grad():\n    outputs = model(**inputs)\nlogits = torch.nn.functional.interpolate(outputs.logits, size=(image.height, image.width), mode=\"bilinear\", align_corners=False)\nprediction = logits.argmax(dim=1)[0].cpu().numpy()\nprint(prediction.shape, prediction.min(), prediction.max())",
+            "explanation": "The processor applies model-specific preprocessing, and the output logits are resized to the original image dimensions before selecting the most likely class per pixel. Check the model card for its label map, training dataset, license, and intended use. The predicted integer map is not automatically a visually meaningful RGB image; map class IDs to colors only for visualization."
+        },
+        {
+            "id": "boundary-quality",
+            "title": "Boundary Quality and Evaluation",
+            "type": "concept",
+            "content": "Two models may have similar mean IoU while producing different boundary quality. A mask can correctly identify the broad region but misplace thin structures or object edges. Boundary-sensitive metrics compare predicted and target contours within a specified tolerance. Other useful diagnostics include per-class IoU, Dice coefficient, pixel accuracy, confusion matrices, and visual overlays. Pixel accuracy is dominated by common classes, while IoU penalizes both false positives and false negatives relative to the union. No single metric captures every application requirement, so the evaluation suite should match the practical cost of different errors."
+        },
+        {
+            "id": "confusion-matrix",
+            "title": "Pixel-Level Confusion Matrices",
+            "type": "concept",
+            "content": "A segmentation confusion matrix counts how often each ground-truth class is predicted as each output class. Its diagonal contains correct classifications; off-diagonal entries expose category confusions. For example, a model may repeatedly confuse sidewalk with road or a particular medical tissue with background. A confusion matrix can reveal whether a poor class IoU is caused primarily by missed target pixels or excessive false-positive pixels. With many classes and large datasets, accumulate the matrix across batches rather than storing all pixel predictions. Ignore unlabeled pixels and ensure the class ordering is consistent."
+        },
+        {
+            "id": "domain-shift",
+            "title": "Domain Shift and Generalization",
+            "type": "concept",
+            "content": "Segmentation performance can degrade when camera systems, lighting, geography, image resolution, patient populations, or annotation conventions differ from training data. A model trained on daylight road scenes may perform poorly at night or in heavy rain. A medical model may fail when applied to a different scanner or hospital. Evaluate on data representative of deployment, and use external validation when feasible. Domain adaptation, fine-tuning, and additional labeled examples may help, but changes should be evaluated carefully to avoid overfitting a narrow validation set."
+        },
+        {
+            "id": "deployment",
+            "title": "Segmentation Deployment Considerations",
+            "type": "concept",
+            "content": "Dense prediction can be memory-intensive because the model produces outputs for many pixels. Input resolution, batch size, encoder choice, decoder complexity, and output precision all affect cost. Large images may require tiling with overlap; stitching tile predictions must avoid visible seams and account for boundary effects. For medical or industrial settings, post-processing may enforce valid geometric constraints, but such steps must be validated independently. Store the model version, preprocessing configuration, class map, and evaluation results with each release. Monitor unexpected image formats, missing labels, output dimensions, and changes in input distribution."
+        },
+        {
+            "id": "responsible-segmentation",
+            "title": "Responsible Use of Segmentation",
+            "type": "concept",
+            "content": "Segmentation outputs may influence high-impact decisions, especially in healthcare, transport, and surveillance. Errors can disproportionately affect uncommon conditions, rare objects, or environments underrepresented in training. Privacy-sensitive imagery should be handled with access controls, limited retention, and appropriate consent or legal authorization. Visual overlays can create an impression of certainty even when predictions are unreliable. Communicate uncertainty, define human review requirements, and avoid using model outputs beyond the validated scope. For clinical or safety-critical use, offline metrics alone are not sufficient evidence of suitability."
+        },
+        {
+            "id": "segmentation-summary",
+            "title": "A Complete Segmentation Workflow",
+            "type": "concept",
+            "content": "A reliable segmentation workflow begins with a clear task definition and consistent pixel annotations. Images and masks are loaded with compatible dimensions and transformed together. An encoder-decoder or other dense-prediction architecture produces per-pixel logits or instance masks. Training uses appropriate classification and overlap-based losses, while evaluation reports per-class and aggregate metrics. Qualitative overlays and boundary diagnostics help explain errors that a single score hides. Before deployment, validate generalization, measure memory and latency, version the class map, and define safeguards for errors and distribution changes."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "seg-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main difference between semantic and instance segmentation?",
+            "correctAnswer": "Semantic segmentation labels pixels by category, while instance segmentation also separates individual objects of the same category.",
+            "solution": "A semantic mask may label every person pixel as person. An instance segmentation system assigns a separate mask to each detected person."
+        },
+        {
+            "id": "seg-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why should categorical masks usually be resized using nearest-neighbor interpolation?",
+            "correctAnswer": "Nearest-neighbor interpolation preserves valid class IDs rather than creating blended values between labels.",
+            "solution": "Bilinear interpolation averages neighboring pixel values. For a label mask, that can create values that do not correspond to any class."
+        },
+        {
+            "id": "seg-ex-3",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "A class has 90 true-positive pixels, 30 false-positive pixels, and 30 false-negative pixels. Compute IoU.",
+            "correctAnswer": "0.6.",
+            "solution": "IoU = TP/(TP+FP+FN) = 90/(90+30+30) = 90/150 = 0.6."
+        },
+        {
+            "id": "seg-ex-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A predicted region contains 30 pixels, the target contains 50 pixels, and their intersection is 20 pixels. Compute Dice.",
+            "correctAnswer": "0.5.",
+            "solution": "Dice = 2×intersection/(predicted size + target size) = 40/80 = 0.5."
+        },
+        {
+            "id": "seg-ex-5",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why are skip connections useful in U-Net-style models?",
+            "correctAnswer": "They transfer high-resolution encoder features to the decoder, helping restore spatial details and boundaries.",
+            "solution": "Deep encoder features provide semantic context but may have low spatial resolution. Skip connections combine them with finer-resolution information."
+        },
+        {
+            "id": "seg-ex-6",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What problem does atrous convolution address?",
+            "correctAnswer": "It expands the receptive field without requiring a larger number of kernel weights or the same degree of downsampling.",
+            "solution": "Dilation spaces out kernel samples, increasing the spatial extent covered by a convolution while retaining the original kernel parameter count."
+        },
+        {
+            "id": "seg-ex-7",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "A multiclass segmentation model has logits shaped [4, 6, 128, 128] and integer targets shaped [4, 1, 128, 128]. Why might cross-entropy reject the targets?",
+            "correctAnswer": "For class-index targets, the expected shape is [4, 128, 128], without the singleton class dimension.",
+            "solution": "The logits contain six class scores per pixel. Standard PyTorch multiclass cross-entropy expects one integer class ID at each pixel, so remove the unnecessary dimension while preserving integer dtype."
+        },
+        {
+            "id": "seg-ex-8",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A model achieves high pixel accuracy but low IoU for a rare class. Explain why and propose a response.",
+            "correctAnswer": "Common classes dominate pixel accuracy, so the model may ignore the rare class. Examine per-class metrics and consider balanced sampling, class weights, overlap losses, and additional representative data.",
+            "solution": "A model can correctly label most background pixels while missing a rare foreground category. Class-specific evaluation exposes the failure. Adjust training only after checking annotation quality and validation results."
+        },
+        {
+            "id": "seg-ex-9",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design a data split for segmentation images collected from multiple patients, with several images per patient.",
+            "correctAnswer": "Split by patient so images from a single patient occur in only one of train, validation, or test.",
+            "solution": "Images from the same patient may share anatomy, acquisition settings, and artifacts. Patient-level splitting reduces leakage and gives a more realistic estimate of generalization."
+        },
+        {
+            "id": "seg-ex-10",
+            "type": "debugging",
+            "difficulty": "intermediate",
+            "question": "After applying a random crop to an image, the target mask remains unchanged. What is wrong?",
+            "correctAnswer": "The same geometric crop must be applied to the mask so image pixels and labels remain aligned.",
+            "solution": "Misaligned labels teach the model incorrect pixel correspondences. Use a shared transformation for geometric operations and image-only transformations for color or intensity changes."
+        },
+        {
+            "id": "seg-ex-11",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is mean IoU generally more informative than pixel accuracy for strongly imbalanced segmentation data?",
+            "correctAnswer": "Mean IoU evaluates region overlap per class and reduces the dominance of very common classes.",
+            "solution": "Pixel accuracy can be high when a model predicts the majority class almost everywhere. Per-class IoU exposes errors on smaller or less frequent categories."
+        },
+        {
+            "id": "seg-ex-12",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A segmentation model produces accurate regions but poor boundaries around thin structures. What should you investigate?",
+            "correctAnswer": "Inspect output resolution, downsampling, skip connections, annotation boundaries, suitable boundary metrics, and high-resolution training or inference.",
+            "solution": "Thin structures may disappear during downsampling or be poorly represented by coarse outputs. Better high-resolution features and careful annotation can improve boundary fidelity, but each change should be validated."
+        }
+    ],
+    "summary": "Segmentation predicts labels or object masks at the pixel level. Semantic segmentation assigns categories, instance segmentation separates individual objects, and panoptic segmentation combines semantic and instance-level outputs. Encoder-decoder architectures, skip connections, dilated convolution, and region-based mask heads provide different ways to combine semantic context with spatial detail. Cross-entropy, Dice loss, IoU, and mean IoU measure different aspects of performance. Reliable segmentation requires aligned image-mask augmentation, careful handling of class imbalance, representative validation, boundary analysis, and deployment safeguards.",
+    "relatedTopics": [
+        "cnns",
+        "vision-transformers",
+        "image-embeddings",
+        "object-detection",
+        "diffusion-models"
+    ]
+}

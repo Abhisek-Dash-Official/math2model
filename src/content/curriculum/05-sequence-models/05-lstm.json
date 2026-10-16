@@ -1,1 +1,105 @@
-{}
+{
+  "id": "module-05-lstm",
+  "moduleId": "module-05-sequence-models",
+  "moduleIndex": 5,
+  "topicIndex": 5,
+  "title": "Long Short-Term Memory (LSTM)",
+  "slug": "lstm",
+  "href": "/curriculum/05-sequence-models/lstm",
+  "filePath": "content/curriculum/05-sequence-models/05-lstm.json",
+  "description": "Understand LSTM memory cells and gates, their equations, and why gated recurrent networks often learn longer dependencies than simple RNNs.",
+  "difficulty": "intermediate",
+  "estimatedHours": 4,
+  "prerequisites": [
+    "RNN",
+    "Backpropagation Through Time",
+    "Vanishing & Exploding Gradients"
+  ],
+  "learningObjectives": [
+    "Explain the cell state and hidden state.",
+    "Describe forget, input, and output gates.",
+    "Interpret the core LSTM update equations.",
+    "Use an LSTM layer with correctly shaped tensors."
+  ],
+  "sections": [
+    {
+      "id": "motivation",
+      "title": "Why LSTMs?",
+      "type": "concept",
+      "content": "A simple RNN repeatedly transforms its hidden state, which can make it difficult to preserve useful information over long intervals. Long Short-Term Memory (LSTM) networks introduce a cell state and gates that regulate what information is forgotten, written, and exposed.\n\nThe cell state provides a more controlled information path through time. LSTMs reduce some long-range optimization difficulties, but they are not guaranteed to remember every relevant detail and remain sequential to compute across time."
+    },
+    {
+      "id": "gates",
+      "title": "The Three Main Gates",
+      "type": "concept",
+      "content": "The forget gate decides how much of the previous cell state to retain. The input gate controls how much candidate information is written into the cell. The output gate controls how much of the cell state is exposed as the hidden state. These gates are learned from the current input and previous hidden state.\n\nSigmoid gate activations lie between zero and one and act like soft controls. They are not hard Boolean switches; a value such as 0.8 means retaining or allowing more of the relevant signal than a value such as 0.2."
+    },
+    {
+      "id": "equations",
+      "title": "LSTM Update Equations",
+      "type": "math",
+      "content": "A common formulation is f_t=σ(W_f[x_t,h_(t−1)]+b_f), i_t=σ(W_i[x_t,h_(t−1)]+b_i), and g_t=tanh(W_g[x_t,h_(t−1)]+b_g). The cell state becomes c_t=f_t⊙c_(t−1)+i_t⊙g_t. The output gate is o_t=σ(W_o[x_t,h_(t−1)]+b_o), and h_t=o_t⊙tanh(c_t).\n\nThe symbol ⊙ means element-wise multiplication. The additive cell-state update allows information to persist when the forget gate is near one and the input gate is near zero."
+    },
+    {
+      "id": "interpretation",
+      "title": "Reading a Cell-State Update",
+      "type": "math",
+      "content": "Suppose one cell-state component has previous value 2, forget gate 0.9, input gate 0.2, and candidate value −1. Then the new cell value is 0.9×2 + 0.2×(−1) = 1.6. Most old information is retained, with a smaller negative candidate contribution added.\n\nThis is an illustrative scalar calculation. Actual LSTM gates are vectors and depend on learned transformations of the input and previous hidden state."
+    },
+    {
+      "id": "code",
+      "title": "LSTM in PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nlstm = nn.LSTM(input_size=6, hidden_size=20, num_layers=2, batch_first=True)\nx = torch.randn(4, 15, 6)\noutput, (h_n, c_n) = lstm(x)\nprint(output.shape)  # [4, 15, 20]\nprint(h_n.shape)     # [2, 4, 20]\nprint(c_n.shape)     # [2, 4, 20]",
+      "language": "python",
+      "explanation": "output gives the hidden sequence from the final recurrent layer. h_n and c_n contain final hidden and cell states for each layer and direction. With batch_first=True, input layout is [batch, time, features], but the state tensors keep layers first."
+    },
+    {
+      "id": "uses",
+      "title": "When to Use LSTMs",
+      "type": "concept",
+      "content": "LSTMs can be useful for moderate-length time series, speech features, sequence labeling, and tasks where gated recurrence is a useful inductive bias. They may be less efficient than architectures that parallelize sequence positions, especially for very long inputs.\n\nCompare LSTM baselines with GRUs and simpler models. Evaluate performance, latency, memory, and robustness on the deployment distribution rather than choosing by architecture name alone."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "lstm-ex1",
+      "type": "conceptual",
+      "difficulty": "easy",
+      "question": "What are the two recurrent state vectors in an LSTM?",
+      "correctAnswer": "The hidden state h_t and cell state c_t.",
+      "solution": "The cell state carries internal memory while the hidden state is the exposed recurrent representation."
+    },
+    {
+      "id": "lstm-ex2",
+      "type": "math",
+      "difficulty": "medium",
+      "question": "If previous cell state is 3, forget gate is 0.5, input gate is 0.25, and candidate is 2, calculate the new cell state.",
+      "correctAnswer": "2.0.",
+      "solution": "c_t = 0.5×3 + 0.25×2 = 1.5 + 0.5 = 2."
+    },
+    {
+      "id": "lstm-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "What does the forget gate control?",
+      "correctAnswer": "How much of the previous cell state is retained.",
+      "solution": "It multiplies the previous cell state element by element."
+    },
+    {
+      "id": "lstm-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "With batch_first=True, what is the input shape for batch 10, length 7, and 6 features?",
+      "correctAnswer": "[10, 7, 6].",
+      "solution": "The layout is batch, time, features."
+    }
+  ],
+  "summary": "LSTMs use forget, input, and output gates to regulate a cell state and hidden state. They improve long-range information flow compared with simple RNNs, though they still require careful training and evaluation.",
+  "relatedTopics": [
+    "rnn",
+    "gru",
+    "vanishing-exploding-gradients",
+    "sequence-to-sequence-models"
+  ]
+}

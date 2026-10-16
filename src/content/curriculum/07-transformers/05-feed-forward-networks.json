@@ -1,1 +1,194 @@
-{}
+{
+    "id": "05-feed-forward-networks",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 5,
+    "title": "Feed-Forward Networks (FFN)",
+    "slug": "feed-forward-networks",
+    "href": "/curriculum/07-transformers/feed-forward-networks",
+    "filePath": "content/curriculum/07-transformers/05-feed-forward-networks.json",
+    "description": "Understand the mathematical foundations, nonlinear transformations, dimensional expansion, gated activations, parameter counts, and implementation of feed-forward networks in Transformers.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/encoder",
+        "module-07-transformers/decoder",
+        "module-07-transformers/residual-connections-layer-norm"
+    ],
+    "learningObjectives": [
+        "Explain the role of feed-forward networks in Transformer layers.",
+        "Derive the two-layer FFN equation.",
+        "Distinguish attention-based token mixing from position-wise transformations.",
+        "Understand nonlinear activations such as ReLU, GELU, and SiLU.",
+        "Calculate FFN tensor dimensions and parameter counts.",
+        "Explain dimensional expansion and projection.",
+        "Understand gated FFN variants such as GLU and SwiGLU.",
+        "Implement FFN modules using NumPy and PyTorch.",
+        "Recognize common FFN implementation and training errors."
+    ],
+    "sections": [
+        {
+            "id": "ffn-motivation",
+            "title": "1. Why Transformers Need Feed-Forward Networks",
+            "type": "concept",
+            "content": "Attention allows a token representation to gather information from other positions. However, attention alone is not the complete computational machinery of a Transformer. A feed-forward network adds learned nonlinear transformations to the information available at each position. It can combine features, build intermediate representations, and transform contextual information into forms useful for later layers. The attention sublayer primarily performs content-dependent information mixing across sequence positions, whereas a position-wise FFN transforms each position independently using shared parameters. Repeating attention and feed-forward operations lets a Transformer alternate between gathering context and processing the gathered features."
+        },
+        {
+            "id": "ffn-basic-equation",
+            "title": "2. Mathematical Definition of an FFN",
+            "type": "math",
+            "content": "A common Transformer feed-forward network has two linear transformations with a nonlinear activation between them. Its equation is FFN(x) = W2 σ(W1x + b1) + b2. If x has dimension dmodel and the intermediate dimension is dff, then W1 has shape (dff, dmodel), while W2 has shape (dmodel, dff) under the column-vector convention. The first layer expands the representation, the activation introduces nonlinearity, and the second layer projects it back to dmodel. In batch-first sequence notation, the same operation can be applied to a tensor of shape (B, T, dmodel), with the final dimension changing temporarily to dff."
+        },
+        {
+            "id": "ffn-worked-example",
+            "title": "3. A Small Numerical Example",
+            "type": "example",
+            "content": "Consider a two-dimensional input x = [1, 2], a first transformation that computes hidden values h = [x1 + x2, x1 - x2], and a ReLU activation. The pre-activation is h = [3, -1], so ReLU gives [3, 0]. Suppose the second transformation calculates y = [2h1 + h2, h1 - h2]. The output is [6, 3]. The first transformation combines input features, the activation introduces a nonlinear decision about which hidden values remain active, and the second transformation creates the output representation. Real FFNs use learned weight matrices and biases rather than these hand-selected operations."
+        },
+        {
+            "id": "ffn-position-wise",
+            "title": "4. Why the FFN Is Position-Wise",
+            "type": "concept",
+            "content": "In a standard Transformer FFN, the same linear layers and activation are applied independently at every sequence position. For an input tensor X with shape (B, T, dmodel), the first linear layer produces (B, T, dff), and the second returns (B, T, dmodel). No information moves directly from one token position to another inside this position-wise operation. Context has already been mixed by attention or will be mixed by later attention layers. Weight sharing across positions makes the FFN parameter count independent of sequence length, even though the amount of computation grows with the number of tokens."
+        },
+        {
+            "id": "ffn-dimensional-expansion",
+            "title": "5. Why Expand the Hidden Dimension?",
+            "type": "concept",
+            "content": "Many Transformer architectures choose an intermediate dimension larger than the residual-stream dimension. A classic configuration uses dff approximately four times dmodel, although actual ratios differ by architecture. Expansion gives the network a larger intermediate feature space in which to construct nonlinear combinations. The second projection maps that intermediate representation back to the dimension expected by the residual pathway. Expansion increases parameter count and computational cost, so it is a design trade-off rather than a universal requirement. Gated architectures may use different intermediate dimensions because their parameterization and activation structure differ."
+        },
+        {
+            "id": "ffn-parameter-count",
+            "title": "6. FFN Parameter Count",
+            "type": "math",
+            "content": "For a conventional two-layer FFN with biases, the parameter count is dmodel × dff + dff + dff × dmodel + dmodel. Simplifying gives 2 dmodel dff + dff + dmodel. If dmodel = 512 and dff = 2048, the weight matrices contain 2 × 512 × 2048 = 2,097,152 parameters. The biases add 2048 + 512 = 2560 parameters, producing 2,099,712 parameters in total. This estimate excludes normalization, attention projections, and other layer components. Gated FFNs generally use more than two projection matrices and therefore require a different parameter calculation."
+        },
+        {
+            "id": "ffn-relu",
+            "title": "7. ReLU Activation",
+            "type": "math",
+            "content": "The Rectified Linear Unit is defined as ReLU(x) = max(0, x). Positive inputs pass through unchanged, while negative inputs become zero. ReLU is computationally simple and introduces nonlinearity into the FFN. Without nonlinear activations, a stack of linear layers collapses mathematically into a single linear transformation, reducing the expressive power of the network. ReLU has a zero gradient for negative inputs, which can contribute to inactive units in some settings. It remains an important baseline activation, but many modern Transformer architectures use smoother or gated alternatives."
+        },
+        {
+            "id": "ffn-gelu",
+            "title": "8. GELU Activation",
+            "type": "concept",
+            "content": "The Gaussian Error Linear Unit is commonly used in Transformer feed-forward networks. It can be expressed as GELU(x) = x Φ(x), where Φ(x) is the cumulative distribution function of a standard normal distribution. Unlike ReLU, GELU does not sharply set every negative input to zero; it smoothly scales inputs according to their magnitude. This can provide useful nonlinear behavior for language representations. Frameworks often implement exact or approximate GELU variants. Small numerical differences between variants are usually acceptable when chosen intentionally, but reproducing a pretrained architecture may require matching its original activation configuration."
+        },
+        {
+            "id": "ffn-silu",
+            "title": "9. SiLU and Smooth Activations",
+            "type": "math",
+            "content": "The Sigmoid Linear Unit, also called SiLU or Swish, is defined as SiLU(x) = x σ(x), where σ(x) = 1 / (1 + exp(-x)). For large positive inputs, the sigmoid approaches one and SiLU behaves approximately like the identity. For large negative inputs, the sigmoid approaches zero and the output approaches zero from the negative side. SiLU is smooth and is used in many modern neural-network components, including gated feed-forward designs. Activation choice influences gradient behavior, computational cost, and learned representations, but performance depends on the full architecture and training procedure rather than the activation alone."
+        },
+        {
+            "id": "ffn-gated",
+            "title": "10. Gated Feed-Forward Networks",
+            "type": "concept",
+            "content": "A gated feed-forward network uses one learned transformation to produce candidate features and another to produce a gate controlling those features. A generic gated form is y = Wout(σ(Wgate x) ⊙ Wvalue x), where ⊙ represents element-wise multiplication. The gate can modulate which components of the candidate representation contribute to the output. GLU-style architectures use this general principle with different gate activations. Gating adds flexibility but changes parameter count and compute. It also means that the intermediate dimension should not automatically be chosen using the same assumptions as a simple two-layer ReLU FFN."
+        },
+        {
+            "id": "ffn-swiglu",
+            "title": "11. SwiGLU",
+            "type": "math",
+            "content": "SwiGLU is a gated feed-forward design that uses SiLU for its gate. One common formulation is SwiGLU(x) = Wout(SiLU(Wgate x) ⊙ Wvalue x). The gate and value projections independently transform the input into intermediate representations, which are multiplied element-wise before the output projection. The gate controls how strongly each value feature contributes. Because there are two input-side projections and one output projection, the parameter count differs from a conventional two-matrix FFN. Model configurations often adjust the intermediate dimension to manage the additional cost while preserving a desired capacity and compute budget."
+        },
+        {
+            "id": "ffn-residual-integration",
+            "title": "12. Integrating the FFN with a Transformer Block",
+            "type": "concept",
+            "content": "The FFN normally appears after an attention sublayer. In a pre-normalization block, the feed-forward update can be written y = x + FFN(LayerNorm(x)). The FFN returns a tensor with the same final dimension as x so residual addition is possible. Dropout may be applied to the FFN output during training. The exact activation, intermediate dimension, bias usage, normalization arrangement, and dropout configuration depend on the architecture. Reproducing a pretrained model requires matching these details because changing the FFN design changes the function and the expected parameter shapes."
+        },
+        {
+            "id": "ffn-pytorch-implementation",
+            "title": "13. Implement a Standard FFN in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\n\nclass FeedForwardNetwork(nn.Module):\n    def __init__(self, d_model, d_ff, dropout=0.1):\n        super().__init__()\n        self.network = nn.Sequential(\n            nn.Linear(d_model, d_ff),\n            nn.GELU(),\n            nn.Dropout(dropout),\n            nn.Linear(d_ff, d_model)\n        )\n\n    def forward(self, x):\n        return self.network(x)\n\n\nffn = FeedForwardNetwork(d_model=128, d_ff=512)\nx = torch.randn(2, 10, 128)\ny = ffn(x)\n\nprint(\"Input:\", x.shape)\nprint(\"Output:\", y.shape)\nprint(\"Parameter count:\", sum(p.numel() for p in ffn.parameters()))",
+            "explanation": "The network applies the same linear layers independently to every position along the sequence. The intermediate dimension expands from 128 to 512, and the output projection restores the final dimension to 128. Dropout is active during training mode and disabled after calling eval()."
+        },
+        {
+            "id": "ffn-swiglu-code",
+            "title": "14. Implement a SwiGLU-Style FFN",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\nimport torch.nn.functional as F\n\n\nclass SwiGLU(nn.Module):\n    def __init__(self, d_model, d_hidden):\n        super().__init__()\n        self.gate_proj = nn.Linear(d_model, d_hidden, bias=False)\n        self.value_proj = nn.Linear(d_model, d_hidden, bias=False)\n        self.output_proj = nn.Linear(d_hidden, d_model, bias=False)\n\n    def forward(self, x):\n        gate = F.silu(self.gate_proj(x))\n        value = self.value_proj(x)\n        return self.output_proj(gate * value)\n\n\nlayer = SwiGLU(d_model=128, d_hidden=256)\nx = torch.randn(2, 10, 128)\ny = layer(x)\nprint(y.shape)  # torch.Size([2, 10, 128])",
+            "explanation": "The gate and value projections both produce tensors with shape (B, T, d_hidden). SiLU is applied to the gate branch, and element-wise multiplication combines the two branches before the output projection. The dimensions must match for the multiplication to work."
+        },
+        {
+            "id": "ffn-complexity",
+            "title": "15. Computational Cost",
+            "type": "math",
+            "content": "For sequence length T, model dimension dmodel, and intermediate dimension dff, the two FFN matrix multiplications require work proportional to T × dmodel × dff for each projection. Together, the dominant multiply-accumulate work is proportional to 2 T dmodel dff, ignoring constants associated with the chosen FLOP convention, activation operations, and batch size. The parameter count does not grow with sequence length because weights are shared across positions, but computation does. In many Transformer configurations, FFNs account for a substantial fraction of the layer's parameters and arithmetic. Optimizing FFN execution may involve efficient matrix multiplication kernels, appropriate batching, precision choices, or architecture-specific gated designs."
+        },
+        {
+            "id": "ffn-common-mistakes",
+            "title": "16. Common Implementation Mistakes",
+            "type": "concept",
+            "content": "A common mistake is forgetting the activation between the two linear transformations. Another is failing to project the intermediate representation back to dmodel, which breaks the usual residual addition. Gated networks require gate and value branches to have matching intermediate dimensions. An FFN does not automatically mix information across sequence positions; that is the role of attention or another sequence-mixing operation. Dropout behavior depends on training mode, so evaluation should use model.eval() when appropriate. Parameter-count estimates must include the actual number of projection matrices and biases. Finally, changing the FFN architecture in a pretrained model without changing its weights accordingly can cause shape mismatches or incompatible model behavior."
+        },
+        {
+            "id": "ffn-exercise-1",
+            "title": "Exercise 1: Output Dimension",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "An FFN maps an input dimension of 64 to an intermediate dimension of 256 and then back to 64. What is the output feature dimension?",
+            "correctAnswer": "64",
+            "solution": "The second linear transformation maps the intermediate features back to the model dimension, so the final feature dimension is 64."
+        },
+        {
+            "id": "ffn-exercise-2",
+            "title": "Exercise 2: Parameter Count",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Calculate the weight-only parameter count for a two-layer FFN with dmodel = 128 and dff = 512.",
+            "correctAnswer": "131072",
+            "solution": "The first matrix contains 128 × 512 = 65536 weights. The second contains 512 × 128 = 65536 weights. Together they contain 131072 weights, excluding biases."
+        },
+        {
+            "id": "ffn-exercise-3",
+            "title": "Exercise 3: Role of Nonlinearity",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "Why is a nonlinear activation normally placed between the two linear layers?",
+            "correctAnswer": "It increases expressive power by preventing the two linear transformations from collapsing into one equivalent linear transformation.",
+            "solution": "A composition of linear transformations remains linear. Adding a nonlinear activation lets the FFN represent more complex input-output relationships."
+        },
+        {
+            "id": "ffn-exercise-4",
+            "title": "Exercise 4: Position-Wise Computation",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Does a standard position-wise FFN directly attend to neighboring token positions?",
+            "correctAnswer": "No.",
+            "solution": "The same FFN parameters are applied independently at each position. Cross-position information exchange occurs in attention or other sequence-mixing operations."
+        },
+        {
+            "id": "ffn-exercise-5",
+            "title": "Exercise 5: SwiGLU Dimensions",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "In a SwiGLU layer, what must be true about the output shapes of the gate and value projections before element-wise multiplication?",
+            "correctAnswer": "They must have compatible shapes, normally the same intermediate dimension and sequence dimensions.",
+            "solution": "Element-wise multiplication combines corresponding entries. Therefore, the gate and value tensors must be shape-compatible, typically both having shape (B, T, d_hidden)."
+        },
+        {
+            "id": "ffn-exercise-6",
+            "title": "Exercise 6: FFN Versus Attention",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Describe the main computational distinction between self-attention and a position-wise FFN.",
+            "correctAnswer": "Self-attention mixes information across sequence positions, while the FFN applies nonlinear feature transformations independently at each position.",
+            "solution": "Self-attention uses query-key scores to combine values from different positions. The standard FFN operates on the feature vector at each position with shared weights."
+        }
+    ],
+    "summary": "The Transformer feed-forward network transforms each token representation using learned linear layers and nonlinear activations. A conventional FFN expands the hidden dimension, applies an activation, and projects back to the model dimension. Gated variants such as SwiGLU use additional projections to modulate intermediate features. FFNs complement attention: attention mixes contextual information across positions, while the FFN performs position-wise nonlinear processing.",
+    "relatedTopics": [
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/encoder",
+        "module-07-transformers/decoder",
+        "module-07-transformers/residual-connections-layer-norm",
+        "module-07-transformers/build-tiny-transformer-from-scratch"
+    ]
+}

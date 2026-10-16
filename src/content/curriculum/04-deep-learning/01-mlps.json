@@ -1,1 +1,113 @@
-{}
+{
+  "id": "module-04-mlps",
+  "moduleId": "module-04-deep-learning",
+  "moduleIndex": 4,
+  "topicIndex": 1,
+  "title": "Multilayer Perceptrons (MLPs)",
+  "slug": "mlps",
+  "href": "/curriculum/04-deep-learning/mlps",
+  "filePath": "content/curriculum/04-deep-learning/01-mlps.json",
+  "description": "Understand fully connected neural networks, how layers transform representations, and how an MLP learns nonlinear input-output relationships.",
+  "difficulty": "beginner",
+  "estimatedHours": 3,
+  "prerequisites": [
+    "Perceptron",
+    "Activation Functions",
+    "Forward Propagation",
+    "Backpropagation"
+  ],
+  "learningObjectives": [
+    "Describe the role of input, hidden, and output layers.",
+    "Compute a forward pass through a small MLP.",
+    "Explain why nonlinear activations are necessary.",
+    "Identify common MLP training and generalization problems."
+  ],
+  "sections": [
+    {
+      "id": "intuition",
+      "title": "What Is an MLP?",
+      "type": "concept",
+      "content": "A multilayer perceptron is a feed-forward neural network made of layers of neurons. Each layer receives a vector, computes weighted sums plus biases, applies an activation function, and passes the result to the next layer. Information flows from input to output without recurrent connections. MLPs are called fully connected or dense networks because each neuron in one layer is typically connected to every neuron in the next layer.\n\nThink of an MLP as a sequence of learned feature transformations. The first hidden layer may detect simple combinations of input values; later layers can combine those patterns into increasingly useful representations. Unlike a linear model, a sufficiently configured MLP with nonlinear activations can represent complex nonlinear functions."
+    },
+    {
+      "id": "architecture",
+      "title": "Layers and Shapes",
+      "type": "concept",
+      "content": "An MLP commonly contains an input representation, one or more hidden layers, and an output layer. The input layer usually does not perform a learned transformation; it supplies the feature vector. Each dense layer has a weight matrix and a bias vector.\n\nFor a batch of B examples with d input features, the input has shape (B, d). A dense layer with h units has weights shaped (d, h), bias shaped (h,), and output shaped (B, h). Keeping track of dimensions is one of the most useful debugging habits in neural-network code."
+    },
+    {
+      "id": "math",
+      "title": "Forward Pass Mathematics",
+      "type": "math",
+      "content": "For layer l, let a^(l-1) be the previous layer's activation. The pre-activation and activation are z^(l) = a^(l-1) W^(l) + b^(l), and a^(l) = φ(z^(l)). For a network with L layers, repeat this operation until the output layer.\n\nWorked example: suppose x = [2, 1], W = [[1, -1], [0.5, 2]], and b = [0, 1]. Then z = xW + b = [2.5, 1]. With ReLU, a = [2.5, 1]. This layer has transformed two input features into two learned activations."
+    },
+    {
+      "id": "nonlinearity",
+      "title": "Why Activations Matter",
+      "type": "concept",
+      "content": "Stacking linear layers without nonlinear activations does not create a more expressive linear model: the product of linear transformations is still a linear transformation. Nonlinear activations such as ReLU, GELU, or tanh allow hidden layers to model curved decision boundaries and interactions between features.\n\nReLU is φ(z)=max(0,z) and is a common hidden-layer default. Sigmoid maps values to (0,1) and is useful for a binary probability output. Softmax converts a vector of logits into a probability distribution for mutually exclusive classes."
+    },
+    {
+      "id": "code",
+      "title": "Build an MLP with PyTorch",
+      "type": "code",
+      "content": "import torch\nfrom torch import nn\n\nmodel = nn.Sequential(\n    nn.Linear(10, 64),\n    nn.ReLU(),\n    nn.Linear(64, 32),\n    nn.ReLU(),\n    nn.Linear(32, 3)  # three class logits\n)\n\nx = torch.randn(8, 10)  # batch of 8 examples\nlogits = model(x)\nprint(logits.shape)  # torch.Size([8, 3])",
+      "language": "python",
+      "explanation": "The model maps 10 input features to 64 hidden units, then 32 hidden units, then 3 output logits. For multiclass classification, pass logits directly to CrossEntropyLoss; it internally handles the appropriate log-softmax operation. Do not apply softmax before CrossEntropyLoss."
+    },
+    {
+      "id": "training",
+      "title": "Training and Generalization",
+      "type": "concept",
+      "content": "Training adjusts weights and biases to minimize a loss. A typical loop performs a forward pass, computes loss, clears old gradients, backpropagates derivatives, and updates parameters with an optimizer. The training loss measures fit to the training set; validation performance estimates generalization to unseen data.\n\nIf training performance improves while validation performance worsens, the model may be overfitting. Possible responses include collecting more data, weight decay, dropout, early stopping, or reducing model capacity. Standardize numeric features when their scales differ substantially, and fit preprocessing only on training data to avoid leakage."
+    },
+    {
+      "id": "pitfalls",
+      "title": "Common MLP Pitfalls",
+      "type": "concept",
+      "content": "Common issues include mismatched tensor shapes, applying an activation that is inappropriate for the output, learning rates that are too high, and evaluating only on training data. MLPs also do not automatically exploit image locality or sequence order; architectures such as CNNs and recurrent or attention-based models can encode those structures more naturally.\n\nA larger network is not automatically better. Compare models on a validation set, use a simple baseline, and track both the loss and task-specific metrics."
+    }
+  ],
+  "exercises": [
+    {
+      "id": "mlp-ex1",
+      "type": "short-answer",
+      "difficulty": "easy",
+      "question": "What are the three common roles of layers in an MLP?",
+      "correctAnswer": "Input representation, hidden layers, and output layer.",
+      "solution": "The input supplies features, hidden layers learn intermediate representations, and the output layer produces predictions."
+    },
+    {
+      "id": "mlp-ex2",
+      "type": "calculation",
+      "difficulty": "medium",
+      "question": "A layer has 5 inputs and 7 neurons. How many weights and biases does it contain?",
+      "correctAnswer": "35 weights and 7 biases, 42 trainable parameters total.",
+      "solution": "Each neuron has one weight per input (5×7=35) and one bias (7)."
+    },
+    {
+      "id": "mlp-ex3",
+      "type": "conceptual",
+      "difficulty": "medium",
+      "question": "Why do hidden layers usually use nonlinear activations?",
+      "correctAnswer": "Without nonlinearities, stacked dense layers collapse into a single linear transformation.",
+      "solution": "Nonlinear activations let the network represent nonlinear relationships and decision boundaries."
+    },
+    {
+      "id": "mlp-ex4",
+      "type": "debugging",
+      "difficulty": "medium",
+      "question": "A three-class classifier uses CrossEntropyLoss. Should its model return softmax probabilities or raw logits?",
+      "correctAnswer": "Raw logits.",
+      "solution": "CrossEntropyLoss combines log-softmax and negative log-likelihood internally; supplying probabilities changes the intended calculation."
+    }
+  ],
+  "summary": "An MLP composes learned affine transformations and nonlinear activations. Track tensor shapes, select an output/loss pairing that matches the task, and use validation data to assess generalization.",
+  "relatedTopics": [
+    "activation-functions",
+    "forward-propagation",
+    "backpropagation",
+    "loss-functions",
+    "optimizers-momentum-rmsprop-adam"
+  ]
+}

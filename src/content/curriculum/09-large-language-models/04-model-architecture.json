@@ -1,1 +1,255 @@
-{}
+{
+    "id": "module-09-large-language-models-model-architecture",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 4,
+    "title": "LLM Architecture & Scaling Design",
+    "slug": "model-architecture",
+    "href": "/curriculum/09-large-language-models/model-architecture",
+    "filePath": "content/curriculum/09-large-language-models/04-model-architecture.json",
+    "description": "Explore the main architectural components of large language models, including embeddings, Transformer blocks, self-attention, feed-forward networks, normalization, positional information, residual connections, and scaling trade-offs.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "Transformer Architecture",
+        "Attention Mechanism",
+        "Word Embeddings",
+        "Linear Algebra",
+        "Neural Network Fundamentals",
+        "LLM Pretraining"
+    ],
+    "learningObjectives": [
+        "Describe the major components of a Transformer-based LLM.",
+        "Explain token embeddings and positional information.",
+        "Derive the scaled dot-product attention operation.",
+        "Understand multi-head attention and causal masking.",
+        "Explain feed-forward networks, residual connections, and normalization.",
+        "Compare encoder-only, decoder-only, and encoder-decoder architectures.",
+        "Understand model dimensions, parameter counts, and memory requirements.",
+        "Identify architectural trade-offs involved in scaling."
+    ],
+    "sections": [
+        {
+            "id": "llm-architecture-introduction",
+            "title": "What Is an LLM Architecture?",
+            "type": "concept",
+            "content": "An LLM architecture specifies how token representations are transformed into contextual features and output-token probabilities. Most modern large language models use Transformer-based components, though exact designs vary. A typical decoder-only model contains token embeddings, positional information, repeated Transformer blocks, normalization layers, and an output projection over the vocabulary. Architecture determines the model's information flow, parameterization, computational requirements, and compatibility with training objectives."
+        },
+        {
+            "id": "architecture-overview",
+            "title": "The High-Level Forward Pass",
+            "type": "concept",
+            "content": "The input text is converted into token IDs by a tokenizer. An embedding layer maps each ID to a dense vector. Positional information is incorporated so that the model can distinguish token order. Repeated Transformer blocks apply attention and feed-forward transformations, usually with residual connections and normalization. The final hidden states are projected into vocabulary logits, which can be converted to probabilities for next-token prediction."
+        },
+        {
+            "id": "token-embeddings",
+            "title": "Token Embeddings",
+            "type": "concept",
+            "content": "A token embedding table is a trainable matrix E with shape V × d, where V is vocabulary size and d is hidden dimension. Given token ID i, the model selects row E_i as its vector representation. These vectors are learned during training and become part of the model's representation of token identity. Embeddings do not have fixed human-defined meanings; their geometry is shaped by the training objective and surrounding network."
+        },
+        {
+            "id": "embedding-shape",
+            "title": "Embedding Tensor Shapes",
+            "type": "math",
+            "content": "For a batch of B sequences, each with length L and hidden dimension d, the embedded input tensor commonly has shape B × L × d. For example, a batch of 8 sequences with 1,024 token positions and hidden dimension 4,096 has an embedding tensor with 8 × 1,024 × 4,096 elements. The actual memory requirement depends on numerical precision and whether intermediate activations must be retained for backpropagation."
+        },
+        {
+            "id": "positional-information",
+            "title": "Positional Information",
+            "type": "concept",
+            "content": "Self-attention alone does not automatically encode the order of input tokens. Transformer architectures therefore use positional information to distinguish sequence positions. Approaches include learned absolute embeddings, sinusoidal encodings, and relative or rotary methods. Different choices influence how the model represents token order and behaves at longer context lengths. Position handling must be compatible with the model's training and inference configuration."
+        },
+        {
+            "id": "rotary-embeddings",
+            "title": "Rotary Position Embeddings",
+            "type": "concept",
+            "content": "Rotary Position Embeddings, commonly called RoPE, apply position-dependent rotations to query and key vectors in attention. The rotations encode relative positional relationships through how vectors interact in dot products. RoPE is widely used in decoder-style language models. Practical implementations may include scaling or other modifications to support longer contexts, but extrapolating beyond the training range does not automatically guarantee reliable long-context behavior."
+        },
+        {
+            "id": "self-attention",
+            "title": "Self-Attention",
+            "type": "concept",
+            "content": "Self-attention allows each token position to aggregate information from other permitted positions. Input representations are transformed into query, key, and value vectors. Queries represent what a position is seeking, keys represent information used for matching, and values contain information that can be aggregated. Attention weights depend on query-key compatibility, and the weighted sum of values becomes the output representation for each query position."
+        },
+        {
+            "id": "attention-equation",
+            "title": "Scaled Dot-Product Attention",
+            "type": "math",
+            "content": "Scaled dot-product attention is Attention(Q, K, V) = softmax(QKᵀ / √d_k + M)V, where Q contains queries, K contains keys, V contains values, d_k is the key dimension, and M is an optional attention mask. The division by √d_k controls the scale of dot products as the key dimension grows. The softmax converts scores into weights, and multiplication by V aggregates the value vectors."
+        },
+        {
+            "id": "attention-dimensions",
+            "title": "Attention Tensor Dimensions",
+            "type": "math",
+            "content": "For one attention head with sequence length L and key dimension d_k, the query and key matrices can be represented as L × d_k. Their product QKᵀ has shape L × L, giving one attention score for each query-key position pair. Multiplying the resulting L × L attention matrix by values of shape L × d_v produces an output of shape L × d_v. Batched multi-head implementations add batch and head dimensions."
+        },
+        {
+            "id": "multihead-attention",
+            "title": "Multi-Head Attention",
+            "type": "concept",
+            "content": "Multi-head attention uses several attention heads, each with its own learned projections. Heads can learn different patterns of information interaction, though their roles are not guaranteed to align with simple human interpretations. The head outputs are concatenated and projected back to the model's hidden dimension. If the total hidden dimension is d and there are h heads, implementations commonly allocate a per-head dimension of d/h when d is divisible by h."
+        },
+        {
+            "id": "causal-attention",
+            "title": "Causal Self-Attention",
+            "type": "concept",
+            "content": "Decoder-only language models use causal attention so a position cannot access future tokens during next-token prediction. This constraint makes training consistent with autoregressive generation. A causal mask blocks attention to positions after the current token. In a typical implementation, the mask is combined with attention scores before softmax, preventing forbidden positions from receiving probability."
+        },
+        {
+            "id": "feedforward-network",
+            "title": "Feed-Forward Network",
+            "type": "concept",
+            "content": "Each Transformer block usually contains a position-wise feed-forward network in addition to attention. A common form projects each token representation from hidden dimension d to a larger intermediate dimension d_ff, applies a nonlinear activation, and projects back to d. Because the same feed-forward parameters are applied at every sequence position, the network transforms token features independently at each position after attention has mixed contextual information."
+        },
+        {
+            "id": "feedforward-equation",
+            "title": "Feed-Forward Transformation",
+            "type": "math",
+            "content": "A simple feed-forward block can be written as FFN(x) = W_2 σ(W_1x + b_1) + b_2. Here W_1 projects from d to d_ff, σ is a nonlinear activation, and W_2 projects from d_ff back to d. Modern architectures may use gated activations such as SwiGLU, which introduce additional projections and change the parameter count. The exact feed-forward design is model-specific."
+        },
+        {
+            "id": "activation-functions",
+            "title": "Activation Functions and Gated MLPs",
+            "type": "concept",
+            "content": "Nonlinear activations allow a feed-forward network to represent more complex transformations than a purely linear layer. GELU and SiLU are common activation functions, while gated variants combine activation outputs with another learned projection. SwiGLU is a widely used gated feed-forward design in modern Transformer architectures. The choice affects parameter count, compute, numerical behavior, and empirical model performance."
+        },
+        {
+            "id": "residual-connections",
+            "title": "Residual Connections",
+            "type": "concept",
+            "content": "Residual connections add a sublayer's input to its output, creating a path through which information and gradients can propagate across the network. A simplified residual operation is y = x + F(x). Transformer blocks use residual paths around attention and feed-forward sublayers, often together with normalization. The exact ordering of normalization, sublayer computation, and residual addition differs across architectures."
+        },
+        {
+            "id": "layer-normalization",
+            "title": "Normalization Layers",
+            "type": "concept",
+            "content": "Normalization helps control the scale and distribution of activations during training. LayerNorm normalizes features within each token representation using statistics computed across its feature dimensions. RMSNorm uses a root-mean-square scaling operation without subtracting the mean. Pre-normalization architectures place normalization before the attention or feed-forward sublayer, while post-normalization designs place it after the residual addition. Each choice affects training dynamics."
+        },
+        {
+            "id": "transformer-block",
+            "title": "Putting a Transformer Block Together",
+            "type": "concept",
+            "content": "A simplified pre-normalization decoder block can first normalize the hidden states, apply masked self-attention, and add the attention output through a residual connection. It then normalizes the result, applies the feed-forward network, and adds a second residual connection. Repeating this block builds progressively contextualized representations. Real architectures may include rotary positions, grouped-query attention, gated MLPs, specialized normalization, and other optimizations."
+        },
+        {
+            "id": "encoder-decoder-decoder-only",
+            "title": "Encoder-Only, Decoder-Only, and Encoder-Decoder",
+            "type": "concept",
+            "content": "Encoder-only architectures commonly use bidirectional attention and are well suited to contextual representations and understanding tasks. Decoder-only architectures use causal attention and naturally support autoregressive generation. Encoder-decoder architectures combine an input encoder with a decoder that generates outputs conditioned on the encoded input. These are broad design patterns rather than strict task limitations; adaptation and fine-tuning can enable multiple applications."
+        },
+        {
+            "id": "grouped-query-attention",
+            "title": "Grouped-Query Attention",
+            "type": "concept",
+            "content": "Grouped-query attention, or GQA, uses multiple query heads that share a smaller number of key-value heads. This reduces the size of the key-value cache compared with conventional multi-head attention using a separate key-value pair for every query head. It can improve inference efficiency, especially during autoregressive decoding. The trade-off is that key-value sharing changes the attention parameterization and must be supported by the model architecture."
+        },
+        {
+            "id": "kv-cache",
+            "title": "Key-Value Caching",
+            "type": "concept",
+            "content": "During autoregressive generation, previously processed tokens do not need to have their key and value projections recomputed at every step if those tensors are cached. A key-value cache stores intermediate attention representations for earlier tokens. This can greatly reduce repeated computation during generation, but memory use grows with context length, layer count, number of key-value heads, head dimension, batch size, and numerical precision."
+        },
+        {
+            "id": "parameter-count",
+            "title": "Estimating Parameter Counts",
+            "type": "concept",
+            "content": "A Transformer model's parameters are distributed across embeddings, attention projections, feed-forward layers, normalization parameters, and output projections. Parameter count is a useful architectural statistic, but it does not directly determine runtime or quality. Some parameters are reused across sequence positions, while activations and attention computations depend on sequence length and batch size. Weight tying, grouped-query attention, and gated MLPs also change the count."
+        },
+        {
+            "id": "attention-complexity",
+            "title": "Attention Computational Complexity",
+            "type": "math",
+            "content": "For sequence length L and hidden dimension d, standard dense self-attention has a major attention interaction cost proportional to L²d. Projection and feed-forward operations contribute terms that are often proportional to Ld² for fixed architecture dimensions. This means long sequences can become expensive even when parameter count is unchanged. Memory-efficient attention kernels reduce materialization of intermediate matrices, but they do not remove the fundamental pairwise interaction count of standard full attention."
+        },
+        {
+            "id": "memory-estimation",
+            "title": "Parameter Memory Estimation",
+            "type": "math",
+            "content": "A rough parameter-storage estimate is parameter_count × bytes_per_parameter. For example, 7 billion parameters stored in 2 bytes each require approximately 14 billion bytes, or about 14 GB using decimal units. This estimate excludes activations, gradients, optimizer states, temporary buffers, communication overhead, and framework memory. Full training memory can be several times larger than the storage needed for model weights alone."
+        },
+        {
+            "id": "architecture-code",
+            "title": "Inspect a Pretrained Model Configuration",
+            "type": "code",
+            "language": "python",
+            "content": "from transformers import AutoConfig\n\nconfig = AutoConfig.from_pretrained(\"gpt2\")\nprint(\"Layers:\", config.n_layer)\nprint(\"Attention heads:\", config.n_head)\nprint(\"Hidden dimension:\", config.n_embd)\nprint(\"Context length:\", config.n_positions)\nprint(\"Vocabulary size:\", config.vocab_size)",
+            "explanation": "This code reads architecture settings from a pretrained GPT-2 configuration. Attribute names vary across model families, so inspect the configuration object when working with other architectures. It requires Transformers and access to the configuration files."
+        },
+        {
+            "id": "scaling-design",
+            "title": "Architectural Scaling Trade-Offs",
+            "type": "concept",
+            "content": "Increasing hidden dimension, layer count, attention heads, feed-forward dimension, or vocabulary size changes parameter count and compute. Longer context increases attention work and cache memory. A model intended for training at scale may prioritize throughput and parallelism, while an inference-focused model may prioritize latency, memory use, and batching. Design choices should be evaluated jointly rather than optimized one dimension at a time."
+        },
+        {
+            "id": "architecture-efficiency",
+            "title": "Efficiency Techniques",
+            "type": "concept",
+            "content": "Common efficiency techniques include mixed-precision computation, activation checkpointing, efficient attention kernels, grouped-query attention, key-value caching, tensor parallelism, pipeline parallelism, and optimized data loading. Each addresses a different bottleneck. For example, activation checkpointing trades extra computation for lower activation memory, while key-value caching trades memory for reduced repeated computation during generation."
+        },
+        {
+            "id": "architecture-limitations",
+            "title": "Architecture Does Not Guarantee Capability",
+            "type": "concept",
+            "content": "A powerful architecture does not automatically yield a useful model. Training data, objective, optimization, scale, fine-tuning, and evaluation strongly influence the final behavior. Two models with similar parameter counts can perform differently because of differences in data, training compute, tokenization, or design. Likewise, longer context windows do not guarantee that a model can reliably retrieve and reason over every detail in a long input."
+        },
+        {
+            "id": "architecture-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "A Transformer-based LLM typically combines embeddings, positional information, attention, feed-forward networks, residual connections, normalization, and an output projection. Attention enables contextual information exchange, while feed-forward layers transform token features. Architectural choices affect parameter count, training compute, context length, and inference memory. Efficient scaling requires considering model quality and system constraints together."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "architecture-exercise-1",
+            "type": "math",
+            "difficulty": "beginner",
+            "question": "A model has vocabulary size 40,000 and embedding dimension 2,048. How many parameters are in a standard token embedding table?",
+            "correctAnswer": "81,920,000 parameters.",
+            "solution": "Multiply vocabulary size by embedding dimension: 40,000 × 2,048 = 81,920,000."
+        },
+        {
+            "id": "architecture-exercise-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why does a decoder-only language model use causal attention?",
+            "correctAnswer": "To prevent a token prediction from using future tokens that would not be available during autoregressive generation.",
+            "solution": "Causal masking blocks attention to later positions, ensuring that each prediction uses only the permitted preceding context."
+        },
+        {
+            "id": "architecture-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "If sequence length doubles while all other dimensions remain fixed, how does the pairwise attention-score matrix size change?",
+            "correctAnswer": "It increases by a factor of four.",
+            "solution": "The score matrix contains L × L entries. Doubling L gives (2L)² = 4L² entries."
+        },
+        {
+            "id": "architecture-exercise-4",
+            "type": "conceptual",
+            "difficulty": "advanced",
+            "question": "How does grouped-query attention reduce inference memory requirements?",
+            "correctAnswer": "It uses fewer key-value heads than query heads, reducing the amount of key and value data that must be cached.",
+            "solution": "The key-value cache stores projected keys and values for preceding tokens. Sharing key-value heads reduces the number of cached vectors, while retaining multiple query heads."
+        },
+        {
+            "id": "architecture-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You need to deploy a language model on memory-constrained hardware. Which architectural and inference factors should you inspect?",
+            "correctAnswer": "Parameter count, numerical precision, context length, key-value cache size, layer dimensions, attention design, batch size, and inference optimizations.",
+            "solution": "Weight storage is only one component of memory use. Long contexts and larger batches increase cache requirements, while model dimensions affect both compute and storage. Measure real workload performance before selecting a deployment configuration."
+        }
+    ],
+    "summary": "LLM architecture determines how token embeddings are transformed into contextual representations and vocabulary predictions. Transformer blocks combine attention, feed-forward networks, residual connections, normalization, and positional information. Vocabulary size and model dimensions affect parameters, while sequence length influences attention computation and key-value cache memory. Efficient architectures balance capability, training cost, inference latency, and deployment constraints.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-next-token-prediction",
+        "module-09-large-language-models-pretraining",
+        "module-09-large-language-models-tokenization",
+        "module-09-large-language-models-parameter-initialization",
+        "module-09-large-language-models-distributed-training",
+        "module-09-large-language-models-scaling-laws"
+    ]
+}

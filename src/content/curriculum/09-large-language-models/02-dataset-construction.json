@@ -1,1 +1,257 @@
-{}
+{
+    "id": "module-09-large-language-models-dataset-construction",
+    "moduleId": "module-09-large-language-models",
+    "moduleIndex": 9,
+    "topicIndex": 2,
+    "title": "Dataset Curation & Filtering",
+    "slug": "dataset-construction",
+    "href": "/curriculum/09-large-language-models/dataset-construction",
+    "filePath": "content/curriculum/09-large-language-models/02-dataset-construction.json",
+    "description": "Learn how large language model datasets are sourced, cleaned, deduplicated, filtered, balanced, validated, and governed for reliable and responsible pretraining.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Pretraining Objectives & Paradigms",
+        "Basic Statistics",
+        "Data Processing with Python",
+        "Tokenization Techniques"
+    ],
+    "learningObjectives": [
+        "Explain how dataset quality affects pretrained language models.",
+        "Describe data sourcing, provenance, and licensing checks.",
+        "Implement basic text normalization and filtering.",
+        "Understand exact and near-duplicate detection.",
+        "Explain quality, language, safety, and contamination filters.",
+        "Recognize sampling and data-mixture trade-offs.",
+        "Design dataset validation and governance procedures."
+    ],
+    "sections": [
+        {
+            "id": "dataset-curation-introduction",
+            "title": "What Is Dataset Curation?",
+            "type": "concept",
+            "content": "Dataset curation is the process of selecting, cleaning, organizing, filtering, and validating data before using it to train a model. Large language model corpora can contain web pages, books, documentation, code, research articles, and other text sources. These sources vary in quality, style, language, reliability, and legal status. Curation aims to build a training corpus that is useful, sufficiently diverse, and appropriate for the model's intended purpose."
+        },
+        {
+            "id": "data-quality",
+            "title": "Why Data Quality Matters",
+            "type": "concept",
+            "content": "Training algorithms learn from the examples they receive. A corpus dominated by spam, malformed text, copied pages, or inaccurate claims can teach undesirable patterns and waste training compute. Conversely, well-curated data can improve coverage, reduce repetition, and make training more efficient. Data quality is not a single universal score: educational content, code, dialogue, scientific text, and multilingual material have different quality requirements."
+        },
+        {
+            "id": "data-sourcing",
+            "title": "Data Sources and Provenance",
+            "type": "concept",
+            "content": "Potential sources include public web pages, books, technical documentation, research publications, code repositories, and licensed datasets. Provenance records where each dataset or document originated, when it was collected, and what permissions or restrictions apply. Public accessibility does not automatically mean unrestricted permission for every use. Teams should review applicable licenses, terms, privacy obligations, and jurisdiction-specific requirements before including data in training."
+        },
+        {
+            "id": "metadata",
+            "title": "Dataset Metadata",
+            "type": "concept",
+            "content": "Useful metadata includes source identifier, collection timestamp, language, content type, license information, processing version, quality score, and deduplication status. Metadata supports auditing, reproducibility, filtering, and investigation of model behavior. Sensitive source identifiers should be handled appropriately, and records should not unnecessarily expose personal information. A versioned data manifest helps connect a model checkpoint to the data pipeline that produced it."
+        },
+        {
+            "id": "raw-data-ingestion",
+            "title": "Raw Data Ingestion",
+            "type": "concept",
+            "content": "Ingestion gathers source documents into a consistent processing pipeline. Common tasks include parsing HTML, extracting readable text, decoding character encodings, identifying document boundaries, and preserving useful metadata. Extraction errors can create navigation fragments, duplicated menus, broken sentences, or missing code blocks. Keep raw data separate from cleaned data so that processing choices can be audited and corrected."
+        },
+        {
+            "id": "normalization",
+            "title": "Text Normalization",
+            "type": "concept",
+            "content": "Normalization converts text into a consistent representation. It may include Unicode normalization, whitespace cleanup, line-ending standardization, and removal of clearly irrelevant markup. Aggressive normalization can destroy meaning: mathematical notation, programming code, capitalization, and language-specific characters may be important. Normalization should therefore be adapted to the source type and preserve content needed by the training objective."
+        },
+        {
+            "id": "normalization-code",
+            "title": "Basic Text Normalization in Python",
+            "type": "code",
+            "language": "python",
+            "content": "import re\nimport unicodedata\n\ndef normalize_text(text):\n    text = unicodedata.normalize(\"NFC\", text)\n    text = text.replace(\"\\r\\n\", \"\\n\").replace(\"\\r\", \"\\n\")\n    text = re.sub(r\"[\\t ]+\", \" \", text)\n    text = re.sub(r\"\\n{3,}\", \"\\n\\n\", text)\n    return text.strip()\n\nsample = \"  Neural   networks\\r\\n\\r\\n\\r\\n learn.  \"\nprint(normalize_text(sample))",
+            "explanation": "This example standardizes Unicode, line endings, horizontal whitespace, and excessive blank lines. It is a minimal demonstration, not a universal cleaning pipeline. Code, tables, and mathematical text may need specialized normalization rules."
+        },
+        {
+            "id": "language-identification",
+            "title": "Language Identification",
+            "type": "concept",
+            "content": "Language identification estimates which language or languages appear in a document. It supports multilingual balancing, language-specific filtering, and quality measurement. Short strings, code snippets, names, and mixed-language text are difficult to classify reliably. A robust pipeline should retain uncertainty information where possible and avoid discarding valuable low-resource-language examples solely because a detector is less accurate for them."
+        },
+        {
+            "id": "quality-filters",
+            "title": "Quality Filtering",
+            "type": "concept",
+            "content": "Quality filters can use document length, character distributions, sentence structure, repeated-line ratios, language confidence, formatting signals, source reputation, or learned quality classifiers. A short document is not automatically low quality, and a long document is not automatically useful. Thresholds should be evaluated against representative examples from every important domain and language. Combining multiple weak signals is often more reliable than using a single heuristic."
+        },
+        {
+            "id": "heuristic-filtering",
+            "title": "Simple Heuristic Filtering",
+            "type": "code",
+            "language": "python",
+            "content": "import re\n\ndef basic_quality_check(text, min_chars=80):\n    stripped = text.strip()\n    if len(stripped) < min_chars:\n        return False\n    if not re.search(r\"[A-Za-z]\", stripped):\n        return False\n    nonspace = [ch for ch in stripped if not ch.isspace()]\n    if not nonspace:\n        return False\n    unusual_ratio = sum(not (ch.isalnum() or ch.isspace() or ch in \".,!?;:'\\\"-()[]{}_/+=#%&@\") for ch in nonspace) / len(nonspace)\n    return unusual_ratio < 0.35\n\nprint(basic_quality_check(\"This is an example of a readable document with useful text.\"))",
+            "explanation": "The function demonstrates simple length and character checks. It is intentionally crude and should not be used as a production quality classifier without validation. The Latin-letter requirement is unsuitable for multilingual corpora and should be replaced with language-aware rules."
+        },
+        {
+            "id": "deduplication",
+            "title": "Why Deduplication Matters",
+            "type": "concept",
+            "content": "Large corpora often contain repeated pages, syndicated articles, copied documentation, and near-identical versions of the same document. Duplicates can cause frequently repeated material to receive disproportionate training weight. They also increase storage and processing costs and may increase the risk of memorizing repeated sequences. Deduplication reduces redundancy while preserving legitimate repeated structures when they carry meaningful information."
+        },
+        {
+            "id": "exact-deduplication",
+            "title": "Exact Deduplication",
+            "type": "concept",
+            "content": "Exact deduplication identifies documents whose normalized text is identical. A cryptographic hash can act as a compact fingerprint: identical inputs produce the same hash with overwhelming practical reliability. The pipeline must define normalization consistently, since differences in whitespace or Unicode encoding may otherwise prevent duplicates from matching. Exact deduplication does not detect paraphrases or lightly edited copies."
+        },
+        {
+            "id": "exact-dedup-code",
+            "title": "Exact Deduplication with Hashes",
+            "type": "code",
+            "language": "python",
+            "content": "import hashlib\n\ndef text_hash(text):\n    normalized = \" \".join(text.split())\n    return hashlib.sha256(normalized.encode(\"utf-8\")).hexdigest()\n\ndef exact_deduplicate(documents):\n    seen = set()\n    unique = []\n    for document in documents:\n        fingerprint = text_hash(document)\n        if fingerprint not in seen:\n            seen.add(fingerprint)\n            unique.append(document)\n    return unique\n\ndocuments = [\"AI learns patterns\", \"AI learns patterns\", \"Models learn from data\"]\nprint(exact_deduplicate(documents))",
+            "explanation": "The function normalizes whitespace, hashes each document, and keeps only the first occurrence of each fingerprint. A production pipeline should preserve document metadata and record which copies were removed."
+        },
+        {
+            "id": "near-deduplication",
+            "title": "Near-Duplicate Detection",
+            "type": "concept",
+            "content": "Near-duplicate documents differ slightly but share much of their content. Techniques include shingling, MinHash, locality-sensitive hashing, edit-distance methods, and embedding-based similarity. Exact pairwise comparison across a massive corpus can be expensive, so approximate methods help find likely duplicate groups. Similarity thresholds require care: highly similar legal templates, code examples, or standard definitions may be legitimately useful rather than redundant."
+        },
+        {
+            "id": "minhash",
+            "title": "MinHash and Shingling",
+            "type": "concept",
+            "content": "A shingle is a sequence of adjacent tokens or words extracted from a document. Jaccard similarity between two shingle sets A and B is |A ∩ B| / |A ∪ B|. MinHash uses randomized hash functions to create compact signatures that approximate Jaccard similarity. Locality-sensitive hashing can then group signatures likely to belong to similar documents. These techniques are useful for discovering near-duplicates without comparing every document pair exactly."
+        },
+        {
+            "id": "jaccard-code",
+            "title": "Calculate Jaccard Similarity",
+            "type": "code",
+            "language": "python",
+            "content": "def jaccard_similarity(a, b):\n    a, b = set(a), set(b)\n    union = a | b\n    return len(a & b) / len(union) if union else 1.0\n\nfirst = {\"neural\", \"networks\", \"learn\", \"patterns\"}\nsecond = {\"neural\", \"networks\", \"learn\", \"features\"}\nprint(jaccard_similarity(first, second))",
+            "explanation": "The function calculates exact Jaccard similarity between two sets. In a document pipeline, sets may contain word shingles rather than individual words. The simple implementation is useful for small examples but does not scale to exhaustive comparison of huge corpora."
+        },
+        {
+            "id": "personal-data",
+            "title": "Personal Information and Privacy",
+            "type": "concept",
+            "content": "Web and document corpora may contain personal identifiers, contact information, private communications, or other sensitive content. Data governance should identify relevant privacy risks, apply appropriate collection restrictions and removal procedures, and avoid retaining unnecessary sensitive material. Automated personal-information detection is imperfect and may create both false positives and false negatives. Privacy review must therefore be integrated into source selection, processing, retention, and auditing."
+        },
+        {
+            "id": "safety-filtering",
+            "title": "Safety and Harmful-Content Filtering",
+            "type": "concept",
+            "content": "Safety filtering may identify content that creates unacceptable training risks for a particular application. The correct policy depends on the model's purpose, the data's context, and applicable requirements. A filter that is too broad can remove legitimate educational, historical, medical, or safety research. A filter that is too narrow can retain harmful or inappropriate material. Document-level labels and targeted review can help distinguish discussion of a topic from instructions that facilitate harm."
+        },
+        {
+            "id": "benchmark-contamination",
+            "title": "Benchmark Contamination",
+            "type": "concept",
+            "content": "Benchmark contamination occurs when evaluation questions, answers, or close variants appear in training data. A model may then perform well partly because it has encountered the test material rather than because it generalizes to unseen examples. Contamination checks can compare benchmark items against training corpora using exact matches, fuzzy matching, or semantic similarity. Results should be interpreted carefully because common phrases may match legitimately without indicating meaningful leakage."
+        },
+        {
+            "id": "data-mixtures",
+            "title": "Building a Data Mixture",
+            "type": "concept",
+            "content": "A training mixture combines data from multiple domains or sources, such as general web text, code, mathematics, scientific writing, and educational material. Sampling proportions influence which patterns the model sees most often. Sampling in direct proportion to raw corpus size can cause enormous sources to dominate. Temperature-based or explicitly weighted sampling can increase representation of smaller domains, but excessive upsampling may overfit repeated examples."
+        },
+        {
+            "id": "sampling-formula",
+            "title": "Sampling Proportions",
+            "type": "math",
+            "content": "Suppose source i has raw size n_i and a sampling weight w_i. A simple normalized sampling probability is p_i = w_i / Σ_j w_j. A temperature-based strategy may define w_i = n_i^α, where α controls how strongly raw size influences sampling. At α = 1, weights are proportional to source size; for 0 < α < 1, smaller sources receive greater probability relative to their raw size. The best mixture depends on the task and empirical validation."
+        },
+        {
+            "id": "mixture-code",
+            "title": "Calculate Data-Mixture Probabilities",
+            "type": "code",
+            "language": "python",
+            "content": "def mixture_probabilities(sizes, alpha=0.5):\n    if alpha < 0:\n        raise ValueError(\"alpha must be non-negative\")\n    weights = [size ** alpha for size in sizes]\n    total = sum(weights)\n    return [weight / total for weight in weights]\n\nsizes = [1_000_000, 100_000, 10_000]\nprint(\"Proportional:\", mixture_probabilities(sizes, alpha=1.0))\nprint(\"Balanced:\", mixture_probabilities(sizes, alpha=0.5))",
+            "explanation": "The example compares sampling probabilities under direct size weighting and square-root weighting. Lowering alpha makes the sampling distribution less dominated by the largest source. This is a simple mathematical illustration rather than a complete data-mixture design."
+        },
+        {
+            "id": "domain-coverage",
+            "title": "Domain and Language Balance",
+            "type": "concept",
+            "content": "A corpus should be evaluated for coverage across intended languages, domains, writing styles, and levels of expertise. Aggregate token counts can hide severe gaps. A model intended for mathematics should contain useful mathematical reasoning examples and notation, while a multilingual model needs representative content for each supported language. Balance does not necessarily mean equal token counts; it means a deliberate mixture aligned with objectives and evaluation results."
+        },
+        {
+            "id": "data-validation",
+            "title": "Dataset Validation",
+            "type": "concept",
+            "content": "Validation checks can include document counts, token counts, language distributions, duplicate rates, missing metadata, corrupted encodings, extreme document lengths, and unexpected source changes. Sampling-based human review can reveal errors missed by automated checks. The validation report should record thresholds, tool versions, rejected-record counts, and known limitations. Data pipelines should fail visibly when major statistics change unexpectedly."
+        },
+        {
+            "id": "data-versioning",
+            "title": "Versioning and Reproducibility",
+            "type": "concept",
+            "content": "Dataset versions should identify source snapshots, transformations, filtering rules, deduplication settings, tokenizer versions, and sampling configuration. Reproducibility is difficult if upstream web pages change or processing libraries change behavior. A manifest with immutable identifiers and checksums helps reconstruct a training run. For privacy and legal reasons, reproducibility does not always mean retaining every raw document indefinitely; access and retention must follow the applicable governance requirements."
+        },
+        {
+            "id": "data-pipeline",
+            "title": "A Practical Dataset-Curation Pipeline",
+            "type": "concept",
+            "content": "A practical pipeline can proceed through source approval, ingestion, metadata extraction, text normalization, language detection, quality filtering, exact deduplication, near-duplicate detection, privacy and safety checks, contamination analysis, domain balancing, and final validation. The order can vary by data source. Preserve audit records so rejected documents and transformations can be investigated. Each stage should have measurable acceptance criteria and representative tests."
+        },
+        {
+            "id": "data-curation-limitations",
+            "title": "Limitations of Automated Filtering",
+            "type": "concept",
+            "content": "Automated filters make mistakes. Language detectors can misclassify short text, quality classifiers can prefer one writing style, and safety filters can confuse legitimate discussion with harmful instructions. Deduplication may remove repeated but useful material. Thresholds can also disadvantage minority languages or unconventional formats. Human review, stratified sampling, threshold analysis, and explicit documentation are important safeguards."
+        },
+        {
+            "id": "dataset-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Dataset curation shapes the data distribution from which an LLM learns. Good pipelines address provenance, normalization, quality, language coverage, deduplication, privacy, safety, contamination, and source balancing. Automated filters should be validated rather than treated as infallible. Versioning and detailed metadata improve auditability, reproducibility, and the ability to investigate unexpected model behavior."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "dataset-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is public availability of a document not sufficient to establish that it can be used without restriction for model training?",
+            "correctAnswer": "The document may be subject to licensing, contractual, privacy, or other legal requirements.",
+            "solution": "Accessibility and permission are different questions. Data sourcing should consider applicable terms, licenses, provenance, privacy, and jurisdiction-specific obligations."
+        },
+        {
+            "id": "dataset-exercise-2",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "How can a pipeline detect exact duplicate text documents efficiently?",
+            "correctAnswer": "Normalize the text, calculate a stable hash, and keep only one record for each hash.",
+            "solution": "A hash map or set allows average constant-time membership checks. Store document identifiers and metadata so duplicate relationships remain auditable."
+        },
+        {
+            "id": "dataset-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Two documents have shingle sets with intersection size 6 and union size 10. What is their Jaccard similarity?",
+            "correctAnswer": "0.6",
+            "solution": "Jaccard similarity is intersection size divided by union size: 6 / 10 = 0.6."
+        },
+        {
+            "id": "dataset-exercise-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "A multilingual corpus contains 90% English text and very little Odia text. What risks does this create, and what should you measure?",
+            "correctAnswer": "The model may underperform in Odia due to limited representation. Measure language-specific data quality, tokenization efficiency, training representation, and downstream evaluation performance.",
+            "solution": "Aggregate corpus size hides language imbalance. Investigate whether additional high-quality, appropriately sourced Odia data and deliberate sampling can improve coverage, then validate performance on representative Odia tasks."
+        },
+        {
+            "id": "dataset-exercise-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Why should a dataset pipeline retain statistics about documents removed by its filters?",
+            "correctAnswer": "Removal statistics help identify filter errors, distribution shifts, language bias, and reproducibility problems.",
+            "solution": "Tracking rejection reasons and rates makes it possible to determine whether a filter removes unexpected classes of data. Stratified manual review can reveal false positives and guide improvements."
+        }
+    ],
+    "summary": "LLM dataset curation includes source selection, provenance checks, normalization, quality filtering, deduplication, privacy and safety review, contamination analysis, domain balancing, and validation. These stages improve training efficiency and reduce avoidable risks, but automated methods have limitations. Metadata, versioning, audit logs, and language-specific evaluation make the resulting dataset more reliable and reproducible.",
+    "relatedTopics": [
+        "module-09-large-language-models-pretraining",
+        "module-09-large-language-models-tokenization",
+        "module-09-large-language-models-scaling-laws",
+        "module-09-large-language-models-checkpointing"
+    ]
+}

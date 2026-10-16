@@ -1,1 +1,725 @@
-{}
+{
+    "id": "svd",
+    "title": "Singular Value Decomposition (SVD)",
+    "slug": "svd",
+    "module": "mathematics-for-ai",
+    "description": "Learn how singular value decomposition factorizes any real matrix into orthogonal transformations and a diagonal scaling matrix. Explore singular values, low-rank approximation, dimensionality reduction, recommender systems, image compression, and numerical applications in machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 7,
+    "prerequisites": [
+        "scalars-vectors-matrices-tensors",
+        "vector-operations",
+        "dot-products",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality",
+        "eigenvalues-eigenvectors"
+    ],
+    "learningObjectives": [
+        "Define singular value decomposition and its matrix dimensions.",
+        "Understand the roles of U, Sigma, and V transpose.",
+        "Distinguish singular values from eigenvalues.",
+        "Explain the relationship between SVD and eigendecomposition.",
+        "Understand matrix rank and the number of nonzero singular values.",
+        "Construct low-rank approximations using the largest singular values.",
+        "Apply SVD to dimensionality reduction and data compression.",
+        "Understand SVD-based collaborative filtering and recommendation systems.",
+        "Use NumPy to compute and reconstruct matrices with SVD.",
+        "Recognize computational costs and numerical limitations of SVD."
+    ],
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. What Is Singular Value Decomposition?",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Singular value decomposition, commonly called SVD, is a matrix factorization technique that expresses a matrix as the product of three simpler matrices. It is one of the most useful tools in numerical linear algebra and machine learning."
+                },
+                {
+                    "type": "math",
+                    "value": "A=U\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "For a real m by n matrix A, U is an m by m orthogonal matrix, Sigma is an m by n diagonal-shaped matrix containing the singular values, and V is an n by n orthogonal matrix."
+                },
+                {
+                    "type": "text",
+                    "value": "The columns of U are called left singular vectors. The columns of V are called right singular vectors. The singular values are nonnegative numbers that describe how strongly the matrix scales the corresponding singular directions."
+                },
+                {
+                    "type": "text",
+                    "value": "Unlike the standard eigenvalue problem, SVD applies to rectangular matrices as well as square matrices. This makes it especially useful for datasets, where the number of observations and the number of features are usually different."
+                },
+                {
+                    "type": "text",
+                    "value": "SVD appears in dimensionality reduction, image compression, latent factor models, pseudoinverses, least-squares problems, and many numerical algorithms used in AI."
+                }
+            ]
+        },
+        {
+            "id": "geometric-intuition",
+            "title": "2. Geometric Intuition",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A matrix transforms input vectors. Geometrically, SVD describes this transformation as three stages: rotate or reflect the input coordinates, scale along perpendicular directions, and rotate or reflect the output coordinates."
+                },
+                {
+                    "type": "text",
+                    "value": "The right singular vectors describe important input directions. The singular values determine how much those directions are stretched or compressed. The left singular vectors describe the corresponding output directions."
+                },
+                {
+                    "type": "text",
+                    "value": "For a two-dimensional input, a transformation might first rotate the coordinate system, stretch one direction by a factor of 4 and another by a factor of 1, and then orient the output in another coordinate system."
+                },
+                {
+                    "type": "math",
+                    "value": "A=U\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "Because orthogonal matrices preserve Euclidean lengths and angles, the central scaling matrix Sigma contains the essential stretching information. The outer orthogonal transformations change the coordinate orientations without changing lengths."
+                },
+                {
+                    "type": "text",
+                    "value": "If a singular value is zero, the corresponding input direction is mapped to zero. This means information along that direction is lost. Very small singular values indicate directions that are strongly compressed and may be sensitive to noise."
+                }
+            ]
+        },
+        {
+            "id": "matrix-factorization",
+            "title": "3. Understanding U, Sigma, and V Transpose",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Suppose A is an m by n matrix. Its full SVD is written as:"
+                },
+                {
+                    "type": "math",
+                    "value": "A_{m\\times n}=U_{m\\times m}\\Sigma_{m\\times n}V^T_{n\\times n}"
+                },
+                {
+                    "type": "text",
+                    "value": "U is orthogonal, meaning its columns form an orthonormal basis for the output space when it is square. It satisfies U transpose U = I."
+                },
+                {
+                    "type": "math",
+                    "value": "U^TU=I"
+                },
+                {
+                    "type": "text",
+                    "value": "V is also orthogonal and contains the right singular vectors. It satisfies V transpose V = I."
+                },
+                {
+                    "type": "math",
+                    "value": "V^TV=I"
+                },
+                {
+                    "type": "text",
+                    "value": "Sigma contains the singular values along its main diagonal, conventionally ordered from largest to smallest. The singular values are nonnegative."
+                },
+                {
+                    "type": "math",
+                    "value": "\\sigma_1\\geq\\sigma_2\\geq\\cdots\\geq\\sigma_r\\geq0"
+                },
+                {
+                    "type": "text",
+                    "value": "The number r is the rank of the matrix when considering exact nonzero singular values. For numerical data, singular values that are sufficiently small relative to a tolerance may be treated as effectively zero."
+                },
+                {
+                    "type": "text",
+                    "value": "A common computational variant is the reduced or thin SVD. It avoids unnecessary columns and rows in the factor matrices while preserving the reconstruction of A."
+                },
+                {
+                    "type": "math",
+                    "value": "A_{m\\times n}=U_{m\\times r}\\Sigma_{r\\times r}V^T_{r\\times n}"
+                },
+                {
+                    "type": "text",
+                    "value": "In this reduced form, r can be chosen as the smaller of m and n for a standard thin SVD. A compact SVD goes further by retaining only the rank-many nonzero singular directions when the exact rank is known."
+                }
+            ]
+        },
+        {
+            "id": "simple-example",
+            "title": "4. A Simple SVD Example",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Consider a diagonal matrix whose coordinate directions are already orthogonal."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}3&0\\\\0&1\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "This matrix stretches the horizontal direction by 3 and the vertical direction by 1. Its SVD can be written with U and V equal to the identity matrix and Sigma equal to A."
+                },
+                {
+                    "type": "math",
+                    "value": "U=I,\\quad \\Sigma=\\begin{bmatrix}3&0\\\\0&1\\end{bmatrix},\\quad V=I"
+                },
+                {
+                    "type": "text",
+                    "value": "The singular values are 3 and 1. The largest singular value identifies the direction that experiences the greatest stretching."
+                },
+                {
+                    "type": "text",
+                    "value": "Now consider a rank-one matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "A=\\begin{bmatrix}1&2\\\\2&4\\end{bmatrix}"
+                },
+                {
+                    "type": "text",
+                    "value": "The second column is twice the first, so the matrix has rank 1. It has one nonzero singular value and one zero singular value in exact arithmetic. Its transformation collapses the two-dimensional input into a one-dimensional output subspace."
+                },
+                {
+                    "type": "text",
+                    "value": "SVD reveals this loss of dimensionality through the singular values without requiring us to inspect the columns manually."
+                }
+            ]
+        },
+        {
+            "id": "relationship-to-eigenvalues",
+            "title": "5. Relationship Between SVD and Eigenvalues",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "SVD is closely related to eigendecomposition. For a real matrix A, the matrix A transpose A is symmetric and positive semidefinite."
+                },
+                {
+                    "type": "math",
+                    "value": "A^TA=V\\Sigma^T\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The right singular vectors of A are eigenvectors of A transpose A. The eigenvalues of A transpose A are the squared singular values."
+                },
+                {
+                    "type": "math",
+                    "value": "\\lambda_i(A^TA)=\\sigma_i^2"
+                },
+                {
+                    "type": "text",
+                    "value": "Similarly, the left singular vectors are eigenvectors of A A transpose, and its eigenvalues are also the squared singular values, including the appropriate number of zeros."
+                },
+                {
+                    "type": "math",
+                    "value": "AA^T=U\\Sigma\\Sigma^TU^T"
+                },
+                {
+                    "type": "text",
+                    "value": "When A is square, symmetric, and positive semidefinite, its singular values equal its eigenvalues. For a general matrix, singular values are always nonnegative, whereas eigenvalues may be negative or complex."
+                },
+                {
+                    "type": "text",
+                    "value": "SVD is generally more broadly applicable than ordinary eigendecomposition because it works for rectangular matrices and provides orthogonal factors that are useful for stable numerical computation."
+                },
+                {
+                    "type": "text",
+                    "value": "Although the mathematical relationship is useful, explicitly forming A transpose A can worsen numerical conditioning. Practical SVD algorithms generally compute the factorization using specialized numerical procedures rather than relying on this identity as the sole computational method."
+                }
+            ]
+        },
+        {
+            "id": "low-rank-approximation",
+            "title": "6. Low-Rank Approximation",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A low-rank approximation represents a matrix using fewer independent directions than the original matrix. SVD gives a principled way to construct such approximations."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose the singular values of A are ordered from largest to smallest. A rank-k approximation keeps the first k singular values and their associated singular vectors, setting the remaining singular values to zero."
+                },
+                {
+                    "type": "math",
+                    "value": "A_k=U_k\\Sigma_kV_k^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The matrices Uₖ and Vₖ contain the first k left and right singular vectors. Sigmaₖ contains the first k singular values."
+                },
+                {
+                    "type": "text",
+                    "value": "The Eckart–Young theorem states that truncating the SVD in this way produces a best rank-k approximation under both the Frobenius norm and the spectral norm."
+                },
+                {
+                    "type": "math",
+                    "value": "\\min_{\\operatorname{rank}(B)\\leq k}\\|A-B\\|_F=\\sqrt{\\sum_{i=k+1}^{r}\\sigma_i^2}"
+                },
+                {
+                    "type": "text",
+                    "value": "The Frobenius reconstruction error depends on the discarded singular values. If the discarded values are small, the approximation can be accurate despite using fewer components."
+                },
+                {
+                    "type": "text",
+                    "value": "Low-rank approximation is useful for compressing matrices, reducing storage, approximating large datasets, and creating compact latent representations. However, the directions with small singular values may still contain information relevant to a particular task."
+                }
+            ]
+        },
+        {
+            "id": "dimensionality-reduction",
+            "title": "7. SVD for Dimensionality Reduction",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A data matrix often contains many observations and many features. SVD can identify orthogonal directions that capture the dominant structure of this matrix."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose X is an m by n centered data matrix, with observations stored as rows and features stored as columns. Its SVD is:"
+                },
+                {
+                    "type": "math",
+                    "value": "X=U\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The columns of V describe feature-space directions. Projecting X onto the first k right singular vectors produces a lower-dimensional representation."
+                },
+                {
+                    "type": "math",
+                    "value": "Z=XV_k=U_k\\Sigma_k"
+                },
+                {
+                    "type": "text",
+                    "value": "The original data has n features, while Z has k features. If k is much smaller than n, this can substantially reduce storage and downstream computation."
+                },
+                {
+                    "type": "text",
+                    "value": "For centered data, these right singular vectors correspond to the principal directions obtained through PCA. The variance along each principal direction is proportional to the square of its singular value, with the normalization depending on the covariance convention."
+                },
+                {
+                    "type": "math",
+                    "value": "\\operatorname{Var}_i=\\frac{\\sigma_i^2}{m-1}"
+                },
+                {
+                    "type": "text",
+                    "value": "This formula assumes the centered matrix has m observations and uses the sample covariance denominator m - 1."
+                },
+                {
+                    "type": "text",
+                    "value": "SVD can be used directly for PCA without explicitly constructing the covariance matrix. This is often numerically preferable, especially when the feature count is large."
+                }
+            ]
+        },
+        {
+            "id": "python-svd",
+            "title": "8. Computing SVD with NumPy",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "NumPy provides np.linalg.svd for computing singular value decompositions. By default, the function returns U, a one-dimensional array of singular values, and V transpose."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.array([\n    [3.0, 1.0],\n    [1.0, 3.0],\n    [0.0, 2.0]\n])\n\nU, singular_values, Vt = np.linalg.svd(A, full_matrices=False)\n\nprint(\"Original shape:\", A.shape)\nprint(\"U shape:\", U.shape)\nprint(\"Singular values:\", singular_values)\nprint(\"V transpose shape:\", Vt.shape)\n\n# Reconstruct the original matrix.\nSigma = np.diag(singular_values)\nA_reconstructed = U @ Sigma @ Vt\n\nprint(\"Reconstruction correct:\", np.allclose(A, A_reconstructed))"
+                },
+                {
+                    "type": "text",
+                    "value": "The singular values are returned as a vector rather than a two-dimensional diagonal matrix. To reconstruct the matrix, convert the singular-value vector into a diagonal matrix using np.diag."
+                },
+                {
+                    "type": "text",
+                    "value": "The full_matrices=False option requests a thin SVD. It avoids unnecessary dimensions and is often convenient for data analysis."
+                },
+                {
+                    "type": "text",
+                    "value": "SVD factors are not unique in every detail. For example, changing the sign of a singular vector and changing the corresponding vector in the other factor appropriately can leave the reconstructed matrix unchanged. Therefore, do not rely on a particular sign convention for singular vectors."
+                }
+            ]
+        },
+        {
+            "id": "image-compression",
+            "title": "9. SVD for Image Compression",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A grayscale image can be represented as a matrix in which each entry stores a pixel intensity. SVD can approximate this matrix using a small number of singular components."
+                },
+                {
+                    "type": "text",
+                    "value": "If an image matrix has shape m by n, storing every pixel requires mn values. A rank-k approximation can be represented using the first k columns of U, the first k singular values, and the first k rows of V transpose."
+                },
+                {
+                    "type": "math",
+                    "value": "A_k=U_k\\Sigma_kV_k^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The approximate storage requirement is k(m + n + 1) scalar values, compared with mn values for the original matrix, when storing the factors and singular values directly."
+                },
+                {
+                    "type": "text",
+                    "value": "For a sufficiently small k, the approximation may preserve the major structures of the image while reducing storage. As k increases, the approximation generally becomes more accurate."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\nfrom PIL import Image\n\n# Replace this path with a local grayscale image path.\nimage = Image.open(\"grayscale-image.png\").convert(\"L\")\nA = np.asarray(image, dtype=float)\n\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\n\nk = min(30, len(s))\nA_approx = U[:, :k] @ np.diag(s[:k]) @ Vt[:k, :]\nA_approx = np.clip(A_approx, 0, 255).astype(np.uint8)\n\nImage.fromarray(A_approx).save(\"compressed-approximation.png\")\n\noriginal_values = A.size\napprox_values = k * (A.shape[0] + A.shape[1] + 1)\n\nprint(\"Original scalar count:\", original_values)\nprint(\"Approximation scalar count:\", approx_values)\nprint(\"Approximation rank:\", k)"
+                },
+                {
+                    "type": "text",
+                    "value": "This example illustrates low-rank image approximation. The actual file size depends on the image format, compression settings, metadata, and how the factors are encoded. The scalar-count comparison is not a guarantee of a smaller encoded file."
+                },
+                {
+                    "type": "text",
+                    "value": "For large images, full SVD can be expensive. Randomized SVD and other approximate methods can reduce computation when only a relatively small number of dominant components is needed."
+                }
+            ]
+        },
+        {
+            "id": "recommendation-systems",
+            "title": "10. SVD in Recommendation Systems",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Recommendation systems predict which products, films, songs, or other items a user might prefer. A common data representation is a user-item interaction matrix."
+                },
+                {
+                    "type": "math",
+                    "value": "R\\in\\mathbb{R}^{m\\times n}"
+                },
+                {
+                    "type": "text",
+                    "value": "Each row represents a user, each column represents an item, and each entry represents an observed rating or interaction. Such matrices are often sparse because most users interact with only a small fraction of available items."
+                },
+                {
+                    "type": "text",
+                    "value": "A low-rank factorization approximates the interaction matrix using compact latent representations for users and items."
+                },
+                {
+                    "type": "math",
+                    "value": "R\\approx U_k\\Sigma_kV_k^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The user and item factors can capture latent patterns such as broad preferences or item similarities. These patterns are mathematical representations and do not necessarily correspond to directly interpretable human concepts."
+                },
+                {
+                    "type": "text",
+                    "value": "Real recommendation systems often use specialized matrix factorization methods that handle missing entries, regularization, user biases, item biases, and implicit feedback. Applying ordinary SVD directly to a sparse rating matrix is not automatically equivalent to fitting a recommender that predicts missing ratings."
+                },
+                {
+                    "type": "text",
+                    "value": "The central idea is that user-item interactions may be approximated by a lower-dimensional latent structure, reducing the need to model every interaction independently."
+                }
+            ]
+        },
+        {
+            "id": "pseudoinverse",
+            "title": "11. SVD and the Moore-Penrose Pseudoinverse",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A matrix does not always have an ordinary inverse. Rectangular matrices and singular square matrices cannot have a standard two-sided inverse. The Moore-Penrose pseudoinverse generalizes the idea of inversion."
+                },
+                {
+                    "type": "math",
+                    "value": "A=U\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The pseudoinverse is constructed by transposing the orthogonal factors and replacing each nonzero singular value with its reciprocal, while leaving zero singular values at zero."
+                },
+                {
+                    "type": "math",
+                    "value": "A^+=V\\Sigma^+U^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The pseudoinverse is useful for solving linear systems and least-squares problems. When Ax = b has no exact solution, the least-squares approach seeks an x that minimizes the residual norm."
+                },
+                {
+                    "type": "math",
+                    "value": "\\min_x\\|Ax-b\\|_2"
+                },
+                {
+                    "type": "text",
+                    "value": "Among solutions with the minimum residual, the pseudoinverse produces the minimum-norm solution under the standard Moore-Penrose formulation."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nA = np.array([\n    [1.0, 2.0],\n    [2.0, 4.0],\n    [3.0, 6.0]\n])\n\nb = np.array([1.0, 2.0, 3.0])\n\nA_pinv = np.linalg.pinv(A)\nx = A_pinv @ b\n\nprint(\"Pseudoinverse shape:\", A_pinv.shape)\nprint(\"Solution:\", x)\nprint(\"Residual norm:\", np.linalg.norm(A @ x - b))"
+                },
+                {
+                    "type": "text",
+                    "value": "In practice, use np.linalg.pinv or an appropriate least-squares solver instead of manually inverting small singular values. Small singular values can amplify numerical noise, so numerical implementations apply tolerances when deciding which values to invert."
+                }
+            ]
+        },
+        {
+            "id": "numerical-stability",
+            "title": "12. Singular Values and Numerical Stability",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Singular values describe how strongly a matrix scales different orthogonal input directions. The ratio between the largest and smallest nonzero singular values provides important information about numerical conditioning."
+                },
+                {
+                    "type": "math",
+                    "value": "\\kappa_2(A)=\\frac{\\sigma_{\\max}}{\\sigma_{\\min}}"
+                },
+                {
+                    "type": "text",
+                    "value": "For a matrix with full column rank, this ratio describes its condition number in the Euclidean norm. A large condition number means that some directions are stretched much more than others, making certain numerical problems sensitive to small perturbations."
+                },
+                {
+                    "type": "text",
+                    "value": "If a matrix has a zero singular value, it is rank deficient and its condition number under the ordinary inverse problem is infinite or undefined, depending on the convention used."
+                },
+                {
+                    "type": "text",
+                    "value": "When solving least-squares problems, very small singular values can cause noise in the input or output to be amplified. Truncated SVD addresses this by discarding sufficiently small singular directions, trading exact reconstruction for greater stability."
+                },
+                {
+                    "type": "text",
+                    "value": "This trade-off is important in data fitting and machine learning. Removing unstable directions can reduce overfitting or numerical sensitivity, but aggressive truncation may also remove useful information."
+                }
+            ]
+        },
+        {
+            "id": "truncated-svd",
+            "title": "13. Truncated SVD in Practice",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Truncated SVD retains only a selected number of the largest singular values and their associated singular vectors. It is especially useful when a matrix has a few dominant directions and many smaller ones."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "value": "import numpy as np\n\nrng = np.random.default_rng(42)\nA = rng.normal(size=(100, 20))\n\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\n\nk = 5\nA_approx = U[:, :k] @ np.diag(s[:k]) @ Vt[:k, :]\n\nerror = np.linalg.norm(A - A_approx, ord=\"fro\")\nrelative_error = error / np.linalg.norm(A, ord=\"fro\")\n\nprint(\"Original shape:\", A.shape)\nprint(\"Approximation shape:\", A_approx.shape)\nprint(\"Approximation rank at most:\", k)\nprint(\"Absolute Frobenius error:\", error)\nprint(\"Relative Frobenius error:\", relative_error)"
+                },
+                {
+                    "type": "text",
+                    "value": "The resulting matrix has rank at most k. If the retained singular values are the largest k values, this approximation minimizes the Frobenius reconstruction error among all matrices of rank at most k."
+                },
+                {
+                    "type": "text",
+                    "value": "For very large matrices, computing a full SVD may be unnecessarily expensive. Randomized algorithms can estimate the leading singular subspaces without computing every singular vector."
+                },
+                {
+                    "type": "text",
+                    "value": "The best value of k depends on the goal. Reconstruction tasks may use approximation error, while downstream machine learning tasks should evaluate whether the compressed representation preserves predictive performance."
+                }
+            ]
+        },
+        {
+            "id": "computational-cost",
+            "title": "14. Computational Cost",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "SVD can be computationally expensive for large matrices. Its cost depends on the matrix dimensions, whether a full or thin factorization is requested, and the numerical algorithm used."
+                },
+                {
+                    "type": "text",
+                    "value": "For a dense m by n matrix with m at least n, a standard full SVD generally requires work on the order of m n squared, with additional terms depending on the exact factorization and whether singular vectors are computed."
+                },
+                {
+                    "type": "text",
+                    "value": "If only the largest k singular values and vectors are needed, iterative or randomized truncated methods may reduce the cost substantially when k is small relative to the matrix dimensions."
+                },
+                {
+                    "type": "text",
+                    "value": "Memory can also become a bottleneck. Storing U, Sigma, and V explicitly may require substantial space, which is why thin decompositions and low-rank representations are often preferred."
+                },
+                {
+                    "type": "text",
+                    "value": "For sparse matrices, specialized algorithms can exploit the fact that most entries are zero. Converting a large sparse matrix to a dense array merely to compute SVD can waste memory and computation."
+                }
+            ]
+        },
+        {
+            "id": "common-misconceptions",
+            "title": "15. Common Misconceptions",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Misconception 1: Singular values and eigenvalues are always the same. They are equal for symmetric positive semidefinite matrices, but for a general matrix singular values are nonnegative and are related to the eigenvalues of A transpose A."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 2: SVD works only for square matrices. SVD applies to rectangular matrices as well."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 3: Keeping a fixed percentage of singular values always preserves the same percentage of useful information. A retained variance percentage can be useful for centered PCA data, but it does not guarantee equivalent performance on a particular task."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 4: A low-rank approximation is always better than the original matrix. It can reduce storage and noise, but it necessarily introduces reconstruction error when discarded singular values are nonzero."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 5: Ordinary SVD automatically solves missing-data problems. Standard SVD expects a fully specified matrix. Missing interactions in recommendation systems often require specialized methods."
+                },
+                {
+                    "type": "text",
+                    "value": "Misconception 6: Singular vectors have unique signs. The signs of corresponding singular-vector pairs can change without affecting the reconstructed matrix."
+                }
+            ]
+        },
+        {
+            "id": "summary",
+            "title": "16. Key Takeaways",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "SVD decomposes a matrix into orthogonal factors and a diagonal-shaped matrix of nonnegative singular values."
+                },
+                {
+                    "type": "math",
+                    "value": "A=U\\Sigma V^T"
+                },
+                {
+                    "type": "text",
+                    "value": "The right singular vectors describe input directions, the singular values describe scaling, and the left singular vectors describe output directions."
+                },
+                {
+                    "type": "text",
+                    "value": "The singular values squared are the eigenvalues of A transpose A. SVD works for rectangular matrices and is broadly useful in numerical linear algebra."
+                },
+                {
+                    "type": "text",
+                    "value": "Truncating the SVD produces the best rank-k approximation under the Frobenius and spectral norms."
+                },
+                {
+                    "type": "text",
+                    "value": "Applications include PCA, image approximation, low-rank compression, recommendation systems, least-squares solutions, and numerical stability analysis."
+                },
+                {
+                    "type": "text",
+                    "value": "The choice of rank depends on the trade-off between computational savings, reconstruction accuracy, numerical stability, and the requirements of the downstream task."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What are the three main components of the singular value decomposition of a matrix?",
+            "hints": [
+                "Recall the factorization A = U Sigma V transpose.",
+                "Think about orthogonal transformations and scaling."
+            ],
+            "solution": "The three components are U, Sigma, and V transpose. U contains left singular vectors, Sigma contains nonnegative singular values, and V transpose contains the transposed right singular vectors."
+        },
+        {
+            "id": "exercise-2",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Can SVD be applied to a rectangular matrix with shape 10 by 4?",
+            "hints": [
+                "SVD does not require a square matrix.",
+                "Consider the dimensions of U, Sigma, and V transpose in a thin SVD."
+            ],
+            "solution": "Yes. A thin SVD for a 10 by 4 matrix can use U with shape 10 by 4, a diagonal singular-value matrix with shape 4 by 4, and V transpose with shape 4 by 4."
+        },
+        {
+            "id": "exercise-3",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "For A = [[3, 0], [0, 1]], identify the singular values.",
+            "hints": [
+                "This matrix is diagonal with nonnegative entries.",
+                "For this matrix, the singular values are the absolute values of the diagonal entries."
+            ],
+            "solution": "The singular values are 3 and 1. They are already ordered from largest to smallest."
+        },
+        {
+            "id": "exercise-4",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A matrix has singular values 5, 3, and 1. Calculate its Frobenius norm.",
+            "hints": [
+                "The squared Frobenius norm equals the sum of squared singular values.",
+                "Take the square root of the sum."
+            ],
+            "solution": "The Frobenius norm is sqrt(5² + 3² + 1²) = sqrt(35)."
+        },
+        {
+            "id": "exercise-5",
+            "type": "calculation",
+            "difficulty": "intermediate",
+            "question": "A matrix has singular values 10, 4, and 2. What is the Frobenius reconstruction error when using its best rank-2 approximation?",
+            "hints": [
+                "A rank-2 approximation retains the two largest singular values.",
+                "The squared reconstruction error is the sum of the squares of discarded singular values."
+            ],
+            "solution": "The approximation discards the singular value 2. Therefore, the Frobenius error is sqrt(2²) = 2."
+        },
+        {
+            "id": "exercise-6",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Use NumPy to compute the SVD of a 3 by 2 matrix and reconstruct the original matrix.",
+            "hints": [
+                "Use np.linalg.svd with full_matrices=False.",
+                "Convert the singular values to a diagonal matrix.",
+                "Multiply U, Sigma, and V transpose."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nA = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\nA_reconstructed = U @ np.diag(s) @ Vt\n\nprint(np.allclose(A, A_reconstructed))\n\nThe result should be True, within floating-point tolerance."
+        },
+        {
+            "id": "exercise-7",
+            "type": "coding",
+            "difficulty": "advanced",
+            "question": "Create a rank-2 approximation of a random 20 by 10 matrix and calculate its relative Frobenius reconstruction error.",
+            "hints": [
+                "Compute a thin SVD.",
+                "Retain the first two singular values and vectors.",
+                "Divide the approximation error by the original matrix's Frobenius norm."
+            ],
+            "solution": "Example solution:\n\nimport numpy as np\n\nrng = np.random.default_rng(42)\nA = rng.normal(size=(20, 10))\nU, s, Vt = np.linalg.svd(A, full_matrices=False)\n\nk = 2\nA2 = U[:, :k] @ np.diag(s[:k]) @ Vt[:k, :]\nrelative_error = np.linalg.norm(A - A2, ord=\"fro\") / np.linalg.norm(A, ord=\"fro\")\n\nprint(\"Relative error:\", relative_error)\n\nThe relative error measures the reconstruction error compared with the magnitude of the original matrix."
+        },
+        {
+            "id": "exercise-8",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Why can SVD be useful for compressing a dataset with many correlated features?",
+            "hints": [
+                "Correlated features may contain redundant directions.",
+                "Consider retaining only the largest singular values.",
+                "Think about the trade-off between compression and information loss."
+            ],
+            "solution": "Correlated features may cause the data to occupy a lower-dimensional subspace or lie near one. SVD identifies orthogonal directions that capture the matrix's dominant structure. Retaining only the leading components can reduce dimensionality and storage while approximating the original data. However, discarded directions may still contain task-relevant information, so compression quality should be evaluated."
+        },
+        {
+            "id": "exercise-9",
+            "type": "application",
+            "difficulty": "advanced",
+            "question": "Explain why ordinary SVD of a user-item matrix with missing ratings may not directly produce reliable predictions for all missing entries.",
+            "hints": [
+                "Standard matrix factorization assumes a fully specified matrix.",
+                "Missing values are not the same as observed zeros.",
+                "Consider specialized loss functions and regularization."
+            ],
+            "solution": "Ordinary SVD operates on a fully specified matrix. Replacing missing ratings with zeros can incorrectly treat unknown interactions as observed dislikes or zero ratings. Recommendation systems commonly use matrix factorization methods that optimize only over observed interactions and often include regularization, biases, and implicit-feedback information."
+        }
+    ],
+    "relatedTopics": [
+        "scalars-vectors-matrices-tensors",
+        "matrix-multiplication",
+        "linear-transformations",
+        "basis-and-dimensionality",
+        "eigenvalues-eigenvectors",
+        "functions",
+        "gradients",
+        "principal-component-analysis",
+        "recommendation-systems",
+        "neural-networks"
+    ]
+}

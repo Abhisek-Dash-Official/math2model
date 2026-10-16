@@ -1,1 +1,177 @@
-{}
+{
+    "id": "what-is-learning",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 1,
+    "title": "What Is Learning?",
+    "slug": "what-is-learning",
+    "description": "Understand the mathematical foundations of machine learning, how models learn from data, how learning differs from traditional programming, and how to formulate real-world problems as learning tasks.",
+    "difficulty": "beginner",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Basic Python programming",
+        "Basic algebra",
+        "Basic understanding of functions",
+        "Introductory probability concepts"
+    ],
+    "learningObjectives": [
+        "Define machine learning and explain its relationship with artificial intelligence.",
+        "Distinguish traditional programming from machine learning.",
+        "Understand tasks, experience, and performance in a learning problem.",
+        "Differentiate supervised, unsupervised, and reinforcement learning.",
+        "Identify features, labels, examples, datasets, models, and parameters.",
+        "Understand empirical risk minimization.",
+        "Explain generalization and why memorizing training data is insufficient.",
+        "Formulate a practical problem as a machine learning task.",
+        "Build a simple predictive model using Python and scikit-learn."
+    ],
+    "sections": [
+        {
+            "id": "introduction",
+            "title": "1. Introduction to Machine Learning",
+            "type": "concept",
+            "content": "Machine learning is a branch of artificial intelligence in which computer systems improve their performance on a task by learning patterns from data or experience. Instead of manually writing every decision rule, a developer defines the learning problem, collects relevant data, selects a learning algorithm, and trains a model to discover useful relationships. For example, rather than writing thousands of rules to distinguish spam from legitimate email, we can provide examples of both categories and train a classifier to recognize their patterns. The model may learn that certain combinations of words, sender characteristics, links, and message structures are associated with spam. Machine learning does not imply human-like understanding. It means that a computational procedure uses data to construct a model that performs a specified task according to a measurable objective. Its success depends on the quality and relevance of the data, the suitability of the model, the optimization procedure, and the evaluation method."
+        },
+        {
+            "id": "traditional-programming",
+            "title": "2. Traditional Programming vs Machine Learning",
+            "type": "concept",
+            "content": "Traditional programming typically combines explicitly written rules with input data to produce outputs. In supervised machine learning, training examples are used by an algorithm to estimate a model, which can then produce predictions for new inputs. Consider a house-price prediction system. A rule-based implementation might require an expert to manually specify how every combination of location, size, age, and condition affects price. A learning-based approach instead uses historical house sales to estimate these relationships. The training process does not remove the need for human decisions: developers still define the target, select features, choose a model family, and evaluate the result. Machine learning is especially useful when the relevant patterns are too numerous, complicated, or changing to encode reliably as hand-written rules. Explicit rules may still be preferable when behavior is simple, requirements are deterministic, or decisions must be fully specified and easily audited."
+        },
+        {
+            "id": "formal-definition",
+            "title": "3. A Formal Definition of Learning",
+            "type": "concept",
+            "content": "A useful formalization describes a learning problem using a task T, experience E, and performance measure P. A program learns from experience E with respect to task T and performance measure P if its performance at T, as measured by P, improves with E. For an email spam classifier, T is classifying emails, E is a collection of labeled emails, and P could be precision, recall, or a cost-sensitive measure. The performance measure matters because different objectives can favor different models. A classifier with high accuracy may still be unsuitable if it misses nearly all dangerous messages. In a regression problem, the task might be predicting delivery time, experience might be historical deliveries, and performance might be mean absolute error. This formulation forces the practitioner to specify what improvement actually means before choosing an algorithm."
+        },
+        {
+            "id": "core-terminology",
+            "title": "4. Essential Machine Learning Terminology",
+            "type": "concept",
+            "content": "A dataset is a collection of observations used for analysis or learning. An example, observation, or instance is one record in the dataset. A feature is an input variable used to make a prediction, such as house area or number of bedrooms. A label or target is the outcome the model is asked to predict, such as house price. A model is a mathematical or computational function that maps inputs to predictions. Parameters are quantities estimated during training, such as the coefficients of linear regression. Hyperparameters are configuration choices selected outside the ordinary parameter-fitting process, such as a tree's maximum depth or a regularization strength. A loss function measures the error of a prediction or set of predictions. An optimizer changes model parameters to reduce an objective. Training is the process of fitting the model, inference is using the fitted model to make predictions, and generalization is performance on relevant unseen examples."
+        },
+        {
+            "id": "learning-paradigms",
+            "title": "5. Major Types of Machine Learning",
+            "type": "concept",
+            "content": "Supervised learning uses examples containing inputs and target labels. It includes regression, which predicts numerical quantities, and classification, which predicts categories. Unsupervised learning works with data without supplied target labels and attempts to uncover structure, such as clusters, lower-dimensional representations, or unusual observations. Reinforcement learning studies an agent interacting with an environment, receiving rewards, and learning a policy that aims to maximize cumulative reward. Semi-supervised learning combines a relatively small labeled dataset with a larger unlabeled dataset. Self-supervised learning creates learning targets from the data itself, for example by predicting hidden portions of text. These categories describe different training setups rather than completely isolated families of algorithms. The appropriate setup depends on what information is available and what the system must accomplish."
+        },
+        {
+            "id": "regression-classification",
+            "title": "6. Regression and Classification",
+            "type": "concept",
+            "content": "Regression predicts a numerical quantity. Examples include predicting electricity consumption, delivery time, or a home's selling price. Classification predicts a category, such as fraudulent versus legitimate transaction, or one of several image classes. Binary classification has two target classes, while multiclass classification has more than two mutually exclusive classes. Some classifiers produce scores or probabilities, which are then converted into class decisions using a threshold or decision rule. The distinction is determined primarily by the target and the learning objective, not by whether the input features are numerical or categorical. A model predicting a probability of default is commonly a classification model even though its output is a number between zero and one."
+        },
+        {
+            "id": "learning-pipeline",
+            "title": "7. The End-to-End Machine Learning Pipeline",
+            "type": "concept",
+            "content": "A practical pipeline begins with problem formulation and a clear success metric. Data is then collected, inspected, cleaned, and transformed into features. The dataset is divided into training, validation, and test portions when appropriate. A baseline model establishes a reference point. A candidate model is trained on the training data, its settings are selected using validation data or cross-validation, and final performance is measured on held-out test data. Before deployment, practitioners also consider latency, reliability, fairness, privacy, security, and operating cost. After deployment, data and performance should be monitored because relationships can change over time. A model is not finished merely because its training loss is low; it must provide useful and reliable performance in the environment where it will be used."
+        },
+        {
+            "id": "empirical-risk",
+            "title": "8. Empirical Risk Minimization",
+            "type": "math",
+            "content": "Many supervised learning algorithms can be described as minimizing an empirical objective. Given training examples (x_i, y_i), a model f with parameters theta produces predictions f_theta(x_i). A loss function L measures the discrepancy between the prediction and target. The empirical risk is R_hat(theta) = (1/n) * sum from i=1 to n of L(f_theta(x_i), y_i). Training seeks parameters that make this average loss small, sometimes adding a regularization penalty to discourage overly complex solutions. For example, with squared-error loss, L(prediction, target) = (prediction - target)^2. Minimizing training risk alone does not guarantee good generalization: a sufficiently flexible model may fit noise or memorize individual examples. Validation, suitable model complexity, regularization, and representative data help address this problem."
+        },
+        {
+            "id": "generalization",
+            "title": "9. Generalization and Unseen Data",
+            "type": "concept",
+            "content": "Generalization is the ability to perform well on examples that were not used to fit the model. A model that perfectly memorizes the training examples may perform poorly on new cases. This difference is one reason training metrics cannot be treated as a complete measure of quality. Generalization depends on whether the training data represents the deployment environment, whether the model has appropriate capacity, whether features are reliable, and whether the evaluation procedure is sound. Distribution shift occurs when the data encountered later differs from the training distribution. Leakage occurs when information unavailable at prediction time, or information derived from held-out targets, enters training. Both can make offline evaluation misleading. A credible machine learning system therefore needs careful data splitting and evaluation that resembles the intended real-world use."
+        },
+        {
+            "id": "baseline",
+            "title": "10. Baselines and Problem Formulation",
+            "type": "concept",
+            "content": "A baseline is a simple reference model against which more complicated approaches are compared. For regression, predicting the training-set mean or median can provide a useful starting point. For classification, a majority-class predictor may be informative, although it can be misleading on imbalanced data. More meaningful baselines may use simple domain rules or established models. Before training, specify the prediction target, prediction time, available features, unit of evaluation, acceptable error, and consequences of mistakes. For example, a fraud detector should not merely maximize accuracy if fraud is rare and missed fraudulent transactions are costly. Precision, recall, expected financial loss, and operational review capacity may be more appropriate considerations."
+        },
+        {
+            "id": "limitations",
+            "title": "11. Limitations and Responsible Use",
+            "type": "concept",
+            "content": "Machine learning systems can reproduce biases present in historical data, fail on underrepresented groups, react unpredictably to distribution changes, and provide confidently incorrect predictions. Correlation in observational data does not automatically establish causation. Features may be unavailable, expensive, delayed, or inappropriate for a particular decision. Sensitive applications require additional attention to privacy, fairness, explainability, security, and human oversight. Evaluation should consider subgroup performance and the practical consequences of errors. Machine learning should be selected because it provides a defensible benefit for the task, not merely because it is technically possible to train a model."
+        },
+        {
+            "id": "python-example",
+            "title": "12. First Machine Learning Model in Python",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_iris\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import accuracy_score, classification_report\n\nX, y = load_iris(return_X_y=True)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = make_pipeline(\n    StandardScaler(),\n    LogisticRegression(max_iter=1000)\n)\n\nmodel.fit(X_train, y_train)\npredictions = model.predict(X_test)\n\nprint('Accuracy:', accuracy_score(y_test, predictions))\nprint(classification_report(y_test, predictions))",
+            "explanation": "This example loads a labeled classification dataset, separates training and test data, standardizes the features using a pipeline, trains logistic regression, and evaluates predictions on held-out data. Stratification preserves approximate class proportions in the split. The scaler is fitted only on the training data because it is inside the pipeline. The test set is used for final evaluation rather than repeatedly tuning the model."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "q1",
+            "type": "short-answer",
+            "difficulty": "easy",
+            "question": "In the spam classification problem, identify the task, experience, and a possible performance measure.",
+            "correctAnswer": "Task: classify emails as spam or legitimate. Experience: historical emails with labels. Performance: a measure such as precision, recall, F1 score, or a suitable cost-sensitive metric.",
+            "solution": "The task specifies what the system must do, experience describes the data used for learning, and the performance measure defines what successful behavior means. Accuracy alone may be insufficient if the classes are highly imbalanced."
+        },
+        {
+            "id": "q2",
+            "type": "classification",
+            "difficulty": "easy",
+            "question": "Predicting tomorrow's temperature in degrees Celsius is primarily which type of task?",
+            "options": [
+                "Classification",
+                "Regression",
+                "Clustering",
+                "Reinforcement learning"
+            ],
+            "correctAnswer": "Regression",
+            "solution": "Temperature is a numerical target. A model estimating a numerical quantity is performing regression."
+        },
+        {
+            "id": "q3",
+            "type": "short-answer",
+            "difficulty": "medium",
+            "question": "Explain why a model with zero training error may still be a poor model.",
+            "correctAnswer": "It may have memorized the training data, including noise, and may fail on unseen examples.",
+            "solution": "Training error measures fit to observed examples, not necessarily generalization. Use held-out evaluation, appropriate model complexity, and regularization where suitable."
+        },
+        {
+            "id": "q4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A regression model predicts 8 when the actual value is 10. Calculate the squared-error loss.",
+            "correctAnswer": 4,
+            "solution": "The error is 8 - 10 = -2. Squaring gives (-2)^2 = 4."
+        },
+        {
+            "id": "q5",
+            "type": "short-answer",
+            "difficulty": "medium",
+            "question": "Why is a majority-class classifier often a weak baseline for a dataset with severe class imbalance?",
+            "correctAnswer": "It can achieve high accuracy while failing to detect the minority class.",
+            "solution": "If 99% of transactions are legitimate, always predicting legitimate gives 99% accuracy but detects no fraud. Recall, precision, and cost-sensitive measures can reveal this failure."
+        },
+        {
+            "id": "q6",
+            "type": "scenario",
+            "difficulty": "hard",
+            "question": "A hospital wants to predict whether a patient will be readmitted within 30 days. Outline the learning problem and identify two risks.",
+            "correctAnswer": "This is supervised binary classification using historical patient examples and readmission labels. Risks include leakage, unrepresentative data, biased outcomes, privacy concerns, and poor subgroup performance.",
+            "solution": "Define the prediction time and target window, identify features available at that time, choose clinically relevant evaluation metrics, and use a patient-appropriate split. Ensure that post-readmission information does not leak into features. Evaluate subgroup performance and treat predictions as decision support rather than unquestionable conclusions."
+        }
+    ],
+    "summary": [
+        "Machine learning uses data or experience to improve performance on a defined task.",
+        "Supervised learning uses target labels; unsupervised learning seeks structure without supplied labels; reinforcement learning learns through rewards and interaction.",
+        "Features are inputs, labels are targets, and parameters are fitted by training.",
+        "Training usually minimizes an objective based on a loss function.",
+        "Generalization to unseen examples matters more than simply memorizing training data.",
+        "A credible workflow requires problem formulation, baselines, careful splitting, evaluation, and monitoring.",
+        "Data quality, leakage, bias, privacy, and distribution shift are important practical concerns."
+    ],
+    "relatedTopics": [
+        "training-validation-test-sets",
+        "linear-regression",
+        "logistic-regression",
+        "loss-functions",
+        "evaluation-metrics",
+        "overfitting-underfitting"
+    ]
+}

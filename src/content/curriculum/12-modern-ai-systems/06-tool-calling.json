@@ -1,1 +1,341 @@
-{}
+{
+    "id": "module-12-modern-ai-systems-tool-calling",
+    "moduleId": "module-12-modern-ai-systems",
+    "moduleIndex": 12,
+    "topicIndex": 6,
+    "title": "Tool Calling & Function Execution",
+    "slug": "tool-calling",
+    "href": "/curriculum/12-modern-ai-systems/tool-calling",
+    "filePath": "content/curriculum/12-modern-ai-systems/06-tool-calling.json",
+    "description": "Understand how language models request external tools, how applications validate and execute those requests, and how to build secure, reliable tool-enabled AI systems.",
+    "difficulty": "intermediate",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "Basic Python programming",
+        "HTTP and REST API fundamentals",
+        "JSON data structures",
+        "Foundational knowledge of language models",
+        "module-12-modern-ai-systems-rag"
+    ],
+    "learningObjectives": [
+        "Explain why language models use tools instead of relying only on generated text.",
+        "Distinguish a model-generated tool request from actual tool execution.",
+        "Design tool schemas with clear names, descriptions, and parameter types.",
+        "Understand the complete tool-calling lifecycle.",
+        "Validate arguments before executing a tool.",
+        "Implement a simple tool registry and dispatcher.",
+        "Handle tool outputs and errors in a model conversation.",
+        "Distinguish read-only tools from state-changing tools.",
+        "Apply authorization, least privilege, and input validation.",
+        "Prevent common tool-use attacks and prompt-injection failures.",
+        "Implement timeouts, retries, idempotency, and execution limits.",
+        "Design human approval for consequential operations.",
+        "Evaluate tool selection, argument accuracy, and execution reliability."
+    ],
+    "sections": [
+        {
+            "id": "tool-calling-motivation",
+            "title": "1. Why Language Models Need Tools",
+            "type": "concept",
+            "content": "A language model generates outputs based on learned patterns and the context provided to it. By itself, it does not automatically have access to a live database, current inventory, private files, a payment processor, or an application's internal business logic. Tools let an application connect model reasoning to controlled external operations. A tool might retrieve the current weather, query an authorized database, calculate a precise result, search internal documentation, or create a draft. The model proposes which operation may be useful and supplies arguments. The surrounding application decides whether the request is valid, authorized, and safe to execute. Tool calling therefore combines language-model capabilities with conventional software engineering rather than replacing application code."
+        },
+        {
+            "id": "tool-vs-text",
+            "title": "2. Tool Requests Are Not Ordinary Text",
+            "type": "concept",
+            "content": "A model may produce a structured tool-call object rather than a user-facing answer. The object typically identifies a tool and provides arguments matching a declared schema. The application interprets this structured output, validates it, executes the corresponding operation, and sends the result back to the model if another reasoning step is needed. Merely generating text such as 'I searched the database' does not prove that a database operation occurred. A robust system distinguishes an actual tool execution record from the model's natural-language claims. This distinction is essential for auditing, security, and user trust. The exact representation of tool calls depends on the model API and orchestration framework."
+        },
+        {
+            "id": "tool-lifecycle",
+            "title": "3. The Tool-Calling Lifecycle",
+            "type": "concept",
+            "content": "A typical lifecycle starts when the application sends a user request, conversation context, and tool definitions to a model. The model may return a normal answer or request one or more tool calls. The application checks that the requested tool exists and validates the arguments. It then performs authorization checks, executes the operation, and records a structured result. The result is added to the conversation in the format expected by the model interface. The model can then interpret the result and either request another tool or produce a final answer. The application must enforce limits on the number of calls, total execution time, permissions, and possible side effects. This loop should terminate when the model returns a final response or an explicit stopping condition is reached."
+        },
+        {
+            "id": "tool-architecture",
+            "title": "4. Main Components of a Tool-Enabled System",
+            "type": "concept",
+            "content": "A tool-enabled architecture usually includes a model interface, tool definitions, a tool registry, an argument validator, an authorization layer, an execution dispatcher, tool implementations, a result serializer, and observability infrastructure. The model interface handles requests and responses from the model provider. The registry maps approved tool names to executable functions. Validation checks the structure and types of arguments. Authorization verifies whether the current user and workflow may perform the operation. The dispatcher applies execution policies such as timeouts and retries. Tool implementations interact with external systems, while the serializer converts results into a form that the model can consume. Keeping these components separate makes the system easier to test and secure."
+        },
+        {
+            "id": "tool-definition",
+            "title": "5. Designing Tool Definitions",
+            "type": "concept",
+            "content": "A tool definition tells the model what an operation does and which arguments it accepts. A good tool name is specific and action-oriented, such as search_documents or get_order_status. The description should explain when the tool is appropriate and clarify important limitations. Parameter schemas should specify types, required fields, allowed values, and constraints where supported. Avoid exposing multiple overlapping tools with vague descriptions because the model may choose inconsistently. Avoid placing secrets or internal implementation details in descriptions. The schema is a communication contract between the model and application, but it is not a security boundary by itself. The application must independently validate every request."
+        },
+        {
+            "id": "json-schema-example",
+            "title": "6. Example Tool Schema",
+            "type": "code",
+            "language": "json",
+            "content": "{\n  \"name\": \"search_documents\",\n  \"description\": \"Search authorized knowledge-base documents using a natural-language query.\",\n  \"parameters\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"query\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": 500},\n      \"limit\": {\"type\": \"integer\", \"minimum\": 1, \"maximum\": 10},\n      \"category\": {\"type\": \"string\", \"enum\": [\"engineering\", \"support\", \"policy\"]}\n    },\n    \"required\": [\"query\"],\n    \"additionalProperties\": false\n  }\n}",
+            "explanation": "This illustrates a JSON Schema-like tool contract. Exact schema support differs across model APIs, so the provider-specific representation may need adjustment. The application should still validate incoming arguments because model output can be malformed, incomplete, or intentionally manipulated. Authorization-sensitive values such as tenant identity should normally be derived by the server rather than accepted as a freely chosen argument."
+        },
+        {
+            "id": "tool-schema-quality",
+            "title": "7. Making Schemas Reliable",
+            "type": "concept",
+            "content": "A reliable schema makes valid calls easy to express and invalid calls easy to reject. Use descriptive parameter names and define units explicitly. For example, a duration should specify whether it is measured in seconds or minutes. Enumerations reduce ambiguity when only a fixed set of values is valid. Bounds prevent unreasonably large requests. Use required fields only when the operation genuinely needs them, and avoid accepting arbitrary extra fields unless there is a clear reason. If two fields are mutually dependent, validate that relationship in application code or an appropriate schema. Test schemas using valid examples, missing fields, wrong types, unexpected properties, and boundary values."
+        },
+        {
+            "id": "tool-registry",
+            "title": "8. Building a Tool Registry",
+            "type": "concept",
+            "content": "A tool registry maps each approved tool name to its implementation and associated policy. It can also store input schemas, timeout settings, permission requirements, retry rules, and whether the operation is read-only or state-changing. The model should never be allowed to execute an arbitrary function merely by inventing a function name. The dispatcher should look up the name in an explicit allowlist and reject unknown tools. Registry entries should be created by trusted application code. Avoid using dynamic evaluation or importing arbitrary modules based on model-generated strings. The registry is a useful place to centralize observability and execution controls."
+        },
+        {
+            "id": "registry-code",
+            "title": "9. A Minimal Tool Registry in Python",
+            "type": "code",
+            "language": "python",
+            "content": "def search_documents(query, limit=5):\n    return {\"query\": query, \"limit\": limit, \"results\": []}\n\ndef get_service_status(service):\n    return {\"service\": service, \"status\": \"unknown\"}\n\nTOOLS = {\"search_documents\": search_documents, \"get_service_status\": get_service_status}\n\ndef dispatch_tool(name, arguments):\n    if name not in TOOLS:\n        raise ValueError(f\"Unsupported tool: {name}\")\n    if not isinstance(arguments, dict):\n        raise TypeError(\"Tool arguments must be an object\")\n    return TOOLS[name](**arguments)",
+            "explanation": "This is a minimal illustration of allowlisted dispatch, not a production-ready execution engine. It does not implement schema validation, authentication, authorization, timeouts, logging, or side-effect controls. A production dispatcher should validate each tool's specific schema before calling the implementation and should never assume that a model-generated argument object is trustworthy."
+        },
+        {
+            "id": "argument-validation",
+            "title": "10. Validating Tool Arguments",
+            "type": "concept",
+            "content": "Model-generated arguments are untrusted input. Validate types, string lengths, numeric ranges, enumeration values, identifier formats, and relationships between fields. Reject missing required fields and unexpected properties when the schema is strict. Do not silently convert arbitrary strings into privileged identifiers. If a tool expects an order ID, verify that the identifier belongs to the authenticated user before returning order information. Validation must occur before the tool reaches an external system. Schema validation prevents malformed requests, while authorization prevents otherwise well-formed requests from accessing resources the caller is not permitted to use. Both are required."
+        },
+        {
+            "id": "tool-validation-example",
+            "title": "11. A Small Validation Example",
+            "type": "code",
+            "language": "python",
+            "content": "def validate_search_arguments(arguments):\n    if not isinstance(arguments, dict):\n        raise TypeError(\"Expected an object\")\n    if set(arguments) - {\"query\", \"limit\"}:\n        raise ValueError(\"Unexpected argument\")\n    query = arguments.get(\"query\")\n    limit = arguments.get(\"limit\", 5)\n    if not isinstance(query, str) or not query.strip() or len(query) > 500:\n        raise ValueError(\"Invalid query\")\n    if type(limit) is not int or not 1 <= limit <= 10:\n        raise ValueError(\"limit must be an integer from 1 to 10\")\n    return {\"query\": query.strip(), \"limit\": limit}",
+            "explanation": "The validator checks the object shape, rejects unexpected fields, limits query length, and validates the integer range. Using type(limit) is int intentionally rejects booleans, which are subclasses of int in Python. Real systems should use a maintained validation library for complex schemas and keep authorization checks separate from syntactic validation."
+        },
+        {
+            "id": "tool-execution",
+            "title": "12. Executing Tools Safely",
+            "type": "concept",
+            "content": "After validation and authorization, the dispatcher invokes the approved implementation. Tool implementations should use established clients for databases, HTTP services, files, and other external systems. Apply timeouts to network requests and limit the amount of data returned. A search tool should return a bounded result set rather than an entire database. Errors should be converted into structured outcomes that do not expose secrets, stack traces, or internal infrastructure details to the model. The application should distinguish a valid empty result from a failed operation. Tool execution should be observable through request IDs, operation names, timing, status, and carefully selected metadata."
+        },
+        {
+            "id": "tool-results",
+            "title": "13. Returning Tool Results to the Model",
+            "type": "concept",
+            "content": "Tool results should be concise, structured, and faithful to the actual operation. A database lookup might return a status, a small set of fields, and a source identifier. A search tool might return titles, snippets, and document IDs instead of full documents. The model can use this result to formulate a response or decide whether another operation is needed. Do not allow the model to treat a tool result as automatically authoritative if the underlying source is untrusted or stale. Preserve provenance and timestamps where they affect correctness. Limit result size because large tool outputs consume context and can introduce irrelevant information or prompt-injection content."
+        },
+        {
+            "id": "tool-error-handling",
+            "title": "14. Tool Errors and Recovery",
+            "type": "concept",
+            "content": "A tool may fail because of invalid arguments, insufficient permissions, rate limits, network problems, unavailable dependencies, or unexpected data. Return structured error categories that help the model and application decide what to do next. A validation error may justify asking for a missing value. A transient network failure may permit a bounded retry. An authorization failure should not be retried with guessed identities or broader permissions. Do not expose internal exception details to the model unless there is a clear reason. Track the original request, tool name, attempt count, and final status so failures can be diagnosed."
+        },
+        {
+            "id": "timeouts-retries",
+            "title": "15. Timeouts, Retries, and Backoff",
+            "type": "concept",
+            "content": "External tools should have explicit execution deadlines. A timeout prevents a stalled dependency from consuming resources indefinitely. Transient errors may be retried with exponential backoff and random jitter to reduce synchronized retry bursts. Retry only operations whose semantics make retries safe. A read-only query is often easier to retry than a payment or order-creation operation. Set an overall deadline for the complete model-tool loop, not only for each individual request. Bound the number of model calls and tool executions per user request. If the deadline expires, return a controlled failure or partial result instead of allowing an unbounded workflow."
+        },
+        {
+            "id": "idempotency",
+            "title": "16. Idempotency for State-Changing Tools",
+            "type": "concept",
+            "content": "A state-changing operation can succeed even if the client never receives the response. Retrying the operation may create a duplicate payment, duplicate order, or repeated ticket. Idempotency keys allow a backend to recognize repeated attempts belonging to the same logical operation. The server should persist the key and the operation result according to the relevant API's guarantees. An idempotency key must be scoped and generated using trusted application logic. Do not assume that a model-generated identifier is sufficient protection. For consequential actions, combine idempotency with explicit authorization, validation, and a clear record of the requested operation."
+        },
+        {
+            "id": "read-vs-write-tools",
+            "title": "17. Read-Only and State-Changing Tools",
+            "type": "concept",
+            "content": "Read-only tools retrieve information without intentionally changing business state. Examples include searching documents or checking an order's current status. State-changing tools modify resources, such as sending a message, creating an order, updating an account, or deleting a file. These categories should have different permission and approval requirements. A read-only tool can still expose sensitive information, so it requires authorization. A write tool additionally requires careful validation of intent, target, and consequences. The application should not rely on the model's confidence to decide whether a side effect is allowed. Encode the policy in trusted code."
+        },
+        {
+            "id": "human-approval",
+            "title": "18. Human Approval for Consequential Actions",
+            "type": "concept",
+            "content": "Some actions should require confirmation from a user or authorized operator. Examples include sending an external message, making a purchase, deleting important data, or modifying account permissions. A safe workflow separates preparation from commitment. The model may draft the proposed action and summarize its effects, while the application presents a confirmation interface containing the actual target and parameters. The user confirms through a trusted interface, and the server verifies the confirmation before execution. A confirmation should be bound to the specific action and its parameters so that a changed request cannot reuse an old approval. The need for approval depends on the operation's impact and the application's risk policy."
+        },
+        {
+            "id": "least-privilege",
+            "title": "19. Least Privilege and Authorization",
+            "type": "concept",
+            "content": "Least privilege means each tool receives only the permissions needed to perform its intended task. A document-search tool should not receive database-administrator credentials if read-only access is sufficient. An email-drafting tool should not automatically have permission to send messages. Authorization should be evaluated using the authenticated user's identity, resource ownership, organizational policies, and operation type. Model instructions are not an authorization mechanism. A prompt saying 'the user is an administrator' does not establish that the user actually has administrator privileges. Keep credentials and policy decisions in trusted application infrastructure and audit access to sensitive operations."
+        },
+        {
+            "id": "prompt-injection-tools",
+            "title": "20. Prompt Injection and Tool Abuse",
+            "type": "concept",
+            "content": "Prompt injection occurs when untrusted content attempts to influence model behavior by presenting instructions that conflict with the application's intended policy. Such content can arrive through retrieved documents, web pages, emails, uploaded files, or tool outputs. An attacker may try to convince the model to reveal secrets, call an unauthorized tool, or transfer data to an external destination. Treat external content as data rather than authority. Restrict tool permissions, validate destinations, filter sensitive information, and require approval for high-impact actions. Do not assume that a prompt telling the model to ignore malicious instructions is sufficient by itself. Security must be enforced by the execution environment."
+        },
+        {
+            "id": "tool-output-injection",
+            "title": "21. Tool Output Is Also Untrusted",
+            "type": "concept",
+            "content": "A tool may return text written by an external user or website. That text can contain misleading claims or instructions directed at the model. The application should preserve the origin of tool results and avoid treating arbitrary returned text as trusted system instructions. Structured outputs reduce ambiguity but do not automatically make the contents truthful or safe. For example, a web search result can contain a malicious link, and a document search result can contain text asking the model to disclose credentials. Tool outputs should be checked against application policy before they influence sensitive operations. The model should not gain additional permissions merely because an external result requests them."
+        },
+        {
+            "id": "tool-call-loop",
+            "title": "22. The Model-Tool Loop",
+            "type": "concept",
+            "content": "The model-tool loop repeats model inference and tool execution until the model returns a final response or the application reaches a limit. Each iteration consumes time and resources. A poorly constrained model may repeatedly call tools, invoke the same tool without progress, or request unnecessary operations. Set limits for total iterations, tool calls, execution time, and output size. Detect repeated identical calls where appropriate. Keep a record of tool results so that the application can determine whether another call is genuinely needed. When a loop exceeds its budget, stop safely and report what could and could not be completed."
+        },
+        {
+            "id": "loop-pseudocode",
+            "title": "23. Simplified Tool-Calling Loop",
+            "type": "code",
+            "language": "python",
+            "content": "def run_agent(user_message, model_step, dispatch, max_steps=6):\n    messages = [{\"role\": \"user\", \"content\": user_message}]\n    for _ in range(max_steps):\n        response = model_step(messages)\n        if response.get(\"type\") == \"final\":\n            return response.get(\"content\", \"\")\n        if response.get(\"type\") != \"tool_call\":\n            raise ValueError(\"Unexpected model response\")\n        result = dispatch(response[\"name\"], response[\"arguments\"])\n        messages.append({\"role\": \"tool\", \"content\": str(result)})\n    raise RuntimeError(\"Tool-call step limit reached\")",
+            "explanation": "This simplified example demonstrates the control flow only. Real model APIs often require tool-call IDs, assistant messages containing structured calls, and corresponding tool-result messages. The dispatcher must validate schemas, authorize requests, and enforce timeouts. A production implementation should also handle model errors, structured serialization, bounded result sizes, and explicit terminal states."
+        },
+        {
+            "id": "parallel-tool-calls",
+            "title": "24. Parallel Tool Calls",
+            "type": "concept",
+            "content": "Some user requests require several independent operations. For example, a travel assistant might retrieve weather and public transport information concurrently. Parallel calls can reduce total latency when operations do not depend on one another. However, concurrency must be bounded to prevent resource exhaustion, and each operation needs its own timeout and error handling. Do not parallelize operations whose order matters, such as creating a record before retrieving its generated identifier. State-changing operations require special care because partial success can leave the system in an unexpected state. Model APIs may support multiple tool calls in one response, but the application is responsible for determining which operations can safely run concurrently."
+        },
+        {
+            "id": "tool-result-schema",
+            "title": "25. Designing Stable Tool Results",
+            "type": "concept",
+            "content": "Tool results should use predictable schemas so that downstream model and application logic can interpret them consistently. A result can include a status, data object, source metadata, and an error category. Avoid mixing human-readable error messages with business data in ways that are difficult to parse. Do not return unbounded records or raw database rows containing unnecessary private fields. Version result schemas when changes could break consumers. For example, a payment-status tool might return a payment identifier, an allowed status value, and a timestamp, but should not return full card credentials. Keep the result focused on the user's actual task."
+        },
+        {
+            "id": "tool-observability",
+            "title": "26. Observability and Audit Trails",
+            "type": "concept",
+            "content": "Tool-enabled systems need visibility into which tools were requested, which tools were executed, how arguments were validated, how long operations took, and whether they succeeded. Logs should distinguish a model-proposed action from an executed action. Record tool names, correlation IDs, outcome categories, and timing information. Sensitive arguments and returned content should be redacted or omitted when not required. For high-impact operations, retain an audit record of the authenticated actor, authorization decision, approval status, idempotency key, and final outcome. These records support incident investigation and help teams detect repeated failures, unexpected tool selection, and suspicious access patterns."
+        },
+        {
+            "id": "tool-testing",
+            "title": "27. Testing Tool-Enabled Applications",
+            "type": "concept",
+            "content": "Testing should cover tool selection, argument generation, schema validation, authorization, execution, error recovery, and final answer construction. Unit tests can validate tool implementations independently of the model. Contract tests verify that schemas and response formats remain compatible. Integration tests exercise real or controlled external dependencies. Adversarial tests should include malformed arguments, unauthorized identifiers, prompt injection, repeated calls, oversized outputs, and tool timeouts. Evaluate both whether the model chooses the correct tool and whether the execution layer blocks invalid requests. A system is not secure merely because the model usually makes appropriate calls during demonstrations."
+        },
+        {
+            "id": "tool-evaluation",
+            "title": "28. Measuring Tool-Calling Quality",
+            "type": "concept",
+            "content": "Useful evaluation dimensions include tool-selection accuracy, argument correctness, task-completion rate, unnecessary-call rate, execution success, latency, cost, and policy-violation rate. These metrics should be measured separately. A model may select the correct tool but generate an invalid argument. A tool may execute correctly while the model misinterprets the result. A successful answer may still be unacceptable if it used unauthorized data. Create a test suite with normal requests, ambiguous requests, requests requiring clarification, unavailable tools, and adversarial inputs. For state-changing operations, verify the actual final state rather than judging only the generated explanation."
+        },
+        {
+            "id": "tool-fallback",
+            "title": "29. Fallbacks and Unavailable Tools",
+            "type": "concept",
+            "content": "Tools may be unavailable because of maintenance, network failures, rate limits, or missing credentials. The application should define which failures permit a fallback and which require stopping. If a live inventory tool fails, the model should not invent current stock information. If a calculator is unavailable, the system may use a trusted local implementation for supported operations. A fallback must provide equivalent guarantees before it is treated as interchangeable. Tell the user when the system could not verify a fact or complete an action. Do not claim that a tool was used successfully unless execution records confirm the outcome."
+        },
+        {
+            "id": "tool-data-minimization",
+            "title": "30. Data Minimization and Privacy",
+            "type": "concept",
+            "content": "Only provide a tool with the information it needs to perform its task. A document search does not need a user's full profile if an authenticated tenant identifier and query are sufficient. A notification tool should receive the intended message and authorized recipient rather than an entire database record. Minimize sensitive data in model context, tool results, logs, and error messages. Define retention rules for traces and outputs. When tools interact with external services, understand what information leaves the application's trust boundary. Privacy and compliance requirements should influence tool design before integration rather than being added after the workflow is complete."
+        },
+        {
+            "id": "tool-cost",
+            "title": "31. Cost and Resource Management",
+            "type": "concept",
+            "content": "Tool-enabled workflows can incur model inference costs, API charges, database queries, compute time, and network usage. An unnecessarily long tool loop multiplies these costs. Use concise tool outputs, bounded call counts, caching where safe, and deterministic code for tasks that do not require model reasoning. Track cost and latency by workflow and tool. Avoid repeatedly asking the model to perform calculations that a normal function can execute exactly. A cost optimization should not bypass authorization or silently reduce correctness. Set budgets for each request and define how the application responds when the budget is exhausted."
+        },
+        {
+            "id": "deterministic-tools",
+            "title": "32. Prefer Deterministic Code for Deterministic Tasks",
+            "type": "concept",
+            "content": "Language models are useful for interpreting ambiguous language and selecting an appropriate operation, but deterministic computation is often better performed by conventional code. Arithmetic, schema validation, permission checks, sorting, and exact database updates should rely on well-defined implementations. The model can decide that a calculation is needed and call a calculator tool, while the calculator performs the operation. Similarly, the model may propose a database query, but the application should construct or validate it under strict rules. This separation reduces hallucinations and makes system behavior easier to test. Use model reasoning where it adds value, not as a substitute for established program logic."
+        },
+        {
+            "id": "tool-workflow-design",
+            "title": "33. Designing a Tool Workflow",
+            "type": "concept",
+            "content": "Start by defining the user task and the minimum operations required to complete it. Identify the data each operation needs, the systems it touches, and the permissions it requires. Separate read operations from state changes and decide where approval is necessary. Define schemas, validation rules, timeout budgets, and error categories. Specify what counts as successful completion and how partial failures should be handled. Finally, build tests for ordinary and adversarial inputs. A well-designed workflow should make unsafe actions difficult even if the model chooses the wrong tool or generates malformed arguments."
+        },
+        {
+            "id": "tool-workflow-example",
+            "title": "34. Worked Example: Order Status Assistant",
+            "type": "concept",
+            "content": "A customer asks where an order is. The model selects a get_order_status tool and provides the order identifier. The application validates the identifier format and verifies that the order belongs to the authenticated customer. The tool queries the authoritative order service and returns a limited structured result containing status and the last update time. The model explains the result in plain language. If the order does not exist or belongs to another customer, the application returns an appropriately limited response without revealing private information. The model cannot bypass the ownership check by claiming that the user has permission. This design combines natural-language interaction with conventional access control."
+        },
+        {
+            "id": "tool-side-effects",
+            "title": "35. Handling Side Effects and Partial Success",
+            "type": "concept",
+            "content": "A workflow may perform several state-changing operations, and some may succeed while others fail. For example, creating a ticket and sending a notification are two distinct operations. If the ticket is created but notification delivery fails, retrying the entire workflow without tracking state may create duplicate tickets. Use operation IDs, idempotency keys, durable state transitions, and explicit recovery rules. Where appropriate, use transactional mechanisms or compensating actions. A compensating action is not always a true rollback, especially when an external message has already been delivered. Define the workflow's partial-success behavior before implementation."
+        },
+        {
+            "id": "tool-permission-boundaries",
+            "title": "36. Keeping Permissions Outside the Model",
+            "type": "concept",
+            "content": "The model can recommend an action, but trusted application code must decide whether the action is allowed. A request to retrieve another user's private record should be rejected even if the model provides a syntactically valid tool call. The authorization layer should evaluate the authenticated actor, resource, operation, and relevant policy. Do not use natural-language model judgments as the only basis for granting access. If an operation requires administrator approval, the application should verify the administrator's identity through its normal authentication system. This separation keeps policy enforcement deterministic and auditable."
+        },
+        {
+            "id": "tool-versioning",
+            "title": "37. Versioning Tool Contracts",
+            "type": "concept",
+            "content": "Tool schemas and implementations evolve over time. Renaming a parameter, changing a return type, or altering an operation's semantics can affect model behavior and downstream application code. Version contracts when compatibility cannot be maintained. Keep schema tests alongside implementation tests and document changes that affect safety or permissions. If a model provider changes how it represents tool calls, isolate that change in the model adapter instead of rewriting every tool. Versioning also helps reproduce incidents because a trace can identify the schema and implementation active when the call occurred."
+        },
+        {
+            "id": "tool-security-checklist",
+            "title": "38. Security Checklist",
+            "type": "concept",
+            "content": "Maintain an explicit allowlist of tools. Validate every argument against a defined schema. Authenticate users independently of model output. Authorize access to each resource and operation. Use least-privilege credentials. Apply timeouts, bounded retries, call limits, and output limits. Require confirmation for consequential actions where appropriate. Use idempotency for retryable state changes. Treat retrieved content and tool results as untrusted data. Keep secrets out of prompts, logs, and tool outputs. Record auditable execution outcomes and regularly test prompt injection, unauthorized access, and malformed arguments."
+        },
+        {
+            "id": "tool-lab",
+            "title": "39. Practical Lab: Build a Tool Dispatcher",
+            "type": "exercise",
+            "content": "Build a small Python application with three tools: search_documents, get_service_status, and create_support_ticket. Define strict schemas and implement a registry that dispatches only approved tool names. Require authentication context for resource access and treat ticket creation as a state-changing operation. Validate every argument, add timeouts where external calls are involved, and return structured success or error objects. Add a maximum tool-call count and write tests for unknown tools, missing fields, invalid types, unauthorized access, duplicate submissions, and failed dependencies. Record the difference between a proposed tool call and a successfully executed operation."
+        },
+        {
+            "id": "tool-lab-solution",
+            "title": "40. Lab Design: Safe Execution",
+            "type": "concept",
+            "content": "A reasonable solution defines each tool's schema and implementation in a trusted registry. The dispatcher rejects unknown names, validates arguments, obtains the authenticated user's context, checks permissions, and invokes the tool under a deadline. Ticket creation requires an idempotency key and verifies that the user is permitted to create the ticket. Each operation returns a structured result with a stable status code and minimal data. Tests use a fake service to simulate success, timeouts, authorization failures, and duplicate requests. The final model response is based on the actual execution result rather than an assumption that the requested action succeeded."
+        },
+        {
+            "id": "tool-calling-summary",
+            "title": "41. Key Takeaways",
+            "type": "concept",
+            "content": "Tool calling connects language models to controlled external capabilities. The model proposes a tool and arguments, while the application validates, authorizes, and executes the operation. Reliable systems use explicit schemas, allowlisted dispatch, least-privilege access, bounded execution, structured results, and robust error handling. State-changing operations need special attention to approval, idempotency, partial success, and auditability. External documents and tool outputs remain untrusted data. Evaluate tool selection, argument correctness, task completion, security, latency, and cost independently. The safest architecture keeps deterministic policy enforcement in trusted application code and uses the model to interpret requests and coordinate appropriate operations."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "tool-calling-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between a model requesting a tool and a tool being executed?",
+            "correctAnswer": "A tool request is a structured proposal from the model. Execution occurs only after the application validates, authorizes, and dispatches the operation.",
+            "solution": "The model may propose a function name and arguments, but the application controls whether the tool exists, whether the arguments are valid, and whether the user has permission. Only the actual execution result establishes what happened."
+        },
+        {
+            "id": "tool-calling-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why is JSON schema validation insufficient for securing a tool?",
+            "correctAnswer": "Schema validation checks the shape and constraints of arguments but does not establish whether the caller is authorized to access a resource or perform an operation.",
+            "solution": "A request can contain a valid order ID and still refer to another user's order. The application must separately authenticate the user and authorize access to the specific resource."
+        },
+        {
+            "id": "tool-calling-ex-3",
+            "type": "design",
+            "difficulty": "intermediate",
+            "question": "A tool creates a payment, but the client times out before receiving the result. What prevents a retry from creating a duplicate payment?",
+            "correctAnswer": "A properly implemented idempotency mechanism that recognizes repeated attempts for the same logical operation.",
+            "solution": "The client retries with the same trusted idempotency key, and the backend returns the previously recorded outcome instead of creating a second payment. Exact guarantees depend on the payment service's idempotency implementation."
+        },
+        {
+            "id": "tool-calling-ex-4",
+            "type": "security",
+            "difficulty": "advanced",
+            "question": "A retrieved document tells the model to send all customer records to an external URL. What should the application do?",
+            "correctAnswer": "Treat the document as untrusted data and prevent unauthorized data access or transfer using trusted permissions, destination controls, and tool policies.",
+            "solution": "Retrieved text must not grant permissions. Tool execution should be limited by an allowlist and least-privilege credentials, with validation of sensitive data access and external destinations. High-impact transfers may require explicit approval."
+        },
+        {
+            "id": "tool-calling-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "How should a workflow handle a ticket being created successfully while its notification fails?",
+            "correctAnswer": "Track the successful ticket creation as a durable state, retry only the notification when safe, and avoid recreating the ticket.",
+            "solution": "Separate the ticket-creation and notification operations. Store the ticket identifier and notification status, use idempotency where supported, and implement a recovery process that resumes from the failed step."
+        }
+    ],
+    "summary": "Tool calling lets a language model request controlled operations such as searches, calculations, database queries, and business actions. The application must validate arguments, enforce authorization, dispatch only approved tools, and return structured results. Reliable implementations use timeouts, bounded retries, idempotency, least privilege, human approval for consequential actions, and detailed execution records. Prompt injection and untrusted tool outputs must not be allowed to override trusted policy. Strong tool-enabled systems combine flexible language understanding with deterministic application-level safety and evaluation.",
+    "relatedTopics": [
+        "module-12-modern-ai-systems-rag",
+        "module-12-modern-ai-systems-retrieval",
+        "module-12-modern-ai-systems-agents",
+        "module-12-modern-ai-systems-function-calling",
+        "module-12-modern-ai-systems-structured-generation"
+    ]
+}

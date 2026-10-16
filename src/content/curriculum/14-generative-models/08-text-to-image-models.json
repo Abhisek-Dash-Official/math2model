@@ -1,1 +1,344 @@
-{}
+{
+    "id": "module-14-generative-models-text-to-image-models",
+    "moduleId": "module-14-generative-models",
+    "moduleIndex": 14,
+    "topicIndex": 8,
+    "title": "Text-to-Image Synthesis Architectures",
+    "slug": "text-to-image-models",
+    "href": "/curriculum/14-generative-models/text-to-image-models",
+    "filePath": "content/curriculum/14-generative-models/08-text-to-image-models.json",
+    "description": "Explore the architectures behind text-to-image generation, including text encoders, cross-attention, latent diffusion, classifier-free guidance, image autoencoders, conditioning strategies, evaluation, and responsible deployment.",
+    "difficulty": "advanced",
+    "estimatedHours": 8,
+    "prerequisites": [
+        "module-06-attention",
+        "module-08-natural-language-processing",
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-noise-schedules",
+        "module-14-generative-models-denoising"
+    ],
+    "learningObjectives": [
+        "Explain the end-to-end pipeline of a text-to-image model.",
+        "Describe how text encoders convert prompts into conditioning representations.",
+        "Understand cross-attention between image features and text tokens.",
+        "Explain the role of latent autoencoders in latent diffusion.",
+        "Trace the path from random latent noise to a decoded image.",
+        "Understand classifier-free guidance and its tradeoffs.",
+        "Compare conditioning methods and model architectures.",
+        "Evaluate prompt adherence, visual quality, diversity, and computational cost.",
+        "Identify limitations involving compositionality, text rendering, bias, and training data.",
+        "Discuss provenance, consent, and responsible use of generated images."
+    ],
+    "sections": [
+        {
+            "id": "text-to-image-overview",
+            "title": "1. What Is Text-to-Image Synthesis?",
+            "type": "concept",
+            "content": "Text-to-image synthesis generates images conditioned on natural-language descriptions. A prompt might specify objects, attributes, relationships, composition, style, lighting, or a scene. The model learns statistical relationships between text and images from training data. At inference time, it converts the prompt into a conditioning representation and generates an image that attempts to satisfy the description. Modern systems commonly use diffusion or related iterative generative methods. Many operate in a compressed latent space rather than directly on pixels. The generated image is not a deterministic factual rendering of the prompt: it is a sample from a learned conditional distribution. Different random seeds may produce different interpretations of the same prompt, and the model may omit details, misunderstand relationships, or synthesize implausible structures."
+        },
+        {
+            "id": "text-image-pipeline",
+            "title": "2. The End-to-End Generation Pipeline",
+            "type": "concept",
+            "content": "A typical text-to-image pipeline contains several stages. First, a tokenizer converts the prompt into token IDs. A text encoder maps these IDs to contextual representations. A conditioning mechanism makes those representations available to the image denoiser, often through cross-attention. Generation begins from random noise in pixel space or latent space. The denoiser repeatedly predicts noise, velocity, or another training target while a sampler updates the noisy representation. Once denoising finishes, a decoder converts the final latent into image pixels if latent diffusion is used. Optional stages can include safety checks, image resizing, metadata recording, and postprocessing. These components are distinct: improving the text encoder, denoiser, sampler, or autoencoder can affect different aspects of the output."
+        },
+        {
+            "id": "prompt-tokenization",
+            "title": "3. Tokenization and Prompt Representation",
+            "type": "concept",
+            "content": "Text encoders do not usually consume raw character strings directly. A tokenizer splits text into tokens or subword units and maps them to integer IDs. The text encoder then processes these IDs to produce embeddings that represent the prompt in context. Tokenization can affect uncommon names, compound words, numbers, punctuation, and non-English text. Models often have a maximum sequence length, so long prompts may be truncated or handled through implementation-specific mechanisms. Prompt engineering can help clarify important attributes and relationships, but it cannot eliminate architectural limitations. When a model ignores a detail, possible causes include tokenization, limited context length, weak training associations, competing instructions, or the denoiser's inability to represent the requested composition."
+        },
+        {
+            "id": "text-encoder",
+            "title": "4. Text Encoders",
+            "type": "concept",
+            "content": "A text encoder maps token IDs into continuous representations. Transformer-based encoders use self-attention to contextualize each token based on other tokens in the sequence. The resulting token embeddings provide richer information than independent word vectors because the representation of a word can depend on its context. Some image-generation systems use one text encoder; others combine multiple encoders or representations. A pooled embedding may summarize the entire prompt, while token-level embeddings preserve information for cross-attention. Text encoders may be frozen during image-model training or updated jointly, depending on the system. Their vocabulary, context length, pretraining data, and representation quality influence the conditions available to the image generator."
+        },
+        {
+            "id": "conditioning-strategies",
+            "title": "5. Conditioning the Image Generator",
+            "type": "concept",
+            "content": "Conditioning communicates the prompt representation to the image-generation network. One approach adds a global text vector to model features. Another uses cross-attention, allowing image features to attend to token-level text representations. Other systems combine cross-attention with adaptive normalization, feature modulation, or additional control signals. Global conditioning is compact but may make it harder to preserve detailed token-specific relationships. Cross-attention allows different spatial features to draw information from different words or phrases. The best approach depends on architecture, training objective, and compute budget. Conditioning can also include non-text inputs such as class labels, reference images, depth maps, pose maps, or segmentation masks."
+        },
+        {
+            "id": "cross-attention",
+            "title": "6. Cross-Attention Between Text and Image Features",
+            "type": "math",
+            "content": "Cross-attention lets image or latent features query text representations. Let Q be queries derived from image features, while K and V are keys and values derived from text embeddings. The attention output is Attention(Q,K,V) = softmax(QKᵀ/sqrt(d_k))V. Each image query computes similarity scores against text tokens, and the normalized weights combine token values into a contextual representation. This gives different spatial locations access to different prompt information. The mechanism does not guarantee perfect grounding: attention weights are learned computational relationships, not definitive explanations of how a generated image satisfies a prompt. The query, key, and value dimensions must align, and masks may be needed for padding or variable sequence lengths.",
+            "formula": "Attention(Q,K,V) = softmax(QK^T / sqrt(d_k))V",
+            "example": "A spatial feature representing a red object may assign stronger attention to tokens describing the object's color, while another feature may attend more to the background description."
+        },
+        {
+            "id": "cross-attention-architecture",
+            "title": "7. Where Cross-Attention Is Applied",
+            "type": "concept",
+            "content": "In latent diffusion U-Nets, cross-attention is often inserted into selected residual blocks at different spatial resolutions. Higher-resolution features can help align local appearance with prompt tokens, while lower-resolution features represent broader scene structure. Attention at every layer increases computation and memory, so implementations choose placements according to the model architecture. Transformer-based denoisers may organize image or latent patches as tokens and use self-attention, cross-attention, or joint attention. The design affects how information moves between the text and visual representations. Cross-attention alone cannot solve every compositional challenge because the model must also learn object geometry, spatial relationships, and visual priors from data."
+        },
+        {
+            "id": "latent-autoencoder",
+            "title": "8. Why Generate in Latent Space?",
+            "type": "concept",
+            "content": "High-resolution pixel tensors are expensive to process repeatedly during diffusion. Latent diffusion uses an autoencoder to map an image into a lower-resolution representation. The diffusion model operates on this compact latent tensor, and a decoder converts the final latent back into image space. Compression reduces the spatial size of the denoising problem and can lower memory and inference cost. However, the autoencoder introduces a representational bottleneck. Details that are discarded during encoding cannot be reliably recovered by the decoder, and some textures may be softened or distorted. Latent scaling also matters because the denoising schedule assumes a particular range of latent magnitudes. The autoencoder and diffusion model must be trained or configured with compatible normalization conventions."
+        },
+        {
+            "id": "latent-scaling",
+            "title": "9. Latent Scaling and Normalization",
+            "type": "concept",
+            "content": "Latent representations may have a variance very different from that of normalized pixels. Diffusion training commonly applies a scaling convention so that the latent distribution has a suitable numerical magnitude. If the scale used during inference differs from training, the denoiser receives inputs outside its expected distribution. The decoder must also receive latents in the scale it was trained to interpret. This issue is easy to overlook because tensor shapes remain correct even when the numerical scale is wrong. A reliable implementation documents the encoder, latent scale factor, diffusion normalization, and decoder convention. Inspect latent statistics from a representative dataset and verify that encode-decode reconstruction works before integrating the diffusion model."
+        },
+        {
+            "id": "latent-diffusion-training",
+            "title": "10. Training a Latent Diffusion Model",
+            "type": "concept",
+            "content": "A common training pipeline first encodes an image into a latent representation. It samples a timestep and Gaussian noise, constructs a noisy latent using the diffusion schedule, and trains a denoiser to predict the selected target. Text conditioning is encoded separately and supplied to the denoiser through cross-attention or another conditioning mechanism. The loss is typically computed in latent space, reducing the cost of training on high-resolution images. Depending on the system, the autoencoder and text encoder may be pretrained and frozen. Training data must align images and captions well enough for the model to learn meaningful associations. Incorrect captions, duplicates, inconsistent image preprocessing, and latent-scale mismatches can all degrade conditional generation."
+        },
+        {
+            "id": "classifier-free-guidance",
+            "title": "11. Classifier-Free Guidance",
+            "type": "math",
+            "content": "Classifier-free guidance combines an unconditional denoising prediction with a prediction conditioned on the prompt. During training, the model sometimes receives a dropped or empty condition, allowing one network to learn both behaviors. At inference, it evaluates the noisy latent under both conditions and combines the predictions. A common convention is epsilon_guided = epsilon_uncond + w(epsilon_cond − epsilon_uncond). Increasing w strengthens movement toward the conditional prediction. Moderate guidance may improve prompt adherence, while excessive guidance can reduce diversity, create harsh contrast, or introduce artifacts. Implementations may define the guidance parameter differently, so the formula and library convention should be checked. The unconditional branch represents the model's behavior without the supplied prompt condition, not a guarantee of a neutral or unbiased image.",
+            "formula": "epsilon_guided = epsilon_uncond + w(epsilon_cond - epsilon_uncond)",
+            "example": "If the unconditional prediction is 0.2 and the conditional prediction is 0.5, then with w = 3 the guided value is 0.2 + 3(0.3) = 1.1."
+        },
+        {
+            "id": "negative-prompts",
+            "title": "12. Negative Prompts and Conditioning",
+            "type": "concept",
+            "content": "Some generation interfaces accept a negative prompt describing features the user wants to discourage. In many implementations, the negative prompt is used as the alternative conditioning input in a guidance calculation. This is not the same as applying a hard constraint. A model may still generate a discouraged feature, especially when it is strongly associated with the positive prompt or common in the training data. Negative prompts can also introduce conflicting conditions and reduce quality when overloaded. Their effect depends on the model's training and inference implementation. When strict requirements matter, use a suitable control mechanism or verification process rather than assuming text-based negative conditions guarantee the absence of a feature."
+        },
+        {
+            "id": "prompt-compositionality",
+            "title": "13. Compositionality and Spatial Relationships",
+            "type": "concept",
+            "content": "A prompt may contain multiple objects, attributes, counts, and relationships. Generating each object convincingly is different from composing them correctly. Models may confuse which color belongs to which object, omit an item, duplicate an object, or misinterpret spatial words such as left, behind, and between. These errors arise partly because the model learns statistical associations rather than executing a symbolic scene specification. Longer prompts can introduce competing information, while rare combinations may be poorly represented in training. Structured prompting can make relationships clearer, but it does not guarantee exact compliance. For applications requiring precise layouts, combine text with layout maps, masks, reference images, or other explicit controls and evaluate the resulting image against the intended constraints."
+        },
+        {
+            "id": "text-rendering",
+            "title": "14. Text Inside Generated Images",
+            "type": "concept",
+            "content": "Generating legible text within images is difficult because language and image generation have different structural requirements. A text-to-image model may reproduce the visual appearance of lettering without reliably producing the exact character sequence. Long words, small labels, unusual fonts, and spatially constrained typography are particularly challenging. The model must coordinate character identity, ordering, spacing, perspective, and visual style. Some systems perform better because of specialized training or architectural improvements, but results should still be verified. For designs where exact wording matters, a practical workflow is to generate the visual composition first and add text using a conventional typography or vector-graphics tool afterward."
+        },
+        {
+            "id": "control-conditioning",
+            "title": "15. Beyond Text: Control Signals",
+            "type": "concept",
+            "content": "Text alone is often insufficient for precise composition. Additional conditioning can specify pose, depth, edges, segmentation, line art, or a reference image. Control networks may process these signals and inject features into the denoiser, allowing generation to follow a desired structure while retaining flexibility in appearance. Image-to-image methods can start from a partially corrupted version of an existing image, balancing preservation and transformation through the amount of noise added. Inpainting replaces selected regions while conditioning on visible context, and outpainting extends content beyond the original boundaries. These tasks require careful mask conventions and conditioning alignment. More control signals can improve structural fidelity but increase complexity and may constrain creative variation."
+        },
+        {
+            "id": "image-to-image",
+            "title": "16. Image-to-Image Diffusion",
+            "type": "concept",
+            "content": "Image-to-image generation begins with an existing image rather than pure random noise. The image is encoded into pixel or latent space and partially corrupted according to a selected strength. The denoising process then transforms the corrupted representation under a prompt or other condition. Low corruption strength generally preserves more of the original structure, while higher strength allows larger changes. The relationship is not always linear, and the exact meaning of strength depends on the sampler and implementation. Image-to-image systems are useful for restyling, controlled editing, and variations. They can still alter identity, geometry, or important details, so outputs should be checked against preservation requirements."
+        },
+        {
+            "id": "inpainting-outpainting",
+            "title": "17. Inpainting and Outpainting",
+            "type": "concept",
+            "content": "Inpainting generates content within a selected region while using surrounding context to maintain coherence. The mask identifies editable pixels or latent locations, although some implementations invert the mask convention. During denoising, the system may repeatedly combine generated regions with known content or condition on a masked image representation. Outpainting extends the canvas beyond the original image and generates plausible continuation around the visible scene. Both tasks require consistency in lighting, perspective, texture, and object geometry. Boundary artifacts can appear when the model does not integrate new content smoothly with the preserved region. Test mask orientation, latent resizing, and blending behavior before using these techniques in a production editing workflow."
+        },
+        {
+            "id": "transformer-denoisers",
+            "title": "18. Transformer-Based Image Generation",
+            "type": "concept",
+            "content": "Transformer architectures can replace or complement convolutional U-Nets as denoisers. Image or latent tensors may be divided into patches, projected into tokens, and processed through attention blocks. Transformers provide flexible global interactions, while convolutional networks naturally encode local spatial structure. Hybrid architectures combine these strengths. Attention cost can grow rapidly with the number of tokens, so high-resolution generation often uses latent compression, hierarchical tokenization, windowed attention, or other efficiency strategies. Text and image tokens may interact through cross-attention or joint attention. Architectural performance depends on training scale, data quality, optimization, and compute budget rather than on the architecture name alone."
+        },
+        {
+            "id": "training-data",
+            "title": "19. Training Data and Image-Text Alignment",
+            "type": "concept",
+            "content": "Text-to-image models learn from paired images and text descriptions. The captions do not need to be identical to the visible content, but they must provide useful associations. Weak captions may omit important objects or relationships. Noisy metadata, duplicated images, inconsistent licensing, and low-quality images can affect learning. Data selection also shapes the model's representation of occupations, cultures, appearance, environments, and artistic styles. Training datasets may contain personal or copyrighted material, and the legality and ethics of collection depend on context and jurisdiction. Responsible dataset governance includes provenance tracking, privacy review, consent where appropriate, license review, and procedures for handling removal requests."
+        },
+        {
+            "id": "evaluation-text-image",
+            "title": "20. Evaluating Text-to-Image Models",
+            "type": "concept",
+            "content": "Evaluation should separate visual quality, prompt adherence, diversity, robustness, and computational cost. FID compares feature distributions between generated and reference images but does not directly verify every prompt detail. CLIP-based similarity scores compare image and text representations, yet can reward broad semantic alignment while missing counts, relationships, or small objects. Human evaluation can assess composition and realism but should use clear criteria, diverse raters, and controlled comparisons. Test sets should include simple prompts, compositional prompts, rare concepts, long descriptions, different languages, and adversarial combinations. Report the sampler, step count, guidance convention, resolution, and preprocessing. A single metric or a small gallery is insufficient evidence of general capability."
+        },
+        {
+            "id": "fid-limitations",
+            "title": "21. Limitations of Automatic Metrics",
+            "type": "concept",
+            "content": "Automatic image-generation metrics summarize selected aspects of model behavior and can hide important failures. FID depends on the feature extractor and reference distribution. CLIP similarity depends on the embedding model and may be insensitive to exact spatial relations or object counts. A model can score well while generating repeated compositions, omitting rare attributes, or producing unsafe content. Metric values are only comparable when sample sizes, preprocessing, image resolution, and implementation are controlled. Use a combination of metrics, targeted test suites, human review, and application-specific checks. For high-stakes use, validate the actual downstream task rather than assuming that a general image-quality score guarantees usefulness."
+        },
+        {
+            "id": "sampling-efficiency",
+            "title": "22. Sampling Speed and Optimization",
+            "type": "concept",
+            "content": "Text-to-image generation can be expensive because each denoising step invokes a large neural network. Efficiency techniques include fewer-step samplers, numerical solvers, distillation, lower-precision computation, optimized attention kernels, and batching. The best technique depends on whether the bottleneck is compute, memory, model loading, or decoding. Reducing the step count can lower latency but may degrade quality, especially when the model has not been trained or distilled for few-step inference. Guidance may require both conditional and unconditional predictions, adding cost unless evaluations are efficiently batched. Benchmarks should measure end-to-end latency, including text encoding, denoising, decoding, and postprocessing."
+        },
+        {
+            "id": "memory-efficiency",
+            "title": "23. Memory and Resolution",
+            "type": "concept",
+            "content": "Image resolution affects the number of spatial locations processed by the denoiser. Doubling width and height multiplies the pixel count by four, and attention operations can scale even more steeply depending on the architecture. Latent diffusion reduces spatial resolution, but memory can still become a bottleneck for large models or high-resolution outputs. Techniques such as attention slicing, tiled processing, lower precision, model offloading, and smaller batches can reduce memory pressure. Each technique has tradeoffs in speed, numerical accuracy, or boundary quality. High-resolution generation should be tested at the intended deployment size rather than extrapolated from low-resolution results."
+        },
+        {
+            "id": "reproducibility",
+            "title": "24. Reproducibility and Random Seeds",
+            "type": "concept",
+            "content": "Text-to-image generation is stochastic. A random seed controls the initial noise and can help reproduce a result when the model, prompt, sampler, software, and settings remain fixed. A seed alone does not guarantee identical output across different model versions, hardware, numerical precision, or library implementations. Record the model checkpoint, text encoder, prompt, negative prompt, dimensions, sampler, inference steps, guidance value, seed, and any control inputs. For evaluation, compare multiple seeds to avoid drawing conclusions from one unusually successful sample. Reproducibility metadata is also useful for debugging and tracking the origin of generated assets."
+        },
+        {
+            "id": "bias-and-representation",
+            "title": "25. Bias and Representation",
+            "type": "concept",
+            "content": "Text-to-image models may reproduce stereotypes or underrepresent groups because their training data and captions reflect uneven social patterns. A prompt for an occupation may disproportionately produce one gender or demographic group. Some groups may appear less frequently or in narrower contexts, and cultural symbols may be rendered inaccurately. Evaluation should examine representative prompt sets and compare output distributions across attributes where appropriate and lawful. Mitigation can include data curation, balanced evaluation, prompt-level safeguards, and careful product design. No single intervention guarantees fairness. Developers should document known limitations and avoid presenting generated depictions as statistically reliable evidence about the real world."
+        },
+        {
+            "id": "copyright-consent-provenance",
+            "title": "26. Copyright, Consent, and Provenance",
+            "type": "concept",
+            "content": "Generated images raise questions about training-data rights, stylistic imitation, identity, consent, and ownership. Applicable rules vary by jurisdiction and use case, so technical capability should not be treated as legal permission. Systems should respect privacy and avoid nonconsensual depictions of real people. In commercial workflows, teams should review the provenance and licensing of training assets and generated outputs. Provenance metadata, content credentials, and clear disclosure can help users understand how an image was created or edited. Metadata may be removed during distribution, so it should not be treated as a complete safeguard. Responsible use combines technical measures, organizational policies, and appropriate human review."
+        },
+        {
+            "id": "prompt-design-principles",
+            "title": "27. Practical Prompt Design",
+            "type": "concept",
+            "content": "A useful prompt describes the main subject, important attributes, relationships, setting, composition, and desired visual treatment. Prioritize constraints that matter most instead of adding a long list of loosely related adjectives. Explicit relationships can help, but complex scenes may require reference images or structural controls. Iteration should change a small number of variables at a time so the effect of each change is easier to interpret. If an image repeatedly fails at a specific relationship, rewriting the prompt indefinitely may not solve an architectural limitation. Test different seeds and inspect whether the problem is stochastic or systematic. For exact text, logos, or geometry, consider generating the visual base and completing the precise elements with deterministic editing tools."
+        },
+        {
+            "id": "prompt-evaluation",
+            "title": "28. Evaluating Prompt Adherence",
+            "type": "concept",
+            "content": "Prompt adherence can be evaluated by decomposing a prompt into testable requirements. For example, a prompt may specify three objects, two colors, a spatial relationship, and a particular background. Each requirement can be assessed independently, then summarized into a composite score if appropriate. Human raters should use a consistent rubric and should not know which model produced each output when blind comparison is feasible. Automatic object detectors or vision-language models can assist but may share biases and failure modes. Evaluation sets should include distractors and unusual combinations to reveal whether the model follows relationships or merely generates familiar co-occurrences. Keep the original prompt and generated image together in evaluation records."
+        },
+        {
+            "id": "text-image-code-conditioning",
+            "title": "29. A Simplified Cross-Attention Calculation",
+            "type": "code",
+            "language": "python",
+            "content": "This example demonstrates the tensor operations used in cross-attention between image features and text tokens.",
+            "explanation": "The example omits residual blocks, normalization, positional embeddings, and the full denoiser. Image features produce queries; text embeddings produce keys and values. The output contains one text-conditioned feature vector per image query.",
+            "code": "import torch\nimport torch.nn.functional as F\n\nbatch, image_tokens, text_tokens, dim = 2, 64, 16, 128\nimage_features = torch.randn(batch, image_tokens, dim)\ntext_features = torch.randn(batch, text_tokens, dim)\nquery = torch.nn.Linear(dim, dim)(image_features)\nkey = torch.nn.Linear(dim, dim)(text_features)\nvalue = torch.nn.Linear(dim, dim)(text_features)\nweights = F.softmax(query @ key.transpose(-2, -1) / (dim ** 0.5), dim=-1)\nconditioned_features = weights @ value\nprint(conditioned_features.shape)",
+            "expectedOutput": "torch.Size([2, 64, 128])"
+        },
+        {
+            "id": "classifier-free-guidance-code",
+            "title": "30. Implementing Classifier-Free Guidance",
+            "type": "code",
+            "language": "python",
+            "content": "Combine unconditional and prompt-conditioned model predictions.",
+            "explanation": "The formula assumes the network outputs the same prediction parameterization in both branches. Some implementations batch the two inputs together for efficiency, but the mathematical combination remains equivalent.",
+            "code": "def classifier_free_guidance(uncond_prediction, cond_prediction, guidance_scale):\n    return uncond_prediction + guidance_scale * (cond_prediction - uncond_prediction)\n\nuncond = torch.tensor([0.2, 0.4])\ncond = torch.tensor([0.5, 0.7])\nguided = classifier_free_guidance(uncond, cond, guidance_scale=2.0)\nprint(guided)",
+            "expectedOutput": "tensor([0.8000, 1.0000])"
+        },
+        {
+            "id": "generation-pipeline-pseudocode",
+            "title": "31. A Simplified Generation Pipeline",
+            "type": "code",
+            "language": "python",
+            "content": "The following pseudocode illustrates how text conditioning, latent denoising, and decoding fit together.",
+            "explanation": "The components are placeholders for pretrained modules. Actual APIs differ by model family, and the sampler must use the correct latent scaling and prediction parameterization.",
+            "code": "prompt_embeddings = text_encoder(tokenizer(prompt))\nlatents = torch.randn(batch_size, latent_channels, latent_height, latent_width, device=device)\nlatents = latents * sampler.initial_noise_scale\n\nfor timestep in sampler.timesteps:\n    model_input = sampler.scale_model_input(latents, timestep)\n    prediction = denoiser(model_input, timestep, prompt_embeddings)\n    latents = sampler.step(prediction, timestep, latents)\n\nlatents = latents / latent_scale_factor\nimages = image_decoder(latents)\nimages = images.clamp(-1, 1)",
+            "expectedOutput": "A batch of generated image tensors after decoding. This pseudocode requires compatible pretrained components and may need output-range conversion before saving or displaying images."
+        },
+        {
+            "id": "text-image-debugging",
+            "title": "32. Debugging a Text-to-Image Pipeline",
+            "type": "concept",
+            "content": "Debug the generation pipeline one component at a time. First verify that prompt tokenization and truncation behave as expected. Check the text embedding shape, device, and numerical range. Confirm that latent initialization uses the sampler's expected noise scale and that the model receives the correct timestep representation. Ensure the prediction type and scheduler update equations agree. After sampling, reverse the latent scaling before decoding and apply the decoder's expected normalization. If output images are nearly uniform, inspect latent statistics at intermediate steps. If the image structure is reasonable but details are poor, investigate the autoencoder and decoder. If the image ignores the prompt, inspect the conditioning path and guidance settings before changing unrelated components."
+        },
+        {
+            "id": "deployment-safety",
+            "title": "33. Safety and Deployment Controls",
+            "type": "concept",
+            "content": "A deployed text-to-image service may need controls for nonconsensual imagery, impersonation, harassment, illegal content, and other foreseeable misuse. Safeguards can include prompt screening, output moderation, rate limits, abuse monitoring, provenance features, and escalation processes. These controls should be evaluated for both effectiveness and unintended overblocking. Safety decisions must account for the system's capabilities and the context in which generated content will be used. Clear user communication helps distinguish generated content from authentic photographs or evidence. No single classifier or watermark can prevent every misuse, so deployment requires layered technical and operational controls."
+        },
+        {
+            "id": "future-directions",
+            "title": "34. Emerging Directions",
+            "type": "concept",
+            "content": "Research in text-to-image generation explores faster sampling, higher-resolution synthesis, improved compositional control, video generation, 3D representations, and stronger multimodal understanding. Flow-based and consistency-based approaches aim to reduce the number of inference evaluations. Transformer-based generative architectures explore different ways of representing image and text tokens. Personalized generation and reference-based editing allow outputs to reflect selected subjects or styles, while raising additional privacy and consent considerations. Evaluation is also expanding beyond visual realism toward instruction following, physical consistency, temporal coherence, and controllability. Progress in one dimension does not automatically solve the others, so claims about capability should be tied to explicit tasks and reproducible evaluation."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "text-image-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main purpose of a text encoder in a text-to-image system?",
+            "correctAnswer": "It converts prompt tokens into contextual representations that condition the image-generation model.",
+            "solution": "The image generator uses the encoded text to guide the features it creates during denoising."
+        },
+        {
+            "id": "text-image-ex-2",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "In cross-attention, what roles do Q, K, and V play when image features attend to text?",
+            "correctAnswer": "Q comes from image features, while K and V come from text representations.",
+            "solution": "Queries are compared with keys to produce attention weights. Those weights combine the value vectors into conditioned features."
+        },
+        {
+            "id": "text-image-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why do many text-to-image systems use latent diffusion?",
+            "correctAnswer": "Denoising in a compressed latent representation reduces spatial computation and memory requirements.",
+            "solution": "The autoencoder reduces the spatial size of the representation, making repeated denoiser evaluations less expensive."
+        },
+        {
+            "id": "text-image-ex-4",
+            "type": "mathematical",
+            "difficulty": "medium",
+            "question": "If the unconditional prediction is 0.1, the conditional prediction is 0.4, and guidance scale is 2, what is the guided prediction?",
+            "correctAnswer": "0.7",
+            "solution": "Guided = 0.1 + 2(0.4 − 0.1) = 0.1 + 0.6 = 0.7."
+        },
+        {
+            "id": "text-image-ex-5",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can a model fail to place the correct color on the correct object?",
+            "correctAnswer": "It may learn the relevant concepts without reliably binding attributes to specific objects and relationships.",
+            "solution": "Generating familiar objects is different from satisfying exact compositional constraints. Additional control signals may be needed for precise layouts."
+        },
+        {
+            "id": "text-image-ex-6",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why does increasing classifier-free guidance too much sometimes reduce image quality?",
+            "correctAnswer": "Strong extrapolation toward the conditional prediction can create artifacts, exaggerated features, or reduced diversity.",
+            "solution": "Guidance strengthens condition adherence but does not guarantee perceptual quality. The best setting depends on the model, prompt, and sampler."
+        },
+        {
+            "id": "text-image-ex-7",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A generated image looks good but omits an object explicitly named in the prompt. Suggest three evaluation or debugging steps.",
+            "correctAnswer": "Check prompt tokenization and truncation, test multiple seeds, and evaluate the object requirement with a targeted checklist or detector.",
+            "solution": "The omission may be stochastic or systematic. Inspecting tokenization, sampling variation, and explicit object-level adherence can help identify the cause."
+        },
+        {
+            "id": "text-image-ex-8",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is CLIP similarity not a complete measure of prompt adherence?",
+            "correctAnswer": "A broad image-text similarity score may not detect exact object counts, attribute binding, or spatial relationships.",
+            "solution": "The metric summarizes alignment in an embedding space. It does not directly verify every constraint in the prompt."
+        },
+        {
+            "id": "text-image-ex-9",
+            "type": "applied",
+            "difficulty": "hard",
+            "question": "A latent diffusion pipeline generates nearly black images even though the latent tensor has the expected shape. What should you check?",
+            "correctAnswer": "Check latent scaling, decoder normalization, model output range, and whether the final latents are compatible with the decoder.",
+            "solution": "Correct tensor shapes do not guarantee correct numerical scales. A scaling mismatch can cause the decoder to receive out-of-distribution values."
+        },
+        {
+            "id": "text-image-ex-10",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why should synthetic images used in factual or scientific contexts be clearly identified and validated?",
+            "correctAnswer": "Generated images can depict plausible but false details and should not be mistaken for direct evidence.",
+            "solution": "Generative models sample from learned distributions rather than guaranteeing factual accuracy. Provenance, disclosure, and domain-specific validation help prevent misleading interpretation."
+        }
+    ],
+    "summary": "Text-to-image systems combine text tokenization and encoding, conditional denoising, and a sampling procedure to generate images from prompts. Cross-attention lets image features use token-level text representations, while latent diffusion reduces computational cost by operating in a compressed representation. Classifier-free guidance controls the strength of conditioning, and additional signals can improve composition and editing. Evaluation must consider visual quality, prompt adherence, diversity, speed, and failure cases. Dataset governance, provenance, consent, and safeguards are essential for responsible deployment.",
+    "relatedTopics": [
+        "module-14-generative-models-diffusion",
+        "module-14-generative-models-noise-schedules",
+        "module-14-generative-models-denoising",
+        "module-06-attention",
+        "module-08-natural-language-processing"
+    ]
+}

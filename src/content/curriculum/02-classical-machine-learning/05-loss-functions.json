@@ -1,1 +1,176 @@
-{}
+{
+    "id": "classical-ml-loss-functions",
+    "title": "Loss Functions",
+    "slug": "loss-functions",
+    "description": "Understand how machine learning models measure prediction errors using loss functions, including squared error, absolute error, binary cross-entropy, multiclass cross-entropy, hinge loss, and regularized objectives.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "What is Learning?",
+        "Linear Regression",
+        "Logistic Regression",
+        "Basic probability",
+        "Basic calculus"
+    ],
+    "learningObjectives": [
+        "Explain the difference between a loss function, cost function, and evaluation metric.",
+        "Calculate common regression and classification losses by hand.",
+        "Explain why squared error and absolute error behave differently.",
+        "Understand binary cross-entropy and multiclass cross-entropy.",
+        "Explain hinge loss and its relationship to margin-based classification.",
+        "Choose an appropriate loss function for a learning problem.",
+        "Understand how loss functions influence optimization and model behavior."
+    ],
+    "sections": [
+        {
+            "id": "loss-introduction",
+            "title": "1. What Is a Loss Function?",
+            "type": "text",
+            "content": "A machine learning model produces predictions from input data. A loss function measures how wrong an individual prediction is compared with its target. During training, the learning algorithm attempts to find model parameters that reduce the loss across the training examples. For example, if a house is actually worth ₹50 lakh and a model predicts ₹46 lakh, the prediction error is ₹4 lakh. A loss function converts this discrepancy into a numerical penalty. Different loss functions penalize errors differently, so selecting a loss function influences what the model learns."
+        },
+        {
+            "id": "loss-terminology",
+            "title": "2. Loss, Cost, Objective, and Metric",
+            "type": "text",
+            "content": "The terms are related but not identical. A loss usually describes the penalty for one example. A cost often aggregates losses over a dataset, commonly by taking their mean or sum. An objective is the quantity an optimizer is instructed to minimize and may include additional terms such as regularization. An evaluation metric measures practical performance, sometimes using a quantity that is not convenient to optimize directly. For example, classification accuracy is easy to interpret but is not a smooth function of model parameters. Cross-entropy is often optimized during training while accuracy is reported for evaluation."
+        },
+        {
+            "id": "loss-empirical-risk",
+            "title": "3. Empirical Risk Minimization",
+            "type": "formula",
+            "content": "Given a dataset containing n examples, empirical risk minimization chooses parameters that minimize average training loss. If f_theta(x_i) is the prediction for input x_i and y_i is its target, the empirical risk is R(theta) = (1/n) * sum_{i=1}^{n} L(f_theta(x_i), y_i). Here, theta represents the model parameters and L represents the per-example loss. Training attempts to find theta values with low empirical risk. A low training risk does not automatically imply good generalization; the model must also perform well on unseen data."
+        },
+        {
+            "id": "loss-squared-error",
+            "title": "4. Mean Squared Error",
+            "type": "formula",
+            "content": "For a regression target y and prediction y_hat, squared error is L = (y - y_hat)^2. Mean squared error is MSE = (1/n) * sum_{i=1}^{n} (y_i - y_hat_i)^2. Squaring makes the penalty nonnegative and gives larger errors disproportionately greater influence. MSE is differentiable, which makes it convenient for gradient-based optimization. However, it is sensitive to outliers because a few large errors can dominate the average. MSE has squared target units: if the target is measured in rupees, MSE is measured in rupees squared."
+        },
+        {
+            "id": "loss-mse-example",
+            "title": "5. Worked Example: MSE",
+            "type": "example",
+            "content": "Suppose actual values are [3, 5, 7] and predictions are [2, 5, 10]. The errors are [1, 0, -3]. The squared errors are [1, 0, 9]. Therefore, MSE = (1 + 0 + 9) / 3 = 10/3 ≈ 3.33. Notice that the error of magnitude 3 contributes 9 to the sum, while the error of magnitude 1 contributes only 1."
+        },
+        {
+            "id": "loss-mae",
+            "title": "6. Mean Absolute Error",
+            "type": "formula",
+            "content": "Absolute error is L = |y - y_hat|. Mean absolute error is MAE = (1/n) * sum_{i=1}^{n} |y_i - y_hat_i|. MAE penalizes errors linearly rather than quadratically, making it less sensitive to extreme errors than MSE. It is measured in the same units as the target and is often easier to interpret. Absolute value is not differentiable at zero, but optimization methods can still handle it using subgradients or specialized algorithms."
+        },
+        {
+            "id": "loss-mae-vs-mse",
+            "title": "7. MAE Versus MSE",
+            "type": "text",
+            "content": "Consider errors of magnitudes 1 and 4. Their absolute penalties are 1 and 4, while their squared penalties are 1 and 16. Thus, MSE gives substantially greater influence to the larger error. MAE can be preferable when robustness to outliers is important. MSE is useful when large deviations should be strongly discouraged and when smooth optimization is desirable. Neither metric is universally superior; the choice depends on the target distribution, application costs, and desired behavior."
+        },
+        {
+            "id": "loss-huber",
+            "title": "8. Huber Loss",
+            "type": "formula",
+            "content": "Huber loss combines squared error for small residuals with absolute-like behavior for large residuals. Let r = y - y_hat and delta > 0. If |r| <= delta, L_delta(r) = 0.5 * r^2. Otherwise, L_delta(r) = delta * (|r| - 0.5 * delta). Small errors receive a smooth quadratic penalty, while large errors receive a linear penalty. This can offer a compromise between MSE's sensitivity to outliers and MAE's behavior near zero. The parameter delta determines where the transition occurs."
+        },
+        {
+            "id": "loss-binary-cross-entropy",
+            "title": "9. Binary Cross-Entropy",
+            "type": "formula",
+            "content": "For binary classification, let y be either 0 or 1 and let p be the model's predicted probability of class 1. Binary cross-entropy is L = -[y log(p) + (1-y) log(1-p)]. If y = 1, the loss is -log(p); if y = 0, it is -log(1-p). Correct, confident predictions receive small losses. Confident predictions that are wrong receive large losses. Implementations clip probabilities or operate directly on logits for numerical stability. In practical training, logits-based implementations are generally preferable to manually applying sigmoid and logarithms."
+        },
+        {
+            "id": "loss-bce-example",
+            "title": "10. Worked Example: Binary Cross-Entropy",
+            "type": "example",
+            "content": "Suppose the true label is y = 1. If the model predicts p = 0.9, its loss is -ln(0.9) ≈ 0.105. If it predicts p = 0.2, its loss is -ln(0.2) ≈ 1.609. The second prediction is penalized much more because the model assigned a low probability to the true class. For a negative example with y = 0 and p = 0.1, the loss is -ln(0.9) ≈ 0.105."
+        },
+        {
+            "id": "loss-multiclass-cross-entropy",
+            "title": "11. Multiclass Cross-Entropy",
+            "type": "formula",
+            "content": "For K mutually exclusive classes, let y_k be the one-hot target for class k and p_k be the predicted probability. Cross-entropy is L = -sum_{k=1}^{K} y_k log(p_k). With one-hot labels, this simplifies to -log(p_true), where p_true is the probability assigned to the correct class. The model is rewarded for assigning high probability to the true class. Softmax is commonly used to transform class logits into a probability distribution. For mutually exclusive classes, use a multiclass formulation rather than treating every class as an independent binary target."
+        },
+        {
+            "id": "loss-hinge",
+            "title": "12. Hinge Loss and Classification Margins",
+            "type": "formula",
+            "content": "For binary labels y in {-1, +1} and a real-valued decision score s, hinge loss is L = max(0, 1 - y*s). If y*s >= 1, the example is correctly classified with the required margin and its hinge loss is zero. If y*s < 1, the loss is positive. Hinge loss is closely associated with support vector machines. Unlike cross-entropy, hinge loss does not directly model a calibrated probability distribution; it focuses on correct classification and margin."
+        },
+        {
+            "id": "loss-class-imbalance",
+            "title": "13. Class Imbalance and Weighted Loss",
+            "type": "text",
+            "content": "When one class is much rarer than another, an unweighted average loss may allow the majority class to dominate training. Class weighting increases the penalty for errors on selected classes. For binary cross-entropy, one may assign different weights to positive and negative examples. Other strategies include resampling and threshold adjustment. Weighting should be selected using training data and validated against the actual application objective. It does not replace careful evaluation using class-sensitive metrics such as recall, precision, and PR-AUC."
+        },
+        {
+            "id": "loss-python",
+            "title": "14. Implementing Common Losses in Python",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\nactual = np.array([3.0, 5.0, 7.0])\npredicted = np.array([2.0, 5.0, 10.0])\n\nmse = np.mean((actual - predicted) ** 2)\nmae = np.mean(np.abs(actual - predicted))\n\nprint(f'MSE: {mse:.3f}')\nprint(f'MAE: {mae:.3f}')\n\n# Binary cross-entropy for one example.\ny = 1.0\np = 0.9\nepsilon = 1e-12\np = np.clip(p, epsilon, 1 - epsilon)\nbce = -(y * np.log(p) + (1 - y) * np.log(1 - p))\nprint(f'Binary cross-entropy: {bce:.3f}')",
+            "explanation": "The example computes MSE and MAE for regression, then binary cross-entropy for a positive example. Clipping avoids taking the logarithm of zero. In real training pipelines, use a framework's numerically stable loss implementation when available."
+        },
+        {
+            "id": "loss-choice",
+            "title": "15. How to Choose a Loss Function",
+            "type": "text",
+            "content": "For continuous regression targets, MSE is a common choice when large errors should be strongly penalized; MAE is useful when robustness to outliers matters; and Huber loss offers a compromise. For mutually exclusive binary labels, binary cross-entropy is a standard probabilistic objective. For mutually exclusive multiclass labels, use multiclass cross-entropy. For margin-based classification such as a conventional SVM, hinge loss is common. For multilabel classification, where multiple labels can independently be true, independent binary losses are often appropriate. Always align the loss with the prediction task and the consequences of errors."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "loss-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Actual values are [4, 8] and predictions are [6, 5]. Calculate MAE and MSE.",
+            "correctAnswer": "MAE = 2.5; MSE = 6.5",
+            "solution": "The residuals are [-2, 3]. Absolute errors are [2, 3], so MAE = (2 + 3)/2 = 2.5. Squared errors are [4, 9], so MSE = (4 + 9)/2 = 6.5."
+        },
+        {
+            "id": "loss-ex-2",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why can MSE be more sensitive to outliers than MAE?",
+            "correctAnswer": "MSE squares residuals, so large errors grow quadratically, whereas MAE grows linearly.",
+            "solution": "An error of magnitude 5 contributes 25 to squared error but only 5 to absolute error. This makes large residuals exert much more influence on MSE."
+        },
+        {
+            "id": "loss-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For a positive example with true label y = 1 and predicted probability p = 0.5, calculate binary cross-entropy using natural logarithms.",
+            "correctAnswer": "Approximately 0.6931",
+            "solution": "L = -ln(p) = -ln(0.5) = ln(2) ≈ 0.6931."
+        },
+        {
+            "id": "loss-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "A model has high accuracy but poor cross-entropy. What might this indicate?",
+            "correctAnswer": "It may classify many examples correctly but assign poor or overconfident probabilities, especially to examples it gets wrong.",
+            "solution": "Accuracy considers only whether the predicted class is correct. Cross-entropy also evaluates the probability assigned to the true class and strongly penalizes confident incorrect predictions."
+        },
+        {
+            "id": "loss-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "You are predicting delivery times and occasional traffic incidents produce extreme residuals. Which regression loss might you investigate and why?",
+            "correctAnswer": "Huber loss, because it is quadratic for small residuals and linear for large residuals.",
+            "solution": "Huber loss preserves smooth quadratic behavior near zero while reducing the influence of extreme residuals relative to MSE. MAE is another candidate if stronger robustness is needed. Compare alternatives using validation data and an application-relevant metric."
+        }
+    ],
+    "summary": [
+        "A loss function quantifies prediction error and guides training.",
+        "MSE penalizes large errors quadratically; MAE penalizes them linearly.",
+        "Huber loss combines quadratic and linear behavior.",
+        "Binary and multiclass cross-entropy evaluate probabilities assigned to true labels.",
+        "Hinge loss encourages correct classification with a margin.",
+        "The training objective and evaluation metric can be different.",
+        "Loss selection should reflect the task, data, and real-world cost of errors."
+    ],
+    "relatedTopics": [
+        "linear-regression",
+        "logistic-regression",
+        "gradient-descent",
+        "regularization",
+        "evaluation-metrics"
+    ]
+}

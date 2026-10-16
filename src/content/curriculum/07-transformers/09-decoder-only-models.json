@@ -1,1 +1,185 @@
-{}
+{
+    "id": "module-07-transformers-decoder-only-models",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 9,
+    "title": "Decoder-Only Models (GPT)",
+    "slug": "decoder-only-models",
+    "href": "/curriculum/07-transformers/decoder-only-models",
+    "filePath": "content/curriculum/07-transformers/09-decoder-only-models.json",
+    "description": "Explore GPT-style decoder-only Transformers, causal self-attention, next-token prediction, autoregressive generation, tokenization, language-model training, decoding strategies, and inference optimization.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-decoder",
+        "module-07-transformers-causal-masking",
+        "module-06-attention-masked-attention"
+    ],
+    "learningObjectives": [
+        "Explain the architecture of a decoder-only language model.",
+        "Understand causal self-attention and next-token prediction.",
+        "Derive the autoregressive factorization of a sequence probability.",
+        "Understand shifted labels and cross-entropy loss.",
+        "Explain prompt conditioning and autoregressive inference.",
+        "Compare greedy decoding, temperature sampling, top-k, and top-p.",
+        "Understand key-value caching and context-window limits.",
+        "Implement a tiny causal language model and diagnose common errors."
+    ],
+    "sections": [
+        {
+            "id": "gpt-introduction",
+            "title": "1. What Is a Decoder-Only Model?",
+            "type": "concept",
+            "content": "A decoder-only Transformer uses a stack of causal Transformer blocks to process a token sequence. Each position can attend to itself and earlier positions but not future positions. A language-modeling head converts the hidden representation at each position into vocabulary logits. The model is trained to predict the next token, enabling it to generate text one token at a time. GPT is a well-known family of decoder-only models, although modern decoder-only systems differ in scale, normalization, positional encoding, feed-forward design, training data, and alignment procedures."
+        },
+        {
+            "id": "gpt-autoregressive-factorization",
+            "title": "2. The Autoregressive Probability Model",
+            "type": "math",
+            "content": "The probability of a token sequence can be factorized using the chain rule: P(x1, x2, ..., xT) = product over t from 1 to T of P(x_t | x_1, ..., x_{t-1}). Each token is predicted conditioned on the prefix that precedes it. In practice, a model receives a tokenized context and produces logits for possible next tokens. The factorization does not require the sequence to be generated greedily; it defines the conditional distributions that a decoding strategy uses. A model's sequence likelihood is the product of its conditional token probabilities."
+        },
+        {
+            "id": "gpt-causal-mask",
+            "title": "3. Why Causal Masking Is Essential",
+            "type": "concept",
+            "content": "During training, all positions in a sequence can be processed in parallel, but each position must be restricted to its valid prefix. The causal mask blocks future key positions in self-attention. Without it, a position could read later tokens and exploit information unavailable during actual generation. This would create a mismatch between training and inference. Causal masking allows parallel computation across positions while preserving the left-to-right probability model. It is a constraint on information flow rather than a requirement to execute the entire network sequentially during training."
+        },
+        {
+            "id": "gpt-next-token-loss",
+            "title": "4. Next-Token Prediction and Cross-Entropy",
+            "type": "math",
+            "content": "A decoder produces logits z_t for each input position. These logits are compared with the token expected at the next position. For a target token y_t, cross-entropy is -log softmax(z_t)[y_t]. The training objective averages this loss over valid positions, often ignoring padding. A common implementation feeds tokens x_1 through x_{T-1} and uses x_2 through x_T as labels. Some model APIs perform this shifting internally, while others expect the caller to shift labels. Check the model's contract to avoid shifting twice or not shifting at all."
+        },
+        {
+            "id": "gpt-tokenization",
+            "title": "5. Tokenization and Vocabulary",
+            "type": "concept",
+            "content": "Language models operate on token IDs rather than raw characters or words. A tokenizer may split a word into one or more subword tokens and maps these units to integer IDs. The model's embedding table converts each ID into a vector. Vocabulary size affects the embedding table and output projection, while tokenization influences sequence length and the representation of rare words. A tokenizer must match the model checkpoint. Incompatible token IDs can produce meaningless inputs even if the tensor dimensions appear correct."
+        },
+        {
+            "id": "gpt-embeddings-position",
+            "title": "6. Embeddings and Positional Information",
+            "type": "concept",
+            "content": "Token embeddings represent token identity, while positional information allows the model to distinguish order. Some models add learned absolute position embeddings to token embeddings. Others use relative-position methods or rotary position embeddings in attention. The exact positional method depends on the architecture. Context length is constrained by the model's configuration and positional strategy, along with memory and computation. Extending a context window may require more than simply accepting a longer tensor; the model must be compatible with the new positional range and trained or adapted appropriately."
+        },
+        {
+            "id": "gpt-block-components",
+            "title": "7. Components of a GPT-Style Block",
+            "type": "concept",
+            "content": "A typical decoder-only block contains causal multi-head self-attention, a feed-forward network, residual connections, and normalization. Attention lets each position retrieve information from earlier positions. The feed-forward network applies nonlinear transformations to the features at each position. Residual connections preserve information paths, while normalization helps stabilize deep computation. Many modern language models use pre-normalization and may use gated feed-forward networks. Details differ across model families, so the term GPT-style describes a broad architectural pattern rather than one immutable block design."
+        },
+        {
+            "id": "gpt-prompt-conditioning",
+            "title": "8. Prompt Conditioning",
+            "type": "concept",
+            "content": "A prompt is a sequence of tokens that conditions the model's next-token distributions. The prompt can contain a question, instructions, examples, or conversation history. The model does not usually need a separate encoder to condition on a prompt: the prompt tokens are part of the same causal sequence. Earlier prompt positions influence later representations through causal attention. Prompt formatting and content can strongly affect behavior, but prompting does not guarantee correctness or provide the model with information that is absent from its weights and available context."
+        },
+        {
+            "id": "gpt-generation-loop",
+            "title": "9. Autoregressive Inference",
+            "type": "concept",
+            "content": "At inference time, the model processes a prompt and obtains logits for the next token. A decoding rule selects a token, which is appended to the sequence. The updated sequence is passed through the model to obtain the next distribution, and the process repeats until a stopping condition is reached. A stop condition may include an end-of-sequence token, a maximum token budget, or an application-specific delimiter. The quality and diversity of generated text depend on model training, prompt, decoding settings, and the task."
+        },
+        {
+            "id": "gpt-decoding-strategies",
+            "title": "10. Greedy Decoding, Sampling, and Temperature",
+            "type": "concept",
+            "content": "Greedy decoding always chooses the highest-logit or highest-probability token. It is deterministic when the model and execution conditions are fixed, but it may produce repetitive or locally optimal continuations. Sampling draws from the next-token distribution. Temperature modifies logits by dividing them by a positive scalar before softmax: lower temperatures concentrate probability on high-logit tokens, while higher temperatures flatten the distribution. Temperature changes randomness, not the underlying learned parameters. It should be selected according to the application's needs rather than treated as a universal quality control."
+        },
+        {
+            "id": "gpt-top-k-top-p",
+            "title": "11. Top-k and Top-p Sampling",
+            "type": "concept",
+            "content": "Top-k sampling restricts the candidate set to the k highest-scoring tokens before sampling. Top-p, also called nucleus sampling, keeps a smallest high-probability set whose cumulative probability reaches a chosen threshold p, subject to implementation details. The distribution is renormalized over the retained candidates. These methods can reduce the chance of sampling from an extremely unlikely token, but overly restrictive settings can reduce diversity or distort meaning. Temperature, top-k, and top-p interact, so generation settings should be evaluated together on representative prompts."
+        },
+        {
+            "id": "gpt-kv-cache",
+            "title": "12. Key-Value Caching",
+            "type": "concept",
+            "content": "At every generation step, the new token attends to earlier tokens. Recomputing the keys and values for the entire prefix is wasteful. A key-value cache stores prior projected keys and values for each layer and reuses them. This reduces redundant computation, especially for long generated sequences, although the cache consumes memory proportional to the number of cached tokens and model layers. Caching does not remove all generation cost: new-token processing and attention over the accumulated context still require computation."
+        },
+        {
+            "id": "gpt-training-data",
+            "title": "13. Training a Language Model",
+            "type": "concept",
+            "content": "A language model is trained on tokenized sequences using next-token prediction. Training examples are divided into manageable context windows. The model calculates logits, a loss compares predictions with next-token labels, and backpropagation updates the parameters. Training quality depends on the data distribution, tokenization, model capacity, optimization schedule, and data filtering. Large-scale training also requires distributed computation, memory management, checkpointing, and monitoring. Training a large foundation model from scratch is expensive; small educational models are useful for understanding the mechanics."
+        },
+        {
+            "id": "gpt-python-tiny-model",
+            "title": "14. Build a Tiny Causal Language Model",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nimport torch.nn as nn\n\nclass TinyLanguageModel(nn.Module):\n    def __init__(self, vocab_size, d_model=64, nhead=4, layers=2, max_len=128):\n        super().__init__()\n        self.token_embedding = nn.Embedding(vocab_size, d_model)\n        self.position_embedding = nn.Embedding(max_len, d_model)\n        layer = nn.TransformerEncoderLayer(\n            d_model=d_model,\n            nhead=nhead,\n            dim_feedforward=4 * d_model,\n            batch_first=True,\n            norm_first=True\n        )\n        self.transformer = nn.TransformerEncoder(layer, num_layers=layers)\n        self.output = nn.Linear(d_model, vocab_size)\n\n    def forward(self, token_ids):\n        batch, length = token_ids.shape\n        if length > self.position_embedding.num_embeddings:\n            raise ValueError(\"Sequence exceeds configured maximum length\")\n        positions = torch.arange(length, device=token_ids.device)\n        x = self.token_embedding(token_ids) + self.position_embedding(positions)[None, :, :]\n        causal_mask = torch.triu(\n            torch.ones(length, length, device=token_ids.device, dtype=torch.bool),\n            diagonal=1\n        )\n        hidden = self.transformer(x, mask=causal_mask)\n        return self.output(hidden)\n\nvocab_size = 100\nmodel = TinyLanguageModel(vocab_size)\ninputs = torch.randint(0, vocab_size, (4, 20))\nlogits = model(inputs)\n\n# Shift input/target positions for next-token prediction.\nprediction_logits = logits[:, :-1, :].contiguous()\ntargets = inputs[:, 1:].contiguous()\nloss = nn.functional.cross_entropy(\n    prediction_logits.view(-1, vocab_size),\n    targets.view(-1)\n)\nprint(\"Logits shape:\", logits.shape)\nprint(\"Next-token loss:\", loss.item())",
+            "explanation": "This is a small educational decoder-only model built using a Transformer encoder-layer implementation with an explicit causal mask. The class name TransformerEncoderLayer refers to the reusable layer implementation; the causal mask changes its information flow. A production model also needs a real tokenizer, training loop, optimizer, checkpointing, evaluation, and an autoregressive generation function. Verify mask conventions against the installed PyTorch version."
+        },
+        {
+            "id": "gpt-evaluation",
+            "title": "15. Evaluating Language Models",
+            "type": "concept",
+            "content": "Cross-entropy and perplexity measure how well a language model predicts held-out tokens. Perplexity is the exponential of average token-level negative log-likelihood when the loss uses natural logarithms. Lower perplexity indicates better predictive performance on the evaluated token distribution, but it does not fully measure usefulness, factuality, reasoning, safety, or instruction following. Task-specific evaluation and human review may be necessary. Comparisons should use consistent tokenization and evaluation procedures because tokenization changes the units over which likelihood is measured."
+        },
+        {
+            "id": "gpt-limitations",
+            "title": "16. Limitations and Common Failures",
+            "type": "concept",
+            "content": "A decoder-only model can produce plausible but incorrect statements, repeat text, fail to follow complex constraints, or reflect biases in its training data. A finite context window restricts direct access to earlier conversation content. Models can also be sensitive to prompt formatting and decoding settings. Training data contamination can make benchmark results misleading. In practical systems, use suitable evaluations, retrieval or tool support where appropriate, output validation, privacy safeguards, and human oversight for high-impact decisions."
+        },
+        {
+            "id": "gpt-debugging",
+            "title": "17. Common Implementation Mistakes",
+            "type": "concept",
+            "content": "Common bugs include forgetting causal masking, shifting targets incorrectly, using the wrong vocabulary size, mixing tokenizers, exceeding the positional limit, and reshaping logits incorrectly before cross-entropy. During inference, feeding the complete prompt repeatedly without caching may be slow but can still be functionally valid. A more serious error is accidentally allowing target positions to see future tokens during training. Test the model with tiny sequences and explicitly inspect the causal mask before attempting long training runs."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "gpt-ex-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "What does a decoder-only language model predict during standard next-token training?",
+            "correctAnswer": "The next token conditioned on the preceding token sequence.",
+            "solution": "The model learns conditional token distributions and is trained to assign high probability to observed continuations."
+        },
+        {
+            "id": "gpt-ex-2",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Write the autoregressive factorization for a three-token sequence.",
+            "correctAnswer": "P(x1, x2, x3) = P(x1) P(x2 | x1) P(x3 | x1, x2).",
+            "solution": "Apply the probability chain rule. Each factor conditions on the tokens that precede the token being predicted."
+        },
+        {
+            "id": "gpt-ex-3",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "What is the difference between top-k and top-p sampling?",
+            "correctAnswer": "Top-k keeps a fixed number of high-scoring candidates, while top-p keeps candidates whose cumulative probability reaches a threshold.",
+            "solution": "Top-k uses a fixed candidate count. Top-p adapts the number of candidates according to the shape of the probability distribution."
+        },
+        {
+            "id": "gpt-ex-4",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "If average next-token cross-entropy is 2 using natural logarithms, what is the corresponding perplexity?",
+            "correctAnswer": "Approximately 7.39.",
+            "solution": "Perplexity = exp(2), which is approximately 7.389. The interpretation depends on the evaluated tokenization and dataset."
+        },
+        {
+            "id": "gpt-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Identify three essential components of a minimal next-token training pipeline.",
+            "correctAnswer": "A tokenized training batch with shifted targets, a causal language model producing vocabulary logits, and a next-token loss followed by backpropagation and parameter updates.",
+            "solution": "The model must receive token IDs, predict the correct next token at each valid position, compute the loss, calculate gradients, and update parameters. A complete pipeline also needs evaluation, validation, and checkpoint management."
+        }
+    ],
+    "summary": "Decoder-only Transformers model sequences autoregressively using causal self-attention and next-token prediction. Training uses shifted labels and cross-entropy, while inference repeatedly selects and appends new tokens. Temperature, top-k, and top-p modify sampling behavior; key-value caching reduces redundant inference computation. Correct masking, tokenizer compatibility, label alignment, and held-out evaluation are essential.",
+    "relatedTopics": [
+        "module-07-transformers-transformer-architecture",
+        "module-07-transformers-decoder",
+        "module-07-transformers-causal-masking",
+        "module-07-transformers-encoder-only-models",
+        "module-07-transformers-build-tiny-transformer-from-scratch"
+    ]
+}

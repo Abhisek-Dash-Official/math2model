@@ -1,1 +1,156 @@
-{}
+{
+    "id": "knn",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 11,
+    "title": "K-Nearest Neighbors (KNN)",
+    "slug": "knn",
+    "description": "Learn instance-based learning through distance metrics, neighborhood selection, classification voting, regression averaging, feature scaling, and practical KNN evaluation.",
+    "difficulty": "beginner",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "linear-algebra",
+        "training-validation-test-sets",
+        "evaluation-metrics"
+    ],
+    "learningObjectives": [
+        "Explain lazy learning and instance-based prediction.",
+        "Calculate common distance metrics.",
+        "Understand how the value of K changes model behavior.",
+        "Implement KNN classification and regression conceptually.",
+        "Explain why feature scaling matters for distance-based algorithms.",
+        "Recognize the curse of dimensionality and computational limitations.",
+        "Choose K and distance settings using validation data.",
+        "Evaluate KNN predictions using suitable metrics."
+    ],
+    "sections": [
+        {
+            "id": "knn-introduction",
+            "title": "1. What Is K-Nearest Neighbors?",
+            "type": "concept",
+            "content": "K-Nearest Neighbors, or KNN, is a supervised learning algorithm that predicts an example's outcome using nearby labeled training examples. Instead of learning an explicit parameterized function during training, a basic KNN system stores the training data and performs much of its work when a prediction is requested.\n\nThe central assumption is that examples close to each other in a suitable feature space tend to have related outcomes. For classification, the algorithm commonly selects the most frequent label among the K nearest training observations. For regression, it commonly averages their target values.\n\nSuppose a new customer has usage and spending characteristics similar to several existing customers who renewed their subscriptions. If most nearby customers renewed, KNN may predict renewal for the new customer.\n\nKNN is often called a lazy learner because it performs relatively little computation during fitting compared with models that optimize a parameter vector. However, prediction can be expensive because the algorithm must search for nearby examples. Specialized indexing structures or approximate-neighbor methods can reduce this cost, depending on the dimensionality and dataset.\n\nKNN is intuitive and can represent complex local patterns, but it depends heavily on the distance measure, feature representation, scaling, K value, and distribution of training examples."
+        },
+        {
+            "id": "distance-metrics",
+            "title": "2. Distance Metrics",
+            "type": "math",
+            "content": "A distance metric quantifies how far apart two feature vectors are. The choice of distance defines what 'nearby' means and can strongly influence KNN predictions.\n\nEuclidean distance between vectors x and z is:\n\nd(x,z) = sqrt(sum_j (x_j - z_j)^2).\n\nFor x = [1, 2] and z = [4, 6], the distance is sqrt((1-4)^2 + (2-6)^2) = sqrt(9 + 16) = 5.\n\nManhattan distance is:\n\nd(x,z) = sum_j |x_j - z_j|.\n\nFor the same points, Manhattan distance is |1-4| + |2-6| = 3 + 4 = 7.\n\nMinkowski distance generalizes these metrics:\n\nd_p(x,z) = [sum_j |x_j-z_j|^p]^(1/p).\n\nWith p = 1 it becomes Manhattan distance; with p = 2 it becomes Euclidean distance.\n\nHamming distance counts positions that differ and can be useful for binary or categorical representations. Cosine distance is often defined as one minus cosine similarity and focuses on the angle between vectors rather than their magnitude. It is frequently useful for sparse text representations, although zero vectors and the task's geometry require care.\n\nA metric should reflect meaningful similarity for the task. The default Euclidean distance is not universally appropriate, particularly when features have different scales, represent categories, or contain redundant information."
+        },
+        {
+            "id": "knn-classification",
+            "title": "3. KNN Classification",
+            "type": "concept",
+            "content": "For a new example x, KNN classification identifies the K nearest training observations and predicts the majority class among them. If the neighbors have labels [A, A, B, A, B] and K = 5, the majority label is A.\n\nA simple mathematical expression is:\n\ny_hat = mode(y_i for i in N_K(x)),\n\nwhere N_K(x) denotes the selected neighborhood. Ties can occur, especially with multiple classes or an even K. Implementations may break ties using class ordering, distances, or other conventions. For reproducible behavior, inspect the estimator's documented tie-handling rules.\n\nSome implementations support distance-weighted voting. Nearby observations receive more weight than farther observations, often using an inverse-distance scheme. A small numerical offset or special handling is needed if a query point exactly matches a training point and distance is zero.\n\nKNN can approximate nonlinear decision boundaries because the predicted class can change as the local neighborhood changes. With K = 1, the classifier can be extremely sensitive to individual training points. Larger K values smooth the decision boundary by considering more observations.\n\nMajority voting is not automatically cost-sensitive. If false negatives and false positives have different costs, consider class weighting, thresholding of class probabilities where meaningful, and evaluation using task-appropriate metrics."
+        },
+        {
+            "id": "knn-regression",
+            "title": "4. KNN Regression",
+            "type": "math",
+            "content": "KNN regression predicts a numeric target by aggregating the target values of nearby training examples. A common rule is the mean of the K nearest targets:\n\ny_hat(x) = (1/K) * sum from i in N_K(x) of y_i.\n\nSuppose the three nearest examples have targets [20, 25, 35]. Their average is (20 + 25 + 35)/3 = 80/3, approximately 26.67.\n\nA distance-weighted version assigns greater influence to closer observations. If weights are w_i, the prediction is:\n\ny_hat(x) = sum_i w_i*y_i / sum_i w_i.\n\nWeights can be based on inverse distance or another suitable kernel, with care around zero distances. The choice changes how strongly nearby observations dominate the prediction.\n\nSmall K values produce local predictions that can vary sharply with individual observations. Large K values smooth the estimate and may reduce variance, but can blur local structure and introduce bias.\n\nA standard KNN regressor predicts using observed training targets and their weighted averages. It therefore generally does not extrapolate far beyond the target values in its neighborhood, unlike some parametric regression models that can extend a learned functional relationship beyond the training range."
+        },
+        {
+            "id": "choosing-k",
+            "title": "5. Choosing K",
+            "type": "concept",
+            "content": "K controls the size of the neighborhood used for prediction. A very small K creates a highly local model that can react strongly to noise. A larger K averages across more examples and produces smoother predictions.\n\nFor K = 1, each query is assigned the label or target of its single nearest training observation in basic unweighted KNN. This can lead to low training classification error but poor generalization when observations are noisy.\n\nAs K grows, prediction becomes less sensitive to individual observations. However, an excessively large K can cause the classifier to favor the majority class or make the regressor too smooth. The best value depends on sample size, noise, feature geometry, and the task.\n\nChoose K with a validation set or cross-validation. Test a sensible range of values and evaluate the metric that matters. For classification, useful choices may include balanced accuracy, F1, or log loss if probability estimates are being evaluated. For regression, MAE or RMSE may be appropriate.\n\nOdd K values can reduce ties in binary classification, but they do not eliminate every tie in multiclass settings or when distance weighting is used. Tie behavior should not be the sole reason for selecting K.\n\nThe optimal K is also affected by the distance metric, feature scaling, and number of dimensions. Tune these choices as a coherent pipeline rather than treating K as the only important parameter."
+        },
+        {
+            "id": "feature-scaling",
+            "title": "6. Why Scaling Is Essential",
+            "type": "concept",
+            "content": "Distance-based models can be dominated by features with large numerical ranges. Suppose a dataset contains age between 18 and 80 and annual income between 100,000 and 5,000,000. Under Euclidean distance, income differences may dominate the calculation simply because the numerical scale is much larger.\n\nStandardization transforms a feature by subtracting its mean and dividing by its standard deviation. Min-max scaling maps values to a specified interval. Either can help when feature units are arbitrary, but the correct transformation depends on the data and intended distance semantics.\n\nFit scaling parameters on training data only. Apply the same fitted scaler to validation, test, and future observations. Fitting a scaler before splitting the dataset leaks information from held-out examples.\n\nScaling does not automatically solve every distance problem. Irrelevant features can still distort neighborhoods, correlated features can count similar information multiple times, and outliers can affect some scaling methods. Feature selection, domain-informed weights, dimensionality reduction, or a different distance measure may be needed.\n\nCategorical variables require special care. Encoding categories as arbitrary integers can make KNN treat the numeric gaps as meaningful distances when they are not. One-hot encoding or a suitable mixed-data distance may be more appropriate."
+        },
+        {
+            "id": "curse-dimensionality",
+            "title": "7. The Curse of Dimensionality",
+            "type": "concept",
+            "content": "As the number of dimensions grows, data become sparse relative to the volume of the feature space. Intuitively, a fixed local neighborhood can contain a smaller fraction of the space, and distances between observations may become less informative.\n\nIn low dimensions, a relatively small number of examples may provide useful coverage. In high dimensions, a much larger dataset may be required to find enough truly comparable neighbors. Irrelevant features can make this problem worse by adding noise to the distance calculation.\n\nThis is one reason KNN often works best when the feature representation is meaningful and the effective dimensionality is manageable. It may perform well on a carefully chosen small feature set but poorly on a large collection of unrelated or redundant features.\n\nPotential remedies include feature selection, domain-specific feature engineering, dimensionality reduction, and suitable learned representations. PCA can reduce linear dimensionality, but it may remove information useful for the target because it is unsupervised. Any feature selection or transformation that learns from the data must be fitted inside the training process to avoid leakage.\n\nApproximate nearest-neighbor search can reduce computational cost for some datasets, but it does not by itself fix a poor distance metric or uninformative feature space. Evaluate predictive quality as well as search speed."
+        },
+        {
+            "id": "knn-complexity",
+            "title": "8. Computational Complexity and Practical Use",
+            "type": "concept",
+            "content": "Basic KNN has a low fitting cost because it primarily stores the training observations. However, a naive query compares the new example with every training example. If there are N training examples and d features, the distance calculations require work roughly proportional to N*d per query, followed by selecting the nearest K observations.\n\nFor large datasets or frequent predictions, this can become expensive. Tree-based spatial indexes such as KD-trees or ball trees may accelerate neighbor search in suitable low-dimensional spaces, but their benefit can decline in high dimensions. Approximate-neighbor methods trade some search accuracy for speed.\n\nMemory usage is also important because the training observations must remain available or be represented in an index. Some models compress training data or use prototypes, but those approaches change the basic algorithm.\n\nKNN can be useful as a baseline, for small-to-medium datasets with meaningful distances, and for problems where local similarity is natural. It can also be valuable for finding similar cases, not only for producing labels or numeric predictions.\n\nBefore deployment, benchmark inference latency and memory, test performance under realistic input distributions, and verify how the system handles missing values, out-of-range observations, duplicate examples, and ties."
+        },
+        {
+            "id": "knn-code",
+            "title": "9. Implementing KNN with scikit-learn",
+            "type": "code",
+            "language": "python",
+            "content": "from sklearn.datasets import load_breast_cancer\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neighbors import KNeighborsClassifier\nfrom sklearn.metrics import accuracy_score, classification_report\n\nX, y = load_breast_cancer(return_X_y=True)\n\nX_train, X_test, y_train, y_test = train_test_split(\n    X, y, test_size=0.2, random_state=42, stratify=y\n)\n\nmodel = make_pipeline(\n    StandardScaler(),\n    KNeighborsClassifier(n_neighbors=7, weights='distance', p=2)\n)\nmodel.fit(X_train, y_train)\n\npredictions = model.predict(X_test)\nprint('Test accuracy:', accuracy_score(y_test, predictions))\nprint(classification_report(y_test, predictions))",
+            "explanation": "The pipeline standardizes features using training data and then fits KNN. The p=2 setting corresponds to Euclidean distance for the Minkowski metric. Distance weighting gives closer neighbors more influence. These settings are examples; tune K, weighting, and distance parameters using cross-validation."
+        },
+        {
+            "id": "knn-limitations",
+            "title": "10. Common Mistakes and Limitations",
+            "type": "concept",
+            "content": "A frequent mistake is fitting a scaler on the full dataset before splitting. This leaks information and makes validation less realistic. Keep preprocessing inside a pipeline used during model selection.\n\nAnother mistake is selecting K based on training accuracy alone. A very small K may fit the training data extremely well but perform poorly on unseen examples. Use validation performance to select neighborhood size.\n\nDistance calculations can be misleading when features have different units, include arbitrary integer encodings, or contain irrelevant dimensions. Examine the meaning of similarity rather than assuming Euclidean distance is automatically suitable.\n\nKNN can struggle with class imbalance because majority-class observations may dominate neighborhoods. Evaluate per-class metrics and consider whether class weighting, resampling within training folds, or another model is more suitable.\n\nMissing values must be handled according to the estimator's capabilities. Basic KNN distance calculations generally require a defined feature representation, so imputation may be needed. Fit imputation using training data only.\n\nFinally, KNN's prediction cost grows with the training dataset in a naive implementation. Good predictive performance is not sufficient if latency, memory, or update requirements make deployment impractical."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "knn-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Calculate Euclidean distance between x = [1, 2] and z = [4, 6].",
+            "correctAnswer": "5.",
+            "solution": "The distance is sqrt((1-4)^2 + (2-6)^2) = sqrt(9 + 16) = sqrt(25) = 5."
+        },
+        {
+            "id": "knn-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "The five nearest neighbors have labels [A, B, A, A, B]. What does unweighted majority-vote KNN predict?",
+            "correctAnswer": "Class A.",
+            "solution": "Class A appears three times and class B appears twice. The majority class is A."
+        },
+        {
+            "id": "knn-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "The three nearest neighbors have regression targets 10, 20, and 30. Calculate the unweighted KNN prediction.",
+            "correctAnswer": "20.",
+            "solution": "The prediction is their mean: (10 + 20 + 30)/3 = 20."
+        },
+        {
+            "id": "knn-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can a very small K overfit?",
+            "correctAnswer": "It relies on very few nearby examples and can be strongly affected by noise, outliers, or mislabeled observations.",
+            "solution": "With K = 1, a query's prediction depends on one training observation. Increasing K can smooth the prediction, although too large a K can also underfit."
+        },
+        {
+            "id": "knn-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "Your dataset contains annual income, age, and number of website visits. KNN performs poorly until you standardize the features. Explain why.",
+            "correctAnswer": "The raw numerical scales caused large-magnitude features to dominate the distance calculation, even if those features were not proportionally more informative.",
+            "solution": "Euclidean distance combines squared differences across features. Income may have values much larger than age or visit counts. Standardization places numeric features on more comparable scales, though the resulting distance should still be validated for the task."
+        },
+        {
+            "id": "knn-ex-6",
+            "type": "diagnosis",
+            "difficulty": "hard",
+            "question": "KNN has good validation performance on 15 features but performs poorly after adding 500 mostly irrelevant features. Explain a likely reason and suggest two remedies.",
+            "correctAnswer": "Irrelevant dimensions distort distances and make neighborhoods less meaningful, illustrating the curse of dimensionality. Remedies include feature selection and dimensionality reduction.",
+            "solution": "The added features contribute noise to distance calculations and can make nearby observations less similar in meaningful dimensions. Select informative features or use a carefully validated dimensionality-reduction pipeline, then compare performance on held-out data."
+        }
+    ],
+    "summary": [
+        "KNN predicts from nearby labeled training examples rather than fitting a conventional parameterized model.",
+        "Classification commonly uses neighbor voting; regression commonly averages neighbor targets.",
+        "Distance metrics define what counts as a neighbor.",
+        "Feature scaling and meaningful feature representations are crucial.",
+        "Small K values can be noisy, while large K values can oversmooth predictions.",
+        "High-dimensional data and large training sets create statistical and computational challenges.",
+        "Choose K and distance settings using validation data, not training accuracy alone."
+    ],
+    "relatedTopics": [
+        "svm",
+        "pca",
+        "clustering",
+        "evaluation-metrics",
+        "training-validation-test-sets"
+    ]
+}

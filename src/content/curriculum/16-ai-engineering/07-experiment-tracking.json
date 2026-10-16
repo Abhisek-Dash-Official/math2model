@@ -1,1 +1,147 @@
-{}
+{
+    "id": "module-16-ai-engineering-experiment-tracking",
+    "moduleId": "module-16-ai-engineering",
+    "moduleIndex": 16,
+    "topicIndex": 7,
+    "title": "Experiment Tracking & MLOps",
+    "slug": "experiment-tracking",
+    "href": "/curriculum/16-ai-engineering/experiment-tracking",
+    "filePath": "content/curriculum/16-ai-engineering/07-experiment-tracking.json",
+    "description": "Build reproducible machine-learning experiments by tracking configurations, metrics, model artifacts, dataset versions, evaluation results, and deployment-relevant metadata.",
+    "difficulty": "intermediate",
+    "estimatedHours": 6,
+    "prerequisites": [
+        "pytorch",
+        "mixed-precision",
+        "distributed-training",
+        "data-pipelines"
+    ],
+    "learningObjectives": [
+        "Explain the role of experiment tracking in the ML lifecycle.",
+        "Distinguish parameters, metrics, artifacts, tags, and metadata.",
+        "Create reproducible experiment configurations and record random seeds.",
+        "Track training and validation metrics without data leakage.",
+        "Compare experiments using controlled metrics and consistent evaluation.",
+        "Understand model registries, dataset versioning, and lineage.",
+        "Design a basic experiment workflow that can later integrate with an MLOps platform."
+    ],
+    "sections": [
+        {
+            "id": "why-track-experiments",
+            "title": "1. Why Experiment Tracking Matters",
+            "type": "concept",
+            "content": "Machine-learning development involves many changing variables: model architecture, hyperparameters, data versions, preprocessing, random seeds, training duration, precision modes, and evaluation protocols. Without structured tracking, it becomes difficult to determine why one run performed better than another or to reproduce a published result. Experiment tracking records what was run, how it was configured, which code and data were used, and what happened. It also helps identify regressions, compare trade-offs, and establish a path from a promising experiment to a maintained production model.",
+            "example": "If two runs have different validation scores, recording only the scores is insufficient. You also need the model configuration, dataset version, preprocessing, training schedule, code revision, and evaluation setup."
+        },
+        {
+            "id": "experiment-components",
+            "title": "2. Parameters, Metrics, Artifacts, and Metadata",
+            "type": "concept",
+            "content": "Parameters describe choices made before or during a run, such as learning rate, batch size, optimizer, and model architecture. Metrics are measured values such as training loss, validation accuracy, latency, or memory usage. Artifacts are files produced or consumed by the run, including checkpoints, plots, prediction samples, and evaluation reports. Metadata describes the surrounding context: source-control revision, dataset version, hardware, framework version, owner, and tags. A complete experiment record links these elements together under a unique run identifier.",
+            "example": "A training run might log learning_rate=0.0003 as a parameter, validation_loss=0.42 as a metric, model.pt as an artifact, and a Git commit hash as metadata."
+        },
+        {
+            "id": "reproducible-configurations",
+            "title": "3. Configuration and Reproducibility",
+            "type": "concept",
+            "content": "Keep configuration separate from training logic so runs can be compared and repeated. Record model architecture, optimizer settings, batch size, number of epochs, data transformations, precision mode, scheduler settings, and random seeds. Seed Python, NumPy, and PyTorch where relevant, and account for random operations inside data-loader workers and distributed processes. Reproducibility is not always bit-for-bit: GPU kernels, software versions, hardware, and distributed execution can introduce nondeterminism. Record the environment and state the level of reproducibility that has actually been tested.",
+            "code": "import random\nimport numpy as np\nimport torch\n\ndef seed_everything(seed):\n    random.seed(seed)\n    np.random.seed(seed)\n    torch.manual_seed(seed)\n    if torch.cuda.is_available():\n        torch.cuda.manual_seed_all(seed)\n\nconfig = {\"seed\": 42, \"learning_rate\": 3e-4, \"batch_size\": 64, \"epochs\": 20, \"precision\": \"bf16\"}\nseed_everything(config[\"seed\"])",
+            "explanation": "This seeds common random-number generators, but does not guarantee identical results across every hardware and software configuration. Deterministic execution may require additional PyTorch settings and can reduce performance. Record the environment and test repeatability rather than assuming that seeding alone guarantees it."
+        },
+        {
+            "id": "metric-design",
+            "title": "4. Choosing and Logging Metrics",
+            "type": "concept",
+            "content": "Metrics should match the task and the real objective. Classification may use accuracy, precision, recall, F1, and calibration; regression may use MAE or RMSE; generative systems may require task-specific quality, safety, and human evaluation. Training metrics help diagnose optimization, while validation metrics estimate generalization during model selection. Test metrics should be reserved for final evaluation when possible. Record the evaluation dataset, aggregation method, and metric implementation. Avoid comparing runs that use different splits or incompatible measurement procedures.",
+            "example": "For an imbalanced binary classifier, accuracy may appear high even when the model misses most positive examples. Track precision, recall, and a suitable threshold-dependent or threshold-independent metric as well."
+        },
+        {
+            "id": "basic-tracking",
+            "title": "5. Implementing a Minimal Experiment Logger",
+            "type": "code",
+            "language": "python",
+            "content": "A lightweight local logger can establish good habits before integrating a dedicated tracking service. Store the run configuration, metrics by step or epoch, environment details, and references to generated artifacts. The example uses JSON Lines so each metric record is appended independently.",
+            "code": "import json\nimport platform\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nimport torch\n\nrun_dir = Path(\"runs/experiment-001\")\nrun_dir.mkdir(parents=True, exist_ok=True)\nconfig = {\"model\": \"mlp\", \"learning_rate\": 1e-3, \"batch_size\": 64, \"seed\": 42}\nmetadata = {\"started_at\": datetime.now(timezone.utc).isoformat(), \"python\": platform.python_version(), \"torch\": torch.__version__, \"cuda_available\": torch.cuda.is_available()}\n(run_dir / \"config.json\").write_text(json.dumps(config, indent=2), encoding=\"utf-8\")\n(run_dir / \"metadata.json\").write_text(json.dumps(metadata, indent=2), encoding=\"utf-8\")\n\ndef log_metrics(step, **metrics):\n    record = {\"step\": step, \"timestamp\": datetime.now(timezone.utc).isoformat(), **metrics}\n    with (run_dir / \"metrics.jsonl\").open(\"a\", encoding=\"utf-8\") as file:\n        file.write(json.dumps(record) + \"\\n\")\n\nlog_metrics(1, train_loss=0.91, validation_loss=0.98, validation_accuracy=0.71)\nlog_metrics(2, train_loss=0.72, validation_loss=0.83, validation_accuracy=0.76)",
+            "explanation": "The logger writes configuration and environment metadata once, then appends metric records. For a production system, use unique run identifiers, schema validation, safe concurrent writes, explicit artifact checksums, and centralized storage if runs span machines. Avoid recording secrets or sensitive sample data."
+        },
+        {
+            "id": "comparing-runs",
+            "title": "6. Comparing Experiments Fairly",
+            "type": "concept",
+            "content": "A meaningful comparison changes a known set of variables while keeping other factors controlled. If the goal is to compare optimizers, use the same dataset split and evaluation procedure. If the goal is to compare architectures, account for compute budget and training duration. Random seeds can affect results, so multiple runs may be needed when variance is substantial. Report not only the best score but also variability, resource use, latency, and training cost where relevant. Track failed runs as well, because failures can reveal unstable configurations or hardware limitations.",
+            "formula": "Mean score = (1 / n) × Σᵢ scoreᵢ; sample standard deviation = sqrt(Σᵢ(scoreᵢ - mean)² / (n - 1)).",
+            "example": "If three seeds produce validation scores of 0.84, 0.86, and 0.85, the mean is 0.85. Reporting all runs gives a more informative picture than reporting only the highest score of 0.86."
+        },
+        {
+            "id": "artifact-and-checkpoint-management",
+            "title": "7. Model Artifacts and Checkpoint Management",
+            "type": "concept",
+            "content": "A model artifact may include learned parameters, architecture configuration, tokenizer or preprocessing assets, label mappings, and other files required for inference. A training checkpoint may additionally include optimizer state, scheduler state, scaler state, and progress information needed to resume training. Save the code revision and configuration alongside artifacts. Use explicit names and checksums, and distinguish intermediate checkpoints from approved release artifacts. Model files should be validated before promotion to another environment. For untrusted artifacts, follow safe loading practices and avoid loading executable or pickle-based content from unknown sources.",
+            "example": "A deployment bundle might contain model weights, a preprocessing configuration, a tokenizer directory, an inference configuration, and an evaluation report. The exact bundle depends on the model architecture and serving system."
+        },
+        {
+            "id": "dataset-lineage",
+            "title": "8. Dataset Versioning and Lineage",
+            "type": "concept",
+            "content": "Dataset lineage records where the data came from, how it was transformed, and which version was used for a run. A dataset identifier may refer to an immutable snapshot, a versioned manifest, a content hash, or a storage location combined with metadata. Record split definitions and preprocessing code because changes to either can alter metrics even when the model code remains unchanged. Data governance may also require access controls, retention limits, and documentation of licensing or consent. Do not assume a path alone identifies an immutable dataset.",
+            "example": "Instead of recording only `data/train`, store a dataset version identifier, manifest checksum, preprocessing version, split seed, and source revision."
+        },
+        {
+            "id": "mlops-lifecycle",
+            "title": "9. From Experiments to MLOps",
+            "type": "concept",
+            "content": "MLOps connects experimentation with repeatable training, validation, release, deployment, and monitoring. A typical workflow checks data quality, trains a model, evaluates it against defined acceptance criteria, registers the artifact, and deploys an approved version. Monitoring then tracks service reliability, latency, input drift, and model-quality signals where labels are available. Automated pipelines can reduce manual errors, but they must still enforce tests, approvals, access control, and rollback procedures. Experiment tracking is one component of this broader lifecycle, not a replacement for reliable software engineering.",
+            "example": "A continuous integration pipeline can run unit tests and a small validation job on a code change, while a separate scheduled pipeline performs full training and registers the result only if acceptance checks pass."
+        },
+        {
+            "id": "tracking-tool-integration",
+            "title": "10. Integrating a Tracking Platform",
+            "type": "concept",
+            "content": "Dedicated experiment-tracking platforms provide searchable runs, metric charts, artifact storage, comparisons, collaboration, and sometimes model registries. The general workflow is similar across tools: initialize a run, log configuration, record metrics during training, upload artifacts, and close the run. Choose a platform based on deployment environment, privacy needs, collaboration requirements, cost, and integration support. Keep the training code's tracking interface small so the underlying service can be changed without rewriting model logic. For offline or restricted environments, a local logger may be sufficient.",
+            "example": "Wrap logging operations behind a small interface such as log_config, log_metrics, and log_artifact. A local JSONL implementation and a hosted tracking backend can then implement the same interface."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "experiment-tracking-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between a metric and an artifact?",
+            "correctAnswer": "A metric is a measured value, while an artifact is a file or other stored output associated with a run.",
+            "solution": "Validation accuracy is a metric. A saved model checkpoint, confusion matrix image, or evaluation report is an artifact."
+        },
+        {
+            "id": "experiment-tracking-ex-2",
+            "type": "practical",
+            "difficulty": "intermediate",
+            "question": "List five pieces of information to record so a training experiment can be reproduced.",
+            "correctAnswer": "Model configuration, hyperparameters, dataset version and split, random seed, and software/code version.",
+            "solution": "Also consider preprocessing, precision mode, hardware, optimizer and scheduler state, evaluation protocol, and the exact training step or epoch."
+        },
+        {
+            "id": "experiment-tracking-ex-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "Three independent runs produce scores 0.80, 0.84, and 0.82. What is the mean score?",
+            "correctAnswer": "0.82.",
+            "solution": "Mean = (0.80 + 0.84 + 0.82) / 3 = 2.46 / 3 = 0.82."
+        },
+        {
+            "id": "experiment-tracking-ex-4",
+            "type": "practical",
+            "difficulty": "advanced",
+            "question": "An experiment has a strong validation score, but the result cannot be reproduced. Name four details to investigate.",
+            "correctAnswer": "Dataset and split version, code revision, configuration and random seeds, and evaluation procedure.",
+            "solution": "Check whether data or preprocessing changed, whether the exact source revision and hyperparameters were recorded, whether randomness and hardware-dependent behavior were controlled, and whether evaluation used the same metric implementation and split."
+        }
+    ],
+    "summary": "Experiment tracking makes machine-learning work auditable and reproducible by linking configuration, metrics, artifacts, code, data, and environment metadata. Fair comparisons require consistent evaluation and often multiple seeds. MLOps extends tracking into validated training pipelines, model registration, controlled deployment, and monitoring.",
+    "relatedTopics": [
+        "pytorch",
+        "mixed-precision",
+        "distributed-training",
+        "data-pipelines",
+        "model-serving",
+        "evaluation-infrastructure"
+    ]
+}

@@ -1,1 +1,183 @@
-{}
+{
+    "id": "module-10-llm-training-alignment-preference-datasets",
+    "moduleId": "module-10-llm-training-alignment",
+    "moduleIndex": 10,
+    "topicIndex": 3,
+    "title": "Preference Dataset Curation",
+    "slug": "preference-datasets",
+    "href": "/curriculum/10-llm-training-alignment/preference-datasets",
+    "filePath": "content/curriculum/10-llm-training-alignment/03-preference-datasets.json",
+    "description": "Learn how human or synthetic preferences are collected, labeled, validated, and transformed into datasets for reward modeling and preference-based language-model alignment.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-10-llm-training-alignment-supervised-fine-tuning"
+    ],
+    "learningObjectives": [
+        "Explain why preference datasets are used in LLM alignment.",
+        "Understand prompt-response comparison records.",
+        "Distinguish pairwise, ranking, and scalar-rating labels.",
+        "Recognize annotator disagreement and ambiguous preferences.",
+        "Identify common data-quality and sampling biases.",
+        "Design a preference-data validation pipeline."
+    ],
+    "sections": [
+        {
+            "id": "preference-data-intro",
+            "title": "What Is Preference Data?",
+            "type": "concept",
+            "content": "Preference data records which of two or more model responses is better for a given prompt according to defined criteria. Instead of supplying only one ideal answer, an annotator compares candidate responses and chooses the preferred one, marks a tie, or assigns a ranking. Preference data is commonly used to train reward models and optimize language models through methods such as RLHF and Direct Preference Optimization. The labels reflect a chosen preference policy, not an objective guarantee that one response is universally correct."
+        },
+        {
+            "id": "why-preferences",
+            "title": "Why Use Preferences?",
+            "type": "concept",
+            "content": "Many language-model behaviors are difficult to capture with a single reference answer. A response can be more useful because it is accurate, clear, appropriately concise, safe, well-structured, or transparent about uncertainty. Pairwise comparisons can be easier for annotators than writing a perfect answer from scratch. However, preferences must be defined carefully: a longer response is not always better, and a confident answer should not be preferred when it contains unsupported claims."
+        },
+        {
+            "id": "preference-record",
+            "title": "Structure of a Preference Record",
+            "type": "concept",
+            "content": "A common record contains a prompt, a chosen response, and a rejected response. It may also store an annotator identifier, rubric version, confidence, task category, model source, and quality-control metadata. Additional context is important when prompts involve previous conversation turns or tool outputs. A robust schema should preserve enough context to interpret the comparison while minimizing unnecessary sensitive information."
+        },
+        {
+            "id": "preference-json",
+            "title": "Example Preference Record",
+            "type": "code",
+            "language": "json",
+            "content": "{\n  \"prompt\": \"Explain why validation data is useful.\",\n  \"chosen\": \"Validation data helps estimate how well a model generalizes during development and supports model selection.\",\n  \"rejected\": \"Validation data is only used to increase training accuracy.\",\n  \"label\": \"chosen_preferred\",\n  \"category\": \"machine_learning_education\",\n  \"annotator_confidence\": 0.92\n}",
+            "explanation": "The chosen answer is preferred because it describes validation data more accurately. Confidence is optional metadata and should not be interpreted as a calibrated probability unless the collection process explicitly supports that interpretation."
+        },
+        {
+            "id": "pairwise-vs-ranking",
+            "title": "Pairwise Comparisons and Rankings",
+            "type": "concept",
+            "content": "Pairwise labeling compares two candidates at a time. Ranking asks an annotator to order several responses, while scalar ratings assign scores according to a rubric. Pairwise comparisons are often straightforward but can become expensive when comparing many candidates. Rankings provide more information per prompt but may be cognitively demanding. Scalar ratings can be useful for separate quality dimensions, although different annotators may interpret rating scales differently."
+        },
+        {
+            "id": "preference-rubric",
+            "title": "Defining an Annotation Rubric",
+            "type": "concept",
+            "content": "An annotation rubric specifies what makes a response preferable. Common dimensions include correctness, relevance, instruction adherence, completeness, clarity, calibration, harmlessness, and format compliance. Rubrics should explain how to handle trade-offs. For instance, a concise accurate answer may be preferable to a long answer with unsupported details. A good rubric defines when to select a tie, when to flag an example as unjudgeable, and how to handle conflicting requirements."
+        },
+        {
+            "id": "annotator-training",
+            "title": "Annotator Training and Calibration",
+            "type": "concept",
+            "content": "Annotators need clear instructions, representative examples, and practice rounds before labeling large datasets. Calibration sessions help identify inconsistent interpretations of the rubric. Periodic audits can detect drift, systematic preferences, and misunderstanding of specialized subject matter. Domain-specific tasks may require expert review. Annotators should be able to flag uncertainty instead of being forced to make an unreliable choice."
+        },
+        {
+            "id": "disagreement",
+            "title": "Annotator Disagreement",
+            "type": "concept",
+            "content": "Different annotators can reasonably prefer different responses because of ambiguity, personal preferences, domain knowledge, or conflicting goals. Disagreement is not always a labeling error. A dataset may preserve multiple judgments, collect additional reviews, or mark the comparison as ambiguous. Agreement statistics can identify problematic items, but a single agreement score does not reveal every source of disagreement or determine which preference is ethically or factually appropriate."
+        },
+        {
+            "id": "ties-and-abstentions",
+            "title": "Ties, Abstentions, and Unjudgeable Examples",
+            "type": "concept",
+            "content": "A tie is appropriate when responses are similarly good under the rubric. An abstention can be appropriate when the prompt is ambiguous, required context is missing, or the annotator lacks sufficient expertise. These outcomes should be represented explicitly rather than silently converted into arbitrary preferences. If a training method only accepts strict pairs, the data-processing stage must document how ties and abstentions are filtered or transformed."
+        },
+        {
+            "id": "preference-bias",
+            "title": "Common Preference Biases",
+            "type": "concept",
+            "content": "Preference datasets can contain position bias, verbosity bias, style bias, model-identity bias, and biases related to language, dialect, or demographic representation. Annotators may favor a polished answer even when its facts are wrong. They may also prefer answers from a familiar model if system identity is visible. Randomizing candidate order, hiding irrelevant model identities, checking factual claims, and auditing subgroup behavior can reduce some of these risks."
+        },
+        {
+            "id": "position-bias",
+            "title": "Detecting Position Bias",
+            "type": "concept",
+            "content": "Position bias occurs when the order in which candidates are presented influences the choice. One way to test for it is to present the same pair in both orders to separate annotators or in controlled audits. If preferences change substantially when the order is reversed, the dataset may be contaminated by presentation effects. Randomization and balanced presentation reduce systematic order effects, although they do not eliminate all annotation biases."
+        },
+        {
+            "id": "sampling",
+            "title": "Sampling Prompts and Candidate Responses",
+            "type": "concept",
+            "content": "Preference data should represent the intended deployment distribution while also covering important edge cases. Sources may include real user prompts with appropriate privacy controls, curated tasks, adversarial examples, and model-generated candidates. If data is drawn only from easy or popular prompts, the resulting model may perform poorly on rare tasks. Sampling plans should track task categories, languages, response lengths, difficulty, and safety-relevant situations."
+        },
+        {
+            "id": "candidate-generation",
+            "title": "Generating Candidate Responses",
+            "type": "concept",
+            "content": "Candidate responses can come from different checkpoints, decoding settings, model families, or human-written answers. Useful comparisons require genuine variation in quality or behavior. If all candidates are nearly identical, the dataset provides little learning signal. If one candidate is obviously nonsensical, comparisons may teach less nuanced preferences. Candidate-generation procedures should be documented because they affect which behaviors are available for selection."
+        },
+        {
+            "id": "data-leakage-and-duplicates",
+            "title": "Duplicates and Data Leakage",
+            "type": "concept",
+            "content": "Repeated prompts and near-duplicate comparisons can overweight particular behaviors. Leakage occurs when evaluation prompts or reference answers influence the preference dataset or its candidate generation. Deduplicate exact and near-duplicate records, preserve dataset provenance, and keep final evaluation sets isolated. Avoid removing all semantically similar examples blindly, because different examples may test genuinely different skills or contexts."
+        },
+        {
+            "id": "privacy-and-sensitive-data",
+            "title": "Privacy and Sensitive Data",
+            "type": "concept",
+            "content": "Preference datasets may contain personal information from prompts or responses. Collection pipelines should minimize data, apply appropriate access controls, redact unnecessary identifiers, and follow applicable privacy and retention requirements. Sensitive examples should be handled according to documented policies. Redaction must preserve the context needed for valid labeling while reducing exposure. Dataset access and downstream use should be auditable."
+        },
+        {
+            "id": "quality-pipeline",
+            "title": "A Preference-Data Quality Pipeline",
+            "type": "concept",
+            "content": "A robust pipeline validates schema and conversation context, removes duplicates, checks for missing or malformed responses, verifies candidate order randomization, applies the rubric, reviews uncertain or high-impact examples, audits factual correctness where possible, and measures category coverage. It should retain provenance and versioning information. Quality checks should operate before training and continue during sampling so that dataset drift and recurring labeling errors can be detected."
+        },
+        {
+            "id": "validate-preference-data",
+            "title": "Validating Preference Records with Python",
+            "type": "code",
+            "language": "python",
+            "content": "def validate_preference(record):\n    required = (\"prompt\", \"chosen\", \"rejected\")\n    if any(not isinstance(record.get(key), str) or not record[key].strip() for key in required):\n        return False\n    if record[\"chosen\"].strip() == record[\"rejected\"].strip():\n        return False\n    return True\n\nrecord = {\"prompt\": \"Explain overfitting.\", \"chosen\": \"A model fits training data too closely.\", \"rejected\": \"Overfitting always improves generalization.\"}\nprint(validate_preference(record))",
+            "explanation": "This basic validator checks required text fields and exact equality between candidate responses. Production validation should also handle ties, context serialization, duplicate detection, policy-sensitive data, label provenance, and factual or rubric-based quality checks."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "pref-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What information does a chosen-rejected preference pair contain?",
+            "correctAnswer": "A prompt and two candidate responses, with one marked as preferred over the other.",
+            "solution": "The pair records a relative preference under a particular rubric or annotation policy."
+        },
+        {
+            "id": "pref-ex-2",
+            "type": "conceptual",
+            "difficulty": "intermediate",
+            "question": "Why might an annotation rubric prefer a short answer over a longer answer?",
+            "correctAnswer": "If the short answer is accurate and complete while the longer answer adds irrelevant or unsupported claims.",
+            "solution": "Preference criteria should reward task-appropriate quality rather than verbosity alone."
+        },
+        {
+            "id": "pref-ex-3",
+            "type": "application",
+            "difficulty": "intermediate",
+            "question": "What is position bias, and how can it be tested?",
+            "correctAnswer": "Position bias is a preference caused by candidate order; test it by reversing presentation order and comparing judgments.",
+            "solution": "Controlled order reversal reveals whether annotators consistently favor the first or second displayed response."
+        },
+        {
+            "id": "pref-ex-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Annotators disagree frequently on open-ended writing prompts. Suggest a response.",
+            "correctAnswer": "Clarify the rubric, allow ties or abstentions, calibrate annotators, retain multiple judgments when useful, and audit ambiguous cases.",
+            "solution": "Disagreement can reflect genuine subjectivity. It should be analyzed rather than automatically resolved by forcing a single label."
+        },
+        {
+            "id": "pref-ex-5",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "Design checks for a preference dataset used to train a reward model.",
+            "correctAnswer": "Validate schema, remove duplicates, audit label consistency and candidate-order effects, check coverage and privacy, review factual claims, and isolate evaluation data.",
+            "solution": "A quality pipeline should assess both technical integrity and the validity of the preferences represented in the labels."
+        }
+    ],
+    "summary": "Preference datasets represent relative judgments between model responses and are central to reward modeling and preference-based alignment. Their usefulness depends on clear rubrics, representative prompts, reliable labels, controlled candidate presentation, privacy protection, and rigorous quality checks. Disagreement and ambiguity should be modeled explicitly instead of being hidden by forced labels.",
+    "relatedTopics": [
+        "module-10-llm-training-alignment-instruction-tuning",
+        "module-10-llm-training-alignment-supervised-fine-tuning",
+        "module-10-llm-training-alignment-rlhf",
+        "module-10-llm-training-alignment-reward-models",
+        "module-10-llm-training-alignment-dpo"
+    ]
+}

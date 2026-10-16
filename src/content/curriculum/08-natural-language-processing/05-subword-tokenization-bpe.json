@@ -1,1 +1,248 @@
-{}
+{
+    "id": "module-08-natural-language-processing-subword-tokenization-bpe",
+    "moduleId": "module-08-natural-language-processing",
+    "moduleIndex": 8,
+    "topicIndex": 5,
+    "title": "Subword Tokenization & Byte-Pair Encoding (BPE)",
+    "slug": "subword-tokenization-bpe",
+    "href": "/curriculum/08-natural-language-processing/subword-tokenization-bpe",
+    "filePath": "content/curriculum/08-natural-language-processing/05-subword-tokenization-bpe.json",
+    "description": "Understand subword tokenization, Byte-Pair Encoding, merge rules, vocabulary learning, unknown-word handling, and the role of subword units in modern language models.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Tokenization Techniques",
+        "Vocabulary Construction",
+        "One-Hot Encoding",
+        "Word Embeddings"
+    ],
+    "learningObjectives": [
+        "Explain why word-level tokenization struggles with rare and unseen words.",
+        "Describe the motivation behind subword tokenization.",
+        "Understand the basic Byte-Pair Encoding training algorithm.",
+        "Manually trace a sequence of BPE merge operations.",
+        "Implement a simplified BPE tokenizer in Python.",
+        "Compare BPE with WordPiece, Unigram, and byte-level tokenization.",
+        "Evaluate vocabulary size, sequence length, and tokenization efficiency."
+    ],
+    "sections": [
+        {
+            "id": "subword-introduction",
+            "title": "What Is Subword Tokenization?",
+            "type": "concept",
+            "content": "Subword tokenization represents text using units that are smaller than complete words but often larger than individual characters. For example, a tokenizer might represent 'unhelpful' as ['un', 'help', 'ful']. The exact segmentation depends on the tokenizer's learned vocabulary. Subword tokenization balances word-level and character-level approaches: common words can remain single tokens, while rare or unfamiliar words can be composed from smaller units. This approach is widely used in modern neural language processing."
+        },
+        {
+            "id": "word-level-limitations",
+            "title": "Why Word-Level Tokenization Is Not Enough",
+            "type": "concept",
+            "content": "A word-level vocabulary can become very large because languages contain inflections, compounds, spelling variants, names, and newly created terms. A vocabulary trained on one corpus may not contain a word encountered during inference. Mapping every unseen word to an unknown token loses distinctions between those words. Adding every possible word is impractical because language is productive and vocabulary requirements change over time. Subword tokenization reduces this problem by reusing known components across many word forms."
+        },
+        {
+            "id": "character-level-limitations",
+            "title": "Why Not Use Only Characters?",
+            "type": "concept",
+            "content": "Character-level tokenization provides broad coverage because words can be constructed from smaller character units. However, it produces long sequences and forces the model to learn many linguistic patterns across multiple character positions. Longer sequences increase computational cost, especially for standard self-attention. Subword tokenization offers a compromise: common sequences of characters become reusable units, reducing sequence length while preserving the ability to represent many unfamiliar words."
+        },
+        {
+            "id": "subword-example",
+            "title": "A Subword Example",
+            "type": "concept",
+            "content": "Consider the words 'play', 'player', 'playing', and 'replaying'. A word-level tokenizer may require four independent entries. A subword tokenizer could reuse pieces such as 'play', 'er', 'ing', and 're', depending on the learned vocabulary. Reusing pieces reduces duplicated vocabulary entries and helps a model share statistical information across related forms. These example boundaries are illustrative; actual tokenizers may split the same words differently."
+        },
+        {
+            "id": "bpe-origin",
+            "title": "What Is Byte-Pair Encoding?",
+            "type": "concept",
+            "content": "Byte-Pair Encoding, commonly called BPE, originated as a data-compression technique and was adapted for subword tokenization. In a simplified NLP version, training begins with small units and repeatedly merges frequent adjacent pairs into larger units. Each merge creates a reusable token. The process continues until a target vocabulary size or merge budget is reached. The learned merge sequence is then applied consistently when tokenizing new text."
+        },
+        {
+            "id": "bpe-intuition",
+            "title": "BPE Intuition",
+            "type": "concept",
+            "content": "Imagine a corpus containing the word 'low' many times. Initially, the word may be represented as ['l', 'o', 'w']. If the pair ('l', 'o') occurs frequently, BPE may merge it into 'lo'. If the resulting pair ('lo', 'w') is also frequent, it may become 'low'. Frequent sequences gradually become larger tokens, while rare words can remain represented by smaller units. The algorithm learns reusable pieces from the statistics of the training corpus."
+        },
+        {
+            "id": "bpe-initialization",
+            "title": "BPE Initialization",
+            "type": "concept",
+            "content": "A simplified character-level BPE tokenizer starts by representing each training word as a sequence of characters. A practical implementation may append an end-of-word marker so that the algorithm can distinguish word boundaries and learn complete-word units. The corpus also needs word frequencies, since a word occurring thousands of times should generally contribute more to pair statistics than a word appearing once. Modern tokenizers may instead start from bytes or use other initial symbol sets."
+        },
+        {
+            "id": "bpe-pair-counts",
+            "title": "Counting Adjacent Pairs",
+            "type": "concept",
+            "content": "At each BPE training iteration, count adjacent symbol pairs across the training corpus. If the current word representation is ['l', 'o', 'w'], its adjacent pairs are ('l', 'o') and ('o', 'w'). The frequency of a pair is the weighted sum of its occurrences across the corpus. The most frequent eligible pair is selected for merging. A deterministic tie-breaking policy is useful for reproducibility because different choices can produce different merge sequences."
+        },
+        {
+            "id": "bpe-pair-counts-code",
+            "title": "Count Adjacent Pairs in Python",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ndef count_pairs(words):\n    pairs = Counter()\n    for symbols, frequency in words.items():\n        for i in range(len(symbols) - 1):\n            pairs[(symbols[i], symbols[i + 1])] += frequency\n    return pairs\n\ncorpus = {\n    (\"l\", \"o\", \"w\"): 5,\n    (\"l\", \"o\", \"w\", \"e\", \"r\"): 2,\n    (\"n\", \"e\", \"w\", \"e\", \"s\", \"t\"): 6\n}\nprint(count_pairs(corpus).most_common())",
+            "explanation": "The function counts adjacent pairs and weights each pair by the frequency of its complete word representation. The input uses tuples to represent sequences of symbols. This is a small educational example of the counting stage in BPE training."
+        },
+        {
+            "id": "bpe-merging",
+            "title": "Applying a BPE Merge",
+            "type": "concept",
+            "content": "After selecting a pair, replace occurrences of that adjacent pair with a merged symbol. For example, merging ('l', 'o') changes ['l', 'o', 'w'] into ['lo', 'w']. The same merge is applied throughout the training representation. Pair counting then runs again on the updated sequences. The order of merges matters because an earlier merge can create new adjacent pairs that did not previously exist."
+        },
+        {
+            "id": "bpe-worked-example",
+            "title": "Worked Example of BPE",
+            "type": "concept",
+            "content": "Suppose the corpus contains 'low' five times and 'lower' twice. Starting with characters, the representation of 'low' is ['l', 'o', 'w'] and 'lower' is ['l', 'o', 'w', 'e', 'r']. The pair ('l', 'o') occurs seven times, and ('o', 'w') also occurs seven times. If the tie-breaking rule selects ('l', 'o'), it becomes 'lo'. The updated sequences contain ('lo', 'w'), which may then be selected and merged into 'low'. The example demonstrates that merge decisions depend on corpus frequencies and tie-breaking."
+        },
+        {
+            "id": "bpe-training-algorithm",
+            "title": "The BPE Training Algorithm",
+            "type": "concept",
+            "content": "A simplified BPE training procedure is: normalize the training corpus, represent words using initial symbols, count adjacent pairs with word-frequency weights, select the most frequent pair, merge that pair throughout the corpus, record the merge, and repeat until the stopping condition is reached. The stopping condition may be a target vocabulary size or a fixed number of merges. The learned vocabulary and ordered merge rules are saved for use during inference."
+        },
+        {
+            "id": "bpe-pseudocode",
+            "title": "BPE Pseudocode",
+            "type": "concept",
+            "content": "Initialize the symbol sequences from the training corpus. While the vocabulary has not reached its target size, count all adjacent pairs, choose the pair with the highest count, merge its occurrences, and append the pair to the ordered merge list. If no eligible pairs remain, stop. During inference, start from the tokenizer's initial symbols and apply the learned merge rules in their trained order. Real implementations include additional details for Unicode, special tokens, word boundaries, and efficient data structures."
+        },
+        {
+            "id": "bpe-implementation",
+            "title": "A Simplified BPE Merge Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "from collections import Counter\n\ndef get_pair_counts(words):\n    pairs = Counter()\n    for symbols, frequency in words.items():\n        for i in range(len(symbols) - 1):\n            pairs[(symbols[i], symbols[i + 1])] += frequency\n    return pairs\n\ndef merge_pair(words, pair):\n    merged_words = {}\n    merged_symbol = \"\".join(pair)\n    for symbols, frequency in words.items():\n        result = []\n        i = 0\n        while i < len(symbols):\n            if i + 1 < len(symbols) and (symbols[i], symbols[i + 1]) == pair:\n                result.append(merged_symbol)\n                i += 2\n            else:\n                result.append(symbols[i])\n                i += 1\n        merged_words[tuple(result)] = merged_words.get(tuple(result), 0) + frequency\n    return merged_words\n\nwords = {(\"l\", \"o\", \"w\"): 5, (\"l\", \"o\", \"w\", \"e\", \"r\"): 2}\npair = get_pair_counts(words).most_common(1)[0][0]\nprint(\"Selected pair:\", pair)\nprint(merge_pair(words, pair))",
+            "explanation": "This implementation counts pairs, chooses the most frequent pair, and merges its occurrences. It is deliberately small and educational. A complete tokenizer must track merge order, use robust symbol representations, handle word boundaries, and define deterministic tie-breaking."
+        },
+        {
+            "id": "bpe-vocabulary",
+            "title": "Building the BPE Vocabulary",
+            "type": "concept",
+            "content": "The vocabulary contains initial symbols and the new symbols created by merge operations, subject to the tokenizer's implementation and vocabulary policy. Each vocabulary token receives an ID. The vocabulary and ordered merge rules jointly determine how text is segmented. Saving only the vocabulary may be insufficient for a tokenizer whose segmentation depends on merge ranks. Model weights must be paired with the exact tokenizer configuration they were trained with."
+        },
+        {
+            "id": "bpe-inference",
+            "title": "Applying BPE During Inference",
+            "type": "concept",
+            "content": "During inference, the tokenizer normalizes input according to its configuration, converts the text into initial symbols, and applies the learned merge rules. The final symbols are mapped to token IDs. Training and inference must use compatible normalization and symbol handling. A model trained with one tokenizer cannot safely be given IDs generated from an unrelated vocabulary because each ID refers to a specific learned token representation."
+        },
+        {
+            "id": "byte-level-bpe",
+            "title": "Byte-Level BPE",
+            "type": "concept",
+            "content": "Byte-level BPE begins with a representation based on bytes rather than a limited set of characters. This allows arbitrary input text to be represented using a finite initial alphabet, including unusual Unicode sequences. UTF-8 text is converted into bytes, and BPE merges frequent byte sequences. The approach reduces reliance on unknown tokens, but a byte-level unit does not necessarily correspond to a human-perceived character. Special handling is still required for normalization and special tokens."
+        },
+        {
+            "id": "wordpiece",
+            "title": "WordPiece Tokenization",
+            "type": "concept",
+            "content": "WordPiece is a related subword-tokenization method used by models such as BERT. It learns a subword vocabulary using an objective different from ordinary frequency-based BPE merging. In many WordPiece tokenizers, continuation pieces use a marker such as '##'. For example, a word might be represented by a root piece and one or more continuation pieces. The exact segmentation depends on the learned vocabulary and scoring procedure."
+        },
+        {
+            "id": "unigram-tokenization",
+            "title": "Unigram Language Model Tokenization",
+            "type": "concept",
+            "content": "Unigram tokenization begins with a larger candidate vocabulary and estimates a probability distribution over subword units. It removes or prunes candidates while trying to preserve the quality of the tokenization objective. Unlike a single deterministic BPE merge sequence, a unigram tokenizer can support multiple candidate segmentations with associated probabilities. SentencePiece is a toolkit that supports both Unigram and BPE-based tokenization approaches."
+        },
+        {
+            "id": "bpe-wordpiece-unigram-comparison",
+            "title": "Comparing Subword Algorithms",
+            "type": "concept",
+            "content": "BPE repeatedly merges frequent adjacent pairs. WordPiece learns a vocabulary through a different scoring criterion and is associated with continuation markers in common implementations. Unigram tokenization estimates probabilities over candidate subwords and prunes the vocabulary. All three aim to balance vocabulary size and text coverage, but they differ in training procedures, segmentation behavior, and implementation details. A tokenizer should be evaluated as part of its complete model pipeline."
+        },
+        {
+            "id": "vocabulary-size-tradeoffs",
+            "title": "Vocabulary Size and Sequence Length",
+            "type": "concept",
+            "content": "A larger subword vocabulary can represent more frequent sequences as single tokens, reducing the number of tokens in common text. However, it requires more embedding parameters and may allocate capacity to rare units. A smaller vocabulary reduces the number of token types but often produces longer sequences. Because standard full self-attention scales quadratically with sequence length, reducing sequence length can have substantial computational benefits."
+        },
+        {
+            "id": "subword-tokenization-multilingual",
+            "title": "Subword Tokenization for Multilingual Text",
+            "type": "concept",
+            "content": "Multilingual subword vocabularies must share capacity across different scripts, languages, and morphological patterns. A shared vocabulary can allow some cross-lingual reuse, but high-resource languages may dominate the training statistics. Some languages may therefore require more tokens to represent equivalent text. Evaluate token counts, text coverage, and downstream performance separately for languages represented in the corpus."
+        },
+        {
+            "id": "subword-tokenization-limitations",
+            "title": "Limitations of Subword Tokenization",
+            "type": "concept",
+            "content": "Subword boundaries do not always correspond to linguistic morphemes. A tokenizer may split a meaningful unit in an unintuitive way, and token counts can differ substantially across languages. Some tokenizers also handle whitespace, punctuation, and rare Unicode characters in ways that surprise users. Tokenization does not itself solve semantic understanding, and poor training data can result in an inefficient or imbalanced vocabulary."
+        },
+        {
+            "id": "inspect-pretrained-tokenizer",
+            "title": "Inspecting a Pretrained Tokenizer",
+            "type": "code",
+            "language": "python",
+            "content": "from transformers import AutoTokenizer\n\ntokenizer = AutoTokenizer.from_pretrained(\"bert-base-uncased\")\ntext = \"Tokenization helps language models process unfamiliar words.\"\ntokens = tokenizer.tokenize(text)\nids = tokenizer.convert_tokens_to_ids(tokens)\nprint(\"Tokens:\", tokens)\nprint(\"Token IDs:\", ids)\nprint(\"Reconstructed text:\", tokenizer.decode(ids))",
+            "explanation": "This example inspects a pretrained WordPiece tokenizer through the Transformers library. It requires the transformers package and access to the model files. The displayed segmentation is specific to this tokenizer; a BPE tokenizer may split the same sentence differently."
+        },
+        {
+            "id": "tokenizer-evaluation",
+            "title": "Evaluating a Subword Tokenizer",
+            "type": "concept",
+            "content": "Useful evaluation metrics include average tokens per word, average tokens per document, vocabulary size, unknown-token rate, encoding speed, and downstream task performance. For multilingual systems, measure each language separately. For scientific and programming text, inspect formulas, identifiers, and technical terms. Token-count efficiency alone is insufficient because a tokenizer also needs adequate coverage and must work well with the model's training distribution."
+        },
+        {
+            "id": "subword-best-practices",
+            "title": "Practical Best Practices",
+            "type": "concept",
+            "content": "Use the tokenizer that matches the pretrained model. Save tokenizer files and configuration with trained checkpoints. Evaluate tokenization on representative data before large-scale training. Inspect how rare words, URLs, code, mathematical notation, and multilingual text are segmented. Avoid assuming that every subword is a meaningful linguistic unit. When comparing models, account for differences in tokenization because token counts and context-window usage may not be directly comparable."
+        },
+        {
+            "id": "subword-summary",
+            "title": "Key Takeaways",
+            "type": "concept",
+            "content": "Subword tokenization balances the broad coverage of small units with the efficiency of larger units. BPE learns token units by repeatedly merging frequent adjacent symbols. WordPiece and Unigram use different vocabulary-learning procedures. Vocabulary size affects embedding parameters and sequence length, while byte-level approaches provide broad input coverage. The exact tokenizer and merge configuration must remain consistent with the language model."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "bpe-exercise-1",
+            "type": "conceptual",
+            "difficulty": "beginner",
+            "question": "Why is subword tokenization often more robust than word-level tokenization?",
+            "correctAnswer": "It can represent unfamiliar words by combining smaller units already present in its vocabulary.",
+            "solution": "A word-level tokenizer may map an unseen word to an unknown token. Subword tokenization can reuse learned character sequences or byte sequences to represent the unfamiliar word."
+        },
+        {
+            "id": "bpe-exercise-2",
+            "type": "analytical",
+            "difficulty": "intermediate",
+            "question": "If the pair ('a', 'b') appears 15 times and the pair ('b', 'c') appears 9 times, which pair would basic frequency-based BPE select first?",
+            "correctAnswer": "The pair ('a', 'b'), assuming no additional constraints and no tie.",
+            "solution": "Basic BPE selects the most frequent eligible adjacent pair. Since 15 is greater than 9, ('a', 'b') is selected."
+        },
+        {
+            "id": "bpe-exercise-3",
+            "type": "math",
+            "difficulty": "intermediate",
+            "question": "A tokenizer reduces a sequence from 120 tokens to 80 tokens. Approximately what is the ratio of the full self-attention score-matrix sizes after versus before tokenization?",
+            "correctAnswer": "4/9, or approximately 44.4%.",
+            "solution": "The matrix size is proportional to L squared. The ratio is 80² / 120² = 6400 / 14400 = 4/9."
+        },
+        {
+            "id": "bpe-exercise-4",
+            "type": "design",
+            "difficulty": "advanced",
+            "question": "You are training a multilingual language model. Why should tokenizer efficiency be measured separately for different languages?",
+            "correctAnswer": "A shared vocabulary may represent different languages with very different numbers of tokens because of differences in training frequency, scripts, and morphology.",
+            "solution": "Average token count across all languages can hide poor coverage for low-resource languages. Measure token counts and task performance per language to reveal imbalances."
+        },
+        {
+            "id": "bpe-exercise-5",
+            "type": "coding",
+            "difficulty": "intermediate",
+            "question": "Implement a function that merges every non-overlapping occurrence of an adjacent symbol pair in a list.",
+            "correctAnswer": "A left-to-right loop that checks each adjacent pair, appends the merged symbol when it matches, and otherwise appends the current symbol.",
+            "solution": "def merge_symbols(symbols, pair):\n    result = []\n    i = 0\n    while i < len(symbols):\n        if i + 1 < len(symbols) and (symbols[i], symbols[i + 1]) == pair:\n            result.append(''.join(pair))\n            i += 2\n        else:\n            result.append(symbols[i])\n            i += 1\n    return result\n\nprint(merge_symbols(['l', 'o', 'w'], ('l', 'o')))"
+        }
+    ],
+    "summary": "Subword tokenization represents text using reusable pieces between whole words and characters. BPE repeatedly merges frequent adjacent symbols and stores the ordered merge rules for inference. WordPiece and Unigram learn subword vocabularies differently. Subword methods improve coverage of rare words while controlling sequence length, but tokenizer quality still depends on corpus coverage, language balance, vocabulary design, and consistency with the model.",
+    "relatedTopics": [
+        "module-08-natural-language-processing-tokenization",
+        "module-08-natural-language-processing-vocabulary",
+        "module-08-natural-language-processing-word-embeddings",
+        "module-08-natural-language-processing-sentence-representations",
+        "module-09-large-language-models-tokenization"
+    ]
+}

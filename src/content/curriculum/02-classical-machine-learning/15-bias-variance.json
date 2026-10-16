@@ -1,1 +1,140 @@
-{}
+{
+    "id": "bias-variance",
+    "moduleId": "module-02-classical-machine-learning",
+    "moduleIndex": 2,
+    "topicIndex": 15,
+    "title": "Bias-Variance Trade-off",
+    "slug": "bias-variance",
+    "description": "Understand how model assumptions, data variability, irreducible noise, and model complexity affect prediction error and generalization.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4.5,
+    "prerequisites": [
+        "Linear Regression",
+        "Loss Functions",
+        "Regularization",
+        "Decision Trees",
+        "Evaluation Metrics"
+    ],
+    "learningObjectives": [
+        "Explain statistical bias and variance in predictive modeling.",
+        "Distinguish underfitting, overfitting, and irreducible noise.",
+        "Understand the bias-variance decomposition under squared-error assumptions.",
+        "Interpret training and validation learning curves.",
+        "Explain how model complexity affects bias and variance.",
+        "Describe the effect of more training data and regularization.",
+        "Use experiments to diagnose bias-related and variance-related problems.",
+        "Recognize the assumptions and limitations of the classical bias-variance decomposition."
+    ],
+    "sections": [
+        {
+            "id": "bias-variance-intuition",
+            "title": "1. The Bias-Variance Trade-off",
+            "type": "concept",
+            "content": "# Why Do Models Make Prediction Errors?\n\nA machine learning model tries to learn a relationship from a finite sample of data. Even when the underlying relationship is stable, the observed training sample may contain noise and may not represent every possible future observation.\n\nTwo important sources of prediction error are bias and variance.\n\n## Bias\n\nBias describes systematic error introduced when a learning procedure's average prediction differs from the true relationship.\n\nA model with strong assumptions may fail to capture important patterns. For example, fitting a straight line to a strongly curved relationship can systematically miss the true structure.\n\n## Variance\n\nVariance describes how much a learned model's predictions would change if it were trained on different samples from the same data-generating process.\n\nA highly flexible model can react strongly to small changes in the training data. A deep decision tree may choose a different root split or develop different branches when a few training examples change.\n\n## Irreducible Noise\n\nSome uncertainty comes from the data-generating process itself. Measurement error, unpredictable events, or missing explanatory variables may limit how accurately any model can predict an outcome.\n\nEven a well-designed model cannot necessarily eliminate this uncertainty.\n\n## Intuitive Analogy\n\nImagine trying to predict students' exam scores.\n\n- A model that predicts the same average score for every student may be too simple and miss useful patterns.\n- A very flexible model may memorize small quirks in the training sample and make unstable predictions for new students.\n- A better model captures repeatable relationships without reacting excessively to random noise.\n\n## The Trade-off\n\nIncreasing model flexibility often reduces bias but increases variance. Reducing complexity often reduces variance but increases bias.\n\nThis is a useful tendency, not an absolute law for every model or dataset. The objective is to choose a modeling strategy that achieves strong generalization, not to minimize bias or variance in isolation."
+        },
+        {
+            "id": "bias-variance-decomposition",
+            "title": "2. Mathematical Bias-Variance Decomposition",
+            "type": "math",
+            "content": "# Decomposing Expected Squared Prediction Error\n\nThe classical bias-variance decomposition gives a precise interpretation under specific assumptions.\n\nSuppose the target follows:\n\ny = f(x) + epsilon\n\nwhere f(x) is the underlying regression function and epsilon is random noise with mean zero and variance sigma_squared. Assume the training sample is random and the learning procedure produces a prediction f_hat_D(x), where D denotes the sampled training dataset.\n\nFor a fixed input x, the expected squared prediction error can be decomposed as:\n\nE_D,epsilon[(y - f_hat_D(x))^2] = Bias(f_hat_D(x))^2 + Variance(f_hat_D(x)) + sigma_squared\n\nwhere:\n\nBias(f_hat_D(x)) = E_D[f_hat_D(x)] - f(x)\n\nVariance(f_hat_D(x)) = E_D[(f_hat_D(x) - E_D[f_hat_D(x)])^2]\n\nThe expectation is over different possible training datasets, and the noise term represents irreducible target uncertainty under the stated assumptions.\n\n## Interpreting the Terms\n\n### Squared Bias\n\nIf the learning algorithm consistently predicts too low or too high at a particular x, its average prediction differs from f(x). Squaring the difference makes its contribution nonnegative.\n\n### Variance\n\nIf different training samples produce very different predictions at the same x, the prediction variance is high.\n\n### Irreducible Noise\n\nEven if a model perfectly estimates f(x), an unpredictable noise term can prevent perfect observation-level predictions.\n\n## Why Is the Decomposition Useful?\n\nIt explains why reducing training error does not always improve test performance. A more flexible model may reduce systematic approximation error but become more sensitive to the training sample.\n\n## Important Assumptions\n\nThis classic additive decomposition is most directly applicable to squared-error regression with the stated noise assumptions. Bias and variance remain useful concepts in other settings, but the exact decomposition changes for other losses, classification problems, or different data-generating assumptions.\n\n## Expected Error Versus One Test Score\n\nBias and variance describe behavior over possible training datasets. A single train-test split provides only one noisy view of that behavior. Repeated splits or cross-validation can help assess how sensitive a model is to sample variation, although they do not remove all uncertainty."
+        },
+        {
+            "id": "model-complexity",
+            "title": "3. How Model Complexity Affects Bias and Variance",
+            "type": "concept",
+            "content": "# The Complexity Curve\n\nConsider fitting a polynomial to data generated by a curved relationship.\n\nA degree-one polynomial is a straight line. It may be too simple to capture the relationship. A high-degree polynomial can fit the training observations very closely but may oscillate dramatically between points.\n\nThis illustrates how model complexity can affect generalization.\n\n## Low Complexity\n\nA model with limited flexibility may have:\n\n- High bias because important relationships cannot be represented.\n- Relatively low variance because small sample changes have limited influence.\n- High training error when it cannot fit the training pattern.\n- High validation error due to systematic underfitting.\n\n## High Complexity\n\nA highly flexible model may have:\n\n- Lower training error.\n- Lower approximation bias when the model can represent complex patterns.\n- Higher variance because the fit depends strongly on sample details.\n- Validation error that may increase after a certain point.\n\n## Intermediate Complexity\n\nA suitable model balances these effects. Its training error may not be minimal, but its validation error can be lower than that of a more complex alternative.\n\n## Examples Across Algorithms\n\n### Decision Trees\n\nA shallow tree may miss interactions and threshold patterns. A deep tree can fit very specific training observations. Depth and leaf-size constraints influence the balance.\n\n### Polynomial Regression\n\nLow polynomial degree constrains the shape. Higher degrees allow more flexibility but can produce unstable curves, particularly near data boundaries.\n\n### Regularized Linear Models\n\nStrong regularization shrinks coefficients and constrains the fitted function. This can reduce variance but increase bias if the true relationship requires larger coefficients or additional flexibility.\n\n### K-Nearest Neighbors\n\nA very small number of neighbors can produce locally unstable predictions. A larger number smooths predictions but may blur important local structure.\n\n## Complexity Is Not Just Parameter Count\n\nEffective complexity depends on the algorithm, regularization, sample size, noise level, and data structure. Two models with the same number of parameters can generalize differently because their assumptions and training procedures differ."
+        },
+        {
+            "id": "learning-curves-diagnosis",
+            "title": "4. Diagnosing Bias and Variance with Learning Curves",
+            "type": "concept",
+            "content": "# Learning Curves\n\nLearning curves show how model performance changes as the amount of training data or the number of training iterations changes.\n\nFor diagnosing bias and variance, it is useful to compare training and validation error as the training-set size increases.\n\n## High-Bias Pattern\n\nTypical signs include:\n\n- Training error is relatively high.\n- Validation error is also relatively high.\n- The gap between training and validation errors is often small.\n- Adding more data may have limited benefit if the model remains too restrictive.\n\nPossible interventions include adding useful features, increasing model flexibility, reducing excessive regularization, or improving feature representation.\n\n## High-Variance Pattern\n\nTypical signs include:\n\n- Training error is low.\n- Validation error is noticeably higher.\n- There is a substantial generalization gap.\n- More representative training data may improve stability.\n\nPossible interventions include increasing regularization, reducing model complexity, improving data quality, removing leakage-prone features, or gathering more representative examples.\n\n## A Caveat\n\nThese patterns are diagnostic clues, not proofs. A large gap can also arise from distribution mismatch, leakage, incorrect validation design, or differences between training and validation difficulty.\n\n## Validation Error Versus Training-Set Size\n\nAs training data increases, validation error often improves and the train-validation gap may shrink. However, the amount of improvement depends on whether new data provides useful coverage and whether the model class is appropriate.\n\nMore data does not automatically solve systematic bias or a mismatch between training and deployment distributions.\n\n## Training Duration\n\nFor iterative models, training loss may continue decreasing while validation loss eventually rises. This is one reason early stopping can help. The phenomenon is related to overfitting, although learning dynamics can be more complex than a simple two-term bias-variance picture.\n\n## A Practical Diagnostic Procedure\n\n1. Verify that train and validation data are correctly separated.\n2. Compare training and validation metrics using the same evaluation definition.\n3. Plot performance against training-set size or model complexity.\n4. Inspect examples where errors occur.\n5. Change one major modeling factor at a time.\n6. Confirm improvement on validation data before evaluating the final test set."
+        },
+        {
+            "id": "bias-variance-interventions",
+            "title": "5. Reducing Bias and Variance",
+            "type": "concept",
+            "content": "# Interventions for Better Generalization\n\nThe appropriate intervention depends on the error pattern. Applying a technique without diagnosing the problem can make performance worse.\n\n## If Bias Is Too High\n\nConsider:\n\n- Increasing model flexibility.\n- Adding meaningful features or interactions.\n- Reducing excessive regularization.\n- Improving the representation of nonlinear relationships.\n- Fixing underfitting caused by inappropriate preprocessing.\n\nA more flexible model is not guaranteed to work better. It must be supported by enough data and evaluated on unseen examples.\n\n## If Variance Is Too High\n\nConsider:\n\n- Collecting more representative training data.\n- Increasing regularization.\n- Limiting model complexity.\n- Using feature selection when appropriate.\n- Averaging multiple models, for example through bagging or random forests.\n- Improving data quality and removing accidental leakage.\n\n## The Role of Regularization\n\nRegularization constrains the learned model. In many settings, increasing regularization reduces variance but introduces more bias. Selecting a suitable strength requires validation.\n\n## The Role of More Data\n\nMore independent and representative training examples often reduce the instability caused by sampling variation. However, more noisy, duplicated, biased, or distributionally mismatched data may not help and can sometimes make the pipeline worse.\n\n## The Role of Ensembles\n\nBagging and random forests average predictions from multiple models trained on randomized versions of the learning problem. This can reduce variance when model errors are not perfectly correlated.\n\nBoosting builds models sequentially to improve an additive prediction function. Depending on the algorithm and settings, it can reduce bias and improve accuracy, but aggressive boosting can still overfit.\n\n## Do Not Optimize One Error Source in Isolation\n\nA low-bias model with extreme variance may generalize poorly. A low-variance model with severe bias may also generalize poorly. The goal is to improve expected performance on the intended deployment distribution."
+        },
+        {
+            "id": "bias-variance-experiment",
+            "title": "6. Experiment: Polynomial Complexity and Generalization",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.preprocessing import PolynomialFeatures, StandardScaler\nfrom sklearn.linear_model import LinearRegression, Ridge\nfrom sklearn.metrics import mean_squared_error\n\nrng = np.random.default_rng(42)\nX = np.sort(rng.uniform(-3, 3, size=180)).reshape(-1, 1)\ny = np.sin(X[:, 0]) + rng.normal(0, 0.25, size=len(X))\n\nX_train, X_val, y_train, y_val = train_test_split(\n    X, y, test_size=0.3, random_state=42\n)\n\nfor degree in [1, 2, 4, 8, 12, 18]:\n    model = make_pipeline(\n        PolynomialFeatures(degree=degree, include_bias=False),\n        StandardScaler(),\n        Ridge(alpha=0.1)\n    )\n    model.fit(X_train, y_train)\n\n    train_pred = model.predict(X_train)\n    val_pred = model.predict(X_val)\n\n    train_mse = mean_squared_error(y_train, train_pred)\n    val_mse = mean_squared_error(y_val, val_pred)\n\n    print(\n        f'Degree={degree:2d} | '\n        f'Train MSE={train_mse:.4f} | '\n        f'Validation MSE={val_mse:.4f}'\n    )",
+            "explanation": "The experiment illustrates how model flexibility and regularization interact. The exact results depend on the sampled data and software implementation. Higher degree does not guarantee worse validation performance for every dataset. Repeat the experiment with several seeds or cross-validation to assess stability. The scaler and polynomial transformation are fitted within the pipeline using training data only."
+        },
+        {
+            "id": "bias-variance-limitations",
+            "title": "7. Limitations and Misinterpretations",
+            "type": "concept",
+            "content": "# Common Misinterpretations\n\n**Misinterpretation 1: Every complex model has high variance.** Complexity often increases variance, but data volume, regularization, architecture, and training procedure all matter.\n\n**Misinterpretation 2: Every simple model has high bias.** Simplicity alone does not imply poor fit. If the underlying relationship is simple, a simple model may perform very well.\n\n**Misinterpretation 3: More training data always fixes overfitting.** Additional representative data can help, but poor labels, distribution shift, leakage, and model misspecification require different interventions.\n\n**Misinterpretation 4: The lowest training error is the best model.** Training error alone does not measure generalization.\n\n**Misinterpretation 5: The classical equation applies unchanged to every metric.** The familiar additive decomposition is derived under specific squared-error assumptions. Classification loss, F1-score, and other metrics require different analyses.\n\n**Misinterpretation 6: Bias and variance are directly measured by the training-validation gap.** The gap is a useful diagnostic, but it is not itself a direct mathematical decomposition of bias and variance.\n\n## A Strong Experimental Habit\n\nKeep a record of model complexity, regularization, training performance, validation performance, and data-split strategy. Change one major factor at a time where possible. Use repeated validation or cross-validation when sample variability is important.\n\nThe trade-off is a framework for reasoning about model behavior, not a substitute for carefully designed experiments."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "bv-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the difference between bias and variance in machine learning?",
+            "correctAnswer": "Bias describes systematic differences between the average learned prediction and the underlying relationship. Variance describes how much predictions change across different training samples.",
+            "solution": "A model with high bias may systematically miss important patterns. A model with high variance may fit different training samples in substantially different ways. Both can contribute to poor generalization."
+        },
+        {
+            "id": "bv-ex-2",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A linear model has high training error and similarly high validation error. What might this indicate?",
+            "correctAnswer": "It may indicate high bias or underfitting, although data quality, feature representation, and evaluation design should also be checked.",
+            "solution": "A small train-validation gap combined with high errors on both sets is consistent with a model that cannot capture the relationship. Consider useful features, interactions, nonlinear transformations, a more flexible model, or less regularization. First verify that the data and metrics are correct."
+        },
+        {
+            "id": "bv-ex-3",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "A deep decision tree has near-zero training error but much higher validation error. Which error pattern does this suggest, and what interventions could help?",
+            "correctAnswer": "It suggests a high-variance or overfitting pattern. Limit depth, increase minimum leaf size, prune the tree, collect more representative data, or try an ensemble.",
+            "solution": "The model fits training observations closely but does not generalize equally well. Complexity constraints can reduce sensitivity to individual examples. Use cross-validation to select the constraints and inspect whether data leakage or distribution mismatch is contributing to the gap."
+        },
+        {
+            "id": "bv-ex-4",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "State the classical bias-variance decomposition for squared-error regression and explain its assumptions at a high level.",
+            "correctAnswer": "Expected squared prediction error equals squared bias plus prediction variance plus irreducible noise under a model such as y = f(x) + epsilon with zero-mean noise of fixed variance.",
+            "solution": "For a fixed input x, the expected squared error over random training samples and target noise can be decomposed into the squared difference between the average prediction and f(x), the variance of predictions across training samples, and the noise variance. The exact formula relies on the stated regression and noise assumptions and should not be applied unchanged to every loss or classification metric."
+        },
+        {
+            "id": "bv-ex-5",
+            "type": "application",
+            "difficulty": "hard",
+            "question": "A model has low training error and high validation error. Would collecting more data necessarily solve the problem?",
+            "correctAnswer": "No. More representative data may reduce variance, but distribution mismatch, leakage, incorrect labels, or model misspecification can require different solutions.",
+            "solution": "If the model is unstable because the training sample is small, additional representative observations may help. However, if training and validation come from different distributions, the split or deployment environment must be investigated. If labels are incorrect or preprocessing leaks information, more data alone will not fix the pipeline."
+        },
+        {
+            "id": "bv-ex-6",
+            "type": "analysis",
+            "difficulty": "medium",
+            "question": "Why might a model with slightly higher training error achieve lower validation error than a more flexible model?",
+            "correctAnswer": "The simpler or more regularized model may fit less noise and have lower variance, producing better predictions on unseen observations.",
+            "solution": "A flexible model can reduce training error by adapting to sample-specific fluctuations. If those fluctuations do not repeat in future data, they hurt generalization. A constrained model can accept a little more training error in exchange for more stable predictions."
+        }
+    ],
+    "summary": [
+        "Bias reflects systematic modeling error, while variance reflects sensitivity to the training sample.",
+        "Irreducible noise limits prediction accuracy even when the underlying relationship is modeled well.",
+        "Under squared-error assumptions, expected prediction error can be decomposed into squared bias, variance, and noise.",
+        "Increasing complexity often reduces bias while increasing variance, but the relationship depends on the model and data.",
+        "Learning curves help diagnose possible underfitting and overfitting.",
+        "Regularization, representative training data, complexity controls, and ensembles can improve generalization.",
+        "The bias-variance framework guides experiments but does not replace sound evaluation."
+    ],
+    "relatedTopics": [
+        "regularization",
+        "decision-trees",
+        "random-forests",
+        "evaluation-metrics",
+        "overfitting-underfitting"
+    ]
+}

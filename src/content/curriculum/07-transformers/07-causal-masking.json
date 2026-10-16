@@ -1,1 +1,200 @@
-{}
+{
+    "id": "module-07-transformers-causal-masking",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 7,
+    "title": "Causal Masking Mechanics",
+    "slug": "causal-masking",
+    "href": "/curriculum/07-transformers/causal-masking",
+    "filePath": "content/curriculum/07-transformers/07-causal-masking.json",
+    "description": "Master causal attention masks, triangular masking, information leakage prevention, padding masks, shifted language-model targets, efficient attention implementations, and debugging strategies.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-06-attention/masked-attention",
+        "module-06-attention/scaled-dot-product-attention",
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/decoder"
+    ],
+    "learningObjectives": [
+        "Explain why causal masking is essential for autoregressive language models.",
+        "Derive the mathematical condition for valid causal attention.",
+        "Construct a lower-triangular attention pattern.",
+        "Distinguish causal masks from padding masks.",
+        "Explain how causal masking prevents future-token leakage.",
+        "Align decoder inputs and next-token targets correctly.",
+        "Implement causal masking using PyTorch.",
+        "Understand common attention API mask conventions.",
+        "Debug masking errors and test causal behavior.",
+        "Explain the role of causal masking during training and generation."
+    ],
+    "sections": [
+        {
+            "id": "causal-mask-introduction",
+            "title": "1. What Is Causal Masking?",
+            "type": "concept",
+            "content": "Causal masking restricts which sequence positions may contribute to a token's attention output. In autoregressive language modeling, the representation at position i must not access future target positions. A causal mask blocks attention from query position i to key position j whenever j is greater than i. It allows access to the current position and permitted earlier positions. This ensures that each position is computed from a prefix rather than from the complete future sequence. Causal masking is a fundamental component of decoder-only language models and is also used in the masked self-attention sublayer of conventional encoder-decoder decoders."
+        },
+        {
+            "id": "causal-formal-definition",
+            "title": "2. Formal Definition",
+            "type": "math",
+            "content": "Let S be the unmasked attention score matrix, where Sij = qi · kj / sqrt(dk). Define a causal mask M such that Mij = 0 when j is less than or equal to i, and Mij = negative infinity when j is greater than i. The masked attention weights are A = softmax(S + M), with softmax applied over the key dimension. The output is O = AV. Masked entries receive zero probability in exact arithmetic because their logits are negative infinity. Implementations may use Boolean masks or sufficiently negative finite values depending on the API and numerical requirements. The mask must be applied before softmax so forbidden positions do not receive attention probability."
+        },
+        {
+            "id": "causal-four-token-matrix",
+            "title": "3. The Four-Token Causal Pattern",
+            "type": "example",
+            "content": "For a sequence with four positions, the allowed attention pattern is lower triangular. Query 1 can attend to key 1. Query 2 can attend to keys 1 and 2. Query 3 can attend to keys 1, 2, and 3. Query 4 can attend to keys 1, 2, 3, and 4. In matrix form, with rows as queries and columns as keys, the allowed entries are [[1,0,0,0],[1,1,0,0],[1,1,1,0],[1,1,1,1]], where 1 means allowed. The zeros in the upper triangle indicate forbidden future positions. This matrix is a structural rule; the actual attention probabilities at allowed positions are still determined by learned query-key scores."
+        },
+        {
+            "id": "causal-information-leakage",
+            "title": "4. Preventing Future-Token Leakage",
+            "type": "concept",
+            "content": "Suppose a training example is 'A student reads a book'. At the position used to predict 'reads', the model should not see the future word 'book' through self-attention. If future positions are visible, the model can exploit information unavailable when generating text one token at a time. Training loss may appear unusually good even though the inference procedure cannot reproduce the same information flow. Causal masking prevents this direct attention pathway from future positions. Correct target shifting is also required: masking alone cannot repair a data pipeline that supplies the target token through an unintended input feature or misaligns labels."
+        },
+        {
+            "id": "causal-input-target-shift",
+            "title": "5. Input and Target Shifting",
+            "type": "math",
+            "content": "For a token sequence [t0, t1, t2, t3], a standard next-token training example can use input [t0, t1, t2] and targets [t1, t2, t3]. The hidden state at the first input position predicts t1, the second predicts t2, and the third predicts t3. Another implementation may pass the full sequence and align logits and labels internally, but the underlying next-token relationship remains the same. Causal masking allows all positions to be trained in parallel because each position is prevented from using future inputs. The target shift and attention mask jointly implement the intended autoregressive dependency."
+        },
+        {
+            "id": "causal-padding-difference",
+            "title": "6. Causal Mask vs. Padding Mask",
+            "type": "concept",
+            "content": "A causal mask controls which positions may be attended to based on sequence order. A padding mask controls which positions are invalid because they are padding or otherwise unavailable. They solve different problems. For a decoder batch containing sequences of different lengths, a model may need both restrictions: future target positions are blocked by the causal mask, and padded key positions are blocked by the padding mask. Framework APIs differ in how masks are combined and in whether True means allowed or blocked. A mask with the correct shape can still be incorrect if its logical convention is misunderstood."
+        },
+        {
+            "id": "causal-mask-shapes",
+            "title": "7. Mask Tensor Shapes",
+            "type": "math",
+            "content": "For a single sequence of length T, a basic causal mask has shape (T, T). For multi-head attention, the scores often have shape (B, H, T, T), and the causal mask can be broadcast over batch and head dimensions. A key-padding mask commonly has shape (B, T). The exact required shape depends on the attention function. For cross-attention, query length Tq and context length Tk can differ, so the score shape is (B, H, Tq, Tk). A causal mask for a decoder self-attention layer is typically square, while a context padding mask follows the source key length. Never assume every mask uses the same dimensions."
+        },
+        {
+            "id": "causal-softmax-axis",
+            "title": "8. The Importance of the Softmax Dimension",
+            "type": "concept",
+            "content": "Attention softmax is normally applied over the key or context dimension. Each query distributes its attention probability across the positions it is permitted to use. If softmax is accidentally applied over the query dimension, the resulting normalization represents a different computation. A reliable test is to sum the attention weights across the final key dimension for every query row. Rows with at least one valid key should sum approximately to one, subject to numerical precision. Forbidden entries should have probability near zero. A fully masked query row is problematic because softmax over all negative-infinity values is undefined in common implementations; avoid creating such rows or handle them explicitly."
+        },
+        {
+            "id": "causal-pytorch-mask",
+            "title": "9. Construct a Causal Mask in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\n\ndef make_causal_mask(length, device=None):\n    # True means blocked for torch.nn.MultiheadAttention.\n    return torch.triu(\n        torch.ones(length, length, dtype=torch.bool, device=device),\n        diagonal=1\n    )\n\n\nlength = 4\nmask = make_causal_mask(length)\nprint(mask.int())\n\n# True entries are future positions and must not be attended to.\nassert mask[0, 1]\nassert mask[0, 3]\nassert not mask[2, 1]\nassert not mask[2, 2]",
+            "explanation": "torch.triu with diagonal=1 marks entries strictly above the main diagonal. In torch.nn.MultiheadAttention, True in a Boolean attn_mask means that the corresponding query-key pair is blocked. Other APIs may use different conventions, so the meaning must be checked when changing functions."
+        },
+        {
+            "id": "causal-pytorch-attention",
+            "title": "10. Apply Causal Masking with MultiheadAttention",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\nbatch_size = 2\nsequence_length = 5\nd_model = 32\nnum_heads = 4\n\nx = torch.randn(batch_size, sequence_length, d_model)\ncausal_mask = torch.triu(\n    torch.ones(sequence_length, sequence_length, dtype=torch.bool),\n    diagonal=1\n)\n\nattention = nn.MultiheadAttention(\n    embed_dim=d_model,\n    num_heads=num_heads,\n    batch_first=True\n)\n\noutput, weights = attention(\n    x, x, x,\n    attn_mask=causal_mask,\n    need_weights=True,\n    average_attn_weights=False\n)\n\nprint(\"Output shape:\", output.shape)\nprint(\"Weights shape:\", weights.shape)\nprint(\"Future attention:\", weights[..., 0, 1:].abs().max().item())",
+            "explanation": "The example returns per-head attention weights. The first query is not allowed to attend to later positions, so the corresponding future weights should be zero up to numerical precision. For an actual decoder, combine causal masking with the appropriate padding handling and ensure that fully padded key rows are not passed into softmax."
+        },
+        {
+            "id": "causal-padding-code",
+            "title": "11. Combining Causal and Padding Masks",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\nbatch_size = 2\nsequence_length = 5\nd_model = 32\n\nx = torch.randn(batch_size, sequence_length, d_model)\n\n# In key_padding_mask, True means ignore this key position.\nkey_padding_mask = torch.tensor([\n    [False, False, False, False, False],\n    [False, False, False, True, True]\n])\n\ncausal_mask = torch.triu(\n    torch.ones(sequence_length, sequence_length, dtype=torch.bool),\n    diagonal=1\n)\n\nlayer = nn.MultiheadAttention(\n    d_model, num_heads=4, batch_first=True\n)\noutput, weights = layer(\n    x, x, x,\n    attn_mask=causal_mask,\n    key_padding_mask=key_padding_mask,\n    need_weights=True,\n    average_attn_weights=False\n)\nprint(output.shape)\nprint(weights.shape)",
+            "explanation": "For this API, the causal attn_mask blocks future query-key pairs and the key_padding_mask ignores padded key positions. PyTorch may warn about mismatched mask types in some versions; using matching mask types or a supported optimized causal API can be preferable. Padded query outputs are not automatically guaranteed to be zero merely because padded keys are masked."
+        },
+        {
+            "id": "causal-leakage-test",
+            "title": "12. Test Whether Future Tokens Affect Earlier Outputs",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\ntorch.manual_seed(7)\nlayer = nn.MultiheadAttention(\n    embed_dim=16,\n    num_heads=4,\n    batch_first=True,\n    dropout=0.0\n)\nlayer.eval()\n\nx1 = torch.randn(1, 5, 16)\nx2 = x1.clone()\nx2[:, 4, :] = torch.randn(1, 16) * 100.0\n\nmask = torch.triu(\n    torch.ones(5, 5, dtype=torch.bool),\n    diagonal=1\n)\n\nwith torch.no_grad():\n    y1, _ = layer(x1, x1, x1, attn_mask=mask, need_weights=False)\n    y2, _ = layer(x2, x2, x2, attn_mask=mask, need_weights=False)\n\nprint(\"Earlier positions remain unchanged:\",\n      torch.allclose(y1[:, :4], y2[:, :4], atol=1e-5))",
+            "explanation": "The test changes only the final input token and checks that outputs at earlier positions do not change under causal self-attention. It isolates the attention operation in evaluation mode with dropout disabled. In a full decoder stack, the same causal property must hold across every layer and any additional pathway that processes sequence information."
+        },
+        {
+            "id": "causal-efficient-kernels",
+            "title": "13. Causal Masking and Efficient Attention Kernels",
+            "type": "concept",
+            "content": "A straightforward implementation explicitly creates a triangular mask and a dense attention score matrix. This is easy to understand, but it may add memory traffic and overhead for long sequences. Modern frameworks can provide optimized scaled dot-product attention functions or kernels that understand causal attention directly. Such implementations can avoid materializing certain intermediate tensors in ordinary memory and improve performance. Optimized kernels must still implement the same information restriction. Verify causal flags, mask conventions, dropout behavior, and compatibility with the selected precision and device. Performance measurements should include realistic sequence lengths and batch sizes rather than only tiny demonstration inputs."
+        },
+        {
+            "id": "causal-generation",
+            "title": "14. Causal Masking During Generation",
+            "type": "concept",
+            "content": "During autoregressive generation, the model typically receives a prefix and predicts the next token. In a simple full-prefix implementation, causal attention ensures each position can use only its available prefix. In incremental decoding, the key-value cache stores representations from earlier tokens. The new query attends to the cached prefix and the current token, so future positions do not yet exist in the computation. Some optimized cache implementations use special mask handling because the query length can be one while the key length is much larger. A generic square triangular mask may therefore be inappropriate without adjustment when using cached attention."
+        },
+        {
+            "id": "causal-common-errors",
+            "title": "15. Common Causal Masking Errors",
+            "type": "concept",
+            "content": "Error 1: using an upper-triangular allowed mask when the API interprets True as blocked, or vice versa. Error 2: constructing the triangle with the wrong diagonal, unintentionally blocking the current token. Error 3: applying softmax over the query dimension rather than the key dimension. Error 4: masking future positions but forgetting padded keys. Error 5: shifting targets incorrectly, causing predictions to be compared with the wrong tokens. Error 6: using a square mask for an incremental query-key layout without checking its dimensions. Error 7: assuming padded query outputs are zero. Debug by inspecting a small mask matrix, verifying its Boolean meaning, checking attention weights, and testing that changing future tokens does not affect earlier outputs."
+        },
+        {
+            "id": "causal-production-checklist",
+            "title": "16. Production Validation Checklist",
+            "type": "concept",
+            "content": "Before training or deploying a decoder, verify that each query can attend only to permitted keys, that padding positions are handled correctly, and that target labels are aligned with next-token predictions. Confirm the attention API's mask shape and Boolean convention. Test sequence length one, short sequences, padded batches, and batch size one. Check that attention rows sum to approximately one when valid keys exist and that forbidden positions have zero probability. Compare a tiny explicit implementation against the optimized implementation when possible. For cached generation, test that cached and uncached logits agree within expected numerical tolerance. Finally, evaluate the complete model pipeline because correct attention masking alone cannot prevent every form of data leakage."
+        },
+        {
+            "id": "causal-exercise-1",
+            "title": "Exercise 1: Allowed Positions",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "For query position 3 in a causal sequence, using one-based indexing, which key positions are allowed?",
+            "correctAnswer": "Positions 1, 2, and 3.",
+            "solution": "Causal attention permits keys j less than or equal to query position i. Query position 3 can therefore attend to the first three positions but not positions after 3."
+        },
+        {
+            "id": "causal-exercise-2",
+            "title": "Exercise 2: Matrix Entries",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "How many score entries are in a full attention matrix for a sequence of length 8, before masking?",
+            "correctAnswer": "64",
+            "solution": "The score matrix has shape (8, 8), so it contains 8 × 8 = 64 entries. Causal masking blocks some entries but does not change the basic dense matrix shape in a straightforward implementation."
+        },
+        {
+            "id": "causal-exercise-3",
+            "title": "Exercise 3: Identify the Mask",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "A batch contains sequences padded to a common length. Which mask prevents attention to padding tokens?",
+            "correctAnswer": "A padding or key-padding mask.",
+            "solution": "A padding mask marks invalid key positions so they do not contribute attention probability. A causal mask instead blocks future positions according to sequence order."
+        },
+        {
+            "id": "causal-exercise-4",
+            "title": "Exercise 4: Target Shift",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Given token IDs [2, 5, 7, 4, 9], write the input and targets for next-token training using a simple one-token shift.",
+            "correctAnswer": "Input: [2, 5, 7, 4]. Targets: [5, 7, 4, 9].",
+            "solution": "The input excludes the last token, while the target sequence excludes the first token. Each input position is supervised to predict the following token."
+        },
+        {
+            "id": "causal-exercise-5",
+            "title": "Exercise 5: Future Leakage Test",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "When testing causal attention, what should happen to the outputs at positions 1 through 4 if only input position 5 is changed in a five-token sequence?",
+            "correctAnswer": "The outputs at positions 1 through 4 should remain unchanged, assuming the tested computation is causal and no other information pathway exposes the changed token.",
+            "solution": "The causal mask prevents the earlier query positions from attending to position 5. A controlled test in evaluation mode can help detect incorrect mask orientation or accidental future-token access."
+        },
+        {
+            "id": "causal-exercise-6",
+            "title": "Exercise 6: All-Masked Rows",
+            "type": "exercise",
+            "difficulty": "advanced",
+            "question": "Why can an attention query with every key position masked produce NaN values?",
+            "correctAnswer": "Softmax over a row containing only negative-infinity logits is undefined in common implementations.",
+            "solution": "Stable softmax typically subtracts the maximum logit before exponentiation. If every logit is negative infinity, the subtraction can produce undefined values. Implementations should avoid all-masked rows or handle them explicitly."
+        }
+    ],
+    "summary": "Causal masking enforces autoregressive information flow by blocking attention from a query position to future key positions. It works together with correctly shifted next-token targets and may be combined with a padding mask. Correct mask orientation, Boolean conventions, softmax dimensions, and cache-aware handling are essential. Small matrix inspections and future-token leakage tests provide practical ways to validate a decoder implementation.",
+    "relatedTopics": [
+        "module-06-attention/masked-attention",
+        "module-06-attention/scaled-dot-product-attention",
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/decoder",
+        "module-07-transformers/decoder-only-models",
+        "module-07-transformers/build-tiny-transformer-from-scratch"
+    ]
+}

@@ -1,1 +1,175 @@
-{}
+{
+    "id": "module-11-inference-kv-cache",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 6,
+    "title": "KV Cache & Memory Optimization",
+    "slug": "kv-cache",
+    "href": "/curriculum/11-inference/kv-cache",
+    "filePath": "content/curriculum/11-inference/06-kv-cache.json",
+    "description": "Learn how key-value caching avoids repeated attention computation during autoregressive generation and understand its memory, latency, and scalability trade-offs.",
+    "difficulty": "advanced",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "module-06-attention",
+        "module-11-inference-autoregressive-generation"
+    ],
+    "learningObjectives": [
+        "Explain the role of queries, keys, and values in attention.",
+        "Understand why previous keys and values can be reused during generation.",
+        "Estimate KV cache memory requirements.",
+        "Implement a conceptual KV cache update.",
+        "Explain the trade-offs between caching, memory consumption, and latency.",
+        "Identify techniques for reducing KV cache memory in serving systems."
+    ],
+    "sections": [
+        {
+            "id": "kv-introduction",
+            "title": "1. What Is a KV Cache?",
+            "type": "concept",
+            "content": "A key-value cache stores attention keys and values computed for previously processed tokens. During autoregressive generation, the model appends one new token at a time. Without caching, an implementation may recompute keys and values for the entire prefix at each step. With caching, it reuses the previously computed tensors and computes only the new token's contribution. This can substantially reduce repeated work during incremental decoding."
+        },
+        {
+            "id": "kv-attention-review",
+            "title": "2. Why Attention Uses Queries, Keys, and Values",
+            "type": "concept",
+            "content": "In scaled dot-product attention, queries represent what a position is seeking, keys describe the positions available for matching, and values contain the information combined according to attention weights. A query is compared with keys to obtain scores, which are normalized into weights and used to combine values. During incremental decoding, the new token needs to attend to previous positions, so their keys and values are useful again."
+        },
+        {
+            "id": "kv-attention-formula",
+            "title": "3. Scaled Dot-Product Attention",
+            "type": "math",
+            "content": "Attention computes compatibility scores between queries and keys, scales the scores, applies softmax, and combines the values. A KV cache stores the relevant keys and values across decoding steps so they can be reused.",
+            "formula": "Attention(Q, K, V) = softmax(QKᵀ / √d_k)V",
+            "example": "If a prompt contains 100 tokens, the model can compute and cache their keys and values during prefill. When token 101 is generated, the new query can attend to cached positions plus the newly computed key and value, subject to the model's attention mask and architecture."
+        },
+        {
+            "id": "kv-prefill-decode",
+            "title": "4. Prefill and Decode Phases",
+            "type": "concept",
+            "content": "During prefill, the model processes the input prompt and computes intermediate representations, including attention keys and values. These are stored in the cache. During decode, each newly generated token produces additional keys and values that are appended to the cache. The model then uses the accumulated cache to predict the next token. Prefill processes many prompt tokens together, while decode advances incrementally."
+        },
+        {
+            "id": "kv-cache-computation",
+            "title": "5. Avoiding Repeated Work",
+            "type": "concept",
+            "content": "For a causal Transformer, previously processed token representations do not change when a later token is appended, assuming the same model, position handling, and context. Their keys and values can therefore be reused. The current token still needs to compute its own representations and attend to the available context. Caching avoids recomputing historical key-value projections, but it does not eliminate all attention computation or the sequential dependency between generated tokens."
+        },
+        {
+            "id": "kv-memory-formula",
+            "title": "6. KV Cache Memory Formula",
+            "type": "math",
+            "content": "For a conventional Transformer, a rough estimate of KV cache memory multiplies the number of layers, cached tokens, KV heads, head dimension, two tensors for keys and values, bytes per element, and batch size. Actual memory depends on architecture, cache layout, tensor parallelism, and implementation details.",
+            "formula": "Memory ≈ 2 × L × B × T × H_kv × D_h × bytes_per_element",
+            "example": "Suppose L = 32 layers, B = 1 sequence, T = 2048 tokens, H_kv = 8 KV heads, D_h = 128, and each element uses 2 bytes. The estimate is 2 × 32 × 1 × 2048 × 8 × 128 × 2 = 268,435,456 bytes, or about 256 MiB using binary units."
+        },
+        {
+            "id": "kv-memory-code",
+            "title": "7. Estimating KV Cache Memory with Python",
+            "type": "code",
+            "language": "python",
+            "content": "def estimate_kv_cache_bytes(layers, batch_size, tokens, kv_heads, head_dim, bytes_per_element=2):\n    return 2 * layers * batch_size * tokens * kv_heads * head_dim * bytes_per_element\n\nsize_bytes = estimate_kv_cache_bytes(32, 1, 2048, 8, 128, 2)\nprint(f\"{size_bytes / (1024 ** 2):.1f} MiB\")",
+            "explanation": "The function estimates memory for keys and values across all layers, batch entries, and cached token positions. It excludes model weights, temporary activations, allocator overhead, metadata, and other runtime memory. It is a planning estimate rather than a complete GPU-memory prediction."
+        },
+        {
+            "id": "kv-cache-structure",
+            "title": "8. Conceptual Cache Update",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\n\ndef append_kv_cache(past_keys, past_values, new_keys, new_values, dim=-2):\n    if past_keys is None:\n        return new_keys, new_values\n    keys = torch.cat([past_keys, new_keys], dim=dim)\n    values = torch.cat([past_values, new_values], dim=dim)\n    return keys, values",
+            "explanation": "This simplified example appends the new token's keys and values along the sequence dimension. Production inference engines often use preallocated buffers, paged memory, or specialized cache managers to avoid repeated tensor concatenation and memory copying. The correct dimension depends on the tensor layout."
+        },
+        {
+            "id": "kv-cache-latency",
+            "title": "9. KV Cache and Latency",
+            "type": "concept",
+            "content": "Caching can reduce redundant computation and improve decode speed. However, each new token still needs to interact with the existing context, and the cache must be read from memory. For long contexts, KV cache bandwidth and capacity can become bottlenecks. The actual speedup depends on model architecture, sequence length, batch size, hardware, and inference implementation."
+        },
+        {
+            "id": "kv-cache-memory-tradeoff",
+            "title": "10. The Memory Trade-Off",
+            "type": "concept",
+            "content": "The cache grows as tokens are added, and multiple simultaneous sequences multiply the memory requirement. A service may run out of GPU memory even when model weights fit comfortably. Systems manage this trade-off through admission control, context limits, cache eviction where semantically appropriate, quantized caches, grouped-query attention, and paged allocation. Reducing cache memory can improve concurrency but may introduce accuracy, complexity, or latency trade-offs."
+        },
+        {
+            "id": "kv-mqa-gqa",
+            "title": "11. Multi-Query and Grouped-Query Attention",
+            "type": "concept",
+            "content": "Multi-query attention uses fewer key-value heads than query heads, and grouped-query attention places several query heads in groups that share key-value heads. These architectures can reduce KV cache memory and bandwidth compared with standard multi-head attention. They require model architecture support; a serving system cannot generally obtain the same architectural benefit simply by changing a runtime flag on an arbitrary checkpoint."
+        },
+        {
+            "id": "kv-quantization",
+            "title": "12. KV Cache Quantization",
+            "type": "concept",
+            "content": "KV cache quantization stores keys and values using fewer bits than their original representation. For example, lower-precision formats can reduce memory use and data movement. Quantization may introduce numerical error, and its effect depends on the model, quantization method, calibration, and workload. Cache quantization is distinct from quantizing model weights, although a deployment may use both."
+        },
+        {
+            "id": "kv-paged-cache",
+            "title": "13. Paged KV Caching",
+            "type": "concept",
+            "content": "Paged KV caching divides cache storage into fixed-size blocks rather than requiring one large contiguous allocation per sequence. A block table maps sequence positions to physical storage blocks. This can reduce fragmentation and make it easier to manage variable-length requests and share storage where supported. Paging is a memory-management technique; it does not eliminate the underlying information that attention needs to access."
+        },
+        {
+            "id": "kv-cache-correctness",
+            "title": "14. Correctness and Cache Invalidation",
+            "type": "concept",
+            "content": "Cached states are valid only for the corresponding model, input prefix, positional encoding, and relevant execution settings. Reusing a cache with a different prompt or incompatible model can produce incorrect results. If a sequence changes, the system must identify which cached prefix remains valid or rebuild the cache. Some architectures and serving optimizations have additional constraints around positions, attention masks, and cache layout."
+        },
+        {
+            "id": "kv-limitations",
+            "title": "15. Limitations and Best Practices",
+            "type": "concept",
+            "content": "KV caching reduces repeated work but consumes memory proportional to sequence length, batch size, and model architecture. Benchmark time to first token and inter-token latency separately. Estimate memory before choosing context limits or concurrency targets. Use the model's supported cache interface, monitor memory pressure, and evaluate cache quantization or paging if needed. Do not assume that caching makes generation constant-time with respect to context length."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "kv-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does a KV cache store during autoregressive inference?",
+            "correctAnswer": "Previously computed attention keys and values for tokens in the sequence.",
+            "solution": "The cache allows the model to reuse historical keys and values instead of recomputing them at every decoding step."
+        },
+        {
+            "id": "kv-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If the number of cached tokens doubles while all other variables stay fixed, what happens to approximate KV cache memory?",
+            "correctAnswer": "It doubles.",
+            "solution": "In the approximate memory formula, cache memory is directly proportional to the number of cached tokens T."
+        },
+        {
+            "id": "kv-ex-3",
+            "type": "calculation",
+            "difficulty": "hard",
+            "question": "Estimate KV cache memory for 16 layers, batch size 1, 1024 tokens, 8 KV heads, head dimension 64, and 2 bytes per element.",
+            "correctAnswer": "32 MiB.",
+            "solution": "Memory = 2 × 16 × 1 × 1024 × 8 × 64 × 2 = 33,554,432 bytes, which is 32 MiB."
+        },
+        {
+            "id": "kv-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Does a KV cache eliminate all attention computation during decoding?",
+            "correctAnswer": "No.",
+            "solution": "The cache avoids recomputing historical keys and values, but the new token still computes its own query and attends to the available context."
+        },
+        {
+            "id": "kv-ex-5",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A serving system supports long contexts but runs out of GPU memory when many users are active. Name three possible mitigations.",
+            "correctAnswer": "Limit concurrent or excessively long requests, use more memory-efficient cache allocation, and evaluate KV cache quantization or an architecture with fewer KV heads.",
+            "solution": "Admission control and context limits bound demand. Paged allocation can reduce fragmentation, while cache quantization or fewer KV heads can reduce memory per token. Each option has implementation-specific trade-offs."
+        }
+    ],
+    "summary": "A KV cache stores previously computed attention keys and values so autoregressive decoding can reuse them instead of repeating historical projections. This reduces redundant computation and often improves generation speed, but cache memory grows with sequence length, batch size, layer count, and KV-head dimensions. Memory estimation, efficient allocation, grouped-query attention, and cache quantization can help manage the trade-off between latency and concurrency.",
+    "relatedTopics": [
+        "module-06-attention",
+        "module-11-inference-autoregressive-generation",
+        "module-11-inference-quantization",
+        "module-11-inference-batching",
+        "module-11-inference-speculative-decoding"
+    ]
+}

@@ -1,1 +1,193 @@
-{}
+{
+    "id": "04-residual-connections-layer-norm",
+    "moduleId": "module-07-transformers",
+    "moduleIndex": 7,
+    "topicIndex": 4,
+    "title": "Residual Connections & Normalization",
+    "slug": "residual-connections-layer-norm",
+    "href": "/curriculum/07-transformers/residual-connections-layer-norm",
+    "filePath": "content/curriculum/07-transformers/04-residual-connections-layer-norm.json",
+    "description": "Develop a mathematical and practical understanding of residual connections, layer normalization, pre-normalization and post-normalization Transformer designs, gradient flow, and training stability.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/encoder",
+        "module-07-transformers/decoder"
+    ],
+    "learningObjectives": [
+        "Explain why residual connections are useful in deep neural networks.",
+        "Derive the forward computation of a residual block.",
+        "Understand how residual pathways influence gradient propagation.",
+        "Explain the mean, variance, scale, and bias used by layer normalization.",
+        "Distinguish layer normalization from batch normalization.",
+        "Compare pre-normalization and post-normalization Transformer blocks.",
+        "Implement residual connections and layer normalization using PyTorch.",
+        "Identify numerical stability and tensor-shape problems.",
+        "Understand the role of normalization and residual pathways in deep Transformer training."
+    ],
+    "sections": [
+        {
+            "id": "residual-motivation",
+            "title": "1. Why Deep Networks Need Residual Connections",
+            "type": "concept",
+            "content": "A deep neural network applies many transformations to an input. As the number of layers grows, optimization can become difficult because information and gradients must pass through many operations. A conventional layer may replace its input representation with a newly transformed representation. A residual layer instead adds a learned update to the original representation. This creates a shortcut through the block and allows the network to preserve useful information while learning refinements. Residual connections became especially influential in deep residual networks and are a standard component of Transformer architectures. They do not guarantee successful training, but they provide a useful structure for optimization and information flow."
+        },
+        {
+            "id": "residual-formula",
+            "title": "2. Mathematical Definition of a Residual Block",
+            "type": "math",
+            "content": "Let x be the input to a neural-network sublayer and let F(x) be the transformation computed by that sublayer. The residual output is y = x + F(x). The input x is called the skip or residual pathway, while F(x) is the residual update. For example, if x = [2, 3] and F(x) = [0.5, -1], then y = [2.5, 2]. If the transformation initially produces values near zero, the block can initially behave approximately like an identity mapping. The addition is element-wise, so x and F(x) must have compatible shapes. If the dimensions differ, an appropriate projection or architecture change is needed."
+        },
+        {
+            "id": "residual-learning",
+            "title": "3. Learning an Update Instead of Replacing a Representation",
+            "type": "concept",
+            "content": "Residual learning encourages a block to learn how the current representation should change rather than forcing every block to reconstruct a useful representation from scratch. Suppose an input already contains information needed by a downstream task. A transformation can learn a relatively small adjustment while the skip pathway carries the existing information forward. This does not mean that the residual update must always be small, nor does it guarantee that every feature is preserved. During training, the network learns both the transformations and how their outputs combine. In a Transformer, attention and feed-forward sublayers produce updates that are added to the running token representations."
+        },
+        {
+            "id": "residual-gradient",
+            "title": "4. Gradient Flow Through a Residual Connection",
+            "type": "math",
+            "content": "For y = x + F(x), the Jacobian is dy/dx = I + JF(x), where I is the identity matrix and JF(x) is the Jacobian of the transformation. By the chain rule, a gradient flowing through this block contains a direct identity-path contribution as well as a contribution through F. In scalar form, if y = x + f(x), then dy/dx = 1 + f'(x). The direct term of 1 gives the gradient a pathway that does not depend solely on the derivative of f. Across many layers, these direct pathways can improve optimization compared with some plain-network designs. However, gradients can still become poorly scaled because of the learned transformations, normalization, and other architectural choices."
+        },
+        {
+            "id": "residual-worked-example",
+            "title": "5. Worked Example: Forward and Backward Computation",
+            "type": "example",
+            "content": "Consider a scalar residual block y = x + 2x. At x = 3, the output is y = 3 + 6 = 9. The derivative dy/dx is 1 + 2 = 3. The gradient therefore includes the direct skip-path contribution of 1 and the transformed-path contribution of 2. Now consider y = x + 0.01x. The derivative is 1.01, so the block remains close to an identity mapping. These scalar examples simplify a high-dimensional operation, but they demonstrate the core principle: residual addition creates a direct route for information and gradients. In real Transformer blocks, F is a learned vector-valued operation involving attention or a feed-forward network."
+        },
+        {
+            "id": "layer-normalization-motivation",
+            "title": "6. Why Layer Normalization Is Used",
+            "type": "concept",
+            "content": "Transformer hidden representations can vary in magnitude and distribution as they pass through layers. Layer normalization standardizes features within each individual token representation and then applies learned scale and bias parameters. This can make optimization more stable and give the network control over the normalized feature distribution. Layer normalization is especially convenient for sequence models because it does not require statistics aggregated across the batch. It can be applied consistently during training and inference. Normalization is not a substitute for good initialization, sensible learning rates, careful precision choices, or correct masking, but it is an important part of many Transformer designs."
+        },
+        {
+            "id": "layer-norm-equations",
+            "title": "7. Layer Normalization Equations",
+            "type": "math",
+            "content": "For a feature vector x containing d elements, calculate the mean μ = (1/d) Σ xᵢ and the variance σ² = (1/d) Σ (xᵢ - μ)². Normalize each feature using x̂ᵢ = (xᵢ - μ) / sqrt(σ² + ε). Then apply learned scale and bias: yᵢ = γᵢ x̂ᵢ + βᵢ. The small positive constant ε improves numerical stability when the variance is very small. The parameters γ and β have one learned value per normalized feature. Layer normalization commonly computes statistics across the final feature dimension for tensors shaped (batch, sequence, hidden_dimension). The exact normalized dimensions are determined by the configured normalized_shape."
+        },
+        {
+            "id": "layer-norm-numeric-example",
+            "title": "8. Numerical Example of Layer Normalization",
+            "type": "example",
+            "content": "Consider x = [2, 4, 6]. Its mean is 4. The squared deviations are 4, 0, and 4, so the population variance is 8/3. Ignoring the small epsilon for this illustration, the standard deviation is approximately 1.633. The normalized values are approximately [-1.225, 0, 1.225]. If γ = [1, 1, 1] and β = [0, 0, 0], the output equals the normalized vector. If γ = [2, 2, 2] and β = [1, 1, 1], the output becomes approximately [-1.45, 1, 3.45]. Learned scale and bias let the network adjust the normalized representation rather than being permanently restricted to zero mean and unit variance."
+        },
+        {
+            "id": "layer-norm-vs-batch-norm",
+            "title": "9. Layer Normalization vs. Batch Normalization",
+            "type": "concept",
+            "content": "Layer normalization calculates statistics over selected features within an individual example or token. Batch normalization generally calculates statistics across a batch for each feature channel and often maintains running estimates for inference. Layer normalization therefore does not depend on the batch containing many examples with representative statistics. This is useful when language-model batches contain variable-length sequences or inference processes one sequence at a time. Batch normalization is widely used in some computer-vision architectures, but layer normalization is more conventional in Transformer blocks. The methods normalize different axes and are not interchangeable without changing model behavior."
+        },
+        {
+            "id": "pre-norm-transformer",
+            "title": "10. Pre-Normalization",
+            "type": "math",
+            "content": "In a pre-normalization Transformer block, normalization is applied before the main transformation. A simplified attention update is y = x + Attention(LayerNorm(x)). A feed-forward update can then be written z = y + FFN(LayerNorm(y)). The residual stream passes directly around each sublayer. This arrangement is common in many modern Transformer architectures because it often supports stable optimization in deep stacks. A complete implementation may include dropout, attention masks, positional mechanisms, and a final normalization after the stack. Pre-normalization is not universally superior for every configuration, so the exact model design and training setup still matter."
+        },
+        {
+            "id": "post-norm-transformer",
+            "title": "11. Post-Normalization",
+            "type": "math",
+            "content": "In a post-normalization design, the sublayer transformation is added to its input and the sum is normalized. For example, y = LayerNorm(x + Attention(x)), followed by z = LayerNorm(y + FFN(y)). This pattern is associated with the original Transformer formulation. The normalization directly follows the residual addition, which changes the gradient pathway compared with pre-normalization. Deep post-normalization models may require careful optimization and learning-rate scheduling. When reproducing an architecture, the location of normalization must match the intended design because moving it changes the function being computed and can affect training behavior."
+        },
+        {
+            "id": "prenorm-postnorm-comparison",
+            "title": "12. Comparing Pre-Norm and Post-Norm",
+            "type": "concept",
+            "content": "The key difference is the location of normalization relative to the residual addition. Pre-norm normalizes the input to the sublayer and then adds the transformed result to the residual stream. Post-norm adds the sublayer result first and normalizes the sum. Pre-norm often makes gradient propagation through the residual stream easier in deep networks. Post-norm can produce different activation and optimization behavior and is important when implementing architectures designed around that pattern. There is no single rule that makes all other choices irrelevant: initialization, depth, learning rate, normalization type, final normalization, precision, and residual scaling also affect stability."
+        },
+        {
+            "id": "transformer-residual-code",
+            "title": "13. Implement Residual Connections in PyTorch",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\n\nclass ResidualMLPBlock(nn.Module):\n    def __init__(self, d_model, hidden_dim):\n        super().__init__()\n        self.norm = nn.LayerNorm(d_model)\n        self.transform = nn.Sequential(\n            nn.Linear(d_model, hidden_dim),\n            nn.GELU(),\n            nn.Linear(hidden_dim, d_model)\n        )\n\n    def forward(self, x):\n        # Pre-normalization residual block.\n        return x + self.transform(self.norm(x))\n\n\nblock = ResidualMLPBlock(d_model=16, hidden_dim=64)\nx = torch.randn(4, 10, 16)\ny = block(x)\n\nprint(\"Input shape:\", x.shape)\nprint(\"Output shape:\", y.shape)\nprint(\"Residual shape preserved:\", x.shape == y.shape)",
+            "explanation": "The input and output both have shape (4, 10, 16). LayerNorm acts on the final feature dimension, and the MLP returns to the same dimension so the residual addition is valid. This illustrates the pattern used in Transformer sublayers, although a full Transformer also requires attention, positional information, and appropriate masks."
+        },
+        {
+            "id": "transformer-layer-norm-code",
+            "title": "14. Inspect Layer Normalization",
+            "type": "code",
+            "language": "python",
+            "content": "import torch\nfrom torch import nn\n\nx = torch.tensor([\n    [2.0, 4.0, 6.0],\n    [1.0, 1.0, 1.0]\n])\n\nlayer_norm = nn.LayerNorm(3, elementwise_affine=False)\ny = layer_norm(x)\n\nprint(\"Input:\", x)\nprint(\"Normalized output:\", y)\nprint(\"Per-row means:\", y.mean(dim=-1))\nprint(\"Per-row variances:\", y.var(dim=-1, unbiased=False))",
+            "explanation": "LayerNorm(3) normalizes each row independently across its three features. The first row has nonzero variance and becomes approximately zero-mean and unit-variance. The constant second row has zero variance; epsilon prevents division by zero, and its normalized output is all zeros. The example disables learned affine parameters so the normalization behavior is easier to inspect."
+        },
+        {
+            "id": "residual-numerical-stability",
+            "title": "15. Numerical Stability in Deep Transformers",
+            "type": "concept",
+            "content": "Residual connections and normalization do not eliminate every numerical problem. Very large activations, extreme attention logits, low-precision arithmetic, unstable optimizer settings, or malformed masks can still cause infinities and NaNs. Mixed-precision training may require appropriate scaling or accumulation behavior, depending on the precision format and framework. Layer normalization implementations often calculate statistics using numerically appropriate accumulation types. Debugging should examine activation magnitudes, loss values, gradients, and parameter updates rather than checking only the final output. A useful strategy is to test a shallow model on a small batch before increasing depth or training scale."
+        },
+        {
+            "id": "residual-design-tradeoffs",
+            "title": "16. Architecture Design Considerations",
+            "type": "concept",
+            "content": "When selecting a residual and normalization design, consider the depth of the model, the architecture family being reproduced, training stability, inference behavior, and available reference implementations. A residual connection requires shape compatibility, so sublayers often project their outputs back to the residual-stream dimension. Layer normalization adds computation and learned affine parameters, although its parameter count is small compared with large attention and feed-forward projections. Pre-norm and post-norm blocks should be treated as distinct architectures. Additional techniques such as residual scaling, carefully chosen initialization, and final normalization may be used in some model families, but they should be adopted intentionally rather than added without understanding their effects."
+        },
+        {
+            "id": "residual-exercise-1",
+            "title": "Exercise 1: Residual Output",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "Let x = [1, 3, 5] and F(x) = [2, -1, 4]. Calculate y = x + F(x).",
+            "correctAnswer": "[3, 2, 9]",
+            "solution": "Add the vectors element-wise: [1 + 2, 3 + (-1), 5 + 4] = [3, 2, 9]."
+        },
+        {
+            "id": "residual-exercise-2",
+            "title": "Exercise 2: Layer Normalization Mean",
+            "type": "exercise",
+            "difficulty": "beginner",
+            "question": "Calculate the mean of the vector [3, 6, 9] before layer normalization.",
+            "correctAnswer": "6",
+            "solution": "The mean is (3 + 6 + 9) / 3 = 6. The deviations from the mean are -3, 0, and 3."
+        },
+        {
+            "id": "residual-exercise-3",
+            "title": "Exercise 3: Choose the Normalization Order",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "In which arrangement is normalization applied before the transformation: pre-norm or post-norm?",
+            "correctAnswer": "Pre-norm.",
+            "solution": "Pre-norm computes a normalized input before passing it into the sublayer, then adds the result to the residual stream. Post-norm applies normalization after the residual addition."
+        },
+        {
+            "id": "residual-exercise-4",
+            "title": "Exercise 4: Shape Compatibility",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "A residual input has shape (2, 8, 64), but the sublayer output has shape (2, 8, 128). Can the tensors be added directly?",
+            "correctAnswer": "No.",
+            "solution": "Element-wise residual addition requires compatible shapes. The sublayer output would need to be projected to 64 features, or the architecture would need another explicit shape-changing mechanism."
+        },
+        {
+            "id": "residual-exercise-5",
+            "title": "Exercise 5: Gradient Derivative",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "For y = x + 3x, calculate dy/dx and identify the direct skip-path contribution.",
+            "correctAnswer": "dy/dx = 4; the direct skip-path contribution is 1.",
+            "solution": "Differentiate each term: dy/dx = 1 + 3 = 4. The derivative of the identity skip path is 1, while the transformed path contributes 3."
+        },
+        {
+            "id": "residual-exercise-6",
+            "title": "Exercise 6: Layer Norm vs. Batch Norm",
+            "type": "exercise",
+            "difficulty": "intermediate",
+            "question": "Which normalization method typically calculates statistics across features within each individual token representation?",
+            "correctAnswer": "Layer normalization.",
+            "solution": "Layer normalization operates over the configured feature dimensions of each example or token. Batch normalization generally uses statistics aggregated over batch elements for each feature channel."
+        }
+    ],
+    "summary": "Residual connections compute x + F(x), providing a direct pathway for information and gradients. Layer normalization standardizes selected feature dimensions and applies learned scale and bias parameters. Transformer architectures commonly use either pre-normalization or post-normalization, and the choice affects optimization behavior. Correct tensor shapes, stable numerical operations, and faithful reproduction of the intended architecture are essential for reliable training.",
+    "relatedTopics": [
+        "module-07-transformers/transformer-architecture",
+        "module-07-transformers/encoder",
+        "module-07-transformers/decoder",
+        "module-07-transformers/feed-forward-networks",
+        "module-07-transformers/build-tiny-transformer-from-scratch"
+    ]
+}

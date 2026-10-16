@@ -1,1 +1,269 @@
-{}
+{
+    "id": "calculus-jacobians",
+    "title": "Jacobians",
+    "slug": "jacobians",
+    "description": "Learn how Jacobian matrices represent the first-order derivatives of vector-valued functions and why they are essential in multivariable calculus, neural networks, and machine learning.",
+    "difficulty": "intermediate",
+    "estimatedHours": 3,
+    "prerequisites": [
+        "Functions",
+        "Partial Derivatives",
+        "Gradients"
+    ],
+    "learningObjectives": [
+        "Understand scalar-valued and vector-valued functions.",
+        "Define the Jacobian matrix.",
+        "Calculate Jacobian matrices for multivariable functions.",
+        "Understand the relationship between gradients and Jacobians.",
+        "Apply the multivariable chain rule using Jacobian matrices.",
+        "Recognize Jacobians in neural networks and machine learning.",
+        "Calculate Jacobians using Python and automatic differentiation."
+    ],
+    "sections": [
+        {
+            "id": "jacobian-introduction",
+            "title": "1. Introduction to Jacobians",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "A Jacobian matrix organizes the first-order partial derivatives of a vector-valued function. While the gradient describes a scalar-valued function, the Jacobian generalizes first-order differentiation to functions that may have several inputs and several outputs."
+                },
+                {
+                    "type": "text",
+                    "value": "Suppose a function maps an input vector x in Rⁿ to an output vector f(x) in Rᵐ. Its Jacobian has m rows and n columns. Each row corresponds to one output component, and each column corresponds to one input variable."
+                },
+                {
+                    "type": "formula",
+                    "label": "Jacobian definition",
+                    "value": "J_f(x) = [∂fᵢ/∂xⱼ] for i = 1,...,m and j = 1,...,n"
+                },
+                {
+                    "type": "formula",
+                    "label": "Jacobian dimensions",
+                    "value": "f: Rⁿ → Rᵐ  implies  J_f(x) ∈ Rᵐˣⁿ"
+                },
+                {
+                    "type": "text",
+                    "value": "The Jacobian describes the local linear approximation of a differentiable vector-valued function. For a small input change Δx, the output change is approximately J_f(x)Δx."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-calculation",
+            "title": "2. Calculating a Jacobian Matrix",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "To calculate a Jacobian, differentiate every output component with respect to every input variable. Place the derivatives of the first output in the first row, the derivatives of the second output in the second row, and continue for all output components."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Two Inputs and Two Outputs",
+                    "problem": "Let f(x, y) = [x² + y, xy]ᵀ. Find its Jacobian.",
+                    "steps": [
+                        "Name the output components f₁(x, y) = x² + y and f₂(x, y) = xy.",
+                        "For f₁, calculate ∂f₁/∂x = 2x and ∂f₁/∂y = 1.",
+                        "For f₂, calculate ∂f₂/∂x = y and ∂f₂/∂y = x.",
+                        "Place the derivatives in rows corresponding to their output components."
+                    ],
+                    "solution": "J_f(x, y) = [[2x, 1], [y, x]]."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Evaluate a Jacobian",
+                    "problem": "For f(x, y) = [x² + y, xy]ᵀ, evaluate the Jacobian at (2, 3).",
+                    "steps": [
+                        "Start with J_f(x, y) = [[2x, 1], [y, x]].",
+                        "Substitute x = 2 and y = 3."
+                    ],
+                    "solution": "J_f(2, 3) = [[4, 1], [3, 2]]."
+                },
+                {
+                    "type": "text",
+                    "value": "The result is a 2 × 2 matrix because the function has two outputs and two inputs. For a function with three outputs and two inputs, the Jacobian would have three rows and two columns."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-gradient-relationship",
+            "title": "3. Relationship Between Gradients and Jacobians",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "For a scalar-valued function f: Rⁿ → R, there is only one output component. Under the convention used here, its Jacobian is a 1 × n row vector containing the first partial derivatives. The gradient is conventionally written as an n × 1 column vector."
+                },
+                {
+                    "type": "formula",
+                    "label": "Scalar function relationship",
+                    "value": "J_f(x) = (∇f(x))ᵀ"
+                },
+                {
+                    "type": "text",
+                    "value": "Some mathematical and machine learning libraries use different conventions for representing gradients and Jacobians. Always check the expected input and output shapes when implementing derivatives in code."
+                },
+                {
+                    "type": "text",
+                    "value": "For a vector-valued function, each output component has its own gradient. Stacking the transposed gradients of the output components as rows produces the Jacobian under the convention used in this module."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-chain-rule",
+            "title": "4. Jacobians and the Multivariable Chain Rule",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Jacobians provide a convenient matrix formulation of the chain rule for compositions of vector-valued functions. If g maps x to an intermediate vector and f maps that intermediate vector to a final output, the derivative of the composition is obtained by multiplying their Jacobian matrices in the correct order."
+                },
+                {
+                    "type": "formula",
+                    "label": "Jacobian chain rule",
+                    "value": "J_(f∘g)(x) = J_f(g(x)) J_g(x)"
+                },
+                {
+                    "type": "text",
+                    "value": "The matrix dimensions must align. If g maps Rⁿ to Rᵖ, then J_g has shape p × n. If f maps Rᵖ to Rᵐ, then J_f has shape m × p. Their product has shape m × n, matching the composition from Rⁿ to Rᵐ."
+                },
+                {
+                    "type": "example",
+                    "title": "Worked Example: Jacobian Chain Rule",
+                    "problem": "Let g(x) = [x², 3x]ᵀ and f(u, v) = u + v². Find the derivative of h(x) = f(g(x)).",
+                    "steps": [
+                        "Substitute g(x) into f: h(x) = x² + (3x)² = 10x².",
+                        "Differentiate directly: h'(x) = 20x.",
+                        "Using the chain rule, J_g(x) = [[2x], [3]] and J_f(u, v) = [1, 2v].",
+                        "Evaluate J_f at g(x), where v = 3x: [1, 6x].",
+                        "Multiply: [1, 6x] [[2x], [3]] = 2x + 18x = 20x."
+                    ],
+                    "solution": "h'(x) = 20x. Both direct differentiation and the Jacobian chain rule give the same result."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-machine-learning",
+            "title": "5. Jacobians in Machine Learning",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Machine learning models often map input vectors to output vectors. Examples include neural network layers, multi-output regression models, coordinate transformations, and probability models that produce a vector of scores or probabilities."
+                },
+                {
+                    "type": "text",
+                    "value": "A Jacobian describes how small changes in each input affect every output. This information is useful for sensitivity analysis, differentiable transformations, and understanding how gradients propagate through a computational graph."
+                },
+                {
+                    "type": "text",
+                    "value": "In a neural network, each layer is a function. The Jacobian of a layer describes how the layer's outputs change with its inputs. Composing layers corresponds to multiplying Jacobians, although practical deep learning libraries generally avoid constructing large Jacobian matrices explicitly when a vector-Jacobian product is sufficient."
+                },
+                {
+                    "type": "text",
+                    "value": "Backpropagation efficiently computes gradients of a scalar loss with respect to model parameters. It typically uses vector-Jacobian products rather than forming every entry of every intermediate Jacobian."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-python",
+            "title": "6. Computing Jacobians with Python",
+            "content": [
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Symbolic Jacobian with SymPy",
+                    "value": "import sympy as sp\n\nx, y = sp.symbols('x y')\nf1 = x**2 + y\nf2 = x*y\n\nF = sp.Matrix([f1, f2])\nJ = F.jacobian([x, y])\n\nprint(J)\nprint(J.subs({x: 2, y: 3}))"
+                },
+                {
+                    "type": "text",
+                    "value": "The symbolic Jacobian is [[2*x, 1], [y, x]]. Substituting x = 2 and y = 3 produces [[4, 1], [3, 2]]."
+                },
+                {
+                    "type": "code",
+                    "language": "python",
+                    "title": "Jacobian with PyTorch",
+                    "value": "import torch\nfrom torch.func import jacrev\n\ndef model(inputs):\n    x, y = inputs[0], inputs[1]\n    return torch.stack([x**2 + y, x*y])\n\ninputs = torch.tensor([2.0, 3.0])\nJ = jacrev(model)(inputs)\nprint(J)"
+                },
+                {
+                    "type": "text",
+                    "value": "For this function, the Jacobian at [2, 3] is [[4, 1], [3, 2]]. PyTorch's jacrev computes the Jacobian using reverse-mode automatic differentiation."
+                }
+            ]
+        },
+        {
+            "id": "jacobian-common-mistakes",
+            "title": "7. Common Mistakes",
+            "content": [
+                {
+                    "type": "text",
+                    "value": "Mistake 1: Reversing the Jacobian dimensions. For f: Rⁿ → Rᵐ, the Jacobian has m rows and n columns under the convention used here."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 2: Mixing row-vector and column-vector conventions for gradients. State the convention and keep it consistent."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 3: Multiplying Jacobians in the wrong order. For f(g(x)), the correct order is J_f(g(x))J_g(x)."
+                },
+                {
+                    "type": "text",
+                    "value": "Mistake 4: Assuming machine learning libraries always materialize a full Jacobian during backpropagation. Many libraries compute more efficient derivative products instead."
+                }
+            ]
+        }
+    ],
+    "exercises": [
+        {
+            "id": "jac-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "Find the Jacobian of F(x, y) = [x + y, x − y]ᵀ.",
+            "correctAnswer": "[[1, 1], [1, -1]]",
+            "solution": "The first output has partial derivatives 1 and 1. The second output has partial derivatives 1 and −1. Place these in the corresponding rows."
+        },
+        {
+            "id": "jac-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Find the Jacobian of F(x, y) = [x²y, x + 3y]ᵀ.",
+            "correctAnswer": "[[2xy, x²], [1, 3]]",
+            "solution": "For the first output x²y, the partial derivatives are 2xy and x². For the second output x + 3y, they are 1 and 3."
+        },
+        {
+            "id": "jac-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For F(x, y) = [x² + y, xy]ᵀ, evaluate the Jacobian at (1, 4).",
+            "correctAnswer": "[[2, 1], [4, 1]]",
+            "solution": "The Jacobian is [[2x, 1], [y, x]]. Substituting x = 1 and y = 4 gives [[2, 1], [4, 1]]."
+        },
+        {
+            "id": "jac-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "If F maps R³ to R², what are the dimensions of its Jacobian?",
+            "correctAnswer": "2 × 3",
+            "solution": "The Jacobian has one row for each of the two output components and one column for each of the three input variables."
+        },
+        {
+            "id": "jac-ex-5",
+            "type": "conceptual",
+            "difficulty": "hard",
+            "question": "Why is the Jacobian chain rule useful for neural networks?",
+            "correctAnswer": "It describes how derivatives propagate through composed functions and layers.",
+            "solution": "A neural network is a composition of differentiable functions. The Jacobian chain rule relates the derivative of the complete network to the derivatives of its layers. Backpropagation applies this principle efficiently."
+        }
+    ],
+    "summary": [
+        "The Jacobian organizes all first-order partial derivatives of a vector-valued function.",
+        "For a function from Rⁿ to Rᵐ, the Jacobian has shape m × n.",
+        "For a scalar-valued function, the Jacobian is the transpose of the gradient under the convention used here.",
+        "The Jacobian chain rule expresses derivatives of compositions as matrix products.",
+        "Jacobians describe how changes in inputs affect multiple outputs.",
+        "Automatic differentiation libraries use Jacobian-related operations to compute derivatives in machine learning."
+    ],
+    "relatedTopics": [
+        "partial-derivatives",
+        "gradients",
+        "chain-rule",
+        "optimization"
+    ]
+}

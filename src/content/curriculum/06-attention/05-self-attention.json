@@ -1,0 +1,207 @@
+{
+    "id": "module-06-attention-self-attention",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 5,
+    "title": "Self-Attention",
+    "slug": "self-attention",
+    "href": "/curriculum/06-attention/self-attention",
+    "filePath": "content/curriculum/06-attention/05-self-attention.json",
+    "description": "Learn how self-attention allows every sequence position to gather contextual information from other positions, including mathematical derivations, token-level examples, implementation details, and practical applications.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Attention Intuition",
+        "Query, Key, Value Formulation",
+        "Scaled Dot-Product Attention & Math",
+        "Matrix multiplication"
+    ],
+    "learningObjectives": [
+        "Define self-attention and distinguish it from cross-attention.",
+        "Explain how each token produces a query, key, and value.",
+        "Derive the self-attention matrix formulation.",
+        "Calculate a small self-attention example.",
+        "Explain how context changes token representations.",
+        "Understand the role of projection matrices.",
+        "Implement self-attention with NumPy.",
+        "Analyze the strengths and limitations of self-attention.",
+        "Explain how self-attention forms the core of Transformer blocks."
+    ],
+    "sections": [
+        {
+            "id": "self-attention-definition",
+            "title": "1. What Is Self-Attention?",
+            "type": "concept",
+            "content": "Self-attention is an operation in which representations from one sequence generate queries, keys, and values that interact with one another. Each query compares itself with the keys from the same sequence, then combines the corresponding values. As a result, the representation at a token position can incorporate information from other positions. In an unmasked encoder-style self-attention layer, a token can generally attend to all positions in the sequence. In causal self-attention, it can attend only to permitted positions, usually itself and earlier positions."
+        },
+        {
+            "id": "self-attention-example",
+            "title": "2. Why Context Matters",
+            "type": "example",
+            "content": "Consider the sentence 'The crane lifted the heavy container.' The word 'crane' is likely to refer to a machine because of the surrounding words 'lifted' and 'container'. In 'A crane stood beside the wetland', the surrounding words support the bird interpretation. Self-attention allows the representation of 'crane' to incorporate information from context. The model does not use a hand-written rule that assigns meanings to words; learned query-key relationships and value representations help later layers distinguish these contexts."
+        },
+        {
+            "id": "self-attention-input",
+            "title": "3. Input Representations",
+            "type": "concept",
+            "content": "A Transformer receives vector representations of sequence positions. These often begin with token embeddings combined with positional information. Let X have shape [n, d_model], where n is sequence length and d_model is the model dimension. The rows of X correspond to positions. Before self-attention, the rows contain initial or previously contextualized representations. Learned linear projections transform X into queries, keys, and values for the current attention layer."
+        },
+        {
+            "id": "self-attention-projections",
+            "title": "4. Query, Key, and Value Projections",
+            "type": "math",
+            "content": "The projections are Q = XW_Q, K = XW_K, and V = XW_V. If X has shape [n, d_model], W_Q and W_K have shape [d_model, d_k], and W_V has shape [d_model, d_v], then Q and K have shape [n, d_k], while V has shape [n, d_v]. Each position has its own projected query, key, and value. These projections are shared across sequence positions within a layer, but their input vectors differ by position."
+        },
+        {
+            "id": "self-attention-matrix",
+            "title": "5. The Self-Attention Equation",
+            "type": "math",
+            "content": "For ordinary dense self-attention without masking, the operation is SelfAttention(X) = softmax((XW_Q)(XW_K)^T / sqrt(d_k)) XW_V. Define A = softmax(QK^T / sqrt(d_k)). Since there are n query positions and n key positions, A has shape [n, n]. Each row describes how one output position distributes its weights across the sequence. The result O = AV has shape [n, d_v]. In a Transformer, a subsequent output projection may map this result back to d_model."
+        },
+        {
+            "id": "self-attention-numerical",
+            "title": "6. Small Numerical Example",
+            "type": "example",
+            "content": "Consider two simplified token representations, X = [[1, 0], [0, 1]], and assume the query, key, and value projection matrices are identity matrices. Then Q = K = V = X. The raw score matrix is QK^T = [[1, 0], [0, 1]]. Since d_k = 2, divide each score by sqrt(2), approximately 1.414. The scaled matrix is [[0.707, 0], [0, 0.707]]. Row-wise softmax gives approximately [[0.670, 0.330], [0.330, 0.670]]. Multiplying by V yields output rows approximately [0.670, 0.330] and [0.330, 0.670]. Each token representation now contains information from both positions, with its own position receiving the larger weight in this example."
+        },
+        {
+            "id": "self-attention-context",
+            "title": "7. Contextualization Across Layers",
+            "type": "concept",
+            "content": "A single self-attention layer computes contextual mixtures based on its input representations. Transformer blocks normally include additional components such as residual connections, normalization, and a feed-forward network. When several blocks are stacked, each layer operates on representations already influenced by other positions. This enables more complex patterns to emerge over depth. For example, a later layer may combine information that an earlier layer gathered from a subject, a verb, and a distant modifier."
+        },
+        {
+            "id": "self-attention-multiple-relations",
+            "title": "8. One Layer, Many Possible Relationships",
+            "type": "concept",
+            "content": "The score matrix can represent many kinds of learned relationships, including local context, repeated entities, syntactic dependencies, and references between distant words. The architecture does not guarantee that each score corresponds to a clean human-readable linguistic relation. Nevertheless, self-attention gives every position a direct mechanism for comparing itself with other positions. Multiple attention heads, introduced in a later topic, allow different learned projections to capture different patterns in parallel."
+        },
+        {
+            "id": "self-attention-parallelism",
+            "title": "9. Why Self-Attention Is Parallelizable",
+            "type": "concept",
+            "content": "Once X is available, the projections Q, K, and V can be computed for all sequence positions using matrix multiplication. The entire score matrix can then be calculated with QK^T, followed by row-wise softmax and another matrix multiplication. Unlike a conventional RNN, the forward computation does not require completing one token's hidden-state update before calculating the next token's attention output. Training can therefore process many sequence positions in parallel, subject to memory limits and dependencies between Transformer layers."
+        },
+        {
+            "id": "self-attention-complexity",
+            "title": "10. Complexity and Memory",
+            "type": "math",
+            "content": "For sequence length n and key dimension d_k, the score computation costs approximately O(n^2 d_k), and combining values costs approximately O(n^2 d_v). The dense attention matrix contains n squared entries per head. Thus, doubling the sequence length approximately quadruples the number of pairwise interactions. The projections themselves have costs related to n and the model dimensions. In long-context systems, the attention matrix and data movement can be significant bottlenecks, motivating optimized kernels and alternative attention patterns."
+        },
+        {
+            "id": "self-attention-code",
+            "title": "11. Implementing Self-Attention with NumPy",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax(x, axis=-1):\n    x = x - np.max(x, axis=axis, keepdims=True)\n    exp_x = np.exp(x)\n    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)\n\ndef self_attention(X, W_q, W_k, W_v, mask=None):\n    Q = X @ W_q\n    K = X @ W_k\n    V = X @ W_v\n\n    d_k = Q.shape[-1]\n    scores = Q @ K.T / np.sqrt(d_k)\n\n    if mask is not None:\n        if not np.all(np.any(mask, axis=-1)):\n            raise ValueError('Each position must have at least one allowed key')\n        scores = np.where(mask, scores, -np.inf)\n\n    weights = softmax(scores, axis=-1)\n    output = weights @ V\n    return output, weights\n\nX = np.array([[1.0, 0.0], [0.0, 1.0]])\nW_q = np.eye(2)\nW_k = np.eye(2)\nW_v = np.eye(2)\n\noutput, weights = self_attention(X, W_q, W_k, W_v)\nprint('Weights:\\n', weights)\nprint('Output:\\n', output)",
+            "explanation": "The function projects all token representations into query, key, and value spaces, computes the scaled score matrix, optionally applies an allowed-position mask, and combines values using the normalized weights. Identity matrices make the example easier to verify by hand. Real Transformer layers learn these projection matrices during training."
+        },
+        {
+            "id": "self-attention-assertions",
+            "title": "12. Testing Correctness",
+            "type": "code",
+            "language": "python",
+            "content": "assert output.shape == X.shape\nassert weights.shape == (2, 2)\nassert np.allclose(weights.sum(axis=-1), np.ones(2))\nassert np.all(weights >= 0)\nassert np.allclose(output, weights @ X)\nprint('Self-attention tests passed.')",
+            "explanation": "The checks verify that the attention output has the expected shape, the attention matrix is square for self-attention, the rows form normalized weight distributions, and the output equals the weighted sum of values. These tests are useful when changing projection dimensions or adding masks."
+        },
+        {
+            "id": "self-attention-masking",
+            "title": "13. Self-Attention Does Not Always Mean Full Visibility",
+            "type": "concept",
+            "content": "The term self-attention identifies where the query, key, and value representations originate: the same sequence. It does not imply that every position is always allowed to interact with every other position. Encoder self-attention often allows access to all non-padding positions. Decoder self-attention typically uses a causal mask so that position t cannot attend to future positions. Padding masks can also exclude positions added only to make examples in a batch the same length."
+        },
+        {
+            "id": "self-attention-limitations",
+            "title": "14. Limitations and Design Considerations",
+            "type": "concept",
+            "content": "Self-attention provides direct communication between positions, but it is not free. Dense attention has quadratic pairwise interaction costs, and very long sequences can exceed memory budgets. Self-attention also needs positional information or another mechanism if order must be represented, because content-only attention does not inherently encode absolute sequence position. Attention weights alone do not fully explain model decisions. These limitations motivate positional encoding, efficient attention methods, and careful model interpretation."
+        },
+        {
+            "id": "self-attention-applications",
+            "title": "15. Real-World Applications",
+            "type": "concept",
+            "content": "In language models, self-attention allows token representations to incorporate grammatical, semantic, and discourse context. In document processing, it can connect a name to a distant description. In vision Transformers, image patches can exchange information across the image. In audio models, frames or acoustic tokens can use contextual information from other positions. The exact input representation and attention pattern vary by application, but the underlying query-key-value operation remains closely related."
+        },
+        {
+            "id": "self-attention-summary",
+            "title": "16. Key Takeaways",
+            "type": "concept",
+            "content": "Self-attention derives queries, keys, and values from one sequence and uses query-key compatibility to create context-dependent representations. Matrix multiplication computes all pairwise scores, softmax normalizes the weights, and a weighted sum of values produces the output. Self-attention enables parallel computation and long-distance communication, but dense versions have quadratic sequence-length costs and need appropriate positional and masking mechanisms."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "self-attention-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "Why is the operation called self-attention?",
+            "correctAnswer": "Because queries, keys, and values are derived from the same sequence of representations.",
+            "solution": "The operation allows positions within a sequence to retrieve information from other positions in that same sequence."
+        },
+        {
+            "id": "self-attention-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If a self-attention input has 12 tokens, what is the shape of its dense attention matrix for one head?",
+            "correctAnswer": "[12, 12].",
+            "solution": "There are 12 query positions and 12 key positions, so the score and attention-weight matrices each contain 12 rows and 12 columns."
+        },
+        {
+            "id": "self-attention-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "What is the purpose of W_Q, W_K, and W_V?",
+            "correctAnswer": "They learn separate projections for query matching, key matching, and value retrieval.",
+            "solution": "The three matrices transform the same input representations into spaces suited to the different functions used by attention."
+        },
+        {
+            "id": "self-attention-ex-4",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "If sequence length doubles from 256 to 512, how does the number of dense attention-score entries change?",
+            "correctAnswer": "It increases by a factor of four.",
+            "solution": "The number of entries is n squared. The ratio is 512 squared divided by 256 squared, which equals four."
+        },
+        {
+            "id": "self-attention-ex-5",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "How can self-attention help distinguish the meanings of 'seal' in 'the seal swam' and 'the seal was opened'?",
+            "correctAnswer": "The token can incorporate different contextual information from words such as 'swam' and 'opened'.",
+            "solution": "The learned attention operation can produce different contextual mixtures for the same word depending on its surrounding representations."
+        },
+        {
+            "id": "self-attention-ex-6",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A self-attention implementation returns a [sequence_length, sequence_length] matrix as its final output. What is likely missing?",
+            "correctAnswer": "The attention-weight matrix has probably been returned instead of the weighted value output, or the multiplication by V is missing.",
+            "solution": "The weights have shape [n, n], while the context output should have shape [n, d_v], computed by weights @ V."
+        },
+        {
+            "id": "self-attention-ex-7",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Can self-attention be causal?",
+            "correctAnswer": "Yes. A causal mask can restrict each position to itself and earlier positions.",
+            "solution": "Self-attention describes the source of Q, K, and V. A mask determines which positions are visible."
+        },
+        {
+            "id": "self-attention-ex-8",
+            "type": "implementation",
+            "difficulty": "hard",
+            "question": "Name three tests for a basic self-attention implementation.",
+            "correctAnswer": "Check output shapes, verify attention rows sum to one, and verify the output equals weights multiplied by V.",
+            "solution": "These checks help detect dimension mistakes, incorrect softmax axes, and errors in value aggregation."
+        }
+    ],
+    "summary": "Self-attention allows every position to form a context-dependent representation by attending to positions within the same sequence. It uses learned query, key, and value projections followed by scaled dot-product attention. It enables parallel processing and direct long-distance information flow, while requiring positional information, appropriate masking, and attention to quadratic sequence-length costs.",
+    "relatedTopics": [
+        "module-06-attention-attention-intuition",
+        "module-06-attention-query-key-value",
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-masked-attention",
+        "module-06-attention-multi-head-attention",
+        "module-06-attention-positional-encoding"
+    ]
+}

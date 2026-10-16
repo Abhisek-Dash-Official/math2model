@@ -1,1 +1,163 @@
-{}
+{
+    "id": "classical-ml-gradient-descent",
+    "title": "Gradient Descent",
+    "slug": "gradient-descent",
+    "description": "Learn how gradient-based optimization updates model parameters to minimize a differentiable objective, including learning rates, batch variants, feature scaling, convergence, and practical implementation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "Linear Regression",
+        "Loss Functions",
+        "Basic derivatives",
+        "Basic vectors and matrices"
+    ],
+    "learningObjectives": [
+        "Explain the intuition behind gradients and parameter updates.",
+        "Derive gradient descent updates for a simple linear model.",
+        "Explain the effect of learning rate on convergence.",
+        "Compare batch, stochastic, and mini-batch gradient descent.",
+        "Understand feature scaling and its effect on optimization.",
+        "Implement gradient descent for linear regression using NumPy.",
+        "Recognize convergence problems and diagnose common training failures."
+    ],
+    "sections": [
+        {
+            "id": "gd-intuition",
+            "title": "1. What Is Gradient Descent?",
+            "type": "text",
+            "content": "Gradient descent is an iterative optimization algorithm used to minimize an objective function. A machine learning model has parameters, such as weights and biases, and the objective measures how well those parameters perform. The gradient points in the direction of the steepest local increase in a differentiable scalar objective. To reduce the objective, gradient descent moves in the opposite direction. This process is repeated until a stopping criterion is reached or the training budget is exhausted."
+        },
+        {
+            "id": "gd-gradient",
+            "title": "2. Understanding the Gradient",
+            "type": "formula",
+            "content": "For a scalar parameter theta and objective J(theta), the derivative dJ/dtheta describes how the objective changes locally as theta changes. For a parameter vector theta, the gradient is the vector of partial derivatives: grad J(theta) = [dJ/dtheta_1, ..., dJ/dtheta_d]. Gradient descent updates theta using theta_new = theta_old - eta * grad J(theta_old), where eta > 0 is the learning rate. A positive derivative means a small decrease in theta locally reduces the objective; a negative derivative means increasing theta locally reduces it."
+        },
+        {
+            "id": "gd-one-dimensional",
+            "title": "3. Worked Example with a Single Parameter",
+            "type": "example",
+            "content": "Let J(w) = (w - 3)^2. Its derivative is dJ/dw = 2(w - 3). Start with w = 0 and learning rate eta = 0.1. The derivative is -6, so the update is w_new = 0 - 0.1*(-6) = 0.6. The parameter moves toward 3, where the objective reaches its minimum. The next update uses the new derivative rather than repeatedly using the original derivative."
+        },
+        {
+            "id": "gd-linear-regression",
+            "title": "4. Gradient Descent for Linear Regression",
+            "type": "formula",
+            "content": "For predictions y_hat_i = w*x_i + b, define the mean squared error objective J(w,b) = (1/n) * sum_i (w*x_i + b - y_i)^2. Let e_i = w*x_i + b - y_i. Then dJ/dw = (2/n) * sum_i e_i*x_i and dJ/db = (2/n) * sum_i e_i. The updates are w <- w - eta*dJ/dw and b <- b - eta*dJ/db. If the objective is defined with a factor of 1/2, the factor 2 disappears from these derivatives. Either convention is valid as long as the derivative matches the objective."
+        },
+        {
+            "id": "gd-learning-rate",
+            "title": "5. Choosing the Learning Rate",
+            "type": "text",
+            "content": "The learning rate controls the size of each parameter update. If it is too small, training can be extremely slow. If it is too large, updates may overshoot the minimum, oscillate, or diverge. A practical workflow is to test reasonable values, monitor the training and validation objectives, and consider a learning-rate schedule or adaptive optimizer where appropriate. A learning rate that works for one feature scale or model architecture may be unsuitable for another."
+        },
+        {
+            "id": "gd-convexity",
+            "title": "6. Convex and Non-Convex Objectives",
+            "type": "text",
+            "content": "A convex objective has no suboptimal local minima: every local minimum is a global minimum. Squared-error linear regression with respect to its parameters is convex, although it may have multiple equivalent minimizers when the design matrix is rank-deficient. Neural networks and many other complex models have non-convex objectives with saddle points and local structure. Gradient descent does not guarantee finding a global minimum for an arbitrary non-convex objective, but it remains an important practical optimization method."
+        },
+        {
+            "id": "gd-batch-types",
+            "title": "7. Batch, Stochastic, and Mini-Batch Gradient Descent",
+            "type": "text",
+            "content": "Batch gradient descent computes the gradient using the entire training dataset before making an update. It produces a stable full-data gradient but can be expensive for large datasets. Stochastic gradient descent updates parameters using one randomly selected training example at a time, making updates cheap but noisy. Mini-batch gradient descent uses a small batch of examples per update and is common in practical machine learning because it balances computational efficiency with a relatively stable gradient estimate. In modern libraries, the term SGD may refer to an optimizer used with mini-batches."
+        },
+        {
+            "id": "gd-feature-scaling",
+            "title": "8. Why Feature Scaling Matters",
+            "type": "text",
+            "content": "Suppose one feature is measured in millimeters and ranges into the thousands, while another is a probability between zero and one. Their different scales can create poorly conditioned optimization geometry. Gradient descent may zigzag or require a small learning rate to remain stable. Standardization, x_scaled = (x - mean) / standard_deviation, often improves convergence. Scaling statistics must be calculated using training data only and then applied unchanged to validation, test, and future examples to avoid data leakage."
+        },
+        {
+            "id": "gd-stopping",
+            "title": "9. Convergence and Stopping Criteria",
+            "type": "text",
+            "content": "Training can stop after a fixed number of updates, when the objective changes very little, when the gradient norm becomes small, or when validation performance stops improving. A small gradient does not always mean the model is useful; it may indicate a flat region or a saddle point. Conversely, noisy mini-batch objectives may fluctuate even when overall progress is being made. Monitoring multiple signals helps avoid stopping too early or wasting computation."
+        },
+        {
+            "id": "gd-numpy",
+            "title": "10. Implementing Linear Regression with Gradient Descent",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\n# Toy dataset: y = 2x + 1\nX = np.array([1.0, 2.0, 3.0, 4.0])\ny = np.array([3.0, 5.0, 7.0, 9.0])\n\nw = 0.0\nb = 0.0\nlearning_rate = 0.05\nn = len(X)\n\nfor step in range(2000):\n    predictions = w * X + b\n    errors = predictions - y\n\n    dw = (2 / n) * np.sum(errors * X)\n    db = (2 / n) * np.sum(errors)\n\n    w -= learning_rate * dw\n    b -= learning_rate * db\n\n    if step % 500 == 0:\n        mse = np.mean((w * X + b - y) ** 2)\n        print(step, round(w, 4), round(b, 4), round(mse, 6))\n\nprint('Final weight:', round(w, 3))\nprint('Final bias:', round(b, 3))",
+            "explanation": "The loop computes predictions, calculates the gradients of MSE, and updates both parameters. Since the data follows y = 2x + 1, the learned weight and bias should approach 2 and 1. Small numerical differences can remain because the optimization stops after a finite number of steps."
+        },
+        {
+            "id": "gd-momentum",
+            "title": "11. Momentum",
+            "type": "formula",
+            "content": "Momentum smooths updates by accumulating a moving direction from previous gradients. One common form is v_t = beta*v_(t-1) + grad J(theta_t), followed by theta_(t+1) = theta_t - eta*v_t, where beta is typically between zero and one. Momentum can reduce zigzagging and accelerate progress along consistent directions. Exact conventions vary across implementations, especially regarding learning-rate placement and bias correction, so check the optimizer documentation when reproducing an algorithm."
+        },
+        {
+            "id": "gd-adaptive",
+            "title": "12. Adaptive Optimizers",
+            "type": "text",
+            "content": "Adaptive optimizers adjust effective parameter-wise step sizes using information from previous gradients. AdaGrad accumulates squared gradients, RMSProp uses a decaying average of squared gradients, and Adam combines moving averages of gradients and squared gradients with bias correction. These methods can be useful when parameters have different gradient scales. They do not remove the need for validation, sensible learning rates, or careful preprocessing, and they are not guaranteed to outperform plain SGD in every setting."
+        },
+        {
+            "id": "gd-debugging",
+            "title": "13. Debugging Optimization",
+            "type": "text",
+            "content": "If loss becomes NaN or infinity, inspect the learning rate, input data, target values, and numerical stability of the loss calculation. If loss stays constant, verify that gradients are nonzero, parameters are actually updated, and the implementation uses the correct derivative. If training is unstable, reduce the learning rate and check feature scales. If training loss decreases but validation loss worsens, the issue may be overfitting rather than optimization failure."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "gd-ex-1",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "For J(w) = (w - 4)^2, calculate the derivative at w = 1.",
+            "correctAnswer": "-6",
+            "solution": "The derivative is dJ/dw = 2(w - 4). Substituting w = 1 gives 2(1 - 4) = -6."
+        },
+        {
+            "id": "gd-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A parameter is w = 2, its gradient is 5, and the learning rate is 0.1. What is the next parameter value?",
+            "correctAnswer": "1.5",
+            "solution": "Use w_new = w_old - eta*gradient = 2 - 0.1*5 = 1.5."
+        },
+        {
+            "id": "gd-ex-3",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the likely effect of an excessively large learning rate?",
+            "correctAnswer": "Updates may overshoot the minimum, oscillate, or cause divergence.",
+            "solution": "Large steps can move parameters past a low-loss region and into regions with larger objective values. Repeated overshooting can prevent convergence."
+        },
+        {
+            "id": "gd-ex-4",
+            "type": "application",
+            "difficulty": "medium",
+            "question": "Why should a standard scaler be fitted only on training data?",
+            "correctAnswer": "To prevent information from validation or test data from leaking into training preprocessing.",
+            "solution": "Computing means and standard deviations using the full dataset exposes the training process to information about held-out examples. Fit the scaler on training data, then use the same fitted transformation on validation and test data."
+        },
+        {
+            "id": "gd-ex-5",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "Your training loss repeatedly increases and becomes NaN after several updates. Give three checks you would perform.",
+            "correctAnswer": "Check the learning rate, input and target values, and numerical stability of the loss or gradients.",
+            "solution": "Reduce the learning rate to test for divergence, inspect inputs and targets for NaN or infinite values, and use stable loss implementations. Also verify gradient formulas and inspect the scale of parameter updates."
+        }
+    ],
+    "summary": [
+        "Gradient descent minimizes an objective by moving opposite its gradient.",
+        "The learning rate determines the size of parameter updates.",
+        "Batch, stochastic, and mini-batch methods differ in how they estimate gradients.",
+        "Feature scaling often improves optimization conditioning.",
+        "Momentum and adaptive optimizers modify how updates are computed.",
+        "Training progress should be monitored using objective values and validation behavior.",
+        "Optimization bugs, data leakage, and overfitting are different problems and require different remedies."
+    ],
+    "relatedTopics": [
+        "loss-functions",
+        "linear-regression",
+        "logistic-regression",
+        "regularization",
+        "overfitting-underfitting"
+    ]
+}

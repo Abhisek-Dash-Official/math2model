@@ -1,1 +1,177 @@
-{}
+{
+    "id": "module-11-inference-autoregressive-generation",
+    "moduleId": "module-11-inference",
+    "moduleIndex": 11,
+    "topicIndex": 1,
+    "title": "Autoregressive Generation Mechanics",
+    "slug": "autoregressive-generation",
+    "href": "/curriculum/11-inference/autoregressive-generation",
+    "filePath": "content/curriculum/11-inference/01-autoregressive-generation.json",
+    "description": "Understand how autoregressive language models generate text token by token, including next-token probabilities, context windows, decoding loops, stopping criteria, and inference-time computation.",
+    "difficulty": "intermediate",
+    "estimatedHours": 4,
+    "prerequisites": [
+        "module-09-large-language-models",
+        "module-06-attention",
+        "module-10-llm-training-alignment-supervised-fine-tuning"
+    ],
+    "learningObjectives": [
+        "Explain autoregressive generation using conditional probability.",
+        "Distinguish training-time teacher forcing from inference-time generation.",
+        "Understand logits, probability distributions, and token selection.",
+        "Implement a simplified autoregressive decoding loop.",
+        "Explain context windows, stopping criteria, and maximum generation length.",
+        "Understand the relationship between decoding quality, latency, and computational cost."
+    ],
+    "sections": [
+        {
+            "id": "autoregressive-introduction",
+            "title": "1. What Is Autoregressive Generation?",
+            "type": "concept",
+            "content": "Autoregressive generation produces a sequence one token at a time. The model first processes the available prompt, predicts a distribution over the next token, selects one token, and appends it to the sequence. It then predicts the next token using the expanded context. This process continues until a stopping condition is reached. Modern language models commonly use this strategy for text completion, conversational responses, code generation, and structured text generation."
+        },
+        {
+            "id": "autoregressive-tokenization",
+            "title": "2. Text Is Generated as Tokens",
+            "type": "concept",
+            "content": "Language models generally operate on tokens rather than directly manipulating complete words or sentences. A tokenizer maps text into token IDs, and a generated sequence of token IDs can be decoded back into text. A token may represent a complete word, part of a word, punctuation, whitespace, or another text unit. Consequently, generating 100 tokens does not necessarily mean generating 100 words. Tokenization affects context length, inference cost, and how text is incrementally produced."
+        },
+        {
+            "id": "autoregressive-probability",
+            "title": "3. The Probability of a Sequence",
+            "type": "math",
+            "content": "The chain rule of probability allows a sequence probability to be expressed as a product of conditional probabilities. An autoregressive language model uses the preceding tokens to estimate the distribution of the next token. Each prediction depends on the prefix already generated.",
+            "formula": "P(x_1, x_2, ..., x_T) = ∏_{t=1}^{T} P(x_t | x_1, ..., x_{t-1})",
+            "example": "For the sequence 'AI learns fast', the model factorizes its probability into P(AI), P(learns | AI), and P(fast | AI, learns). These terms are conditional probabilities, not independent probabilities."
+        },
+        {
+            "id": "autoregressive-next-token",
+            "title": "4. Predicting the Next Token",
+            "type": "concept",
+            "content": "Given a prompt, the model produces logits: real-valued scores associated with vocabulary tokens. A softmax transformation converts these logits into a probability distribution. The decoding strategy then selects a token from that distribution or chooses the highest-probability candidate. The selected token becomes part of the context for the following prediction. The model does not need to generate an entire paragraph in one prediction; it repeatedly performs next-token prediction."
+        },
+        {
+            "id": "autoregressive-softmax",
+            "title": "5. From Logits to Probabilities",
+            "type": "math",
+            "content": "Softmax transforms a vector of logits into nonnegative values that sum to one. Higher logits generally correspond to higher probabilities. The resulting values represent the model's predicted distribution before any additional sampling transformation is applied.",
+            "formula": "P(x_i) = exp(z_i) / Σ_j exp(z_j)",
+            "example": "Suppose three candidate tokens have logits [2, 1, 0]. Their softmax probabilities are approximately [0.665, 0.245, 0.090]. These are illustrative rounded values. A decoding algorithm may select the first token greedily or sample from the distribution."
+        },
+        {
+            "id": "autoregressive-training-inference",
+            "title": "6. Training Versus Inference",
+            "type": "concept",
+            "content": "During causal language-model training, the model is usually trained to predict target tokens from preceding ground-truth tokens. Teacher forcing supplies the correct preceding tokens, allowing predictions for many positions to be computed in parallel with a causal attention mask. During ordinary autoregressive inference, later input tokens are not known in advance. The model generates one new token at a time, and each generated token influences subsequent predictions. This difference explains why inference often has a sequential latency bottleneck."
+        },
+        {
+            "id": "autoregressive-decoding-loop",
+            "title": "7. The Decoding Loop",
+            "type": "concept",
+            "content": "A basic decoding loop repeatedly runs the model, obtains the next-token distribution, chooses a token, appends it, and checks whether generation should stop. Real inference systems add optimizations such as KV caching, batching, optimized attention kernels, quantized weights, and specialized stopping logic. The loop is conceptually simple, but its performance depends heavily on model architecture, sequence length, hardware, and serving implementation."
+        },
+        {
+            "id": "autoregressive-python",
+            "title": "8. A Simplified Generation Loop",
+            "type": "code",
+            "language": "python",
+            "content": "def generate_next_tokens(model, input_ids, max_new_tokens, eos_token_id):\n    generated = list(input_ids)\n    for _ in range(max_new_tokens):\n        logits = model(generated)\n        next_token = int(logits[-1].argmax())\n        generated.append(next_token)\n        if next_token == eos_token_id:\n            break\n    return generated",
+            "explanation": "This pseudocode assumes that model(generated) returns next-token logits for the entire sequence. It uses greedy decoding, so it always selects the highest-logit token. A production implementation should use token tensors, attention masks, efficient model interfaces, and KV caching where supported. The example is educational and is not directly compatible with every model API."
+        },
+        {
+            "id": "autoregressive-greedy",
+            "title": "9. Greedy Decoding",
+            "type": "concept",
+            "content": "Greedy decoding selects the token with the highest probability at each step. It is deterministic when the model and computation are deterministic, and it is simple to implement. However, a locally highest-probability token does not necessarily lead to the best complete sequence. Greedy decoding can produce repetitive text or miss alternative continuations. Sampling and beam search offer different trade-offs, which are covered in later topics."
+        },
+        {
+            "id": "autoregressive-context-window",
+            "title": "10. Context Windows",
+            "type": "concept",
+            "content": "The context window limits how many tokens the model can consider within a forward pass. Depending on the architecture and serving system, the available context may include the prompt and previously generated tokens. When the sequence approaches the supported limit, the application may need to stop generation, truncate older context, summarize history, or use another context-management strategy. Larger contexts can improve access to relevant information but usually increase memory requirements and computational work."
+        },
+        {
+            "id": "autoregressive-stopping",
+            "title": "11. Stopping Criteria",
+            "type": "concept",
+            "content": "Generation can stop when the model emits an end-of-sequence token, reaches a maximum number of new tokens, or satisfies an application-defined stopping condition. Some systems use stop sequences, such as a specific delimiter, to end a response. Stop-sequence handling must account for token boundaries and streaming behavior. A maximum output length is an important safeguard against unexpectedly long generations and uncontrolled inference costs."
+        },
+        {
+            "id": "autoregressive-cost",
+            "title": "12. Latency and Computational Cost",
+            "type": "concept",
+            "content": "Autoregressive generation has two useful latency phases: processing the input prompt and generating output tokens. Prompt processing is often called prefill, while incremental generation is called decode. Prefill can process prompt positions in parallel, whereas ordinary decoding depends on previously generated tokens. The cost of each step depends on model size, context length, attention implementation, memory bandwidth, and hardware. Reducing per-token latency can substantially improve interactive applications."
+        },
+        {
+            "id": "autoregressive-token-throughput",
+            "title": "13. Measuring Generation Performance",
+            "type": "concept",
+            "content": "Time to first token measures how long a user waits before generation begins. Inter-token latency measures the delay between successive output tokens. Tokens per second measures throughput during generation. End-to-end latency includes prompt processing and the complete response. These metrics describe different aspects of performance and should be measured separately. A system can have high aggregate throughput while still delivering slow responses to individual users."
+        },
+        {
+            "id": "autoregressive-determinism",
+            "title": "14. Determinism and Reproducibility",
+            "type": "concept",
+            "content": "Greedy decoding removes sampling randomness, but it does not guarantee identical outputs across all hardware, numerical precisions, model versions, or execution configurations. Sampling-based decoding can introduce additional randomness. Reproducibility requires documenting the model checkpoint, tokenizer, decoding configuration, random seed where applicable, and relevant software settings. Even then, some GPU operations may be nondeterministic."
+        },
+        {
+            "id": "autoregressive-applications",
+            "title": "15. Applications of Autoregressive Inference",
+            "type": "concept",
+            "content": "Autoregressive inference powers conversational assistants, code completion, summarization, translation, content generation, and structured response generation. Applications can constrain the decoding process or validate the final output to satisfy format requirements. For example, a JSON-producing assistant may use structured decoding where supported and validate the resulting object against a schema. Output validation remains useful because a generation strategy alone does not guarantee semantic correctness."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "autoregressive-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What does autoregressive generation mean?",
+            "correctAnswer": "It means generating each next token conditioned on the tokens already present in the sequence.",
+            "solution": "The model predicts one token, appends it to the context, and predicts the next token using the expanded context. This process repeats until a stopping condition is met."
+        },
+        {
+            "id": "autoregressive-ex-2",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "A prompt contains 120 tokens and the model generates 80 new tokens. How many tokens are in the final sequence if no tokens are removed?",
+            "correctAnswer": "200 tokens.",
+            "solution": "Final sequence length = prompt length + generated tokens = 120 + 80 = 200."
+        },
+        {
+            "id": "autoregressive-ex-3",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why can training predictions be computed in parallel while autoregressive inference is sequential?",
+            "correctAnswer": "Training can use known target prefixes with causal masking, whereas inference must use generated tokens to determine subsequent inputs.",
+            "solution": "During training, the correct preceding tokens are already available for every position. During inference, the next position depends on the token just generated, creating a sequential dependency."
+        },
+        {
+            "id": "autoregressive-ex-4",
+            "type": "design",
+            "difficulty": "hard",
+            "question": "A chatbot sometimes generates extremely long responses. Name three controls that can help.",
+            "correctAnswer": "Set a maximum new-token limit, use appropriate stop conditions, and monitor or constrain generation at the application layer.",
+            "solution": "The token limit caps generation length, stop conditions allow early termination, and application-level controls can prevent excessive costs or enforce response requirements."
+        },
+        {
+            "id": "autoregressive-ex-5",
+            "type": "analysis",
+            "difficulty": "hard",
+            "question": "Why might a system with high tokens-per-second throughput still feel slow to a user?",
+            "correctAnswer": "It may have high prompt-processing latency or long delays before the first token is generated.",
+            "solution": "Throughput describes the rate of token generation over a period, not necessarily the time to first token or total request latency. These metrics should be measured separately."
+        }
+    ],
+    "summary": "Autoregressive inference generates text one token at a time by repeatedly predicting the next-token distribution conditioned on the existing context. Logits are transformed into probabilities, and a decoding algorithm selects the next token. Training can compute predictions for many positions in parallel using known target prefixes, while inference introduces sequential dependencies. Context limits, stopping criteria, latency, and token throughput are important when building efficient language-model applications.",
+    "relatedTopics": [
+        "module-11-inference-temperature",
+        "module-11-inference-top-k",
+        "module-11-inference-top-p",
+        "module-11-inference-beam-search",
+        "module-11-inference-kv-cache",
+        "module-11-inference-quantization",
+        "module-11-inference-batching",
+        "module-11-inference-speculative-decoding"
+    ]
+}

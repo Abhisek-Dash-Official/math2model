@@ -1,0 +1,230 @@
+{
+    "id": "module-06-attention-multi-head-attention",
+    "moduleId": "module-06-attention",
+    "moduleIndex": 6,
+    "topicIndex": 7,
+    "title": "Multi-Head Attention",
+    "slug": "multi-head-attention",
+    "href": "/curriculum/06-attention/multi-head-attention",
+    "filePath": "content/curriculum/06-attention/07-multi-head-attention.json",
+    "description": "Understand multi-head attention from mathematical formulation to implementation, including parallel attention heads, projection matrices, tensor reshaping, concatenation, output projections, computational cost, and common debugging problems.",
+    "difficulty": "intermediate",
+    "estimatedHours": 5,
+    "prerequisites": [
+        "Query, Key, Value Formulation",
+        "Scaled Dot-Product Attention & Math",
+        "Self-Attention",
+        "Masked Attention",
+        "Matrix multiplication and tensor reshaping"
+    ],
+    "learningObjectives": [
+        "Explain why a Transformer uses multiple attention heads.",
+        "Derive the multi-head attention equation.",
+        "Understand per-head query, key, and value dimensions.",
+        "Explain concatenation and the final output projection.",
+        "Track batch, sequence, head, and feature dimensions.",
+        "Implement multi-head self-attention with NumPy.",
+        "Understand the role of head-specific learned projections.",
+        "Analyze parameter count and computational complexity.",
+        "Recognize common tensor reshaping and masking bugs.",
+        "Explain why attention heads may learn different relationships without assuming each head has a fixed semantic role."
+    ],
+    "sections": [
+        {
+            "id": "mha-motivation",
+            "title": "1. Why Multiple Attention Heads?",
+            "type": "concept",
+            "content": "A single attention operation computes one set of query-key compatibility scores and one weighted combination of values for each position. This can be useful, but one representation may not be sufficient for every relationship a model needs to capture. Multi-head attention runs several attention operations in parallel, each with its own learned projections. Different heads can learn different patterns, such as local context, relationships between repeated entities, or long-distance dependencies. These patterns are learned rather than assigned manually, and heads do not always have cleanly separable interpretations."
+        },
+        {
+            "id": "mha-intuition",
+            "title": "2. An Intuitive Example",
+            "type": "example",
+            "content": "Consider the sentence 'The student placed the book on the table because it was heavy.' Different heads may learn to emphasize different relationships. One head might focus on nearby grammatical context, while another might connect 'it' with a plausible earlier noun. A third may emphasize broader sentence context. This is an illustration of possible behavior, not a guarantee that a particular head will learn a specific linguistic function. The benefit is that multiple learned attention patterns can be computed at the same layer."
+        },
+        {
+            "id": "mha-equation",
+            "title": "3. The Multi-Head Attention Equation",
+            "type": "math",
+            "content": "For head i, define head_i = Attention(QW_Q_i, KW_K_i, VW_V_i). The outputs of all heads are concatenated along the feature dimension and projected: MultiHead(Q, K, V) = Concat(head_1, ..., head_h) W_O. Each head has its own query, key, and value projection matrices. The output projection W_O mixes information across the concatenated head features and maps them to the desired model dimension. Bias terms may also be used in practical implementations."
+        },
+        {
+            "id": "mha-dimensions",
+            "title": "4. Understanding the Dimensions",
+            "type": "math",
+            "content": "Let the input model dimension be d_model and the number of heads be h. A common design uses d_k = d_v = d_model / h for each head, assuming d_model is divisible by h. Each head returns a vector of dimension d_v, so concatenating h heads produces a vector of dimension h times d_v, commonly equal to d_model. The output projection W_O then maps that concatenated representation to d_model. This is a common configuration, not a universal requirement."
+        },
+        {
+            "id": "mha-projections",
+            "title": "5. Projection Matrices",
+            "type": "concept",
+            "content": "Each head has its own learned query, key, and value projections. In an implementation, these per-head projections are often combined into large matrices for efficient computation. A query projection may map d_model features to h times d_k features, after which the result is reshaped into separate heads. Keys and values are treated similarly. This combined-matrix approach is mathematically equivalent to applying separate projections to each head, provided the parameters and tensor transformations are arranged consistently."
+        },
+        {
+            "id": "mha-tensor-shapes",
+            "title": "6. Tracking Tensor Shapes",
+            "type": "math",
+            "content": "For a batch of B sequences of length T, the input has shape [B, T, d_model]. After a combined query projection, the tensor can be reshaped to [B, T, h, d_k] and transposed to [B, h, T, d_k]. Keys follow the same pattern. Values become [B, h, T, d_v]. Each head computes scores with shape [B, h, T, T] for self-attention. The weighted value result has shape [B, h, T, d_v]. Transposing and merging the head and value dimensions produces [B, T, h*d_v], which is then passed through W_O."
+        },
+        {
+            "id": "mha-numerical",
+            "title": "7. Small Conceptual Example",
+            "type": "example",
+            "content": "Suppose d_model = 4 and h = 2, so each head uses two-dimensional features. Head 1 may produce an output vector [0.2, 0.8], while head 2 produces [0.7, 0.1]. Concatenation gives [0.2, 0.8, 0.7, 0.1]. The output projection can mix these four features into a new four-dimensional representation. The example shows the structure of concatenation and projection; real outputs and projections are learned from training data."
+        },
+        {
+            "id": "mha-head-diversity",
+            "title": "8. Why Head-Specific Projections Matter",
+            "type": "concept",
+            "content": "If every head used exactly the same projections and received the same inputs and mask, the heads would generally produce identical outputs, offering little benefit from duplication. Independent learned projections let each head construct a different matching space and retrieved representation. Training may still produce overlapping or redundant heads. More heads do not automatically improve performance; the useful number depends on model size, data, optimization, and the task."
+        },
+        {
+            "id": "mha-code",
+            "title": "9. NumPy Implementation from Scratch",
+            "type": "code",
+            "language": "python",
+            "content": "import numpy as np\n\ndef softmax(x, axis=-1):\n    x = x - np.max(x, axis=axis, keepdims=True)\n    exp_x = np.exp(x)\n    return exp_x / np.sum(exp_x, axis=axis, keepdims=True)\n\ndef multi_head_self_attention(X, Wq, Wk, Wv, Wo, num_heads, mask=None):\n    batch, seq_len, d_model = X.shape\n    if d_model % num_heads != 0:\n        raise ValueError('d_model must be divisible by num_heads')\n\n    head_dim = d_model // num_heads\n    Q = (X @ Wq).reshape(batch, seq_len, num_heads, head_dim)\n    K = (X @ Wk).reshape(batch, seq_len, num_heads, head_dim)\n    V = (X @ Wv).reshape(batch, seq_len, num_heads, head_dim)\n\n    Q = Q.transpose(0, 2, 1, 3)\n    K = K.transpose(0, 2, 1, 3)\n    V = V.transpose(0, 2, 1, 3)\n\n    scores = Q @ K.transpose(0, 1, 3, 2) / np.sqrt(head_dim)\n    if mask is not None:\n        scores = np.where(mask, scores, -np.inf)\n\n    weights = softmax(scores, axis=-1)\n    context = weights @ V\n    context = context.transpose(0, 2, 1, 3)\n    context = context.reshape(batch, seq_len, d_model)\n    output = context @ Wo\n    return output, weights\n\nrng = np.random.default_rng(7)\nB, T, D, H = 2, 3, 4, 2\nX = rng.normal(size=(B, T, D))\nWq = rng.normal(size=(D, D))\nWk = rng.normal(size=(D, D))\nWv = rng.normal(size=(D, D))\nWo = rng.normal(size=(D, D))\n\noutput, weights = multi_head_self_attention(X, Wq, Wk, Wv, Wo, H)\nprint('Output shape:', output.shape)\nprint('Weights shape:', weights.shape)",
+            "explanation": "The implementation uses combined projection matrices of shape [d_model, d_model]. Each projected tensor is reshaped into heads and transposed so the head dimension comes before the sequence dimensions. Attention is computed independently for each head, after which the context tensors are transposed and concatenated before the output projection. The optional mask must be broadcastable to [batch, heads, query_length, key_length]. Each row must contain at least one allowed key to avoid undefined softmax behavior."
+        },
+        {
+            "id": "mha-code-tests",
+            "title": "10. Test the Implementation",
+            "type": "code",
+            "language": "python",
+            "content": "assert output.shape == (B, T, D)\nassert weights.shape == (B, H, T, T)\nassert np.allclose(weights.sum(axis=-1), 1.0)\nassert np.all(weights >= 0.0)\nprint('Multi-head attention checks passed.')",
+            "explanation": "The output should preserve the batch size, sequence length, and model dimension. The attention weights should have separate matrices for each batch example and head, with one row per query position and one column per key position. The normalization test catches several common softmax-axis errors."
+        },
+        {
+            "id": "mha-masking",
+            "title": "11. Masks in Multi-Head Attention",
+            "type": "concept",
+            "content": "A causal mask can be shared across every head because all heads obey the same sequence-order restriction, even though they learn different attention weights. Padding masks can also be broadcast across heads. However, mask dimensions must align with batch, head, query, and key axes. In a common convention, the score tensor has shape [B, H, T, T] and a causal mask has shape [T, T]. A key-padding mask may be shaped [B, 1, 1, T]. The exact convention depends on the implementation."
+        },
+        {
+            "id": "mha-parameter-count",
+            "title": "12. Parameter Count",
+            "type": "math",
+            "content": "In a common implementation where all four combined projection matrices W_Q, W_K, W_V, and W_O have shape [d_model, d_model], the matrices contain approximately 4*d_model^2 parameters, excluding biases. This count is broadly independent of the number of heads when the concatenated head dimension remains d_model. Changing the number of heads changes how the representation is partitioned and how each head computes attention, even if the total projection parameter count remains similar."
+        },
+        {
+            "id": "mha-complexity",
+            "title": "13. Computational Complexity",
+            "type": "math",
+            "content": "For sequence length T and model dimension d_model, dense multi-head attention includes projection costs on the order of O(T*d_model^2) per sequence and pairwise attention costs on the order of O(T^2*d_model) under a common fixed-total-width design. Batch size multiplies the overall work. The attention-score tensor contains B*h*T^2 entries before accounting for storage optimizations. More heads can increase bookkeeping and memory traffic, while optimized implementations combine operations to reduce overhead."
+        },
+        {
+            "id": "mha-common-bugs",
+            "title": "14. Common Bugs",
+            "type": "concept",
+            "content": "Common errors include reshaping to the wrong head dimension, forgetting to transpose the head axis before matrix multiplication, transposing the wrong key dimensions, and merging heads in the wrong order. Another error is using d_model instead of head_dim in the score scaling factor. The scale for each head is sqrt(d_k) for that head. Incorrect mask broadcasting can silently apply restrictions to the wrong dimension. Check every intermediate shape and test a tiny model with known dimensions before using large training data."
+        },
+        {
+            "id": "mha-interpretation",
+            "title": "15. Interpreting Attention Heads",
+            "type": "concept",
+            "content": "Attention visualization can help investigate how heads distribute their weights, but a head's function should not be inferred from one attention map alone. Some heads may show local patterns, some may attend to special tokens, and others may capture long-distance interactions. Their behavior can vary with the layer, input, training procedure, and model. Head ablation and controlled input experiments can help test whether a head contributes to a particular behavior."
+        },
+        {
+            "id": "mha-applications",
+            "title": "16. Applications",
+            "type": "concept",
+            "content": "Multi-head attention is used in language models, encoder-decoder systems, image Transformers, speech models, and many multimodal architectures. In language processing, separate heads can help represent different contextual relationships. In vision, heads can combine information across image patches. In encoder-decoder architectures, multi-head attention can be used both for self-attention and for cross-attention between decoder and encoder representations."
+        },
+        {
+            "id": "mha-summary",
+            "title": "17. Key Takeaways",
+            "type": "concept",
+            "content": "Multi-head attention performs several attention operations with independent learned projections, concatenates their context vectors, and applies an output projection. Correct tensor reshaping is essential: separate the head dimension before attention and merge it after the weighted value operation. Multi-head attention increases representational flexibility without necessarily increasing the total projection width, but it retains dense attention's quadratic sequence-length cost."
+        }
+    ],
+    "exercises": [
+        {
+            "id": "mha-ex-1",
+            "type": "conceptual",
+            "difficulty": "easy",
+            "question": "What is the main idea behind multi-head attention?",
+            "correctAnswer": "Compute several attention operations with different learned projections in parallel, then combine their outputs.",
+            "solution": "Each head can learn a different compatibility space and value representation. Their outputs are concatenated and passed through an output projection."
+        },
+        {
+            "id": "mha-ex-2",
+            "type": "calculation",
+            "difficulty": "easy",
+            "question": "If d_model = 512 and the model uses 8 equal-sized heads, what is the dimension of each head?",
+            "correctAnswer": "64.",
+            "solution": "Compute 512 / 8 = 64."
+        },
+        {
+            "id": "mha-ex-3",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "For batch size 4, sequence length 20, and 8 heads, what is the shape of a standard self-attention score tensor?",
+            "correctAnswer": "[4, 8, 20, 20].",
+            "solution": "The dimensions represent batch, head, query position, and key position."
+        },
+        {
+            "id": "mha-ex-4",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Why is the output projection W_O used after concatenating the heads?",
+            "correctAnswer": "It mixes the concatenated head features and maps them to the required output dimension.",
+            "solution": "Concatenation combines feature dimensions but does not itself learn interactions between those concatenated features. The output projection provides that learned mixing."
+        },
+        {
+            "id": "mha-ex-5",
+            "type": "calculation",
+            "difficulty": "medium",
+            "question": "Under the common four-matrix design, approximately how many matrix parameters are present when d_model = 256, excluding biases?",
+            "correctAnswer": "262,144.",
+            "solution": "There are four matrices with 256 times 256 parameters each, so 4 times 65,536 equals 262,144."
+        },
+        {
+            "id": "mha-ex-6",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "A model uses 8 heads but divides attention scores by sqrt(512) when each head's key dimension is 64. What is the issue?",
+            "correctAnswer": "It uses the model dimension rather than the per-head key dimension; the usual scaling factor is sqrt(64) = 8.",
+            "solution": "Each head calculates dot products in its own 64-dimensional key space, so the standard scaling factor is based on 64."
+        },
+        {
+            "id": "mha-ex-7",
+            "type": "implementation",
+            "difficulty": "hard",
+            "question": "After head attention, a context tensor has shape [B, H, T, D_h]. What transformations produce the concatenated representation [B, T, H*D_h]?",
+            "correctAnswer": "Transpose it to [B, T, H, D_h] and reshape to [B, T, H*D_h].",
+            "solution": "The sequence axis must precede the head axis before flattening the head and per-head feature dimensions."
+        },
+        {
+            "id": "mha-ex-8",
+            "type": "conceptual",
+            "difficulty": "medium",
+            "question": "Does each attention head always correspond to one clearly identifiable linguistic function?",
+            "correctAnswer": "No.",
+            "solution": "Heads can learn overlapping, distributed, or input-dependent patterns. Their function should be investigated empirically rather than assumed."
+        },
+        {
+            "id": "mha-ex-9",
+            "type": "complexity",
+            "difficulty": "medium",
+            "question": "What happens to the number of dense query-key pairs if sequence length doubles?",
+            "correctAnswer": "It increases by a factor of four.",
+            "solution": "The number of query-key pairs grows quadratically with sequence length."
+        },
+        {
+            "id": "mha-ex-10",
+            "type": "debugging",
+            "difficulty": "hard",
+            "question": "Why is a mask of shape [T, T] often suitable for attention scores shaped [B, H, T, T]?",
+            "correctAnswer": "The mask can broadcast across the batch and head dimensions while matching the query and key dimensions.",
+            "solution": "Broadcasting lets one sequence-order mask be reused for every batch item and head, provided the framework's broadcasting rules are satisfied."
+        }
+    ],
+    "summary": "Multi-head attention runs several attention operations with different learned query, key, and value projections. Each head captures a potentially different contextual pattern. The head outputs are concatenated and mixed through an output projection. Correct tensor reshaping, per-head scaling, and mask broadcasting are essential for a reliable implementation.",
+    "relatedTopics": [
+        "module-06-attention-scaled-dot-product-attention",
+        "module-06-attention-self-attention",
+        "module-06-attention-masked-attention",
+        "module-06-attention-positional-encoding",
+        "module-07-transformers-encoder"
+    ]
+}
