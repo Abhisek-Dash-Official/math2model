@@ -16,37 +16,49 @@
           "title": "Programming Fundamentals",
           "slug": "programming-fundamentals",
           "href": "/curriculum/00-foundations/programming-fundamentals",
-          "filePath": "content/curriculum/00-foundations/01-programming-fundamentals.json"
+          "filePath": "content/curriculum/00-foundations/01-programming-fundamentals.json",
+          "docs_link": "https://www.w3schools.com/c/",
+          "yt_link": "https://www.youtube.com/watch?v=KJgsSFOSQv0"
         },
         {
           "title": "Python for AI",
           "slug": "python-for-ai",
           "href": "/curriculum/00-foundations/python-for-ai",
-          "filePath": "content/curriculum/00-foundations/02-python-for-ai.json"
+          "filePath": "content/curriculum/00-foundations/02-python-for-ai.json",
+          "docs_link": "https://docs.python.org/3/tutorial/",
+          "yt_link": "https://www.youtube.com/watch?v=rfscVS0vtbw"
         },
         {
           "title": "NumPy",
           "slug": "numpy",
           "href": "/curriculum/00-foundations/numpy",
-          "filePath": "content/curriculum/00-foundations/03-numpy.json"
+          "filePath": "content/curriculum/00-foundations/03-numpy.json",
+          "docs_link": "https://numpy.org/doc/stable/user/absolute_beginners.html",
+          "yt_link": "https://www.youtube.com/watch?v=QUT1VHiLmmI"
         },
         {
           "title": "Data Structures & Algorithms",
           "slug": "data-structures-algorithms",
           "href": "/curriculum/00-foundations/data-structures-algorithms",
-          "filePath": "content/curriculum/00-foundations/04-data-structures-algorithms.json"
+          "filePath": "content/curriculum/00-foundations/04-data-structures-algorithms.json",
+          "docs_link": "https://www.geeksforgeeks.org/dsa/",
+          "yt_link": "https://www.youtube.com/watch?v=8hly31xKli0"
         },
         {
           "title": "Basic Probability Intuition",
           "slug": "basic-probability-intuition",
           "href": "/curriculum/00-foundations/basic-probability-intuition",
-          "filePath": "content/curriculum/00-foundations/05-basic-probability-intuition.json"
+          "filePath": "content/curriculum/00-foundations/05-basic-probability-intuition.json",
+          "docs_link": "https://www.khanacademy.org/math/statistics-probability",
+          "yt_link": "https://www.youtube.com/watch?v=uzkc-qNVoOk"
         },
         {
           "title": "Computational Thinking",
           "slug": "computational-thinking",
           "href": "/curriculum/00-foundations/computational-thinking",
-          "filePath": "content/curriculum/00-foundations/06-computational-thinking.json"
+          "filePath": "content/curriculum/00-foundations/06-computational-thinking.json",
+          "docs_link": "https://computationalthinking.cs.cmu.edu/",
+          "yt_link": "https://www.youtube.com/watch?v=VFcUgSYyRPg"
         }
       ]
     },
@@ -68,49 +80,65 @@
               "title": "Scalars, Vectors, Matrices, Tensors",
               "slug": "scalars-vectors-matrices-tensors",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/scalars-vectors-matrices-tensors",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/01-scalars-vectors-matrices-tensors.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/01-scalars-vectors-matrices-tensors.json",
+              "docs_link": "https://www.mathsisfun.com/algebra/vectors.html",
+              "yt_link": "https://www.youtube.com/watch?v=fNk_zzaMoSs"
             },
             {
               "title": "Vector Operations",
               "slug": "vector-operations",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/vector-operations",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/02-vector-operations.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/02-vector-operations.json",
+              "docs_link": "https://www.mathsisfun.com/algebra/vectors.html",
+              "yt_link": "https://www.youtube.com/watch?v=ml4NSzCQobk"
             },
             {
               "title": "Dot Products",
               "slug": "dot-products",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/dot-products",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/03-dot-products.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/03-dot-products.json",
+              "docs_link": "https://numpy.org/doc/stable/reference/generated/numpy.dot.html",
+              "yt_link": "https://www.youtube.com/watch?v=LyGKycYT2v0"
             },
             {
               "title": "Matrix Multiplication",
               "slug": "matrix-multiplication",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/matrix-multiplication",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/04-matrix-multiplication.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/04-matrix-multiplication.json",
+              "docs_link": "https://numpy.org/doc/stable/reference/generated/numpy.matmul.html",
+              "yt_link": "https://www.youtube.com/watch?v=kT4Mp9EdVqs"
             },
             {
               "title": "Linear Transformations",
               "slug": "linear-transformations",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/linear-transformations",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/05-linear-transformations.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/05-linear-transformations.json",
+              "docs_link": "https://textbooks.math.gatech.edu/ila/linear-transformations.html",
+              "yt_link": "https://www.youtube.com/watch?v=kYB8IZa5AuE"
             },
             {
               "title": "Basis and Dimensionality",
               "slug": "basis-and-dimensionality",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/basis-and-dimensionality",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/06-basis-and-dimensionality.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/06-basis-and-dimensionality.json",
+              "docs_link": "https://textbooks.math.gatech.edu/ila/linear-independence.html",
+              "yt_link": "https://www.youtube.com/watch?v=k7RM-ot2NWY"
             },
             {
               "title": "Eigenvalues / Eigenvectors",
               "slug": "eigenvalues-eigenvectors",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/eigenvalues-eigenvectors",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/07-eigenvalues-eigenvectors.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/07-eigenvalues-eigenvectors.json",
+              "docs_link": "https://textbooks.math.gatech.edu/ila/eigenvectors.html",
+              "yt_link": "https://www.youtube.com/watch?v=PFDu9oVAE-g"
             },
             {
               "title": "Singular Value Decomposition (SVD)",
               "slug": "svd",
               "href": "/curriculum/01-mathematics-for-ai/linear-algebra/svd",
-              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/08-svd.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/linear-algebra/08-svd.json",
+              "docs_link": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.svd.html",
+              "yt_link": "https://www.youtube.com/watch?v=nbBvuuNVfco"
             }
           ]
         },
@@ -122,49 +150,65 @@
               "title": "Functions",
               "slug": "functions",
               "href": "/curriculum/01-mathematics-for-ai/calculus/functions",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/01-functions.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/01-functions.json",
+              "docs_link": "https://www.khanacademy.org/math/algebra",
+              "yt_link": "https://www.youtube.com/watch?v=kvGsIo1TmsM"
             },
             {
               "title": "Limits",
               "slug": "limits",
               "href": "/curriculum/01-mathematics-for-ai/calculus/limits",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/02-limits.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/02-limits.json",
+              "docs_link": "https://www.khanacademy.org/math/calculus-1/cs1-limits-and-continuity",
+              "yt_link": "https://www.youtube.com/watch?v=riXcZT2ICjA"
             },
             {
               "title": "Derivatives",
               "slug": "derivatives",
               "href": "/curriculum/01-mathematics-for-ai/calculus/derivatives",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/03-derivatives.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/03-derivatives.json",
+              "docs_link": "https://www.khanacademy.org/math/calculus-1/cs1-derivatives-definition-and-basic-rules",
+              "yt_link": "https://www.youtube.com/watch?v=ANyVpMS3HL4"
             },
             {
               "title": "Partial Derivatives",
               "slug": "partial-derivatives",
               "href": "/curriculum/01-mathematics-for-ai/calculus/partial-derivatives",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/04-partial-derivatives.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/04-partial-derivatives.json",
+              "docs_link": "https://tutorial.math.lamar.edu/classes/calciii/partialderivatives.aspx",
+              "yt_link": "https://www.youtube.com/watch?v=AXqhWeUEtQU"
             },
             {
               "title": "Gradients",
               "slug": "gradients",
               "href": "/curriculum/01-mathematics-for-ai/calculus/gradients",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/05-gradients.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/05-gradients.json",
+              "docs_link": "https://tutorial.math.lamar.edu/classes/calciii/directionalderivatives.aspx",
+              "yt_link": "https://www.youtube.com/watch?v=TEB2z7ZlRAw"
             },
             {
               "title": "Jacobians",
               "slug": "jacobians",
               "href": "/curriculum/01-mathematics-for-ai/calculus/jacobians",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/06-jacobians.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/06-jacobians.json",
+              "docs_link": "https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant",
+              "yt_link": "https://www.youtube.com/watch?v=bohL918kXQk"
             },
             {
               "title": "Chain Rule",
               "slug": "chain-rule",
               "href": "/curriculum/01-mathematics-for-ai/calculus/chain-rule",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/07-chain-rule.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/07-chain-rule.json",
+              "docs_link": "https://www.khanacademy.org/math/calculus-1/cs1-derivatives-definition-and-basic-rules",
+              "yt_link": "https://www.youtube.com/watch?v=H-ybCx8gt-8"
             },
             {
               "title": "Optimization",
               "slug": "optimization",
               "href": "/curriculum/01-mathematics-for-ai/calculus/optimization",
-              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/08-optimization.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/calculus/08-optimization.json",
+              "docs_link": "https://www.khanacademy.org/math/calculus-1/cs1-applications-of-derivatives",
+              "yt_link": "https://www.youtube.com/watch?v=jc2IthslyzM"
             }
           ]
         },
@@ -176,55 +220,73 @@
               "title": "Random Variables",
               "slug": "random-variables",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/random-variables",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/01-random-variables.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/01-random-variables.json",
+              "docs_link": "https://www.probabilitycourse.com/chapter3/3_1_1_random_variables.php",
+              "yt_link": "https://www.youtube.com/watch?v=3v9w79NhsfI"
             },
             {
               "title": "Probability Distributions",
               "slug": "probability-distributions",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/probability-distributions",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/02-probability-distributions.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/02-probability-distributions.json",
+              "docs_link": "https://www.probabilitycourse.com/chapter3/3_2_1_discrete_distributions.php",
+              "yt_link": "https://www.youtube.com/watch?v=oI3hZJqXJuc"
             },
             {
               "title": "Expectation & Variance",
               "slug": "expectation-variance",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/expectation-variance",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/03-expectation-variance.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/03-expectation-variance.json",
+              "docs_link": "https://www.probabilitycourse.com/chapter3/3_1_5_expectation.php",
+              "yt_link": "https://www.youtube.com/watch?v=8idr1WZ1A7Q"
             },
             {
               "title": "Conditional Probability",
               "slug": "conditional-probability",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/conditional-probability",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/04-conditional-probability.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/04-conditional-probability.json",
+              "docs_link": "https://www.probabilitycourse.com/chapter1/1_4_0_conditional_probability.php",
+              "yt_link": "https://www.youtube.com/watch?v=6xPkG2pA-TU"
             },
             {
               "title": "Bayes Theorem",
               "slug": "bayes-theorem",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/bayes-theorem",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/05-bayes-theorem.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/05-bayes-theorem.json",
+              "docs_link": "https://www.probabilitycourse.com/chapter1/1_4_3_bayes_rule.php",
+              "yt_link": "https://www.youtube.com/watch?v=HZGCoVF3YvM"
             },
             {
               "title": "Maximum Likelihood Estimation (MLE)",
               "slug": "maximum-likelihood",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/maximum-likelihood",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/06-maximum-likelihood.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/06-maximum-likelihood.json",
+              "docs_link": "https://en.wikipedia.org/wiki/Maximum_likelihood_estimation",
+              "yt_link": "https://www.youtube.com/watch?v=XepXtl9YKwc"
             },
             {
               "title": "Maximum A Posteriori (MAP)",
               "slug": "maximum-a-posteriori",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/maximum-a-posteriori",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/07-maximum-a-posteriori.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/07-maximum-a-posteriori.json",
+              "docs_link": "https://en.wikipedia.org/wiki/Maximum_a_posteriori_estimation",
+              "yt_link": "https://www.youtube.com/watch?v=8idr1WZ1A7Q"
             },
             {
               "title": "Entropy",
               "slug": "entropy",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/entropy",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/08-entropy.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/08-entropy.json",
+              "docs_link": "https://en.wikipedia.org/wiki/Entropy_(information_theory)",
+              "yt_link": "https://www.youtube.com/watch?v=2s3aJfRr9gE"
             },
             {
               "title": "KL Divergence",
               "slug": "kl-divergence",
               "href": "/curriculum/01-mathematics-for-ai/probability-and-statistics/kl-divergence",
-              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/09-kl-divergence.json"
+              "filePath": "content/curriculum/01-mathematics-for-ai/probability-and-statistics/09-kl-divergence.json",
+              "docs_link": "https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence",
+              "yt_link": "https://www.youtube.com/watch?v=ErfnhcEV1O8"
             }
           ]
         }
@@ -244,97 +306,129 @@
           "title": "What is Learning?",
           "slug": "what-is-learning",
           "href": "/curriculum/02-classical-machine-learning/what-is-learning",
-          "filePath": "content/curriculum/02-classical-machine-learning/01-what-is-learning.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/01-what-is-learning.json",
+          "docs_link": "https://www.ibm.com/think/topics/machine-learning",
+          "yt_link": "https://www.youtube.com/watch?v=ukzFI9rgwfU"
         },
         {
           "title": "Training, Validation, and Test Sets",
           "slug": "training-validation-test-sets",
           "href": "/curriculum/02-classical-machine-learning/training-validation-test-sets",
-          "filePath": "content/curriculum/02-classical-machine-learning/02-training-validation-test-sets.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/02-training-validation-test-sets.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/cross_validation.html",
+          "yt_link": "https://www.youtube.com/watch?v=fwY9Qv96DJY"
         },
         {
           "title": "Linear Regression",
           "slug": "linear-regression",
           "href": "/curriculum/02-classical-machine-learning/linear-regression",
-          "filePath": "content/curriculum/02-classical-machine-learning/03-linear-regression.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/03-linear-regression.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/linear_model.html#ordinary-least-squares",
+          "yt_link": "https://www.youtube.com/watch?v=7ArmBVF2dCs"
         },
         {
           "title": "Logistic Regression",
           "slug": "logistic-regression",
           "href": "/curriculum/02-classical-machine-learning/logistic-regression",
-          "filePath": "content/curriculum/02-classical-machine-learning/04-logistic-regression.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/04-logistic-regression.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression",
+          "yt_link": "https://www.youtube.com/watch?v=yIYKR4sgzI8"
         },
         {
           "title": "Loss Functions",
           "slug": "loss-functions",
           "href": "/curriculum/02-classical-machine-learning/loss-functions",
-          "filePath": "content/curriculum/02-classical-machine-learning/05-loss-functions.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/05-loss-functions.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/model_evaluation.html",
+          "yt_link": "https://www.youtube.com/watch?v=Skc8nqJirJg"
         },
         {
           "title": "Gradient Descent",
           "slug": "gradient-descent",
           "href": "/curriculum/02-classical-machine-learning/gradient-descent",
-          "filePath": "content/curriculum/02-classical-machine-learning/06-gradient-descent.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/06-gradient-descent.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/sgd.html",
+          "yt_link": "https://www.youtube.com/watch?v=IHZwWFHWa-w"
         },
         {
           "title": "Regularization",
           "slug": "regularization",
           "href": "/curriculum/02-classical-machine-learning/regularization",
-          "filePath": "content/curriculum/02-classical-machine-learning/07-regularization.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/07-regularization.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/linear_model.html#ridge-regression-and-classification",
+          "yt_link": "https://www.youtube.com/watch?v=Q81RR3yKn30"
         },
         {
           "title": "Decision Trees",
           "slug": "decision-trees",
           "href": "/curriculum/02-classical-machine-learning/decision-trees",
-          "filePath": "content/curriculum/02-classical-machine-learning/08-decision-trees.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/08-decision-trees.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/tree.html",
+          "yt_link": "https://www.youtube.com/watch?v=ZVR2Way4nwQ"
         },
         {
           "title": "Random Forests",
           "slug": "random-forests",
           "href": "/curriculum/02-classical-machine-learning/random-forests",
-          "filePath": "content/curriculum/02-classical-machine-learning/09-random-forests.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/09-random-forests.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/ensemble.html#forest",
+          "yt_link": "https://www.youtube.com/watch?v=J4Wdy0Wc_xQ"
         },
         {
           "title": "Support Vector Machines (SVM)",
           "slug": "svm",
           "href": "/curriculum/02-classical-machine-learning/svm",
-          "filePath": "content/curriculum/02-classical-machine-learning/10-svm.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/10-svm.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/svm.html",
+          "yt_link": "https://www.youtube.com/watch?v=efR1C6CvhmE"
         },
         {
           "title": "K-Nearest Neighbors (KNN)",
           "slug": "knn",
           "href": "/curriculum/02-classical-machine-learning/knn",
-          "filePath": "content/curriculum/02-classical-machine-learning/11-knn.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/11-knn.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/neighbors.html",
+          "yt_link": "https://www.youtube.com/watch?v=HVXime0nQeI"
         },
         {
           "title": "Clustering Algorithms",
           "slug": "clustering",
           "href": "/curriculum/02-classical-machine-learning/clustering",
-          "filePath": "content/curriculum/02-classical-machine-learning/12-clustering.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/12-clustering.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/clustering.html",
+          "yt_link": "https://www.youtube.com/watch?v=4b5d3muPQmA"
         },
         {
           "title": "Principal Component Analysis (PCA)",
           "slug": "pca",
           "href": "/curriculum/02-classical-machine-learning/pca",
-          "filePath": "content/curriculum/02-classical-machine-learning/13-pca.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/13-pca.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/decomposition.html#pca",
+          "yt_link": "https://www.youtube.com/watch?v=FgakZw6K1QQ"
         },
         {
           "title": "Evaluation Metrics",
           "slug": "evaluation-metrics",
           "href": "/curriculum/02-classical-machine-learning/evaluation-metrics",
-          "filePath": "content/curriculum/02-classical-machine-learning/14-evaluation-metrics.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/14-evaluation-metrics.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/model_evaluation.html",
+          "yt_link": "https://www.youtube.com/watch?v=85dtiMz9tSo"
         },
         {
           "title": "Bias / Variance Tradeoff",
           "slug": "bias-variance",
           "href": "/curriculum/02-classical-machine-learning/bias-variance",
-          "filePath": "content/curriculum/02-classical-machine-learning/15-bias-variance.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/15-bias-variance.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/learning_curve.html",
+          "yt_link": "https://www.youtube.com/watch?v=EuBBz3bI-aA"
         },
         {
           "title": "Overfitting and Underfitting",
           "slug": "overfitting-underfitting",
           "href": "/curriculum/02-classical-machine-learning/overfitting-underfitting",
-          "filePath": "content/curriculum/02-classical-machine-learning/16-overfitting-underfitting.json"
+          "filePath": "content/curriculum/02-classical-machine-learning/16-overfitting-underfitting.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/learning_curve.html",
+          "yt_link": "https://www.youtube.com/watch?v=QAU1jZ9UK2I"
         }
       ]
     },
@@ -352,85 +446,113 @@
           "title": "Perceptron",
           "slug": "perceptron",
           "href": "/curriculum/03-neural-networks/perceptron",
-          "filePath": "content/curriculum/03-neural-networks/01-perceptron.json"
+          "filePath": "content/curriculum/03-neural-networks/01-perceptron.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/linear_model.html#perceptron",
+          "yt_link": "https://www.youtube.com/watch?v=4Gac5I64LM4"
         },
         {
           "title": "Neurons",
           "slug": "neurons",
           "href": "/curriculum/03-neural-networks/neurons",
-          "filePath": "content/curriculum/03-neural-networks/02-neurons.json"
+          "filePath": "content/curriculum/03-neural-networks/02-neurons.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/mlp.html",
+          "yt_link": "https://www.youtube.com/watch?v=aircAruvnKk"
         },
         {
           "title": "Activation Functions",
           "slug": "activation-functions",
           "href": "/curriculum/03-neural-networks/activation-functions",
-          "filePath": "content/curriculum/03-neural-networks/03-activation-functions.json"
+          "filePath": "content/curriculum/03-neural-networks/03-activation-functions.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/activations",
+          "yt_link": "https://www.youtube.com/watch?v=Xvg00QnyaIY"
         },
         {
           "title": "Forward Propagation",
           "slug": "forward-propagation",
           "href": "/curriculum/03-neural-networks/forward-propagation",
-          "filePath": "content/curriculum/03-neural-networks/04-forward-propagation.json"
+          "filePath": "content/curriculum/03-neural-networks/04-forward-propagation.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/mlp.html",
+          "yt_link": "https://www.youtube.com/watch?v=Ilg3gGewQ5U"
         },
         {
           "title": "Loss Functions",
           "slug": "loss-functions",
           "href": "/curriculum/03-neural-networks/loss-functions",
-          "filePath": "content/curriculum/03-neural-networks/05-loss-functions.json"
+          "filePath": "content/curriculum/03-neural-networks/05-loss-functions.json",
+          "docs_link": "https://keras.io/api/losses/",
+          "yt_link": "https://www.youtube.com/watch?v=Skc8nqJirJg"
         },
         {
           "title": "Computational Graphs",
           "slug": "computational-graphs",
           "href": "/curriculum/03-neural-networks/computational-graphs",
-          "filePath": "content/curriculum/03-neural-networks/06-computational-graphs.json"
+          "filePath": "content/curriculum/03-neural-networks/06-computational-graphs.json",
+          "docs_link": "https://www.tensorflow.org/guide/intro_to_graphs",
+          "yt_link": "https://www.youtube.com/watch?v=Z8j9p8gL7Ww"
         },
         {
           "title": "Backpropagation",
           "slug": "backpropagation",
           "href": "/curriculum/03-neural-networks/backpropagation",
-          "filePath": "content/curriculum/03-neural-networks/07-backpropagation.json"
+          "filePath": "content/curriculum/03-neural-networks/07-backpropagation.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/mlp.html",
+          "yt_link": "https://www.youtube.com/watch?v=Ilg3gGewQ5U"
         },
         {
           "title": "Chain Rule in Neural Networks",
           "slug": "chain-rule-in-neural-networks",
           "href": "/curriculum/03-neural-networks/chain-rule-in-neural-networks",
-          "filePath": "content/curriculum/03-neural-networks/08-chain-rule-in-neural-networks.json"
+          "filePath": "content/curriculum/03-neural-networks/08-chain-rule-in-neural-networks.json",
+          "docs_link": "https://www.khanacademy.org/math/differential-calculus/dc-chain",
+          "yt_link": "https://www.youtube.com/watch?v=YG15m2VwSjA"
         },
         {
           "title": "Gradient Descent & SGD",
           "slug": "gradient-descent-sgd",
           "href": "/curriculum/03-neural-networks/gradient-descent-sgd",
-          "filePath": "content/curriculum/03-neural-networks/09-gradient-descent-sgd.json"
+          "filePath": "content/curriculum/03-neural-networks/09-gradient-descent-sgd.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD",
+          "yt_link": "https://www.youtube.com/watch?v=IHZwWFHWa-w"
         },
         {
           "title": "Mini-Batch Training",
           "slug": "mini-batch-training",
           "href": "/curriculum/03-neural-networks/mini-batch-training",
-          "filePath": "content/curriculum/03-neural-networks/10-mini-batch-training.json"
+          "filePath": "content/curriculum/03-neural-networks/10-mini-batch-training.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/data/Dataset",
+          "yt_link": "https://www.youtube.com/watch?v=4qJaSmvhxi8"
         },
         {
           "title": "Weight Initialization",
           "slug": "weight-initialization",
           "href": "/curriculum/03-neural-networks/weight-initialization",
-          "filePath": "content/curriculum/03-neural-networks/11-weight-initialization.json"
+          "filePath": "content/curriculum/03-neural-networks/11-weight-initialization.json",
+          "docs_link": "https://keras.io/api/layers/initializers/",
+          "yt_link": "https://www.youtube.com/watch?v=s2coXdufOzE"
         },
         {
           "title": "Batch Normalization",
           "slug": "batch-normalization",
           "href": "/curriculum/03-neural-networks/batch-normalization",
-          "filePath": "content/curriculum/03-neural-networks/12-batch-normalization.json"
+          "filePath": "content/curriculum/03-neural-networks/12-batch-normalization.json",
+          "docs_link": "https://keras.io/api/layers/normalization_layers/batch_normalization/",
+          "yt_link": "https://www.youtube.com/watch?v=DtEq44FTPM4"
         },
         {
           "title": "Dropout",
           "slug": "dropout",
           "href": "/curriculum/03-neural-networks/dropout",
-          "filePath": "content/curriculum/03-neural-networks/13-dropout.json"
+          "filePath": "content/curriculum/03-neural-networks/13-dropout.json",
+          "docs_link": "https://keras.io/api/layers/regularization_layers/dropout/",
+          "yt_link": "https://www.youtube.com/watch?v=ARq74QuavAo"
         },
         {
           "title": "Optimizers: Momentum, RMSProp, Adam",
           "slug": "optimizers-momentum-rmsprop-adam",
           "href": "/curriculum/03-neural-networks/optimizers-momentum-rmsprop-adam",
-          "filePath": "content/curriculum/03-neural-networks/14-optimizers-momentum-rmsprop-adam.json"
+          "filePath": "content/curriculum/03-neural-networks/14-optimizers-momentum-rmsprop-adam.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/optimizers",
+          "yt_link": "https://www.youtube.com/watch?v=mdKjMPmcWjY"
         }
       ]
     },
@@ -448,49 +570,65 @@
           "title": "Multilayer Perceptrons (MLPs)",
           "slug": "mlps",
           "href": "/curriculum/04-deep-learning/mlps",
-          "filePath": "content/curriculum/04-deep-learning/01-mlps.json"
+          "filePath": "content/curriculum/04-deep-learning/01-mlps.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/mlp.html",
+          "yt_link": "https://www.youtube.com/watch?v=aircAruvnKk"
         },
         {
           "title": "Convolutional Neural Networks (CNNs)",
           "slug": "cnns",
           "href": "/curriculum/04-deep-learning/cnns",
-          "filePath": "content/curriculum/04-deep-learning/02-cnns.json"
+          "filePath": "content/curriculum/04-deep-learning/02-cnns.json",
+          "docs_link": "https://cs231n.github.io/convolutional-networks/",
+          "yt_link": "https://www.youtube.com/watch?v=QzY57FaENXg"
         },
         {
           "title": "Convolution Mathematically",
           "slug": "convolution-mathematically",
           "href": "/curriculum/04-deep-learning/convolution-mathematically",
-          "filePath": "content/curriculum/04-deep-learning/03-convolution-mathematically.json"
+          "filePath": "content/curriculum/04-deep-learning/03-convolution-mathematically.json",
+          "docs_link": "https://d2l.ai/chapter_convolutional-neural-networks/conv-layer.html",
+          "yt_link": "https://www.youtube.com/watch?v=KuXjwB4LzSA"
         },
         {
           "title": "Pooling Layers",
           "slug": "pooling",
           "href": "/curriculum/04-deep-learning/pooling",
-          "filePath": "content/curriculum/04-deep-learning/04-pooling.json"
+          "filePath": "content/curriculum/04-deep-learning/04-pooling.json",
+          "docs_link": "https://cs231n.github.io/convolutional-networks/#pool",
+          "yt_link": "https://www.youtube.com/watch?v=8oOgPUO-TBY"
         },
         {
           "title": "Image Classification",
           "slug": "image-classification",
           "href": "/curriculum/04-deep-learning/image-classification",
-          "filePath": "content/curriculum/04-deep-learning/05-image-classification.json"
+          "filePath": "content/curriculum/04-deep-learning/05-image-classification.json",
+          "docs_link": "https://www.tensorflow.org/tutorials/images/classification",
+          "yt_link": "https://www.youtube.com/watch?v=t0EzVCvQjGE"
         },
         {
           "title": "Embeddings & Representation Learning",
           "slug": "embeddings-representation-learning",
           "href": "/curriculum/04-deep-learning/embeddings-representation-learning",
-          "filePath": "content/curriculum/04-deep-learning/06-embeddings-representation-learning.json"
+          "filePath": "content/curriculum/04-deep-learning/06-embeddings-representation-learning.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/representation.html",
+          "yt_link": "https://www.youtube.com/watch?v=wjZofJX0v4M"
         },
         {
           "title": "Autoencoders",
           "slug": "autoencoders",
           "href": "/curriculum/04-deep-learning/autoencoders",
-          "filePath": "content/curriculum/04-deep-learning/07-autoencoders.json"
+          "filePath": "content/curriculum/04-deep-learning/07-autoencoders.json",
+          "docs_link": "https://www.tensorflow.org/tutorials/generative/autoencoder",
+          "yt_link": "https://www.youtube.com/watch?v=7mRfwaGGAPg"
         },
         {
           "title": "Transfer Learning",
           "slug": "transfer-learning",
           "href": "/curriculum/04-deep-learning/transfer-learning",
-          "filePath": "content/curriculum/04-deep-learning/08-transfer-learning.json"
+          "filePath": "content/curriculum/04-deep-learning/08-transfer-learning.json",
+          "docs_link": "https://www.tensorflow.org/tutorials/images/transfer_learning",
+          "yt_link": "https://www.youtube.com/watch?v=yofjFQddwHE"
         }
       ]
     },
@@ -508,49 +646,65 @@
           "title": "Sequential Data Fundamentals",
           "slug": "sequential-data",
           "href": "/curriculum/05-sequence-models/sequential-data",
-          "filePath": "content/curriculum/05-sequence-models/01-sequential-data.json"
+          "filePath": "content/curriculum/05-sequence-models/01-sequential-data.json",
+          "docs_link": "https://www.tensorflow.org/tutorials/structured_data/time_series",
+          "yt_link": "https://www.youtube.com/watch?v=C6SZUU8-c7M"
         },
         {
           "title": "Recurrent Neural Networks (RNN)",
           "slug": "rnn",
           "href": "/curriculum/05-sequence-models/rnn",
-          "filePath": "content/curriculum/05-sequence-models/02-rnn.json"
+          "filePath": "content/curriculum/05-sequence-models/02-rnn.json",
+          "docs_link": "https://www.tensorflow.org/guide/keras/working_with_rnns",
+          "yt_link": "https://www.youtube.com/watch?v=AsNTP8Kwu80"
         },
         {
           "title": "Backpropagation Through Time (BPTT)",
           "slug": "backpropagation-through-time",
           "href": "/curriculum/05-sequence-models/backpropagation-through-time",
-          "filePath": "content/curriculum/05-sequence-models/03-backpropagation-through-time.json"
+          "filePath": "content/curriculum/05-sequence-models/03-backpropagation-through-time.json",
+          "docs_link": "https://d2l.ai/chapter_recurrent-neural-networks/bptt.html",
+          "yt_link": "https://www.youtube.com/watch?v=8c6J9Z4O3Yg"
         },
         {
           "title": "Vanishing & Exploding Gradients",
           "slug": "vanishing-exploding-gradients",
           "href": "/curriculum/05-sequence-models/vanishing-exploding-gradients",
-          "filePath": "content/curriculum/05-sequence-models/04-vanishing-exploding-gradients.json"
+          "filePath": "content/curriculum/05-sequence-models/04-vanishing-exploding-gradients.json",
+          "docs_link": "https://www.deeplearningbook.org/contents/rnn.html",
+          "yt_link": "https://www.youtube.com/watch?v=qhXZsFVxGKo"
         },
         {
           "title": "Long Short-Term Memory (LSTM)",
           "slug": "lstm",
           "href": "/curriculum/05-sequence-models/lstm",
-          "filePath": "content/curriculum/05-sequence-models/05-lstm.json"
+          "filePath": "content/curriculum/05-sequence-models/05-lstm.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM",
+          "yt_link": "https://www.youtube.com/watch?v=YCzL96nL7j0"
         },
         {
           "title": "Gated Recurrent Unit (GRU)",
           "slug": "gru",
           "href": "/curriculum/05-sequence-models/gru",
-          "filePath": "content/curriculum/05-sequence-models/06-gru.json"
+          "filePath": "content/curriculum/05-sequence-models/06-gru.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/layers/GRU",
+          "yt_link": "https://www.youtube.com/watch?v=8HyCNIVRbSU"
         },
         {
           "title": "Bidirectional Networks",
           "slug": "bidirectional-networks",
           "href": "/curriculum/05-sequence-models/bidirectional-networks",
-          "filePath": "content/curriculum/05-sequence-models/07-bidirectional-networks.json"
+          "filePath": "content/curriculum/05-sequence-models/07-bidirectional-networks.json",
+          "docs_link": "https://www.tensorflow.org/api_docs/python/tf/keras/layers/Bidirectional",
+          "yt_link": "https://www.youtube.com/watch?v=F8ZeR0p4ZzU"
         },
         {
           "title": "Sequence-to-Sequence Models",
           "slug": "sequence-to-sequence-models",
           "href": "/curriculum/05-sequence-models/sequence-to-sequence-models",
-          "filePath": "content/curriculum/05-sequence-models/08-sequence-to-sequence-models.json"
+          "filePath": "content/curriculum/05-sequence-models/08-sequence-to-sequence-models.json",
+          "docs_link": "https://www.tensorflow.org/text/tutorials/nmt_with_attention",
+          "yt_link": "https://www.youtube.com/watch?v=L8HKweYU8gI"
         }
       ]
     },
@@ -569,55 +723,73 @@
           "title": "Why RNNs Struggle with Long Sequences",
           "slug": "why-rnns-struggle",
           "href": "/curriculum/06-attention/why-rnns-struggle",
-          "filePath": "content/curriculum/06-attention/01-why-rnns-struggle.json"
+          "filePath": "content/curriculum/06-attention/01-why-rnns-struggle.json",
+          "docs_link": "https://d2l.ai/chapter_recurrent-modern/seq2seq.html",
+          "yt_link": "https://www.youtube.com/watch?v=XXtpJxZBa2c"
         },
         {
           "title": "Attention Intuition",
           "slug": "attention-intuition",
           "href": "/curriculum/06-attention/attention-intuition",
-          "filePath": "content/curriculum/06-attention/02-attention-intuition.json"
+          "filePath": "content/curriculum/06-attention/02-attention-intuition.json",
+          "docs_link": "https://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/",
+          "yt_link": "https://www.youtube.com/watch?v=eMlx5fFNoYc"
         },
         {
           "title": "Query, Key, Value Formulation",
           "slug": "query-key-value",
           "href": "/curriculum/06-attention/query-key-value",
-          "filePath": "content/curriculum/06-attention/03-query-key-value.json"
+          "filePath": "content/curriculum/06-attention/03-query-key-value.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=OyFJWRnt_AY"
         },
         {
           "title": "Scaled Dot-Product Attention & Math",
           "slug": "scaled-dot-product-attention",
           "href": "/curriculum/06-attention/scaled-dot-product-attention",
-          "filePath": "content/curriculum/06-attention/04-scaled-dot-product-attention.json"
+          "filePath": "content/curriculum/06-attention/04-scaled-dot-product-attention.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=bCz4OMemCcA"
         },
         {
           "title": "Self-Attention",
           "slug": "self-attention",
           "href": "/curriculum/06-attention/self-attention",
-          "filePath": "content/curriculum/06-attention/05-self-attention.json"
+          "filePath": "content/curriculum/06-attention/05-self-attention.json",
+          "docs_link": "https://jalammar.github.io/illustrated-transformer/",
+          "yt_link": "https://www.youtube.com/watch?v=U0s0f995w14"
         },
         {
           "title": "Masked Attention",
           "slug": "masked-attention",
           "href": "/curriculum/06-attention/masked-attention",
-          "filePath": "content/curriculum/06-attention/06-masked-attention.json"
+          "filePath": "content/curriculum/06-attention/06-masked-attention.json",
+          "docs_link": "https://www.tensorflow.org/text/tutorials/transformer",
+          "yt_link": "https://www.youtube.com/watch?v=gJ9ka5VDe7U"
         },
         {
           "title": "Multi-Head Attention",
           "slug": "multi-head-attention",
           "href": "/curriculum/06-attention/multi-head-attention",
-          "filePath": "content/curriculum/06-attention/07-multi-head-attention.json"
+          "filePath": "content/curriculum/06-attention/07-multi-head-attention.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=H3r9bOk6qzI"
         },
         {
           "title": "Positional Encoding",
           "slug": "positional-encoding",
           "href": "/curriculum/06-attention/positional-encoding",
-          "filePath": "content/curriculum/06-attention/08-positional-encoding.json"
+          "filePath": "content/curriculum/06-attention/08-positional-encoding.json",
+          "docs_link": "https://www.tensorflow.org/text/tutorials/transformer",
+          "yt_link": "https://www.youtube.com/watch?v=dichIcInipo"
         },
         {
           "title": "Cross-Attention",
           "slug": "cross-attention",
           "href": "/curriculum/06-attention/cross-attention",
-          "filePath": "content/curriculum/06-attention/09-cross-attention.json"
+          "filePath": "content/curriculum/06-attention/09-cross-attention.json",
+          "docs_link": "https://www.tensorflow.org/text/tutorials/transformer",
+          "yt_link": "https://www.youtube.com/watch?v=KJtZARuO3JY"
         }
       ]
     },
@@ -635,67 +807,89 @@
           "title": "Transformer Architecture Overview",
           "slug": "transformer-architecture",
           "href": "/curriculum/07-transformers/transformer-architecture",
-          "filePath": "content/curriculum/07-transformers/01-transformer-architecture.json"
+          "filePath": "content/curriculum/07-transformers/01-transformer-architecture.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=4Bdc55j80l8"
         },
         {
           "title": "Encoder Layer Breakdown",
           "slug": "encoder",
           "href": "/curriculum/07-transformers/encoder",
-          "filePath": "content/curriculum/07-transformers/02-encoder.json"
+          "filePath": "content/curriculum/07-transformers/02-encoder.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/bert",
+          "yt_link": "https://www.youtube.com/watch?v=H39Z_6uOVaM"
         },
         {
           "title": "Decoder Layer Breakdown",
           "slug": "decoder",
           "href": "/curriculum/07-transformers/decoder",
-          "filePath": "content/curriculum/07-transformers/03-decoder.json"
+          "filePath": "content/curriculum/07-transformers/03-decoder.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/gpt2",
+          "yt_link": "https://www.youtube.com/watch?v=bQ5BoolX9Ag"
         },
         {
           "title": "Residual Connections & Normalization",
           "slug": "residual-connections-layer-norm",
           "href": "/curriculum/07-transformers/residual-connections-layer-norm",
-          "filePath": "content/curriculum/07-transformers/04-residual-connections-layer-norm.json"
+          "filePath": "content/curriculum/07-transformers/04-residual-connections-layer-norm.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=Zik0l5_3W9M"
         },
         {
           "title": "Feed-Forward Networks (FFN)",
           "slug": "feed-forward-networks",
           "href": "/curriculum/07-transformers/feed-forward-networks",
-          "filePath": "content/curriculum/07-transformers/05-feed-forward-networks.json"
+          "filePath": "content/curriculum/07-transformers/05-feed-forward-networks.json",
+          "docs_link": "https://d2l.ai/chapter_attention-mechanisms-and-transformers/transformer.html",
+          "yt_link": "https://www.youtube.com/watch?v=KJtZARuO3JY"
         },
         {
           "title": "Positional Information & Rotary Embeddings",
           "slug": "positional-information",
           "href": "/curriculum/07-transformers/positional-information",
-          "filePath": "content/curriculum/07-transformers/06-positional-information.json"
+          "filePath": "content/curriculum/07-transformers/06-positional-information.json",
+          "docs_link": "https://huggingface.co/blog/RDTvlokip/when-ai-finally-learns-where-it-is",
+          "yt_link": "https://www.youtube.com/watch?v=GQPOtyITy54"
         },
         {
           "title": "Causal Masking Mechanics",
           "slug": "causal-masking",
           "href": "/curriculum/07-transformers/causal-masking",
-          "filePath": "content/curriculum/07-transformers/07-causal-masking.json"
+          "filePath": "content/curriculum/07-transformers/07-causal-masking.json",
+          "docs_link": "https://huggingface.co/docs/transformers/llm_tutorial",
+          "yt_link": "https://www.youtube.com/watch?v=gJ9ka5VDe7U"
         },
         {
           "title": "Encoder-Only Models (BERT)",
           "slug": "encoder-only-models",
           "href": "/curriculum/07-transformers/encoder-only-models",
-          "filePath": "content/curriculum/07-transformers/08-encoder-only-models.json"
+          "filePath": "content/curriculum/07-transformers/08-encoder-only-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/bert",
+          "yt_link": "https://www.youtube.com/watch?v=xI0HHN5XKDo"
         },
         {
           "title": "Decoder-Only Models (GPT)",
           "slug": "decoder-only-models",
           "href": "/curriculum/07-transformers/decoder-only-models",
-          "filePath": "content/curriculum/07-transformers/09-decoder-only-models.json"
+          "filePath": "content/curriculum/07-transformers/09-decoder-only-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/gpt2",
+          "yt_link": "https://www.youtube.com/watch?v=wjZofJX0v4M"
         },
         {
           "title": "Encoder-Decoder Models (T5)",
           "slug": "encoder-decoder-models",
           "href": "/curriculum/07-transformers/encoder-decoder-models",
-          "filePath": "content/curriculum/07-transformers/10-encoder-decoder-models.json"
+          "filePath": "content/curriculum/07-transformers/10-encoder-decoder-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/t5",
+          "yt_link": "https://www.youtube.com/watch?v=rBCqOTEFX1g"
         },
         {
           "title": "Build a Tiny Transformer from Scratch",
           "slug": "build-tiny-transformer-from-scratch",
           "href": "/curriculum/07-transformers/build-tiny-transformer-from-scratch",
-          "filePath": "content/curriculum/07-transformers/11-build-tiny-transformer-from-scratch.json"
+          "filePath": "content/curriculum/07-transformers/11-build-tiny-transformer-from-scratch.json",
+          "docs_link": "https://nlp.seas.harvard.edu/annotated-transformer/",
+          "yt_link": "https://www.youtube.com/watch?v=kCc8FmEb1nY"
         }
       ]
     },
@@ -713,49 +907,65 @@
           "title": "Tokenization Techniques",
           "slug": "tokenization",
           "href": "/curriculum/08-natural-language-processing/tokenization",
-          "filePath": "content/curriculum/08-natural-language-processing/01-tokenization.json"
+          "filePath": "content/curriculum/08-natural-language-processing/01-tokenization.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tokenizer_summary",
+          "yt_link": "https://www.youtube.com/watch?v=V8dgzQO4y2g"
         },
         {
           "title": "Vocabulary Construction",
           "slug": "vocabulary",
           "href": "/curriculum/08-natural-language-processing/vocabulary",
-          "filePath": "content/curriculum/08-natural-language-processing/02-vocabulary.json"
+          "filePath": "content/curriculum/08-natural-language-processing/02-vocabulary.json",
+          "docs_link": "https://huggingface.co/docs/tokenizers/api/models",
+          "yt_link": "https://www.youtube.com/watch?v=HEikzVL-lZU"
         },
         {
           "title": "One-Hot Encoding",
           "slug": "one-hot-encoding",
           "href": "/curriculum/08-natural-language-processing/one-hot-encoding",
-          "filePath": "content/curriculum/08-natural-language-processing/03-one-hot-encoding.json"
+          "filePath": "content/curriculum/08-natural-language-processing/03-one-hot-encoding.json",
+          "docs_link": "https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html",
+          "yt_link": "https://www.youtube.com/watch?v=9yl6-QtUNOg"
         },
         {
           "title": "Word Embeddings (Word2Vec, GloVe)",
           "slug": "word-embeddings",
           "href": "/curriculum/08-natural-language-processing/word-embeddings",
-          "filePath": "content/curriculum/08-natural-language-processing/04-word-embeddings.json"
+          "filePath": "content/curriculum/08-natural-language-processing/04-word-embeddings.json",
+          "docs_link": "https://www.tensorflow.org/text/guide/word_embeddings",
+          "yt_link": "https://www.youtube.com/watch?v=viZrOnJclY0"
         },
         {
           "title": "Subword Tokenization & Byte-Pair Encoding (BPE)",
           "slug": "subword-tokenization-bpe",
           "href": "/curriculum/08-natural-language-processing/subword-tokenization-bpe",
-          "filePath": "content/curriculum/08-natural-language-processing/05-subword-tokenization-bpe.json"
+          "filePath": "content/curriculum/08-natural-language-processing/05-subword-tokenization-bpe.json",
+          "docs_link": "https://huggingface.co/learn/llm-course/en/chapter6/5",
+          "yt_link": "https://www.youtube.com/watch?v=HEikzVL-lZU"
         },
         {
           "title": "Sentence Representations",
           "slug": "sentence-representations",
           "href": "/curriculum/08-natural-language-processing/sentence-representations",
-          "filePath": "content/curriculum/08-natural-language-processing/06-sentence-representations.json"
+          "filePath": "content/curriculum/08-natural-language-processing/06-sentence-representations.json",
+          "docs_link": "https://www.sbert.net/",
+          "yt_link": "https://www.youtube.com/watch?v=G0Duv-Lq1zI"
         },
         {
           "title": "Language Modeling",
           "slug": "language-modeling",
           "href": "/curriculum/08-natural-language-processing/language-modeling",
-          "filePath": "content/curriculum/08-natural-language-processing/07-language-modeling.json"
+          "filePath": "content/curriculum/08-natural-language-processing/07-language-modeling.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/language_modeling",
+          "yt_link": "https://www.youtube.com/watch?v=wjZofJX0v4M"
         },
         {
           "title": "Next-Token Prediction",
           "slug": "next-token-prediction",
           "href": "/curriculum/08-natural-language-processing/next-token-prediction",
-          "filePath": "content/curriculum/08-natural-language-processing/08-next-token-prediction.json"
+          "filePath": "content/curriculum/08-natural-language-processing/08-next-token-prediction.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/language_modeling",
+          "yt_link": "https://www.youtube.com/watch?v=kCc8FmEb1nY"
         }
       ]
     },
@@ -773,67 +983,89 @@
           "title": "Pretraining Objectives & Paradigms",
           "slug": "pretraining",
           "href": "/curriculum/09-large-language-models/pretraining",
-          "filePath": "content/curriculum/09-large-language-models/01-pretraining.json"
+          "filePath": "content/curriculum/09-large-language-models/01-pretraining.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/language_modeling",
+          "yt_link": "https://www.youtube.com/watch?v=wjZofJX0v4M"
         },
         {
           "title": "Dataset Curation & Filtering",
           "slug": "dataset-construction",
           "href": "/curriculum/09-large-language-models/dataset-construction",
-          "filePath": "content/curriculum/09-large-language-models/02-dataset-construction.json"
+          "filePath": "content/curriculum/09-large-language-models/02-dataset-construction.json",
+          "docs_link": "https://huggingface.co/docs/datasets/",
+          "yt_link": "https://www.youtube.com/watch?v=9uw3Xk9qF4A"
         },
         {
           "title": "Tokenizer Design at Scale",
           "slug": "tokenization",
           "href": "/curriculum/09-large-language-models/tokenization",
-          "filePath": "content/curriculum/09-large-language-models/03-tokenization.json"
+          "filePath": "content/curriculum/09-large-language-models/03-tokenization.json",
+          "docs_link": "https://huggingface.co/learn/llm-course/en/chapter6/5",
+          "yt_link": "https://www.youtube.com/watch?v=HEikzVL-lZU"
         },
         {
           "title": "LLM Architecture & Scaling Design",
           "slug": "model-architecture",
           "href": "/curriculum/09-large-language-models/model-architecture",
-          "filePath": "content/curriculum/09-large-language-models/04-model-architecture.json"
+          "filePath": "content/curriculum/09-large-language-models/04-model-architecture.json",
+          "docs_link": "https://arxiv.org/abs/1706.03762",
+          "yt_link": "https://www.youtube.com/watch?v=9-Jl0dxWQs8"
         },
         {
           "title": "Parameter Initialization Strategies",
           "slug": "parameter-initialization",
           "href": "/curriculum/09-large-language-models/parameter-initialization",
-          "filePath": "content/curriculum/09-large-language-models/05-parameter-initialization.json"
+          "filePath": "content/curriculum/09-large-language-models/05-parameter-initialization.json",
+          "docs_link": "https://pytorch.org/docs/stable/nn.init.html",
+          "yt_link": "https://www.youtube.com/watch?v=8krd5qKVw-Q"
         },
         {
           "title": "Training Objectives & Cross-Entropy Loss",
           "slug": "training-objective-cross-entropy",
           "href": "/curriculum/09-large-language-models/training-objective-cross-entropy",
-          "filePath": "content/curriculum/09-large-language-models/06-training-objective-cross-entropy.json"
+          "filePath": "content/curriculum/09-large-language-models/06-training-objective-cross-entropy.json",
+          "docs_link": "https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html",
+          "yt_link": "https://www.youtube.com/watch?v=6ArDvG8k5sU"
         },
         {
           "title": "Gradient Computation & Optimizers",
           "slug": "gradient-computation-optimizers",
           "href": "/curriculum/09-large-language-models/gradient-computation-optimizers",
-          "filePath": "content/curriculum/09-large-language-models/07-gradient-computation-optimizers.json"
+          "filePath": "content/curriculum/09-large-language-models/07-gradient-computation-optimizers.json",
+          "docs_link": "https://pytorch.org/docs/stable/optim.html",
+          "yt_link": "https://www.youtube.com/watch?v=Ilg3gGewQ5U"
         },
         {
           "title": "Learning-Rate Schedules",
           "slug": "learning-rate-schedules",
           "href": "/curriculum/09-large-language-models/learning-rate-schedules",
-          "filePath": "content/curriculum/09-large-language-models/08-learning-rate-schedules.json"
+          "filePath": "content/curriculum/09-large-language-models/08-learning-rate-schedules.json",
+          "docs_link": "https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate",
+          "yt_link": "https://www.youtube.com/watch?v=QzulmoOg2JE"
         },
         {
           "title": "Distributed Training (DP, TP, PP)",
           "slug": "distributed-training",
           "href": "/curriculum/09-large-language-models/distributed-training",
-          "filePath": "content/curriculum/09-large-language-models/09-distributed-training.json"
+          "filePath": "content/curriculum/09-large-language-models/09-distributed-training.json",
+          "docs_link": "https://pytorch.org/tutorials/beginner/dist_overview.html",
+          "yt_link": "https://www.youtube.com/watch?v=3XUGfzyQ2Lw"
         },
         {
           "title": "Checkpointing & Fault Tolerance",
           "slug": "checkpointing",
           "href": "/curriculum/09-large-language-models/checkpointing",
-          "filePath": "content/curriculum/09-large-language-models/10-checkpointing.json"
+          "filePath": "content/curriculum/09-large-language-models/10-checkpointing.json",
+          "docs_link": "https://pytorch.org/tutorials/beginner/saving_loading_models.html",
+          "yt_link": "https://www.youtube.com/watch?v=9kRm4j4x0gA"
         },
         {
           "title": "Neural Scaling Laws (Chinchilla, Kaplan)",
           "slug": "scaling-laws",
           "href": "/curriculum/09-large-language-models/scaling-laws",
-          "filePath": "content/curriculum/09-large-language-models/11-scaling-laws.json"
+          "filePath": "content/curriculum/09-large-language-models/11-scaling-laws.json",
+          "docs_link": "https://arxiv.org/abs/2203.15556",
+          "yt_link": "https://www.youtube.com/watch?v=5eqRuVp65eY"
         }
       ]
     },
@@ -851,55 +1083,73 @@
           "title": "Instruction Tuning Overview",
           "slug": "instruction-tuning",
           "href": "/curriculum/10-llm-training-alignment/instruction-tuning",
-          "filePath": "content/curriculum/10-llm-training-alignment/01-instruction-tuning.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/01-instruction-tuning.json",
+          "docs_link": "https://huggingface.co/docs/trl/sft_trainer",
+          "yt_link": "https://www.youtube.com/watch?v=eC6Hd1hFvos"
         },
         {
           "title": "Supervised Fine-Tuning (SFT)",
           "slug": "supervised-fine-tuning",
           "href": "/curriculum/10-llm-training-alignment/supervised-fine-tuning",
-          "filePath": "content/curriculum/10-llm-training-alignment/02-supervised-fine-tuning.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/02-supervised-fine-tuning.json",
+          "docs_link": "https://huggingface.co/docs/trl/sft_trainer",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Preference Dataset Curation",
           "slug": "preference-datasets",
           "href": "/curriculum/10-llm-training-alignment/preference-datasets",
-          "filePath": "content/curriculum/10-llm-training-alignment/03-preference-datasets.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/03-preference-datasets.json",
+          "docs_link": "https://huggingface.co/docs/trl/dataset_formats",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Reinforcement Learning from Human Feedback (RLHF)",
           "slug": "rlhf",
           "href": "/curriculum/10-llm-training-alignment/rlhf",
-          "filePath": "content/curriculum/10-llm-training-alignment/04-rlhf.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/04-rlhf.json",
+          "docs_link": "https://huggingface.co/blog/rlhf",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Reward Model Training",
           "slug": "reward-models",
           "href": "/curriculum/10-llm-training-alignment/reward-models",
-          "filePath": "content/curriculum/10-llm-training-alignment/05-reward-models.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/05-reward-models.json",
+          "docs_link": "https://huggingface.co/blog/rlhf",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Direct Preference Optimization (DPO)",
           "slug": "dpo",
           "href": "/curriculum/10-llm-training-alignment/dpo",
-          "filePath": "content/curriculum/10-llm-training-alignment/06-dpo.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/06-dpo.json",
+          "docs_link": "https://huggingface.co/docs/trl/dpo_trainer",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "LLM Evaluation Frameworks",
           "slug": "evaluation",
           "href": "/curriculum/10-llm-training-alignment/evaluation",
-          "filePath": "content/curriculum/10-llm-training-alignment/07-evaluation.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/07-evaluation.json",
+          "docs_link": "https://huggingface.co/docs/lighteval/index",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Hallucination Mitigation",
           "slug": "hallucination",
           "href": "/curriculum/10-llm-training-alignment/hallucination",
-          "filePath": "content/curriculum/10-llm-training-alignment/08-hallucination.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/08-hallucination.json",
+          "docs_link": "https://arxiv.org/abs/2202.03629",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         },
         {
           "title": "Safety & Alignment Guardrails",
           "slug": "safety-alignment",
           "href": "/curriculum/10-llm-training-alignment/safety-alignment",
-          "filePath": "content/curriculum/10-llm-training-alignment/09-safety-alignment.json"
+          "filePath": "content/curriculum/10-llm-training-alignment/09-safety-alignment.json",
+          "docs_link": "https://huggingface.co/docs/transformers/main/en/llm_tutorial#safety-and-responsible-use",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         }
       ]
     },
@@ -917,55 +1167,73 @@
           "title": "Autoregressive Generation Mechanics",
           "slug": "autoregressive-generation",
           "href": "/curriculum/11-inference/autoregressive-generation",
-          "filePath": "content/curriculum/11-inference/01-autoregressive-generation.json"
+          "filePath": "content/curriculum/11-inference/01-autoregressive-generation.json",
+          "docs_link": "https://huggingface.co/docs/transformers/generation_strategies",
+          "yt_link": "https://www.youtube.com/watch?v=wjZofJX0v4M"
         },
         {
           "title": "Temperature Sampling",
           "slug": "temperature",
           "href": "/curriculum/11-inference/temperature",
-          "filePath": "content/curriculum/11-inference/02-temperature.json"
+          "filePath": "content/curriculum/11-inference/02-temperature.json",
+          "docs_link": "https://huggingface.co/docs/transformers/main_classes/text_generation",
+          "yt_link": "https://www.youtube.com/watch?v=VtRLrQ3Ev-U"
         },
         {
           "title": "Top-k Sampling",
           "slug": "top-k",
           "href": "/curriculum/11-inference/top-k",
-          "filePath": "content/curriculum/11-inference/03-top-k.json"
+          "filePath": "content/curriculum/11-inference/03-top-k.json",
+          "docs_link": "https://huggingface.co/docs/transformers/main_classes/text_generation",
+          "yt_link": "https://www.youtube.com/watch?v=VtRLrQ3Ev-U"
         },
         {
           "title": "Top-p (Nucleus) Sampling",
           "slug": "top-p",
           "href": "/curriculum/11-inference/top-p",
-          "filePath": "content/curriculum/11-inference/04-top-p.json"
+          "filePath": "content/curriculum/11-inference/04-top-p.json",
+          "docs_link": "https://huggingface.co/docs/transformers/main_classes/text_generation",
+          "yt_link": "https://www.youtube.com/watch?v=VtRLrQ3Ev-U"
         },
         {
           "title": "Beam Search Decoding",
           "slug": "beam-search",
           "href": "/curriculum/11-inference/beam-search",
-          "filePath": "content/curriculum/11-inference/05-beam-search.json"
+          "filePath": "content/curriculum/11-inference/05-beam-search.json",
+          "docs_link": "https://huggingface.co/docs/transformers/generation_strategies",
+          "yt_link": "https://www.youtube.com/watch?v=RLWuzLLSIgw"
         },
         {
           "title": "KV Cache & Memory Optimization",
           "slug": "kv-cache",
           "href": "/curriculum/11-inference/kv-cache",
-          "filePath": "content/curriculum/11-inference/06-kv-cache.json"
+          "filePath": "content/curriculum/11-inference/06-kv-cache.json",
+          "docs_link": "https://huggingface.co/docs/transformers/cache_explanation",
+          "yt_link": "https://www.youtube.com/watch?v=80bIUggRJf4"
         },
         {
           "title": "Quantization (AWQ, GPTQ, GGUF)",
           "slug": "quantization",
           "href": "/curriculum/11-inference/quantization",
-          "filePath": "content/curriculum/11-inference/07-quantization.json"
+          "filePath": "content/curriculum/11-inference/07-quantization.json",
+          "docs_link": "https://huggingface.co/docs/transformers/quantization/overview",
+          "yt_link": "https://www.youtube.com/watch?v=2Et1xv6k8X0"
         },
         {
           "title": "Continuous & Dynamic Batching",
           "slug": "batching",
           "href": "/curriculum/11-inference/batching",
-          "filePath": "content/curriculum/11-inference/08-batching.json"
+          "filePath": "content/curriculum/11-inference/08-batching.json",
+          "docs_link": "https://docs.vllm.ai/en/latest/",
+          "yt_link": "https://www.youtube.com/watch?v=5Zlavkf6W3I"
         },
         {
           "title": "Speculative Decoding",
           "slug": "speculative-decoding",
           "href": "/curriculum/11-inference/speculative-decoding",
-          "filePath": "content/curriculum/11-inference/09-speculative-decoding.json"
+          "filePath": "content/curriculum/11-inference/09-speculative-decoding.json",
+          "docs_link": "https://huggingface.co/docs/transformers/generation_strategies",
+          "yt_link": "https://www.youtube.com/watch?v=Q9zv369Ggfk"
         }
       ]
     },
@@ -983,61 +1251,81 @@
           "title": "Retrieval-Augmented Generation (RAG)",
           "slug": "rag",
           "href": "/curriculum/12-modern-ai-systems/rag",
-          "filePath": "content/curriculum/12-modern-ai-systems/01-rag.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/01-rag.json",
+          "docs_link": "https://python.langchain.com/docs/tutorials/rag/",
+          "yt_link": "https://www.youtube.com/watch?v=sVcwVQRHIc8"
         },
         {
           "title": "Vector Embeddings",
           "slug": "vector-embeddings",
           "href": "/curriculum/12-modern-ai-systems/vector-embeddings",
-          "filePath": "content/curriculum/12-modern-ai-systems/02-vector-embeddings.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/02-vector-embeddings.json",
+          "docs_link": "https://huggingface.co/docs/sentence-transformers/index",
+          "yt_link": "https://www.youtube.com/watch?v=wgfSDrqYMJ4"
         },
         {
           "title": "Vector Databases (Pinecone, Qdrant, Milvus)",
           "slug": "vector-databases",
           "href": "/curriculum/12-modern-ai-systems/vector-databases",
-          "filePath": "content/curriculum/12-modern-ai-systems/03-vector-databases.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/03-vector-databases.json",
+          "docs_link": "https://qdrant.tech/documentation/",
+          "yt_link": "https://www.youtube.com/watch?v=klTvEwg3oJ4"
         },
         {
           "title": "Retrieval & Hybrid Search",
           "slug": "retrieval",
           "href": "/curriculum/12-modern-ai-systems/retrieval",
-          "filePath": "content/curriculum/12-modern-ai-systems/04-retrieval.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/04-retrieval.json",
+          "docs_link": "https://www.elastic.co/what-is/hybrid-search",
+          "yt_link": "https://www.youtube.com/watch?v=QvQZ3b5dJ2E"
         },
         {
           "title": "Reranking Models",
           "slug": "reranking",
           "href": "/curriculum/12-modern-ai-systems/reranking",
-          "filePath": "content/curriculum/12-modern-ai-systems/05-reranking.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/05-reranking.json",
+          "docs_link": "https://www.sbert.net/examples/cross_encoder/applications/README.html",
+          "yt_link": "https://www.youtube.com/watch?v=Z9TW7uW3d3g"
         },
         {
           "title": "Tool Calling & Function Execution",
           "slug": "tool-calling",
           "href": "/curriculum/12-modern-ai-systems/tool-calling",
-          "filePath": "content/curriculum/12-modern-ai-systems/06-tool-calling.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/06-tool-calling.json",
+          "docs_link": "https://platform.openai.com/docs/guides/function-calling",
+          "yt_link": "https://www.youtube.com/watch?v=Z4u7Q2k9e6A"
         },
         {
           "title": "Autonomous AI Agents",
           "slug": "agents",
           "href": "/curriculum/12-modern-ai-systems/agents",
-          "filePath": "content/curriculum/12-modern-ai-systems/07-agents.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/07-agents.json",
+          "docs_link": "https://python.langchain.com/docs/concepts/agents/",
+          "yt_link": "https://www.youtube.com/watch?v=sal78ACtGTc"
         },
         {
           "title": "Function Calling Architecture",
           "slug": "function-calling",
           "href": "/curriculum/12-modern-ai-systems/function-calling",
-          "filePath": "content/curriculum/12-modern-ai-systems/08-function-calling.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/08-function-calling.json",
+          "docs_link": "https://platform.openai.com/docs/guides/function-calling",
+          "yt_link": "https://www.youtube.com/watch?v=SmJE6Z2p9lI"
         },
         {
           "title": "Structured Generation & JSON Modes",
           "slug": "structured-generation",
           "href": "/curriculum/12-modern-ai-systems/structured-generation",
-          "filePath": "content/curriculum/12-modern-ai-systems/09-structured-generation.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/09-structured-generation.json",
+          "docs_link": "https://platform.openai.com/docs/guides/structured-outputs",
+          "yt_link": "https://www.youtube.com/watch?v=2bZ5rQ8p7vM"
         },
         {
           "title": "Multimodal Systems",
           "slug": "multimodal-models",
           "href": "/curriculum/12-modern-ai-systems/multimodal-models",
-          "filePath": "content/curriculum/12-modern-ai-systems/10-multimodal-models.json"
+          "filePath": "content/curriculum/12-modern-ai-systems/10-multimodal-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/image_text_to_text",
+          "yt_link": "https://www.youtube.com/watch?v=KJtZARuO3JY"
         }
       ]
     },
@@ -1055,49 +1343,65 @@
           "title": "CNNs in Modern Vision",
           "slug": "cnns",
           "href": "/curriculum/13-computer-vision/cnns",
-          "filePath": "content/curriculum/13-computer-vision/01-cnns.json"
+          "filePath": "content/curriculum/13-computer-vision/01-cnns.json",
+          "docs_link": "https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html",
+          "yt_link": "https://www.youtube.com/watch?v=YRhxdVk_sIs"
         },
         {
           "title": "Vision Transformers (ViT)",
           "slug": "vision-transformers",
           "href": "/curriculum/13-computer-vision/vision-transformers",
-          "filePath": "content/curriculum/13-computer-vision/02-vision-transformers.json"
+          "filePath": "content/curriculum/13-computer-vision/02-vision-transformers.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/vit",
+          "yt_link": "https://www.youtube.com/watch?v=TrdevFK1LZQ"
         },
         {
           "title": "Image Embeddings",
           "slug": "image-embeddings",
           "href": "/curriculum/13-computer-vision/image-embeddings",
-          "filePath": "content/curriculum/13-computer-vision/03-image-embeddings.json"
+          "filePath": "content/curriculum/13-computer-vision/03-image-embeddings.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/image_feature_extraction",
+          "yt_link": "https://www.youtube.com/watch?v=KJtZARuO3JY"
         },
         {
           "title": "Object Detection (YOLO, Faster R-CNN)",
           "slug": "object-detection",
           "href": "/curriculum/13-computer-vision/object-detection",
-          "filePath": "content/curriculum/13-computer-vision/04-object-detection.json"
+          "filePath": "content/curriculum/13-computer-vision/04-object-detection.json",
+          "docs_link": "https://docs.ultralytics.com/tasks/detect/",
+          "yt_link": "https://www.youtube.com/watch?v=GRtgLl1eKcY"
         },
         {
           "title": "Semantic & Instance Segmentation",
           "slug": "segmentation",
           "href": "/curriculum/13-computer-vision/segmentation",
-          "filePath": "content/curriculum/13-computer-vision/05-segmentation.json"
+          "filePath": "content/curriculum/13-computer-vision/05-segmentation.json",
+          "docs_link": "https://docs.ultralytics.com/tasks/segment/",
+          "yt_link": "https://www.youtube.com/watch?v=3e4o2qY0Q9A"
         },
         {
           "title": "Diffusion Models for Vision",
           "slug": "diffusion-models",
           "href": "/curriculum/13-computer-vision/diffusion-models",
-          "filePath": "content/curriculum/13-computer-vision/06-diffusion-models.json"
+          "filePath": "content/curriculum/13-computer-vision/06-diffusion-models.json",
+          "docs_link": "https://huggingface.co/docs/diffusers/index",
+          "yt_link": "https://www.youtube.com/watch?v=HoKDTa5jHvg"
         },
         {
           "title": "CLIP & Contrastive Vision-Language Learning",
           "slug": "clip-style-models",
           "href": "/curriculum/13-computer-vision/clip-style-models",
-          "filePath": "content/curriculum/13-computer-vision/07-clip-style-models.json"
+          "filePath": "content/curriculum/13-computer-vision/07-clip-style-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/model_doc/clip",
+          "yt_link": "https://www.youtube.com/watch?v=T9XSU0pKX2E"
         },
         {
           "title": "Multimodal Vision Models",
           "slug": "multimodal-models",
           "href": "/curriculum/13-computer-vision/multimodal-models",
-          "filePath": "content/curriculum/13-computer-vision/08-multimodal-models.json"
+          "filePath": "content/curriculum/13-computer-vision/08-multimodal-models.json",
+          "docs_link": "https://huggingface.co/docs/transformers/tasks/image_text_to_text",
+          "yt_link": "https://www.youtube.com/watch?v=KJtZARuO3JY"
         }
       ]
     },
@@ -1115,49 +1419,65 @@
           "title": "Autoencoders",
           "slug": "autoencoders",
           "href": "/curriculum/14-generative-models/autoencoders",
-          "filePath": "content/curriculum/14-generative-models/01-autoencoders.json"
+          "filePath": "content/curriculum/14-generative-models/01-autoencoders.json",
+          "docs_link": "https://pytorch.org/tutorials/beginner/introyt/autoencodersyt_tutorial.html",
+          "yt_link": "https://www.youtube.com/watch?v=H1AllrJ-_30"
         },
         {
           "title": "Variational Autoencoders (VAEs)",
           "slug": "variational-autoencoders",
           "href": "/curriculum/14-generative-models/variational-autoencoders",
-          "filePath": "content/curriculum/14-generative-models/02-variational-autoencoders.json"
+          "filePath": "content/curriculum/14-generative-models/02-variational-autoencoders.json",
+          "docs_link": "https://arxiv.org/abs/1312.6114",
+          "yt_link": "https://www.youtube.com/watch?v=9zKuYvjFFS8"
         },
         {
           "title": "Generative Adversarial Networks (GANs)",
           "slug": "gans",
           "href": "/curriculum/14-generative-models/gans",
-          "filePath": "content/curriculum/14-generative-models/03-gans.json"
+          "filePath": "content/curriculum/14-generative-models/03-gans.json",
+          "docs_link": "https://arxiv.org/abs/1406.2661",
+          "yt_link": "https://www.youtube.com/watch?v=8L11aMN5KY8"
         },
         {
           "title": "Diffusion Process & DDPM",
           "slug": "diffusion",
           "href": "/curriculum/14-generative-models/diffusion",
-          "filePath": "content/curriculum/14-generative-models/04-diffusion.json"
+          "filePath": "content/curriculum/14-generative-models/04-diffusion.json",
+          "docs_link": "https://huggingface.co/docs/diffusers/using-diffusers/conditional_image_generation",
+          "yt_link": "https://www.youtube.com/watch?v=HoKDTa5jHvg"
         },
         {
           "title": "Score-Based Generative Models",
           "slug": "score-matching",
           "href": "/curriculum/14-generative-models/score-matching",
-          "filePath": "content/curriculum/14-generative-models/05-score-matching.json"
+          "filePath": "content/curriculum/14-generative-models/05-score-matching.json",
+          "docs_link": "https://arxiv.org/abs/2011.13456",
+          "yt_link": "https://www.youtube.com/watch?v=NVp7Z5ZV7fs"
         },
         {
           "title": "Noise Schedules & Samplers",
           "slug": "noise-schedules",
           "href": "/curriculum/14-generative-models/noise-schedules",
-          "filePath": "content/curriculum/14-generative-models/06-noise-schedules.json"
+          "filePath": "content/curriculum/14-generative-models/06-noise-schedules.json",
+          "docs_link": "https://huggingface.co/docs/diffusers/using-diffusers/schedulers",
+          "yt_link": "https://www.youtube.com/watch?v=HoKDTa5jHvg"
         },
         {
           "title": "Denoising Neural Networks",
           "slug": "denoising",
           "href": "/curriculum/14-generative-models/denoising",
-          "filePath": "content/curriculum/14-generative-models/07-denoising.json"
+          "filePath": "content/curriculum/14-generative-models/07-denoising.json",
+          "docs_link": "https://huggingface.co/docs/diffusers/index",
+          "yt_link": "https://www.youtube.com/watch?v=HoKDTa5jHvg"
         },
         {
           "title": "Text-to-Image Synthesis Architectures",
           "slug": "text-to-image-models",
           "href": "/curriculum/14-generative-models/text-to-image-models",
-          "filePath": "content/curriculum/14-generative-models/08-text-to-image-models.json"
+          "filePath": "content/curriculum/14-generative-models/08-text-to-image-models.json",
+          "docs_link": "https://huggingface.co/docs/diffusers/using-diffusers/text-img2img",
+          "yt_link": "https://www.youtube.com/watch?v=1CIpzeNxIhU"
         }
       ]
     },
@@ -1175,55 +1495,73 @@
           "title": "Agent & Environment Interactions",
           "slug": "agent-environment",
           "href": "/curriculum/15-reinforcement-learning/agent-environment",
-          "filePath": "content/curriculum/15-reinforcement-learning/01-agent-environment.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/01-agent-environment.json",
+          "docs_link": "https://gymnasium.farama.org/",
+          "yt_link": "https://www.youtube.com/watch?v=2pWv7GOvuf0"
         },
         {
           "title": "States, Actions, and Rewards",
           "slug": "states-actions-rewards",
           "href": "/curriculum/15-reinforcement-learning/states-actions-rewards",
-          "filePath": "content/curriculum/15-reinforcement-learning/02-states-actions-rewards.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/02-states-actions-rewards.json",
+          "docs_link": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html",
+          "yt_link": "https://www.youtube.com/watch?v=2pWv7GOvuf0"
         },
         {
           "title": "Markov Decision Processes (MDP)",
           "slug": "markov-decision-processes",
           "href": "/curriculum/15-reinforcement-learning/markov-decision-processes",
-          "filePath": "content/curriculum/15-reinforcement-learning/03-markov-decision-processes.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/03-markov-decision-processes.json",
+          "docs_link": "https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf",
+          "yt_link": "https://www.youtube.com/watch?v=lfHX2hHRMVQ"
         },
         {
           "title": "Value Functions & Bellman Equations",
           "slug": "value-functions",
           "href": "/curriculum/15-reinforcement-learning/value-functions",
-          "filePath": "content/curriculum/15-reinforcement-learning/04-value-functions.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/04-value-functions.json",
+          "docs_link": "https://spinningup.openai.com/en/latest/spinningup/rl_intro.html",
+          "yt_link": "https://www.youtube.com/watch?v=lfHX2hHRMVQ"
         },
         {
           "title": "Q-Learning & Deep Q-Networks (DQN)",
           "slug": "q-learning",
           "href": "/curriculum/15-reinforcement-learning/q-learning",
-          "filePath": "content/curriculum/15-reinforcement-learning/05-q-learning.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/05-q-learning.json",
+          "docs_link": "https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html",
+          "yt_link": "https://www.youtube.com/watch?v=EUrWGTCGzlA"
         },
         {
           "title": "Policy Gradients",
           "slug": "policy-gradients",
           "href": "/curriculum/15-reinforcement-learning/policy-gradients",
-          "filePath": "content/curriculum/15-reinforcement-learning/06-policy-gradients.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/06-policy-gradients.json",
+          "docs_link": "https://spinningup.openai.com/en/latest/algorithms/vpg.html",
+          "yt_link": "https://www.youtube.com/watch?v=AKbX1Zvo7r8"
         },
         {
           "title": "Actor-Critic Architectures",
           "slug": "actor-critic",
           "href": "/curriculum/15-reinforcement-learning/actor-critic",
-          "filePath": "content/curriculum/15-reinforcement-learning/07-actor-critic.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/07-actor-critic.json",
+          "docs_link": "https://spinningup.openai.com/en/latest/algorithms/vpg.html",
+          "yt_link": "https://www.youtube.com/watch?v=0MNVhXEX9to"
         },
         {
           "title": "Proximal Policy Optimization (PPO)",
           "slug": "ppo",
           "href": "/curriculum/15-reinforcement-learning/ppo",
-          "filePath": "content/curriculum/15-reinforcement-learning/08-ppo.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/08-ppo.json",
+          "docs_link": "https://spinningup.openai.com/en/latest/algorithms/ppo.html",
+          "yt_link": "https://www.youtube.com/watch?v=5P7I-xPq8u8"
         },
         {
           "title": "Connecting RL to LLM Alignment",
           "slug": "rlhf-connection",
           "href": "/curriculum/15-reinforcement-learning/rlhf-connection",
-          "filePath": "content/curriculum/15-reinforcement-learning/09-rlhf-connection.json"
+          "filePath": "content/curriculum/15-reinforcement-learning/09-rlhf-connection.json",
+          "docs_link": "https://huggingface.co/blog/rlhf",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         }
       ]
     },
@@ -1241,61 +1579,81 @@
           "title": "Production PyTorch",
           "slug": "pytorch",
           "href": "/curriculum/16-ai-engineering/pytorch",
-          "filePath": "content/curriculum/16-ai-engineering/01-pytorch.json"
+          "filePath": "content/curriculum/16-ai-engineering/01-pytorch.json",
+          "docs_link": "https://pytorch.org/tutorials/",
+          "yt_link": "https://www.youtube.com/watch?v=V_xro1bcAuA"
         },
         {
           "title": "GPU Programming Concepts",
           "slug": "gpu-programming-concepts",
           "href": "/curriculum/16-ai-engineering/gpu-programming-concepts",
-          "filePath": "content/curriculum/16-ai-engineering/02-gpu-programming-concepts.json"
+          "filePath": "content/curriculum/16-ai-engineering/02-gpu-programming-concepts.json",
+          "docs_link": "https://developer.nvidia.com/cuda-zone",
+          "yt_link": "https://www.youtube.com/watch?v=K4T-YA9J-g8"
         },
         {
           "title": "CUDA Fundamentals for AI",
           "slug": "cuda-basics",
           "href": "/curriculum/16-ai-engineering/cuda-basics",
-          "filePath": "content/curriculum/16-ai-engineering/03-cuda-basics.json"
+          "filePath": "content/curriculum/16-ai-engineering/03-cuda-basics.json",
+          "docs_link": "https://docs.nvidia.com/cuda/cuda-c-programming-guide/",
+          "yt_link": "https://www.youtube.com/watch?v=K4T-YA9J-g8"
         },
         {
           "title": "Mixed Precision Training (FP16 / BF16)",
           "slug": "mixed-precision",
           "href": "/curriculum/16-ai-engineering/mixed-precision",
-          "filePath": "content/curriculum/16-ai-engineering/04-mixed-precision.json"
+          "filePath": "content/curriculum/16-ai-engineering/04-mixed-precision.json",
+          "docs_link": "https://pytorch.org/docs/stable/amp.html",
+          "yt_link": "https://www.youtube.com/watch?v=G-pyp7zoM5c"
         },
         {
           "title": "Distributed Training Engineering",
           "slug": "distributed-training",
           "href": "/curriculum/16-ai-engineering/distributed-training",
-          "filePath": "content/curriculum/16-ai-engineering/05-distributed-training.json"
+          "filePath": "content/curriculum/16-ai-engineering/05-distributed-training.json",
+          "docs_link": "https://pytorch.org/tutorials/beginner/dist_overview.html",
+          "yt_link": "https://www.youtube.com/watch?v=3XUGfzyQ2Lw"
         },
         {
           "title": "High-Throughput Data Pipelines",
           "slug": "data-pipelines",
           "href": "/curriculum/16-ai-engineering/data-pipelines",
-          "filePath": "content/curriculum/16-ai-engineering/06-data-pipelines.json"
+          "filePath": "content/curriculum/16-ai-engineering/06-data-pipelines.json",
+          "docs_link": "https://pytorch.org/docs/stable/data.html",
+          "yt_link": "https://www.youtube.com/watch?v=V_xro1bcAuA"
         },
         {
           "title": "Experiment Tracking & MLOps",
           "slug": "experiment-tracking",
           "href": "/curriculum/16-ai-engineering/experiment-tracking",
-          "filePath": "content/curriculum/16-ai-engineering/07-experiment-tracking.json"
+          "filePath": "content/curriculum/16-ai-engineering/07-experiment-tracking.json",
+          "docs_link": "https://mlflow.org/docs/latest/index.html",
+          "yt_link": "https://www.youtube.com/watch?v=6B2Q6y6h0aA"
         },
         {
           "title": "Model Serving & Deployment Systems",
           "slug": "model-serving",
           "href": "/curriculum/16-ai-engineering/model-serving",
-          "filePath": "content/curriculum/16-ai-engineering/08-model-serving.json"
+          "filePath": "content/curriculum/16-ai-engineering/08-model-serving.json",
+          "docs_link": "https://docs.vllm.ai/en/latest/",
+          "yt_link": "https://www.youtube.com/watch?v=5Zlavkf6W3I"
         },
         {
           "title": "Model Optimization & Kernel Fusion",
           "slug": "quantization-optimization",
           "href": "/curriculum/16-ai-engineering/quantization-optimization",
-          "filePath": "content/curriculum/16-ai-engineering/09-quantization-optimization.json"
+          "filePath": "content/curriculum/16-ai-engineering/09-quantization-optimization.json",
+          "docs_link": "https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html",
+          "yt_link": "https://www.youtube.com/watch?v=2Et1xv6k8X0"
         },
         {
           "title": "Evaluation Infrastructure & Benchmarking",
           "slug": "evaluation-infrastructure",
           "href": "/curriculum/16-ai-engineering/evaluation-infrastructure",
-          "filePath": "content/curriculum/16-ai-engineering/10-evaluation-infrastructure.json"
+          "filePath": "content/curriculum/16-ai-engineering/10-evaluation-infrastructure.json",
+          "docs_link": "https://huggingface.co/docs/lighteval/index",
+          "yt_link": "https://www.youtube.com/watch?v=2eM7o7t8m7A"
         }
       ]
     }
