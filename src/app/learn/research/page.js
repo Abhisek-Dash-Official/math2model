@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ExternalLink, Download } from "lucide-react";
-import researchData from "@/config/external-research-papers.json";
+import researchData from "@/content/research/external-research-papers.json";
 
 export const metadata = {
     title: "Research Papers — Math2Model",

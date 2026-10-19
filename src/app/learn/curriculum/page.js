@@ -116,24 +116,24 @@ function TopicCard({ topic }) {
             </div>
             <div className="mt-4 flex items-center gap-3 pt-3 border-t border-slate-100 text-xs">
                 {topic.docs_link && (
-                    <a
+                    <Link
                         href={topic.docs_link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-slate-500 hover:text-blue-700 font-medium"
                     >
                         <ExternalLink size={13} /> Docs
-                    </a>
+                    </Link>
                 )}
                 {topic.yt_link && (
-                    <a
+                    <Link
                         href={topic.yt_link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-slate-500 hover:text-red-600 font-medium"
                     >
                         <Play size={13} /> Watch
-                    </a>
+                    </Link>
                 )}
             </div>
         </div>
