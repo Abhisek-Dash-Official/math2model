@@ -2,18 +2,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 
-const links = [
+const exploreLinks = [
     { label: "Curriculum", href: "/learn/curriculum" },
     { label: "Research", href: "/learn/research" },
     { label: "Personal research", href: "/learn/personal-research" },
     { label: "Implementations", href: "/learn/implementations" },
 ];
 
+const platformLinks = [
+    { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
+];
+
 export default function Footer() {
     return (
         <footer className="border-t border-slate-200 bg-white">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
-                <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-16 lg:py-12">
+                <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-12 lg:py-12">
+                    {/* Brand Info */}
                     <div>
                         <Link href="/" className="inline-flex items-center gap-3">
                             <Image src="/logo.png" alt="Math2Model Logo" width={36} height={36} priority className="h-9 w-9 rounded-md object-contain" />
@@ -26,10 +34,11 @@ export default function Footer() {
                         </p>
                     </div>
 
+                    {/* Explore */}
                     <div>
                         <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">Explore</h3>
                         <div className="mt-4 flex flex-col items-start gap-3">
-                            {links.map((item) => (
+                            {exploreLinks.map((item) => (
                                 <Link key={item.href} href={item.href} className="text-[12px] text-slate-500 transition-colors hover:text-blue-700">
                                     {item.label}
                                 </Link>
@@ -37,6 +46,19 @@ export default function Footer() {
                         </div>
                     </div>
 
+                    {/* Platform & Legal */}
+                    <div>
+                        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">Platform</h3>
+                        <div className="mt-4 flex flex-col items-start gap-3">
+                            {platformLinks.map((item) => (
+                                <Link key={item.href} href={item.href} className="text-[12px] text-slate-500 transition-colors hover:text-blue-700">
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* The Idea */}
                     <div>
                         <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">The idea</h3>
                         <p className="mt-4 max-w-xs text-[12px] leading-6 text-slate-500">
