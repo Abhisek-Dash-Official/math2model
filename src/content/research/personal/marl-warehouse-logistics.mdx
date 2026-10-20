@@ -1,0 +1,84 @@
+# Collaborative Peer Review & Strategic Assessment
+
+## Executive Summary & Context
+
+This document provides an editor-level critique, structural analysis, and strategic roadmap for the research manuscript **"Scalable Multi-Agent Reinforcement Learning for Warehouse Logistics with Robotic and Human Co-Workers"** (`marl-warehouse-logistics.md`).
+
+- **Target Context:** Academic publication in top-tier robotics and AI venues (e.g., _IEEE Transactions on Robotics_, _ICRA_, _NeurIPS_).
+- **Assumed Standard:** Senior-level academic paper combining operations research (OR), system design, and Multi-Agent Reinforcement Learning (MARL).
+- **Overall Proficiency Level:** **Good** (Strong empirical foundation and practical industrial relevance, requiring targeted adjustments in baseline selection, notation rigor, and architectural contrast).
+
+---
+
+## Rubric-Based Assessment
+
+| Criterion                               | Score / Status | Key Observations                                                                                                                                                                                                                                                            |
+| :-------------------------------------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Novelty & System Architecture**    | **Good**       | Strong 3-layer hierarchical framing (Manager $\rightarrow$ Worker $\rightarrow$ $A^*$ Controller). Effectively bridges task allocation and spatial partitioning. Needs clearer distinction against standard Feudal MARL approaches.                                         |
+| **2. Mathematical & Technical Rigor**   | **Developing** | Standard POSG formulation. Inconsistencies exist between discrete vs. continuous reward distributions, $A^*$ lower-level step mechanics, and state-action definitions compared to concurrent benchmarks.                                                                    |
+| **3. Empirical Evaluation & Baselines** | **Developing** | Robust comparison across Dematic (PTG) and TA-RWARE (GTP) environments against classical heuristics (FM, PDM, CTA). **Crucial Gap:** Missing comparisons against modern cooperative MARL value-factorization methods (e.g., QMIX) and inventory/allocation joint baselines. |
+| **4. Clarity, Structure & Formatting**  | **Good**       | Well-organized structure. Requires formatting fixes for inline notation, clear separation of environment dynamics, and improved flow in the related work section.                                                                                                           |
+
+---
+
+## Detailed Feedback & Growth Areas
+
+### 1. Baselines & Benchmark Coverage (Empirical Evaluation)
+
+- **Specific Text Example:** _Section V-C & Table I ("We compare all three hierarchical algorithms... against PDM, FM and CTA heuristics as well as non-hierarchical baselines IAC, SNAC, and SEAC")_
+- **Issue:** While comparing against industry heuristics (PDM, FM, CTA) and actor-critic MARL baselines (IAC, SNAC, SEAC) demonstrates the utility of hierarchy, it overlooks value-factorization techniques dominant in multi-robot task allocation and path management. Specifically, value-based cooperative frameworks like **QMIX** (with action masking) are widely recognized benchmarks for centralized training with decentralized execution (CTDE) in warehouse operations.
+- **Actionable Next Step:** How does your hierarchical actor-critic setup compare to value-factorization algorithms such as QMIX when both are equipped with identical action-masking techniques? Adding a reference or baseline comparison against QMIX-based warehouse control schemes will strengthen the paper's theoretical positioning.
+
+### 2. Formalization of Hierarchy & Spatial Action Spaces
+
+- **Specific Text Example:** _Section IV-B ("The manager's action space consists of a choice from the set of zones $Y$ given by $\mathcal{A}^m = Y^{|\mathcal{I}|}$...")_
+- **Issue:** The temporal dynamics between the Manager layer and the Worker layer are slightly ambiguous. The paper states that workers execute actions until reaching target locations using $A^*$, but Equation (1) sums rewards over variable worker horizons $k_i$. The exact semi-MDP (SMDP) or macro-action transition dynamics governing manager re-decisions need explicit formalization.
+- **Actionable Next Step:** Can you explicitly define the temporal decision epoch for the Manager? Formulating the Manager level as a formal Options Framework or Semi-POSG (S-POSG) will clarify how asynchronous worker completions ($k_i$) trigger Manager updates.
+
+### 3. Inventory & Dynamic Allocation Context Integration
+
+- **Specific Text Example:** _Section III-A ("In GTP picking, multiple AGVs... carry separate storage mediums... required in an order $z$")_
+- **Issue:** The paper focuses heavily on travel-time minimization and pick rate, treating order allocation as static inputs ($z \sim Z$). In real-world fulfillment, stock allocation, replenishment delays, and shared holding capacities (as seen in multi-node supply chain literature) dictate real-time congestion and destination priorities.
+- **Actionable Next Step:** Would it be beneficial to frame the upper-layer Manager not only as a spatial partitioner, but as an adaptive task-and-inventory distributor? Elaborating on how stock availability impacts action-masking constraints will bridge the gap between pure MAPF/MARL and supply-chain logistics.
+
+---
+
+## Suggested In-Text Edits & Revisions
+
+Below are specific recommended edits to elevate the paper's precision, notation consistency, and contextual depth.
+
+```markdown:Annotated Document Edits:paper_edits.md
+# Applied Revisions and Structural Enhancements
+
+### 1. Section IV-A.1: Formal POSG & Reward Horizon Consistency
+* **Original:**
+  "The goal is to learn a joint policy $\pi=(\pi^{1},...,\pi^{N})$ to maximise the expected discounted return $G^{i}=\sum_{t=1}^{T}\gamma^{t-1}r_{t}^{i}$..."
+* **Suggested Edit:**
+  <comment-tag author="Senior Editor" note="Clarified the discount horizon notation and explicit dependence on macro-action time intervals for hierarchical convergence.">
+  "The objective is to learn a joint policy $\pi = (\pi^1, \dots, \pi^N)$ that maximizes the expected discounted return $G^i = \mathbb{E}_{\pi} \left[ \sum_{t=0}^{T} \gamma^t r_t^i \right]$ for each agent $i \in \mathcal{I}$, where $\gamma \in [0, 1)$ denotes the discount factor and $T$ represents the task horizon."
+  </comment-tag>
+
+---
+
+### 2. Section IV-B: Hierarchical Decomposition Formalism
+* **Original:**
+  "The manager reward $r_t^m$ is the sum of the rewards from all the assigned goals to non-busy workers $i \in \mathcal{I}$ during a timestep."
+* **Suggested Edit:**
+  <comment-tag author="Senior Editor" note="Refined mathematical definition of the macro-action reward transition for the Manager agent.">
+  "The Manager operates on an asynchronous Semi-POSG formulation. The Manager reward $r_t^m$ at macro-step $t$ aggregates the cumulative temporal rewards accumulated by non-busy worker agents $i \in \mathcal{I}_{active}$ over their respective task execution intervals $k_i$:
+
+  $$r_t^m = \sum_{i \in \mathcal{I}_{active}} \sum_{\tau=0}^{k_i - 1} \gamma^\tau r_{t+\tau}^i$$
+
+  where $k_i$ denotes the temporal duration (in low-level execution steps) required for worker $i$ to reach target location $l^i \in y^i$ via the $A^*$ path-planner."
+  </comment-tag>
+
+---
+
+### 3. Section V-C: Baseline & Related Architecture Discussion
+* **Original:**
+  "The sub-par performance of SNAC is due to all worker agents using identical policies, which can lead to delays incurred due to frequent collisions or deadlocks..."
+* **Suggested Edit:**
+  <comment-tag author="Senior Editor" note="Added discussion contextualizing value-factorization (QMIX) and action-masking interactions in dense fulfillment spaces.">
+  "The sub-par performance of SNAC stems from uniform policy parameters across heterogeneous agent roles, leading to spatial deadlocks in high-density aisles. While centralized value-factorization algorithms (e.g., QMIX) address multi-agent credit assignment through mixing networks, they can suffer from scaling bottlenecks when action spaces $|\mathcal{A}|$ span thousands of discrete warehouse coordinates. Our hierarchical decomposition bypasses this by restricting value/policy updates to high-level spatial partitions $Y$, delegating local collision-free execution to $A^*$ low-level controllers."
+  </comment-tag>
+```

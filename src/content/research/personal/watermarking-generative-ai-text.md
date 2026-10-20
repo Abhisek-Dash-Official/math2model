@@ -1,0 +1,159 @@
+# Comprehensive Theoretical Analysis of UNIGRAM-WATERMARK
+
+## 1. Introduction & Theoretical Foundations
+
+Language models (LLMs) generate sequences $y = [y_1, y_2, \dots, y_n]$ token-by-token over a discrete vocabulary $\mathcal{V}$ of size $N = |\mathcal{V}|$. At each step $t$, given a prompt $x$ and preceding context $h = [x, y_{1:t-1}]$, the language model $\mathcal{M}$ computes a logit vector $l_t \in \mathbb{R}^N$. The un-watermarked conditional probability distribution is defined via the soft-argmax function:
+
+$$p_t[v] = \mathbb{P}_{\mathcal{M}(x)}[y_t = v \mid y_{1:t-1}] = \frac{\exp(l_t[v])}{\sum_{i \in \mathcal{V}} \exp(l_t[i])}, \quad \forall v \in \mathcal{V}$$
+
+### The UNIGRAM-WATERMARK Mechanism
+The UNIGRAM-WATERMARK scheme modifies the original language model $\mathcal{M}$ into a watermarked model $\widehat{\mathcal{M}}$ using a static vocabulary partition:
+1. **Vocabulary Partition:** A pseudo-random key $k$ partitions $\mathcal{V}$ into a green list $G \subset \mathcal{V}$ with $|G| = \gamma N$ ($\gamma \in (0, 1)$) and a red list $R = \mathcal{V} \setminus G$ with $|R| = (1-\gamma)N$.
+2. **Logit Modification:** For any context $h$, the modified logits $\hat{l}_t$ are defined as:
+   $$\hat{l}_t[v] = l_t[v] + \delta \cdot \mathbb{I}(v \in G)$$
+   where $\delta > 0$ is the watermark bias/strength parameter.
+3. **Modified Next-Token Distribution:**
+   $$\hat{p}_t[v] = \mathbb{P}_{\widehat{\mathcal{M}}(x)}[y_t = v \mid y_{1:t-1}] = \frac{\exp(l_t[v] + \delta \cdot \mathbb{I}(v \in G))}{\sum_{w \in \mathcal{V}} \exp(l_t[w] + \delta \cdot \mathbb{I}(w \in G))}$$
+4. **Detection Metric:** Given a suspect text $y = [y_1, \dots, y_n]$, the detection algorithm counts the green list tokens $|y|_G = \sum_{i=1}^n \mathbb{I}(y_i \in G)$ and computes the standardized $z$-statistic:
+   $$z_y = \frac{|y|_G - \gamma n}{\sqrt{n \gamma (1 - \gamma)}}$$
+   The text is classified as watermarked if $z_y > \tau$ for a calibrated decision threshold $\tau$.
+
+---
+
+## 2. Quality Guarantees (Renyi Divergence Analysis)
+
+To prove that UNIGRAM-WATERMARK preserves generation quality, we bound the statistical distance between $p_t$ and $\hat{p}_t$ across all order-$\alpha$ Rényi divergences $D_\alpha(P \parallel Q)$, defined as:
+
+$$D_\alpha(P \parallel Q) = \frac{1}{\alpha - 1} \ln \mathbb{E}_{v \sim Q} \left[ \left( \frac{P(v)}{Q(v)} \right)^\alpha \right]$$
+
+### Theorem 2.1 (Quality Bound under Rényi Divergence)
+*For any context $h = [x, y_{1:t-1}]$ and fixed green list $G$, the Rényi divergence between the watermarked distribution $\hat{p}_t = \hat{p}_t(\cdot \mid h)$ and the original distribution $p_t = p_t(\cdot \mid h)$ satisfies:*
+
+$$\forall h, \quad \max \left( D_\alpha(\hat{p}_t \parallel p_t), D_\alpha(p_t \parallel \hat{p}_t) \right) \le \min \left\{ \delta, \frac{\alpha \delta^2}{8} \right\}$$
+
+#### Mathematical Proof:
+Let $\delta_v = \delta \cdot \mathbb{I}(v \in G)$. The modified density can be expressed as:
+
+$$\hat{p}_t[v] = p_t[v] \cdot \frac{\exp(\delta_v)}{\mathbb{E}_{w \sim p_t}[\exp(\delta_w)]}$$
+
+1. **Max-Divergence / Absolute Odds Bound:**
+   Since $\delta_v \in [0, \delta]$, we have $e^0 \le \exp(\delta_v) \le e^\delta$. Consequently:
+   $$e^{-\delta} \le \mathbb{E}_{w \sim p_t}[\exp(\delta_w)] \le e^\delta$$
+   Taking extreme ratios yields point-wise density limits:
+   $$e^{-2\delta} \le \frac{\hat{p}_t[v]}{p_t[v]} \le e^{2\delta}, \quad \forall v \in \mathcal{V}$$
+   This proves $D_\infty(\hat{p}_t \parallel p_t) \le 2\delta$.
+
+2. **Refined Concentrated Bound ($\alpha \delta^2 / 8$):**
+   Consider the log-likelihood ratio (privacy loss random variable) $L(v) = \ln \left( \frac{\hat{p}_t[v]}{p_t[v]} \right) = \delta_v - \ln \mathbb{E}_{w \sim p_t}[\exp(\delta_w)]$.
+   Notice that for any vector $l_t$, shifting $l_t \to l_t + \delta_v$ is a bounded-range transformation where the utility function score $u(h, v) = \mathbb{I}(v \in G)$ has sensitivity $\Delta u = 1$.
+   By Hoeffding's Lemma, for any zero-mean random variable $X \in [a, b]$:
+   $$\mathbb{E}[\exp(\lambda X)] \le \exp\left( \frac{\lambda^2 (b - a)^2}{8} \right)$$
+   Here, $\delta_v \in [0, \delta]$, so the range is $b - a = \delta$. Applying the exponential mechanism bound (Proposition 1 in Dong et al., 2020; Lemma 3.2 in Cesar & Rogers, 2021) establishes that $\hat{p}_t$ and $p_t$ satisfy $\frac{\delta^2}{8}$-concentrated differential privacy ($\frac{\delta^2}{8}$-zCDP). 
+
+   By the standard conversion from zCDP to Rényi divergence:
+   $$D_\alpha(\hat{p}_t \parallel p_t) \le \frac{\alpha \delta^2}{8}$$
+   Taking the minimum over both bounds yields $\min\left\{ \delta, \frac{\alpha \delta^2}{8} \right\}$. $\blacksquare$
+
+### Implications for Standard Distances
+- **Kullback-Leibler (KL) Divergence ($\alpha = 1$):**
+  $$D_{KL}(\hat{p}_t \parallel p_t) \le \min\left\{ \delta, \frac{\delta^2}{8} \right\}$$
+- **Total Variation (TV) Distance:** By Pinsker's inequality ($TV(P, Q) \le \sqrt{\frac{1}{2} D_{KL}(P \parallel Q)}$):
+  $$TV(\hat{p}_t, p_t) \le \min\left\{ \sqrt{\frac{\delta}{2}}, \frac{\delta}{4} \right\}$$
+- **Sequence-Level Divergence:** Under adaptive composition across $n$ generated tokens:
+  $$D_{KL}(\hat{p}(y_{1:n} \mid x) \parallel p(y_{1:n} \mid x)) \le n \cdot \min\left\{ \delta, \frac{\delta^2}{8} \right\}$$
+
+---
+
+## 3. Correctness & Error Guarantees
+
+### 3.1 Type I Error (False Positive Rate)
+Type I error occurs when an un-watermarked sequence $y$ (or human text) is incorrectly classified as watermarked ($z_y > \tau$).
+
+#### Theorem 3.1 (No False Positives)
+*Let $y = [y_1, \dots, y_n]$ be any fixed sequence independent of $G$. Define:*
+*   *Maximum token frequency: $C_{\max}(y) = \max_{v \in \mathcal{V}} \sum_{j=1}^n \mathbb{I}(y_j = v)$*
+*   *Frequency variance term: $V(y) = \frac{1}{n} \sum_{v \in \mathcal{V}} \left( \sum_{j=1}^n \mathbb{I}(y_j = v) \right)^2$*
+
+*Over the random choice of key $k$ (and partition $G$ with $|G| = \gamma N$):*
+1. $\mathbb{E}[|y|_G \mid y] = \gamma n \implies \mathbb{E}[z_y \mid y] = 0$.
+2. *For any failure probability $\alpha \in (0, 1)$, with probability at least $1 - \alpha$:*
+   $$z_y \le \sqrt{\frac{64 V(y) \ln(9/\alpha)}{1 - \gamma}} + \frac{16 C_{\max}(y) \ln(9/\alpha)}{\sqrt{n \gamma (1 - \gamma)}}$$
+
+#### Proof Sketch (Matrix Concentration / Permutation Sampling):
+Let $a_{v, j} = \mathbb{I}(j \le \gamma N) \sum_{l=1}^n \mathbb{I}(y_l = v)$. The quantity $|y|_G$ is structurally equivalent to sampling a random subset of size $\gamma N$ without replacement from $\mathcal{V}$. Applying Albert's Concentration Inequality for randomly permuted sums (Albert, 2019) with variance proxy proportional to $V(y)$ and maximum scale bound $C_{\max}(y)$ yields the Bernstein-type tail bound above. $\blacksquare$
+
+---
+
+### 3.2 Type II Error (False Negative Rate)
+Type II error occurs when a watermarked sequence $y \sim \widehat{\mathcal{M}}(x)$ fails to trigger detection ($z_y \le \tau$).
+
+#### Required Structural Assumptions:
+1. **$(\xi, \beta)$-On-Average High Entropy:** 
+   $$\frac{1}{n} \max \left\{ \left\| \sum_{t=1}^n p_t \right\|_2^2, \sum_{t=1}^n \|p_t\|_2^2 \right\} \le \xi$$
+   This guarantees that the conditional distributions $p_t$ are sufficiently non-concentrated on average, ensuring $\delta$ effectively shifts mass to $G$.
+2. **Homophily Assumption:**
+   $$\frac{1}{n} \sum_{t=1}^n \hat{p}_t(G \mid \hat{y}_{1:t-1}) \ge \frac{1}{n} \sum_{t=1}^n \hat{p}_t(G \mid y_{1:t-1})$$
+   Increasing green token probabilities at step $t$ does not systematically decrease the probability of observing green tokens at future steps $t' > t$.
+
+#### Theorem 3.2 (Only True Positives)
+*Under On-Average High Entropy and Homophily assumptions, if sequence length $n \ge \tilde{\Omega}\left(\frac{\ln(1/\beta)}{\delta^2}\right)$, then with probability at least $1 - \beta$ over $y \sim \widehat{\mathcal{M}}(x)$:*
+
+$$z_y \ge \Omega \left( (e^\delta - 1) \sqrt{n \gamma (1 - \gamma)} \right)$$
+
+#### Key Takeaway:
+While false positive $z$-scores satisfy $z_y = O(1)$, true watermarked $z$-scores scale with $\Omega(\delta \sqrt{n})$. Setting $\tau = \Theta(\delta \sqrt{n})$ yields exponential decay in both Type I and Type II error probabilities as $n \to \infty$.
+
+---
+
+## 4. Provable Robustness Against Attacks
+
+Let $y = [y_1, \dots, y_n]$ be a watermarked sequence generated by $\widehat{\mathcal{M}}$, and let $u = [u_1, \dots, u_m]$ be an edited sequence produced by an adversary $\mathcal{A}$ such that the edit distance $ED(y, u) = \eta < n$.
+
+### Theorem 4.1 (Exact $z$-Score Degradation under Edit Distance)
+*Let $z_y$ and $z_u$ denote the $z$-statistics for the original and modified texts, respectively. For edit distance $\eta < n$:*
+
+$$z_u \ge z_y - \max \left\{ \frac{(1 + \gamma/2)\eta}{\sqrt{n}}, \frac{(1 - \gamma/2)\eta}{\sqrt{n - \eta}} \right\}$$
+
+*When $\eta \le \frac{2\gamma n}{(1 + \gamma/2)^2}$, the first term dominates, simplifying the bound to:*
+
+$$z_u \ge z_y - \frac{(1 + \gamma/2)\eta}{\sqrt{n}}$$
+
+#### Mathematical Proof:
+Define the continuous function $f(x, y) = \frac{x - \gamma y}{\sqrt{y}}$, where $x = |y|_G$ (green count) and $y = n$ (sequence length).
+
+1. **Impact of Single Edit Operations:**
+   Each basic operation (insertion, deletion, substitution) alters:
+   - Green count: $x \to x - k_x$ with $|k_x| \le \eta$.
+   - Length: $y \to y - k_y$ with $|k_y| \le \eta$.
+
+2. **Multivariate First-Order Taylor Expansion:**
+   By Taylor's Theorem:
+   $$f(x - k_x, y - k_y) = f(x, y) - \left[ \frac{k_x}{\sqrt{y - \tilde{k}_y}} - \frac{\gamma k_y}{2\sqrt{y - \tilde{k}_y}} \right]$$
+   where $\tilde{k}_y \in [0, k_y]$.
+
+3. **Bounding Worst-Case Perturbation:**
+   To minimize $z_u$, an adversary maximizes $\frac{k_x - \frac{\gamma}{2}k_y}{\sqrt{y - \tilde{k}_y}}$ subject to $|k_x| \le \eta$ and $|k_y| \le \eta$:
+   - Setting $k_x = \eta$ (removing $\eta$ green tokens):
+     - Case 1 ($k_y \le 0$, net insertion): Maximum occurs at $k_y = -\eta, \tilde{k}_y = 0$, giving rate $\frac{(1 + \gamma/2)\eta}{\sqrt{n}}$.
+     - Case 2 ($k_y > 0$, net deletion): Convex optimization over $k_y \in [0, \eta]$ yields extreme bound at $k_y = \eta, \tilde{k}_y = \eta$, giving rate $\frac{(1 - \gamma/2)\eta}{\sqrt{n - \eta}}$.
+
+Taking the maximum of both adversarial strategies proves the theorem. $\blacksquare$
+
+---
+
+## 5. Comparative Analysis: UNIGRAM-WATERMARK ($K=1$) vs. KGW+23 ($K \ge 2$)
+
+The soft watermarking framework proposed by Kirchenbauer et al. (2023) [KGW+23] generates dynamic green lists based on a context window of length $K-1$:
+$$G_t = \text{Hash}(y_{t-K+1}, \dots, y_{t-1})$$
+
+| Metric / Feature | UNIGRAM-WATERMARK ($K=1$) | KGW+23 Soft Watermark ($K \ge 2$) |
+| :--- | :--- | :--- |
+| **Green List Mapping** | Static per key: $G \subset \mathcal{V}$ | Context-dependent: $G_t = f(y_{t-K+1:t-1})$ |
+| **Robustness to Token Deletion/Insertion** | **High:** Single edit degrades $z$-score by $\approx \frac{1 + \gamma/2}{\sqrt{n}}$ | **Low:** Single edit corrupts green list hash for $K$ consecutive downstream tokens |
+| **Sensitivity to Local Edits ($\eta$ operations)** | Degrades linearly: $\Delta z \sim O(\eta / \sqrt{n})$ | Degrades multiplicative-linearly: $\Delta z \sim O(K \cdot \eta / \sqrt{n})$ |
+| **Resilience to Formatting Attacks** | **Extremely High:** Invariant to token shuffling, emoji insertion, or reordering | **Vulnerable:** Simple emoji insertion breaks context window alignment entirely |
+| **Theoretical Edit Bound Ratio** | **$1\times$ Base Degradation Rate** | **$\ge 2\times$ Faster Degradation Rate** |
+| **Key Invariance / Learnability** | Fixed $G$ can be statistically estimated with $O(10^5+)$ tokens | Context hashing prevents trivial empirical token estimation |
+
+### The Robustness Advantage
+For $K=2$ (a single prefix token determining $G_t$), substituting token $y_i$ invalidates the prefix for $y_{i+1}$, causing a single substitution to impact **two** green list evaluations. For general $K$, a single edit disrupts up to $K$ evaluations. UNIGRAM-WATERMARK ($K=1$) maintains $K=1$, eliminating error propagation across steps and achieving provably twice the edit robustness of $K=2$.
