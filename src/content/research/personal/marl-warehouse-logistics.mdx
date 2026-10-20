@@ -31,7 +31,7 @@ This document provides an editor-level critique, structural analysis, and strate
 
 ### 2. Formalization of Hierarchy & Spatial Action Spaces
 
-- **Specific Text Example:** _Section IV-B ("The manager's action space consists of a choice from the set of zones $Y$ given by $\mathcal{A}^m = Y^{|\mathcal{I}|}$...")_
+- **Specific Text Example:** _Section IV-B ("The manager's action space consists of a choice from the set of zones $Y$ given by $\mathcal{A}^m = Y^{\vert{}\mathcal{I}\vert{}}$...")_
 - **Issue:** The temporal dynamics between the Manager layer and the Worker layer are slightly ambiguous. The paper states that workers execute actions until reaching target locations using $A^*$, but Equation (1) sums rewards over variable worker horizons $k_i$. The exact semi-MDP (SMDP) or macro-action transition dynamics governing manager re-decisions need explicit formalization.
 - **Actionable Next Step:** Can you explicitly define the temporal decision epoch for the Manager? Formulating the Manager level as a formal Options Framework or Semi-POSG (S-POSG) will clarify how asynchronous worker completions ($k_i$) trigger Manager updates.
 
@@ -51,9 +51,9 @@ Below are specific recommended edits to elevate the paper's precision, notation 
 # Applied Revisions and Structural Enhancements
 
 ### 1. Section IV-A.1: Formal POSG & Reward Horizon Consistency
-* **Original:**
+- **Original:**
   "The goal is to learn a joint policy $\pi=(\pi^{1},...,\pi^{N})$ to maximise the expected discounted return $G^{i}=\sum_{t=1}^{T}\gamma^{t-1}r_{t}^{i}$..."
-* **Suggested Edit:**
+- **Suggested Edit:**
   <comment-tag author="Senior Editor" note="Clarified the discount horizon notation and explicit dependence on macro-action time intervals for hierarchical convergence.">
   "The objective is to learn a joint policy $\pi = (\pi^1, \dots, \pi^N)$ that maximizes the expected discounted return $G^i = \mathbb{E}_{\pi} \left[ \sum_{t=0}^{T} \gamma^t r_t^i \right]$ for each agent $i \in \mathcal{I}$, where $\gamma \in [0, 1)$ denotes the discount factor and $T$ represents the task horizon."
   </comment-tag>
@@ -61,9 +61,9 @@ Below are specific recommended edits to elevate the paper's precision, notation 
 ---
 
 ### 2. Section IV-B: Hierarchical Decomposition Formalism
-* **Original:**
+- **Original:**
   "The manager reward $r_t^m$ is the sum of the rewards from all the assigned goals to non-busy workers $i \in \mathcal{I}$ during a timestep."
-* **Suggested Edit:**
+- **Suggested Edit:**
   <comment-tag author="Senior Editor" note="Refined mathematical definition of the macro-action reward transition for the Manager agent.">
   "The Manager operates on an asynchronous Semi-POSG formulation. The Manager reward $r_t^m$ at macro-step $t$ aggregates the cumulative temporal rewards accumulated by non-busy worker agents $i \in \mathcal{I}_{active}$ over their respective task execution intervals $k_i$:
 
@@ -75,10 +75,10 @@ Below are specific recommended edits to elevate the paper's precision, notation 
 ---
 
 ### 3. Section V-C: Baseline & Related Architecture Discussion
-* **Original:**
+- **Original:**
   "The sub-par performance of SNAC is due to all worker agents using identical policies, which can lead to delays incurred due to frequent collisions or deadlocks..."
-* **Suggested Edit:**
+- **Suggested Edit:**
   <comment-tag author="Senior Editor" note="Added discussion contextualizing value-factorization (QMIX) and action-masking interactions in dense fulfillment spaces.">
-  "The sub-par performance of SNAC stems from uniform policy parameters across heterogeneous agent roles, leading to spatial deadlocks in high-density aisles. While centralized value-factorization algorithms (e.g., QMIX) address multi-agent credit assignment through mixing networks, they can suffer from scaling bottlenecks when action spaces $|\mathcal{A}|$ span thousands of discrete warehouse coordinates. Our hierarchical decomposition bypasses this by restricting value/policy updates to high-level spatial partitions $Y$, delegating local collision-free execution to $A^*$ low-level controllers."
+  "The sub-par performance of SNAC stems from uniform policy parameters across heterogeneous agent roles, leading to spatial deadlocks in high-density aisles. While centralized value-factorization algorithms (e.g., QMIX) address multi-agent credit assignment through mixing networks, they can suffer from scaling bottlenecks when action spaces $\vert{}\mathcal{A}\vert{}$ span thousands of discrete warehouse coordinates. Our hierarchical decomposition bypasses this by restricting value/policy updates to high-level spatial partitions $Y$, delegating local collision-free execution to $A^*$ low-level controllers."
   </comment-tag>
 ```

@@ -1,17 +1,10 @@
----
-title: "Evaluating Hallucination Mitigation Metrics in Retrieval-Augmented Generation"
-author: "Research Team"
-date: "2026-03-30"
-abstract: "While Retrieval-Augmented Generation (RAG) significantly mitigates the tendency of Large Language Models (LLMs) to generate factually incorrect or ungrounded claims, evaluating these systems remains a core challenge. Standard text overlap metrics fail to measure actual factual alignment. In this study, we benchmark sparse, dense, and dynamic hybrid retrieval configurations across HaluBench to observe their direct impact on downstream LLM hallucinations. Using Llama-3-8B-Instruct, our empirical findings demonstrate that a dynamic hybrid retrieval approach combining WordNet query expansion with Reciprocal Rank Fusion (RRF) achieves superior retrieval precision (0.915 NDCG@3) and reduces LLM hallucination rates to 10.37%, down from 28.76% under sparse retrieval."
----
-
 # 1. Introduction
 
-Large Language Models (LLMs) have transformed text generation and contextual reasoning across domains. However, their reliance on probabilistic next-token prediction renders them vulnerable to **hallucinations**—generating fluent, authoritative assertions that lack factual backing or directly contradict source contexts [1]. 
+Large Language Models (LLMs) have transformed text generation and contextual reasoning across domains. However, their reliance on probabilistic next-token prediction renders them vulnerable to **hallucinations**—generating fluent, authoritative assertions that lack factual backing or directly contradict source contexts [1].
 
 In critical sectors such as healthcare, finance, and legal analysis, ungrounded outputs pose severe operational risks [2]. Retrieval-Augmented Generation (RAG) addresses these vulnerabilities by grounding model generations in verifiable, external knowledge stores [3]. By supplying parametric models with non-parametric context at inference time, RAG effectively circumvents knowledge cutoffs and cuts fine-tuning overhead [4].
 
-Despite these benefits, the reliability of a RAG pipeline is bottlenecked by its retrieval phase. If a retriever returns irrelevant or incomplete information, the generation engine is forced to extrapolate, yielding **intrinsic hallucinations** (contradicting the retrieved context) or **extrinsic hallucinations** (introducing unsupported external facts) [5]. 
+Despite these benefits, the reliability of a RAG pipeline is bottlenecked by its retrieval phase. If a retriever returns irrelevant or incomplete information, the generation engine is forced to extrapolate, yielding **intrinsic hallucinations** (contradicting the retrieved context) or **extrinsic hallucinations** (introducing unsupported external facts) [5].
 
 ```
                                       ┌────────────────┐
@@ -65,11 +58,13 @@ We evaluate three retrieval strategies over an indexed document store $D = \{d_1
 3. **Dynamic Hybrid Retrieval ($Ret_{\text{Hyb-RRF}}$):** Combines lexical and semantic scores using dynamic weighting and Reciprocal Rank Fusion (RRF).
 
 ### Query Expansion Module
+
 To bridge lexical gaps between queries and domain documents, input queries $q$ undergo automated expansion via WordNet. For every term $q_j \in q$, we append top synset terms $T(q_j)$, producing expanded query $q'$:
 
 $$q' = q \cup \bigcup_{j=1}^{|q|} T(q_j)$$
 
 ### Dynamic Weighting & Reciprocal Rank Fusion
+
 Instead of static interpolation, retrieval weights are dynamically calibrated based on a term specificity score $S(q')$, calculated using inverse document frequency distribution:
 
 $$S(q') = \frac{1}{|q'|} \sum_{i=1}^{|q'|} \text{tf-idf}(q_i)$$
@@ -89,15 +84,17 @@ where $r_{Ret}(d_i)$ is the rank position of document $d_i$, and $\epsilon = 60$
 # 3. Experimental Setup & Metrics
 
 ## 3.1 Benchmark Dataset
-Evaluations were conducted on **HaluBench** [7], a unified hallucination benchmark encompassing $13,867$ evaluation pairs across six distinct domains: DROP, HaluEval, RAGTruth, FinanceBench, PubMedQA, and COVIDQA. 
+
+Evaluations were conducted on **HaluBench** [7], a unified hallucination benchmark encompassing $13,867$ evaluation pairs across six distinct domains: DROP, HaluEval, RAGTruth, FinanceBench, PubMedQA, and COVIDQA.
 
 To evaluate overall generation performance, a balanced, human-annotated sample ($HaluBench_{\text{small}}$, $n=300$) was evaluated across both faithful (`PASS`) and hallucinated (`FAIL`) source cases.
 
 ## 3.2 Evaluation Metrics
 
 Retrieval effectiveness is measured using standard Information Retrieval metrics at $k=3$:
-* **Mean Average Precision (MAP@3):** Measures the average precision across retrieved positions.
-* **Normalized Discounted Cumulative Gain (NDCG@3):** Assesses rank-aware document relevance.
+
+- **Mean Average Precision (MAP@3):** Measures the average precision across retrieved positions.
+- **Normalized Discounted Cumulative Gain (NDCG@3):** Assesses rank-aware document relevance.
 
 Downstream generation quality is calculated using four core factuality metrics:
 
@@ -117,10 +114,10 @@ $$\text{Adjusted Accuracy} = \frac{\text{Correct Answers}}{\text{Correct Answers
 
 Evaluating $Ret_{\text{Hyb-RRF}}$ against single-mode retrievers across the full $HaluBench_{\text{orig}}$ dataset confirms significant improvements in context retrieval quality.
 
-| Metric | Sparse ($Ret_S$) | Dense ($Ret_D$) | Hybrid ($Ret_{\text{Hyb-RRF}}$) |
-| :--- | :---: | :---: | :---: |
-| **MAP@3** | 0.724 | 0.768 | **0.897** |
-| **NDCG@3** | 0.732 | 0.783 | **0.915** |
+| Metric     | Sparse ($Ret_S$) | Dense ($Ret_D$) | Hybrid ($Ret_{\text{Hyb-RRF}}$) |
+| :--------- | :--------------: | :-------------: | :-----------------------------: |
+| **MAP@3**  |      0.724       |      0.768      |            **0.897**            |
+| **NDCG@3** |      0.732       |      0.783      |            **0.915**            |
 
 The hybrid retriever achieved an **NDCG@3 of 0.915**, representing an $16.8\%$ performance gain over stand-alone dense semantic retrieval. This gain stems directly from dynamic query expansion, which preserves specific key identifiers while utilizing semantic vector projections for broad intent matching.
 
@@ -140,6 +137,7 @@ Retrieval Method Performance Comparison (%)
 ```
 
 ### Key Observations
+
 1. **Hallucination Suppression:** $Ret_{\text{Hyb-RRF}}$ reduced the downstream LLM hallucination rate to **10.37%**, compared to 28.76% under sparse retrieval.
 2. **Context Sufficiency:** The rejection rate (where models refuse to answer due to missing facts) dropped from **34.45%** to **9.36%**, demonstrating higher context recall.
 3. **Resilience on Failed Contexts:** On source samples classified as ground-truth failures (`FAIL`), hybrid RAG preserved an accuracy of **77.24%**, whereas sparse retrieval dropped to 39.84%.
@@ -156,10 +154,10 @@ Future work will focus on integrating real-time re-ranking layers (e.g., Cross-E
 
 # References
 
-1. Augenstein, I., et al. (2024). *Factual Correctness and Hallucinations in Large Language Models*. Comp. Linguistics.
-2. Rahman, S. S., et al. (2026). *Hallucination to truth: a review of fact-checking and factuality evaluation in large language models*. Artificial Intelligence Review, 59(70).
-3. Lewis, P., et al. (2020). *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*. NeurIPS.
-4. Mala, C. S., Gezici, G., & Giannotti, F. (2025). *Hybrid Retrieval for Hallucination Mitigation in Large Language Models: A Comparative Analysis*. arXiv:2504.05324v1.
-5. Ji, Z., et al. (2023). *Survey of Hallucination in Natural Language Generation*. ACM Computing Surveys.
-6. Lin, T. Y., et al. (2022). *Limitations of Overlap Metrics in LLM Evaluation*. EMNLP.
-7. Ravi, S. S., et al. (2024). *Lynx: An Open Source Hallucination Evaluation Model and Benchmark*. arXiv:2407.08488.
+1. Augenstein, I., et al. (2024). _Factual Correctness and Hallucinations in Large Language Models_. Comp. Linguistics.
+2. Rahman, S. S., et al. (2026). _Hallucination to truth: a review of fact-checking and factuality evaluation in large language models_. Artificial Intelligence Review, 59(70).
+3. Lewis, P., et al. (2020). _Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks_. NeurIPS.
+4. Mala, C. S., Gezici, G., & Giannotti, F. (2025). _Hybrid Retrieval for Hallucination Mitigation in Large Language Models: A Comparative Analysis_. arXiv:2504.05324v1.
+5. Ji, Z., et al. (2023). _Survey of Hallucination in Natural Language Generation_. ACM Computing Surveys.
+6. Lin, T. Y., et al. (2022). _Limitations of Overlap Metrics in LLM Evaluation_. EMNLP.
+7. Ravi, S. S., et al. (2024). _Lynx: An Open Source Hallucination Evaluation Model and Benchmark_. arXiv:2407.08488.
